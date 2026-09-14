@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
 import { createRoom, type Room } from '../../data/rooms';
+import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 
 interface FormData {
   title: string;
@@ -14,6 +15,7 @@ interface FormData {
   conditions: string;
   chambres: number;
   douches: number;
+  category: string;
 }
 
 const emptyForm: FormData = {
@@ -26,6 +28,7 @@ const emptyForm: FormData = {
   conditions: '',
   chambres: 1,
   douches: 1,
+  category: '',
 };
 
 const marketPays: Record<string, string> = {
@@ -44,9 +47,14 @@ export default function AjouterChambre() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [mainPhotoIndex, setMainPhotoIndex] = useState(0);
   const [previewImg, setPreviewImg] = useState(0);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const homePath = useHomePath();
   const adminPath = `${homePath}/admin`;
+
+  useEffect(() => {
+    fetchCategoriesByMarket(market).then(setCategories);
+  }, [market]);
 
   const update = (field: keyof FormData, value: string | number) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -92,6 +100,7 @@ export default function AjouterChambre() {
     if (!form.ville.trim()) e.ville = 'La ville est requise';
     if (!form.quartier.trim()) e.quartier = 'Le quartier est requis';
     if (!form.description.trim()) e.description = 'La description est requise';
+    if (!form.category) e.category = 'Choisissez une catégorie';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -124,7 +133,7 @@ export default function AjouterChambre() {
       images: photos,
       description: form.description,
       capacity: '',
-      category: 'appartements-moins-chers',
+      category: form.category,
       market,
       pays: marketPays[market] || 'Bénin',
       ville: form.ville,
@@ -218,6 +227,17 @@ export default function AjouterChambre() {
               <span>Description *</span>
               <textarea rows={4} value={form.description} onChange={(e) => update('description', e.target.value)} placeholder="Décrivez l'appartement en détail : ambiance, équipements, points forts..." />
               {errors.description && <span className="field-error">{errors.description}</span>}
+            </label>
+
+            <label className={`admin-field admin-field--full ${errors.category ? 'admin-field--error' : ''}`}>
+              <span>Catégorie *</span>
+              <select value={form.category} onChange={(e) => update('category', e.target.value)}>
+                <option value="">Choisir une catégorie</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.title}</option>
+                ))}
+              </select>
+              {errors.category && <span className="field-error">{errors.category}</span>}
             </label>
 
             <div className="form-nav">

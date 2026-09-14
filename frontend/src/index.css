@@ -66,21 +66,21 @@
   --admin-border: #F5DCC4;
 }
 
-/* Bénin — Vert / Jaune / Rouge */
+/* Bénin — Jaune / Vert / Rouge */
 [data-market="BJ"] {
-  --sky: #008751;
-  --sky-dark: #006B3F;
-  --sky-pale: #D5F5E3;
-  --sun: #F1C40F;
-  --sky-50:  #F0FDF4;
-  --sky-100: #DCFCE7;
-  --sky-200: #BBF7D0;
-  --sky-400: #4ADE80;
-  --sky-500: #22C55E;
-  --sky-600: #16A34A;
-  --sky-900: #14532D;
-  --admin-surface-alt: #F5FFF8;
-  --admin-border: #C4E8D4;
+  --sky: #F1C40F;
+  --sky-dark: #D4A017;
+  --sky-pale: #FFF9E0;
+  --sun: #008751;
+  --sky-50:  #FFFDF0;
+  --sky-100: #FFF3C4;
+  --sky-200: #FFE082;
+  --sky-400: #FFD54F;
+  --sky-500: #FFCA28;
+  --sky-600: #FFB300;
+  --sky-900: #5D4E0A;
+  --admin-surface-alt: #FFFEF5;
+  --admin-border: #F0E6B8;
 }
 
 /* ---------- Reset & base ---------- */
@@ -5858,6 +5858,13 @@ body.nav-open {
   outline: none;
   border-color: var(--sky-500);
   box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
+}
+
+.admin-select--inline {
+  min-width: 140px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  background: var(--admin-surface-alt);
 }
 
 /* ---------- Page header ---------- */

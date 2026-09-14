@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
-import { fetchRoomsByMarket, deleteRoom, toggleRoom, type Room } from '../../data/rooms';
+import { fetchRoomsByMarket, updateRoom, deleteRoom, toggleRoom, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 
 export default function ChambresPage() {
@@ -48,6 +48,11 @@ export default function ChambresPage() {
 
   const toggleDispo = async (id: string) => {
     await toggleRoom(id);
+    loadData();
+  };
+
+  const handleCategoryChange = async (roomId: string, categoryId: string) => {
+    await updateRoom(roomId, { category: categoryId });
     loadData();
   };
 
@@ -106,16 +111,24 @@ export default function ChambresPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((room) => {
-              const cat = categories.find((c) => c.id === room.category);
-              return (
+            {filtered.map((room) => (
                 <tr key={room.id}>
                   <td>
                     <img src={room.img} alt={room.alt} className="admin-table__img" />
                   </td>
                   <td className="admin-table__name">{room.title}</td>
                   <td>{room.ville}</td>
-                  <td>{cat?.title ?? room.category}</td>
+                  <td>
+                    <select
+                      className="admin-select admin-select--inline"
+                      value={room.category}
+                      onChange={(e) => handleCategoryChange(room.id, e.target.value)}
+                    >
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.title}</option>
+                      ))}
+                    </select>
+                  </td>
                   <td className="admin-table__price">
                     {room.price} FCFA <span className="admin-table__unit">{room.priceUnit}</span>
                   </td>
@@ -135,8 +148,8 @@ export default function ChambresPage() {
                     </div>
                   </td>
                 </tr>
-              );
-            })}
+              )
+            )}
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={7} className="admin-table__empty">Aucune chambre trouvée</td>
