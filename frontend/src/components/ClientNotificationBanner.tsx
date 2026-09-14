@@ -8,14 +8,16 @@ export default function ClientNotificationBanner() {
   useEffect(() => {
     const email = localStorage.getItem('ilehya-client-email');
     if (email) {
-      setNotifications(getClientNotifications(email).filter((n) => !n.read && !dismissed.includes(n.id)));
+      getClientNotifications(email).then((notifs) => {
+        setNotifications(notifs.filter((n) => !n.read && !dismissed.includes(n.id)));
+      });
     }
   }, [dismissed]);
 
-  const handleDismiss = (notif: ClientNotification) => {
+  const handleDismiss = async (notif: ClientNotification) => {
     const email = localStorage.getItem('ilehya-client-email');
     if (email) {
-      markClientNotificationAsRead(notif.id, email);
+      await markClientNotificationAsRead(notif.id, email);
     }
     setDismissed((prev) => [...prev, notif.id]);
   };

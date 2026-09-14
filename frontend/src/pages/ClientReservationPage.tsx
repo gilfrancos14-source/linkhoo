@@ -9,11 +9,11 @@ export default function ClientReservationPage() {
   const [searched, setSearched] = useState(false);
   const [reservations, setReservations] = useState<Reservation[]>([]);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
     localStorage.setItem('ilehya-client-email', email.trim());
-    const all = getReservations();
+    const all = await getReservations();
     setReservations(all.filter((r) => r.clientEmail === email.trim().toLowerCase()));
     setSearched(true);
   };

@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react';
 import { useMarket } from '../contexts/MarketContext';
-import { getBannersBySection } from '../data/banners';
+import { fetchBannersBySection, type Banner } from '../data/banners';
 import BannerCarousel from './BannerCarousel';
 
 const events = [
@@ -10,7 +11,11 @@ const events = [
 
 export default function EventsSection() {
   const { market } = useMarket();
-  const banners = getBannersBySection(market, 'events');
+  const [banners, setBanners] = useState<Banner[]>([]);
+
+  useEffect(() => {
+    fetchBannersBySection(market, 'events').then(setBanners);
+  }, [market]);
 
   return (
     <section className="events" id="evenements">

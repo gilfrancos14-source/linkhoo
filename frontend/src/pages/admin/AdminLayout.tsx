@@ -3,8 +3,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
 import { getNotifications, getUnreadCount, markAsRead, markAllAsRead, addTestNotification, type Notification } from '../../lib/notifications';
-import { getRoomsByMarket, getLocalRooms } from '../../data/rooms';
-import { updateReservationStatut, getReservationById, checkDateConflict } from '../../lib/reservations';
+import { fetchRoomsByMarket } from '../../data/rooms';
+import { updateReservationStatut, getReservations, checkDateConflict } from '../../lib/reservations';
 import { addClientNotification } from '../../lib/notifications';
 import { sendWhatsAppClientResponse } from '../../lib/whatsapp';
 
@@ -36,10 +36,13 @@ export default function AdminLayout() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unread, setUnread] = useState(0);
   const [verify, setVerify] = useState<VerifyState | null>(null);
+  const [roomCount, setRoomCount] = useState(0);
   const notifRef = useRef<HTMLDivElement>(null);
   const { pathname } = useLocation();
 
-  const roomCount = getRoomsByMarket(market).length + getLocalRooms().filter((r) => r.market === market).length;
+  useEffect(() => {
+    fetchRoomsByMarket(market).then((rooms) => setRoomCount(rooms.length));
+  }, [market]);
 
   const navGeneral = [
     { to: adminPath, label: 'Aperçu', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="3" width="7" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="12" width="7" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="3" y="16" width="7" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.8"/></svg> },
@@ -52,9 +55,11 @@ export default function AdminLayout() {
     { to: `${adminPath}/reservations`, label: 'Réservations', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg> },
   ];
 
-  const loadNotifs = () => {
-    setNotifications(getNotifications());
-    setUnread(getUnreadCount());
+  const loadNotifs = async () => {
+    const notifs = await getNotifications();
+    setNotifications(notifs);
+    const count = await getUnreadCount();
+    setUnread(count);
   };
 
   useEffect(() => {
@@ -92,26 +97,31 @@ export default function AdminLayout() {
     loadNotifs();
   };
 
-  const handleVerify = (n: Notification) => {
-    const reservation = n.reservationId ? getReservationById(n.reservationId) : null;
-    setVerify({ notif: n, loading: true, available: null, reservation });
+  const handleVerify = async (n: Notification) => {
+    setVerify({ notif: n, loading: true, available: null, reservation: null });
 
-    setTimeout(() => {
+    try {
+      const allRes = await getReservations();
+      const reservation = n.reservationId ? allRes.find((r) => r.id === n.reservationId) ?? null : null;
+      setVerify((prev) => prev ? { ...prev, reservation } : null);
+
       if (!reservation || !reservation.dateDebut || !reservation.dateFin) {
         setVerify((prev) => prev ? { ...prev, loading: false, available: false } : null);
         return;
       }
-      const conflict = checkDateConflict(reservation.roomId, reservation.dateDebut, reservation.dateFin, reservation.id);
+      const conflict = await checkDateConflict(reservation.roomId, reservation.dateDebut, reservation.dateFin, reservation.id);
       setVerify((prev) => prev ? { ...prev, loading: false, available: !conflict.hasConflict } : null);
-    }, 1500);
+    } catch {
+      setVerify((prev) => prev ? { ...prev, loading: false, available: false } : null);
+    }
   };
 
-  const handleConfirmFromPopup = () => {
+  const handleConfirmFromPopup = async () => {
     if (!verify) return;
     const n = verify.notif;
     if (!n.reservationId) return;
-    updateReservationStatut(n.reservationId, 'confirmee');
-    addClientNotification({
+    await updateReservationStatut(n.reservationId, 'confirmee');
+    await addClientNotification({
       type: 'reservation_confirmed',
       roomTitle: n.roomTitle,
       roomId: n.roomId,
@@ -126,17 +136,17 @@ export default function AdminLayout() {
       dateFin: verify.reservation?.dateFin || '',
       confirmed: true,
     });
-    markAsRead(n.id);
+    await markAsRead(n.id);
     setVerify(null);
     loadNotifs();
   };
 
-  const handleRejectFromPopup = () => {
+  const handleRejectFromPopup = async () => {
     if (!verify) return;
     const n = verify.notif;
     if (!n.reservationId) return;
-    updateReservationStatut(n.reservationId, 'annulee');
-    addClientNotification({
+    await updateReservationStatut(n.reservationId, 'annulee');
+    await addClientNotification({
       type: 'reservation_rejected',
       roomTitle: n.roomTitle,
       roomId: n.roomId,
@@ -151,7 +161,7 @@ export default function AdminLayout() {
       dateFin: verify.reservation?.dateFin || '',
       confirmed: false,
     });
-    markAsRead(n.id);
+    await markAsRead(n.id);
     setVerify(null);
     loadNotifs();
   };
@@ -241,7 +251,6 @@ export default function AdminLayout() {
                       <p className="notif-dropdown__empty">Aucune notification</p>
                     ) : (
                       notifications.map((n) => {
-                        const reservation = n.reservationId ? getReservationById(n.reservationId) : null;
                         return (
                           <div key={n.id} className={`notif-item ${!n.read ? 'notif-item--unread' : ''}`}>
                             <button className="notif-item__main" onClick={() => handleNotifClick(n)}>
@@ -252,9 +261,9 @@ export default function AdminLayout() {
                                 <p className="notif-item__text">
                                   Demande de réservation pour <strong>{n.roomTitle}</strong>
                                 </p>
-                                {reservation && reservation.dateDebut && (
+                                {n.type === 'reservation' && (
                                   <span className="notif-item__dates">
-                                    Du {new Date(reservation.dateDebut).toLocaleDateString('fr-FR')} au {new Date(reservation.dateFin).toLocaleDateString('fr-FR')}
+                                    Réservation en attente
                                   </span>
                                 )}
                                 <span className="notif-item__time">{timeAgo(n.date)}</span>

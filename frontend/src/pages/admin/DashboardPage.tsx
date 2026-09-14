@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
-import { getRoomsByMarket, getLocalRooms } from '../../data/rooms';
-import { getCategoriesByMarket } from '../../data/categories';
+import { fetchRoomsByMarket, type Room } from '../../data/rooms';
+import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 
 const revenueSeries = [4200, 4800, 4100, 5300, 5900, 5600, 6400, 7100, 6800, 7600, 8200, 7900, 8600, 9100];
 const months = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc','J1','J2'];
@@ -61,20 +61,35 @@ export default function DashboardPage() {
   const { market } = useMarket();
   const homePath = useHomePath();
   const adminPath = `${homePath}/admin`;
-  const categories = getCategoriesByMarket(market);
 
-  const allData = [...getRoomsByMarket(market), ...getLocalRooms().filter((r) => r.market === market)];
-  const total = allData.length;
-  const disponibles = allData.filter((r) => r.disponible).length;
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const totalRevenue = revenueSeries.reduce((a, b) => a + b, 0);
   const chartRef = useRef<SVGSVGElement>(null);
   const axisRef = useRef<HTMLDivElement>(null);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 5;
 
-  const recent = [...allData].reverse().slice(0, 8);
+  const loadData = async () => {
+    const [r, c] = await Promise.all([
+      fetchRoomsByMarket(market),
+      fetchCategoriesByMarket(market),
+    ]);
+    setRooms(r);
+    setCategories(c);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadData(); }, [market]);
+
+  const total = rooms.length;
+  const disponibles = rooms.filter((r) => r.disponible).length;
+  const recent = [...rooms].reverse().slice(0, 8);
 
   useEffect(() => {
+    if (loading) return;
     if (chartRef.current) drawChart(chartRef.current, revenueSeries);
     if (axisRef.current) {
       axisRef.current.innerHTML = months
@@ -89,10 +104,21 @@ export default function DashboardPage() {
     if (revEl) animateValue(revEl, totalRevenue, { format: (v) => Math.round(v).toLocaleString('fr-FR') + ' FCFA' });
     if (roomEl) animateValue(roomEl, total, { format: (v) => Math.round(v).toLocaleString('fr-FR') });
     if (dispoEl) animateValue(dispoEl, disponibles, { format: (v) => Math.round(v).toLocaleString('fr-FR') });
-  }, []);
+  }, [loading, total, disponibles, totalRevenue]);
 
   const totalPages = Math.ceil(recent.length / PAGE_SIZE);
   const pageItems = recent.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  if (loading) {
+    return (
+      <div className="dash">
+        <div className="dash-page-head">
+          <h1>Aperçu</h1>
+          <p>Chargement...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dash">

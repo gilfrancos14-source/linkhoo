@@ -2,8 +2,8 @@ import { useParams, Link } from 'react-router-dom';
 import { useState, useMemo, useEffect } from 'react';
 import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
-import { getRoomsByMarket, getVilles, getQuartiers } from '../data/rooms';
-import { getCategoriesByMarket } from '../data/categories';
+import { fetchRoomsByMarket, getVillesFromRooms, getQuartiersFromRooms, type Room } from '../data/rooms';
+import { fetchCategoriesByMarket } from '../data/categories';
 import StayCard from '../components/StayCard';
 import Pagination from '../components/Pagination';
 
@@ -13,16 +13,29 @@ export default function CategoryPage() {
   const { market } = useMarket();
   const { id } = useParams<{ id: string }>();
   const homePath = useHomePath();
-  const categories = getCategoriesByMarket(market);
-  const category = categories.find((c) => c.id === id);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const category = categories.find((c: any) => c.id === id);
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      fetchRoomsByMarket(market),
+      fetchCategoriesByMarket(market),
+    ]).then(([r, c]) => {
+      setRooms(r);
+      setCategories(c);
+      setLoading(false);
+    });
+  }, [market]);
 
   const categoryRooms = useMemo(() => {
-    const rooms = getRoomsByMarket(market);
     return rooms.filter((r) => r.category === id);
-  }, [market, id]);
+  }, [rooms, id]);
 
-  const villes = getVilles(market);
-  const quartiers = getQuartiers(market);
+  const villes = useMemo(() => getVillesFromRooms(rooms), [rooms]);
+  const quartiers = useMemo(() => getQuartiersFromRooms(rooms), [rooms]);
 
   const [ville, setVille] = useState('');
   const [quartier, setQuartier] = useState('');
@@ -61,6 +74,16 @@ export default function CategoryPage() {
     setDateDispo('');
     setCurrentPage(1);
   };
+
+  if (loading) {
+    return (
+      <main className="cat-page">
+        <div className="container">
+          <p className="cat-page__empty">Chargement...</p>
+        </div>
+      </main>
+    );
+  }
 
   if (!category) {
     return (

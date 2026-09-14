@@ -1,9 +1,9 @@
 import { useSearchParams, Link } from 'react-router-dom';
-import { useState, useMemo, type FormEvent } from 'react';
+import { useState, useMemo, useEffect, type FormEvent } from 'react';
 import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
-import { getRoomsByMarket, getVilles, getQuartiers, type Room } from '../data/rooms';
-import { getCategoriesByMarket } from '../data/categories';
+import { fetchRoomsByMarket, getVillesFromRooms, getQuartiersFromRooms, type Room } from '../data/rooms';
+import { fetchCategoriesByMarket } from '../data/categories';
 import StayCard from '../components/StayCard';
 import Pagination from '../components/Pagination';
 
@@ -27,9 +27,24 @@ export default function SearchResultsPage() {
   const { market } = useMarket();
   const homePath = useHomePath();
   const [searchParams, setSearchParams] = useSearchParams();
-  const villes = getVilles(market);
-  const quartiers = getQuartiers(market);
-  const categories = getCategoriesByMarket(market);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      fetchRoomsByMarket(market),
+      fetchCategoriesByMarket(market),
+    ]).then(([r, c]) => {
+      setRooms(r);
+      setCategories(c);
+      setLoading(false);
+    });
+  }, [market]);
+
+  const villes = useMemo(() => getVillesFromRooms(rooms), [rooms]);
+  const quartiers = useMemo(() => getQuartiersFromRooms(rooms), [rooms]);
 
   const query = searchParams.get('q') ?? '';
   const dateArrivee = searchParams.get('arrivee') ?? '';
@@ -66,7 +81,6 @@ export default function SearchResultsPage() {
 
   // Filtrage
   const filteredRooms = useMemo(() => {
-    const rooms = getRoomsByMarket(market);
     return rooms.filter((room) => {
       if (!matchesQuery(room, query)) return false;
       if (selectedVille && room.ville !== selectedVille) return false;
@@ -76,7 +90,7 @@ export default function SearchResultsPage() {
       if (price < priceRange[0] || price > priceRange[1]) return false;
       return true;
     });
-  }, [market, query, selectedVille, selectedQuartier, selectedCategory, priceRange]);
+  }, [rooms, query, selectedVille, selectedQuartier, selectedCategory, priceRange]);
 
   const totalPages = Math.ceil(filteredRooms.length / ITEMS_PER_PAGE);
   const paginatedRooms = filteredRooms.slice(
@@ -85,6 +99,16 @@ export default function SearchResultsPage() {
   );
 
   const displayQuery = query.trim() || 'Tous les biens';
+
+  if (loading) {
+    return (
+      <main className="search-page">
+        <div className="container">
+          <p className="search-page__empty-title">Chargement...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="search-page">
@@ -182,7 +206,7 @@ export default function SearchResultsPage() {
                   <label htmlFor="sp-categorie">Catégorie</label>
                   <select id="sp-categorie" value={selectedCategory} onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}>
                     <option value="">Toutes</option>
-                    {categories.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+                    {categories.map((c: any) => <option key={c.id} value={c.id}>{c.title}</option>)}
                   </select>
                 </div>
                 <div className="search-page__filter-group">

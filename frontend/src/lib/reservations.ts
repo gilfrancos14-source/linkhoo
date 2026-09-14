@@ -1,3 +1,5 @@
+import { apiReservations, type ReservationData } from './api';
+
 export interface Reservation {
   id: string;
   clientName: string;
@@ -26,59 +28,63 @@ export const statutColors: Record<Reservation['statut'], string> = {
   annulee: '#ef4444',
 };
 
-const STORAGE_KEY = 'ilehya-reservations';
-
-export function getReservations(): Reservation[] {
-  return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-}
-
-export function addReservation(data: Omit<Reservation, 'id' | 'createdAt' | 'statut'>): Reservation {
-  const reservations = getReservations();
-  const newReservation: Reservation = {
-    ...data,
-    id: 'res-' + Date.now(),
-    statut: 'en_attente',
-    createdAt: new Date().toISOString(),
+function mapReservation(d: ReservationData): Reservation {
+  return {
+    id: d.id,
+    clientName: d.client_name,
+    clientEmail: d.client_email,
+    clientPhone: d.client_phone,
+    roomId: d.room_id,
+    roomTitle: d.room_title,
+    dateDebut: d.date_debut,
+    dateFin: d.date_fin,
+    montant: d.montant,
+    message: d.message,
+    statut: d.statut,
+    createdAt: d.created_at,
+    respondedAt: d.responded_at ?? undefined,
   };
-  reservations.unshift(newReservation);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
-  return newReservation;
 }
 
-export function updateReservationStatut(id: string, statut: 'confirmee' | 'annulee'): void {
-  const reservations = getReservations().map((r) =>
-    r.id === id ? { ...r, statut, respondedAt: new Date().toISOString() } : r
-  );
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+export async function getReservations(): Promise<Reservation[]> {
+  try {
+    const data = await apiReservations.list();
+    return data.map(mapReservation);
+  } catch {
+    return JSON.parse(localStorage.getItem('ilehya-reservations') || '[]');
+  }
 }
 
-export function getReservationById(id: string): Reservation | undefined {
-  return getReservations().find((r) => r.id === id);
+export async function addReservation(data: Omit<Reservation, 'id' | 'createdAt' | 'statut'>): Promise<Reservation> {
+  const payload = {
+    client_name: data.clientName,
+    client_email: data.clientEmail,
+    client_phone: data.clientPhone,
+    room_id: data.roomId,
+    room_title: data.roomTitle,
+    date_debut: data.dateDebut,
+    date_fin: data.dateFin,
+    montant: data.montant,
+    message: data.message,
+    statut: 'en_attente' as const,
+  };
+  const created = await apiReservations.create(payload);
+  return mapReservation(created);
+}
+
+export async function updateReservationStatut(id: string, statut: 'confirmee' | 'annulee'): Promise<void> {
+  await apiReservations.updateStatut(id, statut);
+}
+
+export async function checkDateConflict(roomId: string, dateDebut: string, dateFin: string, excludeId?: string): Promise<{ hasConflict: boolean }> {
+  try {
+    return await apiReservations.checkConflict(roomId, dateDebut, dateFin, excludeId);
+  } catch {
+    return { hasConflict: false };
+  }
 }
 
 export interface ConflictInfo {
   hasConflict: boolean;
   conflictingReservation?: Reservation;
-}
-
-export function checkDateConflict(roomId: string, dateDebut: string, dateFin: string, excludeId?: string): ConflictInfo {
-  const reservations = getReservations();
-  const newStart = new Date(dateDebut).getTime();
-  const newEnd = new Date(dateFin).getTime();
-
-  for (const r of reservations) {
-    if (r.roomId !== roomId) continue;
-    if (r.statut === 'annulee') continue;
-    if (excludeId && r.id === excludeId) continue;
-    if (!r.dateDebut || !r.dateFin) continue;
-
-    const existingStart = new Date(r.dateDebut).getTime();
-    const existingEnd = new Date(r.dateFin).getTime();
-
-    if (newStart < existingEnd && newEnd > existingStart) {
-      return { hasConflict: true, conflictingReservation: r };
-    }
-  }
-
-  return { hasConflict: false };
 }

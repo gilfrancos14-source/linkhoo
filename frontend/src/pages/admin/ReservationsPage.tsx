@@ -11,15 +11,20 @@ interface VerifyState {
 
 export default function ReservationsPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterStatut, setFilterStatut] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [verify, setVerify] = useState<VerifyState | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  useEffect(() => {
-    setReservations(getReservations());
-  }, []);
+  const loadData = async () => {
+    const data = await getReservations();
+    setReservations(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadData(); }, []);
 
   const filtered = reservations.filter((r) => {
     const matchSearch = r.roomTitle.toLowerCase().includes(search.toLowerCase());
@@ -30,23 +35,22 @@ export default function ReservationsPage() {
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const handleVerify = (res: Reservation) => {
+  const handleVerify = async (res: Reservation) => {
     setVerify({ reservation: res, loading: true, available: null });
 
-    setTimeout(() => {
-      if (!res.dateDebut || !res.dateFin) {
-        setVerify((prev) => prev ? { ...prev, loading: false, available: false } : null);
-        return;
-      }
-      const conflict = checkDateConflict(res.roomId, res.dateDebut, res.dateFin, res.id);
-      setVerify((prev) => prev ? { ...prev, loading: false, available: !conflict.hasConflict } : null);
-    }, 1500);
+    if (!res.dateDebut || !res.dateFin) {
+      setVerify((prev) => prev ? { ...prev, loading: false, available: false } : null);
+      return;
+    }
+
+    const result = await checkDateConflict(res.roomId, res.dateDebut, res.dateFin, res.id);
+    setVerify((prev) => prev ? { ...prev, loading: false, available: !result.hasConflict } : null);
   };
 
-  const handleConfirmFromPopup = () => {
+  const handleConfirmFromPopup = async () => {
     if (!verify) return;
-    updateReservationStatut(verify.reservation.id, 'confirmee');
-    addClientNotification({
+    await updateReservationStatut(verify.reservation.id, 'confirmee');
+    await addClientNotification({
       type: 'reservation_confirmed',
       roomTitle: verify.reservation.roomTitle,
       roomId: verify.reservation.roomId,
@@ -62,13 +66,13 @@ export default function ReservationsPage() {
       confirmed: true,
     });
     setVerify(null);
-    setReservations(getReservations());
+    await loadData();
   };
 
-  const handleRejectFromPopup = () => {
+  const handleRejectFromPopup = async () => {
     if (!verify) return;
-    updateReservationStatut(verify.reservation.id, 'annulee');
-    addClientNotification({
+    await updateReservationStatut(verify.reservation.id, 'annulee');
+    await addClientNotification({
       type: 'reservation_rejected',
       roomTitle: verify.reservation.roomTitle,
       roomId: verify.reservation.roomId,
@@ -84,12 +88,23 @@ export default function ReservationsPage() {
       confirmed: false,
     });
     setVerify(null);
-    setReservations(getReservations());
+    await loadData();
   };
 
   const totalRevenu = reservations
     .filter((r) => r.statut === 'confirmee')
     .reduce((sum, r) => sum + r.montant, 0);
+
+  if (loading) {
+    return (
+      <div className="admin-page">
+        <div className="admin-page__header">
+          <h2>Gestion des réservations</h2>
+        </div>
+        <p>Chargement...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-page">

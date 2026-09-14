@@ -1,21 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
-import { getRoomsByMarket, type Room } from '../../data/rooms';
-import { getCategoriesByMarket } from '../../data/categories';
+import { fetchRoomsByMarket, deleteRoom, toggleRoom, type Room } from '../../data/rooms';
+import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 
 export default function ChambresPage() {
   const { market } = useMarket();
   const homePath = useHomePath();
   const adminPath = `${homePath}/admin`;
 
-  const [rooms, setRooms] = useState<Room[]>(() => getRoomsByMarket(market));
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'true' | 'false'>('all');
 
-  const categories = getCategoriesByMarket(market);
+  const loadData = async () => {
+    const [r, c] = await Promise.all([
+      fetchRoomsByMarket(market),
+      fetchCategoriesByMarket(market),
+    ]);
+    setRooms(r);
+    setCategories(c);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadData(); }, [market]);
 
   const filtered = rooms.filter((r) => {
     const matchSearch = r.title.toLowerCase().includes(search.toLowerCase()) || r.ville.toLowerCase().includes(search.toLowerCase());
@@ -27,19 +39,28 @@ export default function ChambresPage() {
     return matchSearch && matchCat && matchStatus;
   });
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Supprimer cette chambre ?')) {
-      const updated = rooms.filter((r) => r.id !== id);
-      setRooms(updated);
-      const allLocal = JSON.parse(localStorage.getItem('ilehya-rooms') || '[]');
-      const filtered = allLocal.filter((r: Room) => r.id !== id || r.market !== market);
-      localStorage.setItem('ilehya-rooms', JSON.stringify(filtered));
+      await deleteRoom(id);
+      loadData();
     }
   };
 
-  const toggleDispo = (id: string) => {
-    setRooms(rooms.map((r) => (r.id === id ? { ...r, disponible: !r.disponible } : r)));
+  const toggleDispo = async (id: string) => {
+    await toggleRoom(id);
+    loadData();
   };
+
+  if (loading) {
+    return (
+      <div className="admin-page">
+        <div className="admin-page__header">
+          <h2>Gestion des chambres</h2>
+        </div>
+        <p>Chargement...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-page">

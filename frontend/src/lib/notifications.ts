@@ -1,3 +1,5 @@
+import { apiNotifications } from './api';
+
 export interface Notification {
   id: string;
   type: 'reservation' | 'reservation_confirmed' | 'reservation_rejected';
@@ -12,40 +14,53 @@ export interface Notification {
   reservationId?: string;
 }
 
-const STORAGE_KEY = 'ilehya-notifications';
-
-export function getNotifications(): Notification[] {
-  return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+export async function getNotifications(): Promise<Notification[]> {
+  try {
+    const data = await apiNotifications.listAdmin();
+    return data.map((d: any) => ({
+      id: d.id,
+      type: d.type,
+      roomTitle: d.room_title,
+      roomId: d.room_id,
+      clientName: d.client_name,
+      clientEmail: d.client_email,
+      clientPhone: d.client_phone,
+      message: d.message,
+      date: d.date,
+      read: d.read,
+      reservationId: d.reservation_id,
+    }));
+  } catch {
+    return JSON.parse(localStorage.getItem('ilehya-notifications') || '[]');
+  }
 }
 
-export function getUnreadCount(): number {
-  return getNotifications().filter((n) => !n.read).length;
+export async function getUnreadCount(): Promise<number> {
+  const notifs = await getNotifications();
+  return notifs.filter((n) => !n.read).length;
 }
 
-export function addNotification(data: Omit<Notification, 'id' | 'date' | 'read'>): void {
-  const notifications = getNotifications();
-  notifications.unshift({
-    ...data,
-    id: 'notif-' + Date.now(),
-    date: new Date().toISOString(),
-    read: false,
+export async function addNotification(data: Omit<Notification, 'id' | 'date' | 'read'>): Promise<void> {
+  await apiNotifications.create({
+    type: data.type,
+    room_title: data.roomTitle,
+    room_id: data.roomId,
+    client_name: data.clientName,
+    client_email: data.clientEmail,
+    client_phone: data.clientPhone,
+    message: data.message,
+    reservation_id: data.reservationId,
   });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
 }
 
-export function markAsRead(id: string): void {
-  const notifications = getNotifications().map((n) =>
-    n.id === id ? { ...n, read: true } : n
-  );
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
+export async function markAsRead(id: string): Promise<void> {
+  await apiNotifications.markRead(id);
 }
 
-export function markAllAsRead(): void {
-  const notifications = getNotifications().map((n) => ({ ...n, read: true }));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(notifications));
+export async function markAllAsRead(): Promise<void> {
+  const notifs = await getNotifications();
+  await Promise.all(notifs.filter((n) => !n.read).map((n) => apiNotifications.markRead(n.id)));
 }
-
-const CLIENT_STORAGE_KEY = 'ilehya-client-notifications';
 
 export interface ClientNotification {
   id: string;
@@ -58,56 +73,48 @@ export interface ClientNotification {
   read: boolean;
 }
 
-export function getClientNotifications(email: string): ClientNotification[] {
-  const all = JSON.parse(localStorage.getItem(CLIENT_STORAGE_KEY) || '[]') as ClientNotification[];
-  return all.filter((n) => n.clientEmail === email);
+export async function getClientNotifications(email: string): Promise<ClientNotification[]> {
+  try {
+    const data = await apiNotifications.listClient(email);
+    return data.map((d: any) => ({
+      id: d.id,
+      type: d.type,
+      roomTitle: d.room_title,
+      roomId: d.room_id,
+      clientEmail: d.client_email,
+      message: d.message,
+      date: d.date,
+      read: d.read,
+    }));
+  } catch {
+    const all = JSON.parse(localStorage.getItem('ilehya-client-notifications') || '[]') as ClientNotification[];
+    return all.filter((n) => n.clientEmail === email);
+  }
 }
 
-export function addClientNotification(data: Omit<ClientNotification, 'id' | 'date' | 'read'>): void {
-  const all = JSON.parse(localStorage.getItem(CLIENT_STORAGE_KEY) || '[]') as ClientNotification[];
-  all.unshift({
-    ...data,
-    id: 'client-notif-' + Date.now(),
-    date: new Date().toISOString(),
-    read: false,
+export async function addClientNotification(data: Omit<ClientNotification, 'id' | 'date' | 'read'>): Promise<void> {
+  await apiNotifications.createClient({
+    type: data.type,
+    room_title: data.roomTitle,
+    room_id: data.roomId,
+    client_email: data.clientEmail,
+    message: data.message,
   });
-  localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(all));
 }
 
-export function markClientNotificationAsRead(id: string, email: string): void {
-  const all = JSON.parse(localStorage.getItem(CLIENT_STORAGE_KEY) || '[]') as ClientNotification[];
-  const updated = all.map((n) => (n.id === id && n.clientEmail === email ? { ...n, read: true } : n));
-  localStorage.setItem(CLIENT_STORAGE_KEY, JSON.stringify(updated));
+export async function markClientNotificationAsRead(id: string, _email: string): Promise<void> {
+  await apiNotifications.markReadClient(id);
 }
 
-export function addTestNotification(): void {
+export async function addTestNotification(): Promise<void> {
   if (!import.meta.env.DEV) return;
-  const testReservationId = 'res-test-' + Date.now();
-  const reservations = JSON.parse(localStorage.getItem('ilehya-reservations') || '[]');
-  reservations.unshift({
-    id: testReservationId,
-    clientName: 'Amina Bello',
-    clientEmail: 'amina.bello@email.com',
-    clientPhone: '+229 96 45 67 89',
-    roomId: 'familial-quartier-des-arts',
-    roomTitle: 'Familial — Quartier des arts',
-    dateDebut: '2026-10-01',
-    dateFin: '2026-12-31',
-    montant: 660,
-    message: 'Bonjour, je souhaite réserver cet appartement pour 3 mois. Est-il disponible ?',
-    statut: 'en_attente',
-    createdAt: new Date().toISOString(),
-  });
-  localStorage.setItem('ilehya-reservations', JSON.stringify(reservations));
-
-  addNotification({
+  await addNotification({
     type: 'reservation',
     roomTitle: 'Familial — Quartier des arts',
     roomId: 'familial-quartier-des-arts',
     clientName: 'Amina Bello',
     clientEmail: 'amina.bello@email.com',
     clientPhone: '+229 96 45 67 89',
-    message: 'Bonjour, je souhaite réserver cet appartement pour 3 mois. Est-il disponible ?',
-    reservationId: testReservationId,
+    message: 'Bonjour, je souhaite réserver cet appartement pour 3 mois.',
   });
 }

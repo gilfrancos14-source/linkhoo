@@ -1,8 +1,8 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useMarket } from '../contexts/MarketContext';
-import { getRoomsByMarket, type Room } from '../data/rooms';
-import { getBannersBySection } from '../data/banners';
+import { fetchRoomsByMarket, type Room } from '../data/rooms';
+import { fetchBannersBySection, type Banner } from '../data/banners';
 import BannerCarousel from './BannerCarousel';
 
 interface PromoRoom {
@@ -34,10 +34,18 @@ export default function PromosSection() {
   const [prevDisabled, setPrevDisabled] = useState(true);
   const [nextDisabled, setNextDisabled] = useState(false);
   const [activeDot, setActiveDot] = useState(0);
-  const banners = getBannersBySection(market, 'promos');
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
+
+  useEffect(() => {
+    fetchRoomsByMarket(market).then(setRooms);
+  }, [market]);
+
+  useEffect(() => {
+    fetchBannersBySection(market, 'promos').then(setBanners);
+  }, [market]);
 
   const promoData = useMemo((): PromoData[] => {
-    const rooms = getRoomsByMarket(market);
     const cats = PROMO_CATEGORIES[market] ?? PROMO_CATEGORIES.BJ;
     const moinsChers = rooms.filter((r) => r.category === cats.moinsChers).slice(0, 5);
     const hotel = rooms.filter((r) => r.category === cats.hotel).slice(0, 4);
@@ -70,7 +78,7 @@ export default function PromosSection() {
         rooms: premium.map(toPromoRoom),
       },
     ].filter((p) => p.rooms.length > 0);
-  }, [market]);
+  }, [market, rooms]);
 
   const promoCards = useMemo(() => {
     const colors = ['-15 %', '-10 %', '-5 %'];

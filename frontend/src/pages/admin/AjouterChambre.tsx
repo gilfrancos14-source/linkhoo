@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
-import { type Room } from '../../data/rooms';
+import { createRoom, type Room } from '../../data/rooms';
 
 interface FormData {
   title: string;
@@ -111,9 +111,8 @@ export default function AjouterChambre() {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = () => {
-    const room: Room = {
-      id: form.title.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now(),
+  const handleSubmit = async () => {
+    const room: Omit<Room, 'id'> = {
       title: form.title,
       subtitle: '',
       info: `${form.chambres} ch. · ${form.douches} d.`,
@@ -137,9 +136,7 @@ export default function AjouterChambre() {
       conditions: form.conditions,
     };
 
-    const existing = JSON.parse(localStorage.getItem('ilehya-rooms') || '[]');
-    existing.push(room);
-    localStorage.setItem('ilehya-rooms', JSON.stringify(existing));
+    await createRoom(room);
     setSaved(true);
   };
 

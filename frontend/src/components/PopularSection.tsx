@@ -1,11 +1,10 @@
-import { useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useMarket } from '../contexts/MarketContext';
-import { getRoomsByMarket } from '../data/rooms';
-import { getBannersBySection } from '../data/banners';
+import { fetchRoomsByMarket, type Room } from '../data/rooms';
+import { fetchBannersBySection, type Banner } from '../data/banners';
 import StayCard from './StayCard';
 import BannerCarousel from './BannerCarousel';
 
-/** IDs des chambres mises en avant par marché. */
 const POPULAR_IDS: Record<string, readonly string[]> = {
   BJ: [
     'lumineux-centre-ville-studio',
@@ -27,10 +26,18 @@ const POPULAR_IDS: Record<string, readonly string[]> = {
 
 export default function PopularSection() {
   const { market } = useMarket();
-  const banners = getBannersBySection(market, 'popular');
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
+
+  useEffect(() => {
+    fetchRoomsByMarket(market).then(setRooms);
+  }, [market]);
+
+  useEffect(() => {
+    fetchBannersBySection(market, 'popular').then(setBanners);
+  }, [market]);
 
   const popularItems = useMemo(() => {
-    const rooms = getRoomsByMarket(market);
     const ids = POPULAR_IDS[market] ?? POPULAR_IDS.BJ;
     return ids
       .map((id) => rooms.find((r) => r.id === id))
@@ -47,7 +54,7 @@ export default function PopularSection() {
         disponible: room!.disponible,
         dateDispo: room!.dateDispo,
       }));
-  }, [market]);
+  }, [market, rooms]);
 
   return (
     <section className="popular" id="plus-loues">

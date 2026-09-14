@@ -1,14 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMarket } from '../../contexts/MarketContext';
-import { getCategoriesByMarket, addCategory, updateCategory, deleteCategory, type Category } from '../../data/categories';
+import { fetchCategoriesByMarket, addCategory, updateCategory, deleteCategory, type Category } from '../../data/categories';
 
 export default function CategoriesPage() {
   const { market } = useMarket();
-  const [cats, setCats] = useState<Category[]>(() => getCategoriesByMarket(market));
+  const [cats, setCats] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formTitle, setFormTitle] = useState('');
   const [formImg, setFormImg] = useState('');
   const [formAlt, setFormAlt] = useState('');
+
+  const loadData = async () => {
+    const data = await fetchCategoriesByMarket(market);
+    setCats(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadData(); }, [market]);
 
   const startAdd = () => {
     setEditingId(null);
@@ -24,23 +33,34 @@ export default function CategoriesPage() {
     setFormAlt(cat.alt);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formTitle.trim()) return;
     if (editingId) {
-      updateCategory(editingId, { title: formTitle, img: formImg, alt: formAlt });
+      await updateCategory(editingId, { title: formTitle, img: formImg, alt: formAlt });
     } else {
-      addCategory({ title: formTitle, img: formImg, alt: formAlt, market });
+      await addCategory({ title: formTitle, img: formImg, alt: formAlt, market });
     }
-    setCats(getCategoriesByMarket(market));
+    await loadData();
     startAdd();
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Supprimer cette catégorie ?')) {
-      deleteCategory(id);
-      setCats(getCategoriesByMarket(market));
+      await deleteCategory(id);
+      await loadData();
     }
   };
+
+  if (loading) {
+    return (
+      <div className="admin-page">
+        <div className="admin-page__header">
+          <h2>Gestion des catégories</h2>
+        </div>
+        <p>Chargement...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-page">

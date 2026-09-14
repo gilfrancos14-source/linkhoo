@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { supabase } from '../config/supabase';
+import { supabaseAdmin as supabase } from '../config/supabase';
 import { isValidMarket } from '../utils/market';
 
 const router = Router();

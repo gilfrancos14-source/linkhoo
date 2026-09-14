@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useMarket } from '../../contexts/MarketContext';
 import {
-  getBannersBySection,
+  fetchBannersBySection,
+  fetchAllBannersByMarket,
   addBanner,
   updateBanner,
   deleteBanner,
@@ -22,14 +23,26 @@ export default function BannieresPage() {
   const { market } = useMarket();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeSection, setActiveSection] = useState<BannerSection>('popular');
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [allBanners, setAllBanners] = useState<Banner[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formImg, setFormImg] = useState('');
   const [formAlt, setFormAlt] = useState('');
   const [formLink, setFormLink] = useState('');
   const [formOrder, setFormOrder] = useState(0);
-  const [, setRefresh] = useState(0);
 
-  const banners = getBannersBySection(market, activeSection);
+  const loadData = async () => {
+    const [sectionBanners, all] = await Promise.all([
+      fetchBannersBySection(market, activeSection),
+      fetchAllBannersByMarket(market),
+    ]);
+    setBanners(sectionBanners);
+    setAllBanners(all);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadData(); }, [market, activeSection]);
 
   const startAdd = () => {
     setEditingId(null);
@@ -47,21 +60,21 @@ export default function BannieresPage() {
     setFormOrder(b.order);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formImg.trim()) return;
     if (editingId) {
-      updateBanner(editingId, { img: formImg, alt: formAlt, link: formLink, order: formOrder });
+      await updateBanner(editingId, { img: formImg, alt: formAlt, link: formLink, order: formOrder });
     } else {
-      addBanner({ section: activeSection, img: formImg, alt: formAlt, link: formLink, market, order: formOrder });
+      await addBanner({ section: activeSection, img: formImg, alt: formAlt, link: formLink, market, order: formOrder });
     }
-    setRefresh((r) => r + 1);
+    await loadData();
     startAdd();
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Supprimer cette bannière ?')) {
-      deleteBanner(id);
-      setRefresh((r) => r + 1);
+      await deleteBanner(id);
+      await loadData();
     }
   };
 
@@ -82,6 +95,20 @@ export default function BannieresPage() {
 
   const isEditing = editingId !== null;
 
+  const getSectionCount = (section: BannerSection) =>
+    allBanners.filter((b) => b.section === section).length;
+
+  if (loading) {
+    return (
+      <div className="admin-page">
+        <div className="admin-page__header">
+          <h2>Gestion des bannières</h2>
+        </div>
+        <p>Chargement...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="admin-page">
       <div className="admin-page__header">
@@ -100,7 +127,7 @@ export default function BannieresPage() {
             onClick={() => { setActiveSection(s); setEditingId(null); }}
           >
             {SECTION_LABELS[s]}
-            <span className="admin-tab__count">{getBannersBySection(market, s).length}</span>
+            <span className="admin-tab__count">{getSectionCount(s)}</span>
           </button>
         ))}
       </div>

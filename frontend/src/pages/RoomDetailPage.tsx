@@ -1,9 +1,9 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
-import { getRoomsByMarket } from '../data/rooms';
-import { getCategoriesByMarket } from '../data/categories';
+import { fetchRoomsByMarket, type Room } from '../data/rooms';
+import { fetchCategoriesByMarket } from '../data/categories';
 import { isValidEmail } from '../utils/validators';
 import { addNotification } from '../lib/notifications';
 import { addReservation } from '../lib/reservations';
@@ -46,9 +46,9 @@ export default function RoomDetailPage() {
   const { market } = useMarket();
   const homePath = useHomePath();
   const { id } = useParams<{ id: string }>();
-  const rooms = getRoomsByMarket(market);
-  const room = rooms.find((r) => r.id === id);
-  const categories = getCategoriesByMarket(market);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '', dateDebut: '', dateFin: '' });
   const [errors, setErrors] = useState<FormErrors>({});
@@ -56,7 +56,20 @@ export default function RoomDetailPage() {
   const [submitted, setSubmitted] = useState(false);
   const [shareFeedback, setShareFeedback] = useState(false);
 
-  const category = room ? categories.find((c) => c.id === room.category) : null;
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      fetchRoomsByMarket(market),
+      fetchCategoriesByMarket(market),
+    ]).then(([r, c]) => {
+      setRooms(r);
+      setCategories(c);
+      setLoading(false);
+    });
+  }, [market]);
+
+  const room = rooms.find((r) => r.id === id);
+  const category = room ? categories.find((c: any) => c.id === room.category) : null;
 
   const handleBlur = useCallback((field: string) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
@@ -69,7 +82,7 @@ export default function RoomDetailPage() {
     }
   }, [formData]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const validation = validateForm(formData);
     setErrors(validation);
@@ -77,7 +90,7 @@ export default function RoomDetailPage() {
     if (Object.keys(validation).length > 0) return;
     if (!room) return;
 
-    const reservation = addReservation({
+    const reservation = await addReservation({
       clientName: formData.name,
       clientEmail: formData.email,
       clientPhone: formData.phone,
@@ -89,7 +102,7 @@ export default function RoomDetailPage() {
       message: formData.message,
     });
 
-    addNotification({
+    await addNotification({
       type: 'reservation',
       roomTitle: room.title,
       roomId: room.id,
@@ -129,6 +142,16 @@ export default function RoomDetailPage() {
       // Fallback silencieux
     }
   };
+
+  if (loading) {
+    return (
+      <main className="room-detail">
+        <div className="container">
+          <p className="room-detail__empty">Chargement...</p>
+        </div>
+      </main>
+    );
+  }
 
   if (!room) {
     return (
