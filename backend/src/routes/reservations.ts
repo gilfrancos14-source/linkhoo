@@ -13,18 +13,6 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/client', async (req: Request, res: Response) => {
-  try {
-    const { email } = req.query;
-    if (!email) return res.status(400).json({ error: 'Email is required' });
-    const { data, error } = await supabase.from('reservations').select('*').eq('client_email', email).order('created_at', { ascending: false });
-    if (error) throw error;
-    res.json(data);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 router.post('/', async (req: Request, res: Response) => {
   try {
     const reservation = {
@@ -48,7 +36,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
-router.patch('/:id/status', async (req: Request, res: Response) => {
+router.patch('/:id', async (req: Request, res: Response) => {
   try {
     const { statut } = req.body;
     if (statut !== 'confirmee' && statut !== 'annulee') {
@@ -62,7 +50,7 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/check-conflict', async (req: Request, res: Response) => {
+router.get('/check', async (req: Request, res: Response) => {
   try {
     const { room_id, date_debut, date_fin, exclude_id } = req.query;
     let query = supabase.from('reservations').select('*').eq('room_id', room_id).neq('statut', 'annulee');

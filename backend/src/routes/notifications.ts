@@ -15,16 +15,6 @@ router.get('/', async (_req: Request, res: Response) => {
   }
 });
 
-router.get('/unread-count', async (_req: Request, res: Response) => {
-  try {
-    const { count, error } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('read', false);
-    if (error) throw error;
-    res.json({ count: count || 0 });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 router.post('/', async (req: Request, res: Response) => {
   try {
     const notification = {
@@ -51,16 +41,6 @@ router.patch('/:id/read', async (req: Request, res: Response) => {
     const { data, error } = await supabase.from('notifications').update({ read: true }).eq('id', req.params.id).select().single();
     if (error) throw error;
     res.json(data);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-router.patch('/read-all', async (_req: Request, res: Response) => {
-  try {
-    const { error } = await supabase.from('notifications').update({ read: true }).eq('read', false);
-    if (error) throw error;
-    res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
