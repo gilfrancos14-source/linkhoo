@@ -1,4 +1,4 @@
-import { apiReservations, type ReservationData } from './api';
+import { apiReservations, type ReservationData, type ClientMineReservationData } from './api';
 
 export interface Reservation {
   id: string;
@@ -14,6 +14,11 @@ export interface Reservation {
   statut: 'en_attente' | 'confirmee' | 'annulee';
   createdAt: string;
   respondedAt?: string;
+  gerantPhone?: string | null;
+  gerantNom?: string | null;
+  gerantPrenom?: string | null;
+  gerantIsVerified?: boolean;
+  gerantIsPremium?: boolean;
 }
 
 export const statutLabels: Record<Reservation['statut'], string> = {
@@ -43,19 +48,20 @@ function mapReservation(d: ReservationData): Reservation {
     statut: d.statut,
     createdAt: d.created_at,
     respondedAt: d.responded_at ?? undefined,
+    gerantPhone: d.gerant_phone ?? undefined,
+    gerantNom: d.gerant_nom ?? undefined,
+    gerantPrenom: d.gerant_prenom ?? undefined,
+    gerantIsVerified: d.gerant_is_verified ?? false,
+    gerantIsPremium: d.gerant_is_premium ?? false,
   };
 }
 
 export async function getReservations(): Promise<Reservation[]> {
-  try {
-    const data = await apiReservations.list();
-    return data.map(mapReservation);
-  } catch {
-    return JSON.parse(localStorage.getItem('ilehya-reservations') || '[]');
-  }
+  const data = await apiReservations.list();
+  return data.map(mapReservation);
 }
 
-export async function addReservation(data: Omit<Reservation, 'id' | 'createdAt' | 'statut'>): Promise<Reservation> {
+export async function addReservation(data: Omit<Reservation, 'id' | 'createdAt' | 'statut' | 'respondedAt'>): Promise<Reservation> {
   const payload = {
     client_name: data.clientName,
     client_email: data.clientEmail,
@@ -66,10 +72,17 @@ export async function addReservation(data: Omit<Reservation, 'id' | 'createdAt' 
     date_fin: data.dateFin,
     montant: data.montant,
     message: data.message,
-    statut: 'en_attente' as const,
   };
   const created = await apiReservations.create(payload);
   return mapReservation(created);
+}
+
+export async function getMyReservations(): Promise<ClientMineReservationData[]> {
+  return apiReservations.listMine();
+}
+
+export async function cancelMyReservation(id: string): Promise<void> {
+  await apiReservations.cancelMine(id);
 }
 
 export async function updateReservationStatut(id: string, statut: 'confirmee' | 'annulee'): Promise<void> {
@@ -77,14 +90,5 @@ export async function updateReservationStatut(id: string, statut: 'confirmee' | 
 }
 
 export async function checkDateConflict(roomId: string, dateDebut: string, dateFin: string, excludeId?: string): Promise<{ hasConflict: boolean }> {
-  try {
-    return await apiReservations.checkConflict(roomId, dateDebut, dateFin, excludeId);
-  } catch {
-    return { hasConflict: false };
-  }
-}
-
-export interface ConflictInfo {
-  hasConflict: boolean;
-  conflictingReservation?: Reservation;
+  return await apiReservations.checkConflict(roomId, dateDebut, dateFin, excludeId);
 }

@@ -1,5 +1,5 @@
-import type { MarketCode } from './rooms';
-import { apiCategories, type CategoryData } from '../lib/api';
+import type { MarketCode } from '../contexts/MarketContext';
+import { request } from '../lib/api';
 
 export interface Category {
   id: string;
@@ -9,34 +9,26 @@ export interface Category {
   market: MarketCode;
 }
 
-function mapCategory(d: CategoryData): Category {
-  return { id: d.id, title: d.title, img: d.img, alt: d.alt, market: d.market as MarketCode };
-}
+const FALLBACK_CATEGORIES: Record<MarketCode, Category[]> = {
+  CI: [
+    { id: 'ci-chambres-moins-chères', title: 'Chambres moins chères', img: '/images/pexels-artbovich-6283961.jpg', alt: 'Chambres abordables', market: 'CI' },
+    { id: 'ci-chambres-premium', title: 'Chambres premium', img: '/images/pexels-artbovich-6315808.jpg', alt: 'Chambres premium', market: 'CI' },
+    { id: 'ci-appartements', title: 'Appartements', img: '/images/pexels-artbovich-6782567.jpg', alt: 'Appartements', market: 'CI' },
+    { id: 'ci-hotels', title: 'Hôtels', img: '/images/pexels-artbovich-5998117.jpg', alt: "Chambres d'hôtel", market: 'CI' },
+  ],
+  BJ: [
+    { id: 'appartements-moins-chers', title: 'Appartements moins chers', img: '/images/pexels-artbovich-5998120.jpg', alt: 'Appartements abordables', market: 'BJ' },
+    { id: 'hotel', title: 'Hôtels', img: '/images/pexels-artbovich-5998117.jpg', alt: "Chambres d'hôtel", market: 'BJ' },
+    { id: 'appartements-premium', title: 'Appartements premium', img: '/images/pexels-artbovich-7045712.jpg', alt: 'Appartements premium', market: 'BJ' },
+  ],
+};
 
 export async function fetchCategoriesByMarket(market: MarketCode): Promise<Category[]> {
   try {
-    const data = await apiCategories.list(market);
-    return data.map(mapCategory);
+    const data = await request<Category[]>(`/categories?market=${market}`);
+    if (Array.isArray(data) && data.length > 0) return data;
+    return FALLBACK_CATEGORIES[market] ?? [];
   } catch {
-    return getLocalCategories().filter((c) => c.market === market);
+    return FALLBACK_CATEGORIES[market] ?? [];
   }
-}
-
-export async function addCategory(cat: Omit<Category, 'id'>): Promise<Category> {
-  const created = await apiCategories.create({ title: cat.title, img: cat.img, alt: cat.alt, market: cat.market });
-  return mapCategory(created);
-}
-
-export async function updateCategory(id: string, updates: Partial<Category>): Promise<void> {
-  await apiCategories.update(id, updates);
-}
-
-export async function deleteCategory(id: string): Promise<void> {
-  await apiCategories.delete(id);
-}
-
-function getLocalCategories(): Category[] {
-  try {
-    return JSON.parse(localStorage.getItem('ilehya-categories') || '[]');
-  } catch { return []; }
 }

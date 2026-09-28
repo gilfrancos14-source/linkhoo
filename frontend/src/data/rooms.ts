@@ -1,7 +1,5 @@
 import type { MarketCode } from '../contexts/MarketContext';
-import { apiRooms, type RoomData } from '../lib/api';
-
-export type { MarketCode };
+import { apiRooms, type RoomData, type GerantInfo } from '../lib/api';
 
 export interface Room {
   id: string;
@@ -26,6 +24,12 @@ export interface Room {
   disponible: boolean;
   dateDispo: string;
   conditions: string;
+  isPopular?: boolean;
+  promoGroup?: string | null;
+  promoStart?: string | null;
+  promoEnd?: string | null;
+  gerantId?: string;
+  gerant?: GerantInfo;
 }
 
 function mapRoom(d: RoomData): Room {
@@ -52,26 +56,38 @@ function mapRoom(d: RoomData): Room {
     disponible: d.disponible,
     dateDispo: d.date_dispo,
     conditions: d.conditions,
+    isPopular: d.is_popular ?? false,
+    promoGroup: d.promo_group ?? null,
+    promoStart: d.promo_start ?? null,
+    promoEnd: d.promo_end ?? null,
+    gerantId: d.gerant_id,
+    gerant: d.gerant,
   };
 }
 
 export async function fetchRoomsByMarket(market: MarketCode): Promise<Room[]> {
-  try {
-    const data = await apiRooms.list(market);
-    return data.map(mapRoom);
-  } catch {
-    return getLocalRooms().filter((r) => r.market === market);
-  }
+  const data = await apiRooms.list(market);
+  return data.map(mapRoom);
 }
 
-export async function fetchRoomById(id: string): Promise<Room | null> {
-  try {
-    const data = await apiRooms.get(id);
-    return mapRoom(data);
-  } catch {
-    const all = getLocalRooms();
-    return all.find((r) => r.id === id) ?? null;
-  }
+export async function fetchMyRooms(): Promise<Room[]> {
+  const data = await apiRooms.listMine();
+  return data.map(mapRoom);
+}
+
+export async function fetchAvailableRooms(
+  market: MarketCode,
+  arrivee: string,
+  depart: string,
+  ville?: string
+): Promise<Room[]> {
+  const data = await apiRooms.listAvailable(market, arrivee, depart, ville);
+  return data.map(mapRoom);
+}
+
+export async function fetchRoomById(id: string): Promise<Room> {
+  const data = await apiRooms.get(id);
+  return mapRoom(data);
 }
 
 export async function createRoom(data: Omit<Room, 'id'>): Promise<Room> {
@@ -97,6 +113,10 @@ export async function createRoom(data: Omit<Room, 'id'>): Promise<Room> {
     disponible: data.disponible,
     date_dispo: data.dateDispo,
     conditions: data.conditions,
+    is_popular: data.isPopular ?? false,
+    promo_group: data.promoGroup ?? null,
+    promo_start: data.promoStart ?? null,
+    promo_end: data.promoEnd ?? null,
   };
   const created = await apiRooms.create(payload);
   return mapRoom(created);
@@ -116,9 +136,19 @@ export async function updateRoom(id: string, updates: Partial<Room>): Promise<vo
   if (updates.description !== undefined) payload.description = updates.description;
   if (updates.capacity !== undefined) payload.capacity = updates.capacity;
   if (updates.category !== undefined) payload.category = updates.category;
+  if (updates.market !== undefined) payload.market = updates.market;
+  if (updates.pays !== undefined) payload.pays = updates.pays;
+  if (updates.ville !== undefined) payload.ville = updates.ville;
+  if (updates.quartier !== undefined) payload.quartier = updates.quartier;
+  if (updates.chambres !== undefined) payload.chambres = updates.chambres;
+  if (updates.douches !== undefined) payload.douches = updates.douches;
   if (updates.disponible !== undefined) payload.disponible = updates.disponible;
   if (updates.dateDispo !== undefined) payload.date_dispo = updates.dateDispo;
   if (updates.conditions !== undefined) payload.conditions = updates.conditions;
+  if (updates.isPopular !== undefined) payload.is_popular = updates.isPopular;
+  if (updates.promoGroup !== undefined) payload.promo_group = updates.promoGroup;
+  if (updates.promoStart !== undefined) payload.promo_start = updates.promoStart;
+  if (updates.promoEnd !== undefined) payload.promo_end = updates.promoEnd;
   await apiRooms.update(id, payload);
 }
 
@@ -129,12 +159,6 @@ export async function deleteRoom(id: string): Promise<void> {
 export async function toggleRoom(id: string): Promise<Room> {
   const data = await apiRooms.toggle(id);
   return mapRoom(data);
-}
-
-export function getLocalRooms(): Room[] {
-  try {
-    return JSON.parse(localStorage.getItem('ilehya-rooms') || '[]');
-  } catch { return []; }
 }
 
 export function getVillesFromRooms(rooms: Room[]): string[] {

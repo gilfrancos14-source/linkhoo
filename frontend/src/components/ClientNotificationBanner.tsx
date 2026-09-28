@@ -1,32 +1,57 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@clerk/clerk-react';
+import { setAuthTokenGetter } from '../lib/api';
 import { getClientNotifications, markClientNotificationAsRead, type ClientNotification } from '../lib/notifications';
 
+const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const clerkConfigured = Boolean(clerkKey && clerkKey.startsWith('pk_'));
+
+const POLL_INTERVAL_MS = 30_000;
+
 export default function ClientNotificationBanner() {
+  const { isLoaded, isSignedIn, getToken } = useAuth();
   const [notifications, setNotifications] = useState<ClientNotification[]>([]);
   const [dismissed, setDismissed] = useState<string[]>([]);
 
-  useEffect(() => {
-    const email = localStorage.getItem('ilehya-client-email');
-    if (email) {
-      getClientNotifications(email).then((notifs) => {
-        setNotifications(notifs.filter((n) => !n.read && !dismissed.includes(n.id)));
-      });
+  const enabled = clerkConfigured && isLoaded && isSignedIn;
+
+  const load = useCallback(async () => {
+    setAuthTokenGetter(() => getToken());
+    try {
+      const notifs = await getClientNotifications();
+      setNotifications(notifs.filter((n) => !n.read));
+    } catch {
+      // silencieux : le polling réessaiera
     }
-  }, [dismissed]);
+  }, [getToken]);
+
+  // Chargement puis polling : sans ça, une notification créée après le montage
+  // (ex: réservation confirmée pendant la visite) n'apparaît jamais.
+  // `dismissed` reste hors dépendances pour ne pas relancer l'appel à la fermeture.
+  useEffect(() => {
+    if (!enabled) return;
+    load();
+    const id = setInterval(load, POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [enabled, load]);
 
   const handleDismiss = async (notif: ClientNotification) => {
-    const email = localStorage.getItem('ilehya-client-email');
-    if (email) {
-      await markClientNotificationAsRead(notif.id, email);
+    try {
+      await markClientNotificationAsRead(notif.id);
+    } catch {
+      // Fermeture locale même si l'API échoue
     }
     setDismissed((prev) => [...prev, notif.id]);
   };
 
-  if (notifications.length === 0) return null;
+  if (!enabled) return null;
+
+  const visible = notifications.filter((n) => !dismissed.includes(n.id));
+  if (visible.length === 0) return null;
 
   return (
     <div className="client-notif-container">
-      {notifications.map((n) => (
+      {visible.map((n) => (
         <div key={n.id} className={`client-notif client-notif--${n.type === 'reservation_confirmed' ? 'success' : 'error'}`}>
           <div className="client-notif__icon">
             {n.type === 'reservation_confirmed' ? (
@@ -46,7 +71,7 @@ export default function ClientNotificationBanner() {
             <p className="client-notif__text">{n.message}</p>
           </div>
           <button className="client-notif__close" onClick={() => handleDismiss(n)} aria-label="Fermer">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 6L6 18M6 6l12 12"/>
             </svg>
           </button>

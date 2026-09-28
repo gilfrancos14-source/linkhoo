@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useLayoutEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export type MarketCode = 'CI' | 'BJ';
 
@@ -10,31 +11,46 @@ interface MarketContextValue {
 
 const MarketContext = createContext<MarketContextValue | null>(null);
 
-const STORAGE_KEY = 'ilehya-market';
+// Slug de marché réellement présent dans l'URL, ou null hors /ci|/bj.
+// useParams() renvoie vide sur les routes /admin de la racine et sur les
+// <Routes> imbriqués : construire les URLs depuis le pathname évite
+// d'obtenir des liens « /undefined/... ».
+export function marketSlugFromPath(pathname: string): 'ci' | 'bj' | null {
+  const segment = pathname.split('/')[1];
+  return segment === 'ci' || segment === 'bj' ? segment : null;
+}
 
-function getInitialMarket(): MarketCode {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === 'CI' || stored === 'BJ') return stored;
-  return 'CI';
+// Le marché est DÉRIVÉ de l'URL à chaque render : aucun état miroir, donc
+// aucun décalage entre la route et le marché affiché (pas de render avec
+// l'ancien marché, pas de double fetch, pas de flash de thème).
+// Aucune persistance : /ci et /bj sont la seule source de vérité.
+// Hors /ci|/bj, on retombe sur CI — valeur jamais lue, car aucun consommateur
+// n'existe en dehors des routes de marché (MarketRoute invalide redirige sur /).
+function marketFromPath(pathname: string): MarketCode {
+  return marketSlugFromPath(pathname) === 'bj' ? 'BJ' : 'CI';
 }
 
 export function MarketProvider({ children }: { children: ReactNode }) {
-  const [market, setMarketState] = useState<MarketCode>(getInitialMarket);
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
 
-  useEffect(() => {
+  const market = marketFromPath(pathname);
+
+  // data-market pilote le thème (index.css). useLayoutEffect s'exécute avant
+  // le paint : sans ça, l'ancien thème s'affiche un frame à chaque changement.
+  useLayoutEffect(() => {
     document.documentElement.setAttribute('data-market', market);
   }, [market]);
 
-  const setMarket = (m: MarketCode) => {
-    setMarketState(m);
-    localStorage.setItem(STORAGE_KEY, m);
-  };
-
-  return (
-    <MarketContext.Provider value={{ market, setMarket }}>
-      {children}
-    </MarketContext.Provider>
+  const value = useMemo<MarketContextValue>(
+    () => ({
+      market,
+      setMarket: (m: MarketCode) => navigate(`/${m.toLowerCase()}`, { replace: true }),
+    }),
+    [market, navigate],
   );
+
+  return <MarketContext.Provider value={value}>{children}</MarketContext.Provider>;
 }
 
 export function useMarket() {

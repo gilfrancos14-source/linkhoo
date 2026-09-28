@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useMarket, type MarketCode } from '../contexts/MarketContext';
 import type { ReactNode } from 'react';
 
@@ -32,7 +31,6 @@ const MARKETS: MarketOption[] = [
 
 export default function MarketSelector() {
   const { market, setMarket } = useMarket();
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -59,9 +57,10 @@ export default function MarketSelector() {
       setOpen(false);
       return;
     }
+    // setMarket navigue : le contexte dérive du marché de l'URL,
+    // il n'y a donc rien d'autre à synchroniser.
     setMarket(code);
     setOpen(false);
-    navigate(`/${code.toLowerCase()}`, { replace: true });
   };
 
   return (

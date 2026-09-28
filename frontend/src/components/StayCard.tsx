@@ -37,7 +37,14 @@ export default function StayCard({
     <article className="stay-card">
       <Link to={href} className="stay-card__link" aria-label={ariaLabel || `${title}, dès ${price} ${priceUnit}`}>
         <div className="stay-card__media">
-          <img src={image} alt={alt} loading="lazy" width="400" height="300" />
+          <img
+            src={image}
+            alt={alt}
+            loading="lazy"
+            width="400"
+            height="300"
+            onError={(e) => e.currentTarget.classList.add('is-hidden')}
+          />
           {tag && <span className="stay-card__tag">{tag}</span>}
           {badge && (
             <span className={`stay-card__badge${badgeVariant === 'unavailable' ? ' stay-card__badge--unavailable' : ''}`}>
