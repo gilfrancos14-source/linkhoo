@@ -1,13 +1,31 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
+import { useUser, useAuth } from '@clerk/clerk-react';
 import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
-import { fetchRoomsByMarket, type Room } from '../data/rooms';
+import { fetchRoomsByMarket, fetchRoomById, type Room } from '../data/rooms';
 import { fetchCategoriesByMarket } from '../data/categories';
 import { isValidEmail } from '../utils/validators';
-import { addNotification } from '../lib/notifications';
 import { addReservation } from '../lib/reservations';
-import { sendWhatsAppReservation } from '../lib/whatsapp';
+import { apiReviews, type RoomReviewsResponse } from '../lib/api';
+
+const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const clerkConfigured = Boolean(clerkKey && clerkKey.startsWith('pk_'));
+
+function addMonths(dateStr: string, months: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1 + months, d);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function countNights(dateDebut: string, dateFin: string): number {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const nights = Math.ceil((new Date(dateFin).getTime() - new Date(dateDebut).getTime()) / msPerDay);
+  return Math.max(1, nights);
+}
 
 interface FormErrors {
   name?: string;
@@ -17,7 +35,7 @@ interface FormErrors {
   dateFin?: string;
 }
 
-function validateForm(data: { name: string; email: string; phone: string; dateDebut: string; dateFin: string }): FormErrors {
+function validateForm(data: { name: string; email: string; phone: string; dateDebut: string; dateFin: string }, isMonthly: boolean): FormErrors {
   const errors: FormErrors = {};
   if (!data.name.trim()) errors.name = 'Veuillez renseigner votre nom.';
   if (!data.email.trim()) {
@@ -33,11 +51,13 @@ function validateForm(data: { name: string; email: string; phone: string; dateDe
   if (!data.dateDebut) {
     errors.dateDebut = 'Veuillez choisir une date de début.';
   }
-  if (!data.dateFin) {
-    errors.dateFin = 'Veuillez choisir une date de fin.';
-  }
-  if (data.dateDebut && data.dateFin && new Date(data.dateFin) <= new Date(data.dateDebut)) {
-    errors.dateFin = 'La date de fin doit être après la date de début.';
+  if (!isMonthly) {
+    if (!data.dateFin) {
+      errors.dateFin = 'Veuillez choisir une date de fin.';
+    }
+    if (data.dateDebut && data.dateFin && new Date(data.dateFin) <= new Date(data.dateDebut)) {
+      errors.dateFin = 'La date de fin doit être après la date de début.';
+    }
   }
   return errors;
 }
@@ -46,15 +66,42 @@ export default function RoomDetailPage() {
   const { market } = useMarket();
   const homePath = useHomePath();
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const { user, isLoaded: userLoaded } = useUser();
+  const { isSignedIn } = useAuth();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '', dateDebut: '', dateFin: '' });
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    message: '',
+    dateDebut: searchParams.get('arrivee') ?? '',
+    dateFin: searchParams.get('depart') ?? '',
+  });
+  const [mois, setMois] = useState(1);
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [shareFeedback, setShareFeedback] = useState(false);
+  const [reviewsData, setReviewsData] = useState<RoomReviewsResponse | null>(null);
+
+  const clerkSignedIn = clerkConfigured && userLoaded && Boolean(isSignedIn);
+
+  useEffect(() => {
+    if (!clerkSignedIn || !user) return;
+    const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ');
+    const email = user.primaryEmailAddress?.emailAddress || user.emailAddresses?.[0]?.emailAddress || '';
+    setFormData((prev) => ({
+      ...prev,
+      name: prev.name || fullName,
+      email: prev.email || email,
+    }));
+  }, [clerkSignedIn, user]);
 
   useEffect(() => {
     setLoading(true);
@@ -64,70 +111,81 @@ export default function RoomDetailPage() {
     ]).then(([r, c]) => {
       setRooms(r);
       setCategories(c);
+    }).catch(() => {
+      setRooms([]);
+      setCategories([]);
+    }).finally(() => {
       setLoading(false);
     });
   }, [market]);
 
+  useEffect(() => {
+    if (!id) return;
+    fetchRoomById(id).then((fullRoom) => {
+      setRooms((prev) => prev.map((r) => r.id === id ? { ...r, gerant: fullRoom.gerant, gerantId: fullRoom.gerantId } : r));
+    }).catch(() => {});
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    apiReviews.listByRoom(id).then(setReviewsData).catch(() => setReviewsData(null));
+  }, [id, submitted]);
+
   const room = rooms.find((r) => r.id === id);
   const category = room ? categories.find((c: any) => c.id === room.category) : null;
+  const isMonthly = room?.priceUnit === '/ mois';
+
+  const effectiveDateFin = isMonthly && formData.dateDebut
+    ? addMonths(formData.dateDebut, mois)
+    : formData.dateFin;
+
+  const estimatedMontant = (() => {
+    if (!room || !formData.dateDebut || !effectiveDateFin) return null;
+    if (isMonthly) return room.priceNum * Math.max(1, mois);
+    return room.priceNum * countNights(formData.dateDebut, effectiveDateFin);
+  })();
 
   const handleBlur = useCallback((field: string) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
-    const partialData = { name: formData.name, email: formData.email, phone: formData.phone, dateDebut: formData.dateDebut, dateFin: formData.dateFin };
-    const validation = validateForm(partialData);
+    const partialData = { name: formData.name, email: formData.email, phone: formData.phone, dateDebut: formData.dateDebut, dateFin: effectiveDateFin };
+    const validation = validateForm(partialData, Boolean(isMonthly));
     if (field in validation) {
       setErrors((prev) => ({ ...prev, [field]: validation[field as keyof FormErrors] }));
     } else {
       setErrors((prev) => { const next = { ...prev }; delete next[field as keyof FormErrors]; return next; });
     }
-  }, [formData]);
+  }, [formData, effectiveDateFin, isMonthly]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const validation = validateForm(formData);
+    const validation = validateForm({ ...formData, dateFin: effectiveDateFin }, Boolean(isMonthly));
     setErrors(validation);
     setTouched({ name: true, email: true, phone: true, dateDebut: true, dateFin: true });
     if (Object.keys(validation).length > 0) return;
     if (!room) return;
 
-    const reservation = await addReservation({
-      clientName: formData.name,
-      clientEmail: formData.email,
-      clientPhone: formData.phone,
-      roomId: room.id,
-      roomTitle: room.title,
-      dateDebut: formData.dateDebut,
-      dateFin: formData.dateFin,
-      montant: room.priceNum,
-      message: formData.message,
-    });
+    setSubmitting(true);
+    setSubmitError('');
 
-    await addNotification({
-      type: 'reservation',
-      roomTitle: room.title,
-      roomId: room.id,
-      clientName: formData.name,
-      clientEmail: formData.email,
-      clientPhone: formData.phone,
-      message: formData.message,
-      reservationId: reservation.id,
-    });
+    try {
+      await addReservation({
+        clientName: formData.name,
+        clientEmail: formData.email,
+        clientPhone: formData.phone,
+        roomId: room.id,
+        roomTitle: room.title,
+        dateDebut: formData.dateDebut,
+        dateFin: effectiveDateFin,
+        montant: estimatedMontant ?? room.priceNum,
+        message: formData.message,
+      });
 
-    localStorage.setItem('ilehya-client-email', formData.email);
-
-    sendWhatsAppReservation({
-      clientName: formData.name,
-      clientEmail: formData.email,
-      clientPhone: formData.phone,
-      roomTitle: room.title,
-      roomPrice: `${room.price} ${room.priceUnit}`,
-      roomInfo: room.info,
-      dateDebut: formData.dateDebut,
-      dateFin: formData.dateFin,
-      message: formData.message,
-    });
-
-    setSubmitted(true);
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Une erreur est survenue. Veuillez réessayer.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleShare = async () => {
@@ -199,16 +257,24 @@ export default function RoomDetailPage() {
 
         <div className="room-detail__gallery">
           <div className="room-detail__main-img">
-            <img src={room.images[activeImg]} alt={`${room.title} — photo ${activeImg + 1} sur ${room.images.length}`} />
-            <span className="room-detail__img-counter" aria-live="polite" aria-atomic="true">
-              Photo {activeImg + 1} sur {room.images.length}
-            </span>
-            <button type="button" className="room-detail__img-arrow room-detail__img-arrow--prev" aria-label="Photo précédente" onClick={() => setActiveImg(activeImg > 0 ? activeImg - 1 : room.images.length - 1)}>
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-            </button>
-            <button type="button" className="room-detail__img-arrow room-detail__img-arrow--next" aria-label="Photo suivante" onClick={() => setActiveImg(activeImg < room.images.length - 1 ? activeImg + 1 : 0)}>
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-            </button>
+            {room.images.length > 0 ? (
+              <>
+                <img src={room.images[activeImg]} alt={`${room.title} — photo ${activeImg + 1} sur ${room.images.length}`} />
+                <span className="room-detail__img-counter" aria-live="polite" aria-atomic="true">
+                  Photo {activeImg + 1} sur {room.images.length}
+                </span>
+                <button type="button" className="room-detail__img-arrow room-detail__img-arrow--prev" aria-label="Photo précédente" onClick={() => setActiveImg(activeImg > 0 ? activeImg - 1 : room.images.length - 1)}>
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+                <button type="button" className="room-detail__img-arrow room-detail__img-arrow--next" aria-label="Photo suivante" onClick={() => setActiveImg(activeImg < room.images.length - 1 ? activeImg + 1 : 0)}>
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+              </>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', fontSize: '14px' }}>
+                Aucune photo disponible
+              </div>
+            )}
           </div>
           <div className="room-detail__thumbs">
             {room.images.map((img, i) => (
@@ -249,16 +315,93 @@ export default function RoomDetailPage() {
                 ))}
               </ul>
             </div>
+
+            {room.gerant?.is_verified && room.gerant?.is_premium && (
+              <div className="host-card">
+                <h2 className="host-card__title">Votre hôte</h2>
+                <div className="host-card__card">
+                  <div className="host-card__name">{room.gerant.prenom} {room.gerant.nom}</div>
+                  <div className="host-card__badges">
+                    <span className="host-card__badge host-card__badge--verified">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      Vérifié
+                    </span>
+                    <span className="host-card__badge host-card__badge--premium">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                      Premium
+                    </span>
+                  </div>
+                  {room.gerant.phone && (
+                    <a href={`tel:${room.gerant.phone}`} className="host-card__phone">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                      {room.gerant.phone}
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {reviewsData && reviewsData.reviews.length > 0 && (
+              <section className="room-reviews" aria-labelledby="room-reviews-title">
+                <div className="room-reviews__head">
+                  <h2 id="room-reviews-title">Avis des locataires</h2>
+                  <div className="room-reviews__summary">
+                    {reviewsData.room_avg !== null && (
+                      <span className="room-reviews__avg">
+                        ★ {reviewsData.room_avg.toFixed(1)}
+                        <small> ({reviewsData.room_count})</small>
+                      </span>
+                    )}
+                    {reviewsData.gerant_avg !== null && (
+                      <span className="room-reviews__avg room-reviews__avg--gerant">
+                        Gérant ★ {reviewsData.gerant_avg.toFixed(1)}
+                        <small> ({reviewsData.gerant_count})</small>
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <ul className="room-reviews__list" role="list">
+                  {reviewsData.reviews.map((rev) => (
+                    <li key={rev.id} className="room-reviews__item">
+                      <div className="room-reviews__item-top">
+                        <strong>{rev.client_name}</strong>
+                        <span className="room-reviews__item-date">
+                          {new Date(rev.created_at).toLocaleDateString('fr-FR')}
+                        </span>
+                      </div>
+                      <div className="room-reviews__item-ratings">
+                        <span>Appartement {'★'.repeat(rev.note_appartement)}</span>
+                        <span>Gérant {'★'.repeat(rev.note_gerant)}</span>
+                      </div>
+                      {rev.commentaire && <p>« {rev.commentaire} »</p>}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
           </div>
 
           <div className="room-detail__form-box">
             <h2>Demande de réservation</h2>
+            {!clerkSignedIn && !submitted && (
+              <div className="room-detail__auth-cta">
+                <p>Connectez-vous pour pré-remplir vos infos et suivre facilement vos réservations.</p>
+                <div className="room-detail__auth-cta-actions">
+                  <Link to={`/${market.toLowerCase()}/login`} className="room-detail__auth-btn room-detail__auth-btn--primary">
+                    Se connecter
+                  </Link>
+                  <Link to={`/${market.toLowerCase()}/inscription`} className="room-detail__auth-btn">
+                    Créer un compte
+                  </Link>
+                </div>
+              </div>
+            )}
             {submitted ? (
               <div className="room-detail__success" role="status">
                 <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--sun)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>
                 <p>Votre demande a bien été envoyée !</p>
                 <p>Nous vous recontacterons dans les plus brefs délais.</p>
-                <Link to={`${homePath}/suivi-reservation`} className="room-detail__track-link">
+                <Link to={clerkSignedIn ? `/${market.toLowerCase()}/compte` : `${homePath}/suivi-reservation`} className="room-detail__track-link">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="4" width="18" height="18" rx="2"/>
                     <path d="M16 2v4M8 2v4M3 10h18"/>
@@ -344,29 +487,59 @@ export default function RoomDetailPage() {
                       <p className="room-detail__field-error" id="rd-date-debut-error" role="alert">{errors.dateDebut}</p>
                     )}
                   </div>
-                  <div className="room-detail__field">
-                    <label htmlFor="rd-date-fin">Date de fin <span aria-hidden="true">*</span></label>
-                    <input
-                      id="rd-date-fin"
-                      type="date"
-                      required
-                      aria-required="true"
-                      aria-invalid={!!errors.dateFin && touched.dateFin}
-                      aria-describedby={errors.dateFin ? 'rd-date-fin-error' : undefined}
-                      value={formData.dateFin}
-                      onChange={(e) => setFormData({ ...formData, dateFin: e.target.value })}
-                      onBlur={() => handleBlur('dateFin')}
-                    />
-                    {errors.dateFin && touched.dateFin && (
-                      <p className="room-detail__field-error" id="rd-date-fin-error" role="alert">{errors.dateFin}</p>
-                    )}
-                  </div>
+                  {isMonthly ? (
+                    <div className="room-detail__field">
+                      <label htmlFor="rd-mois">Durée (mois) <span aria-hidden="true">*</span></label>
+                      <select
+                        id="rd-mois"
+                        required
+                        aria-required="true"
+                        value={mois}
+                        onChange={(e) => setMois(Number(e.target.value))}
+                      >
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
+                          <option key={n} value={n}>{n} mois</option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="room-detail__field">
+                      <label htmlFor="rd-date-fin">Date de fin <span aria-hidden="true">*</span></label>
+                      <input
+                        id="rd-date-fin"
+                        type="date"
+                        required
+                        aria-required="true"
+                        aria-invalid={!!errors.dateFin && touched.dateFin}
+                        aria-describedby={errors.dateFin ? 'rd-date-fin-error' : undefined}
+                        value={formData.dateFin}
+                        onChange={(e) => setFormData({ ...formData, dateFin: e.target.value })}
+                        onBlur={() => handleBlur('dateFin')}
+                      />
+                      {errors.dateFin && touched.dateFin && (
+                        <p className="room-detail__field-error" id="rd-date-fin-error" role="alert">{errors.dateFin}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
+                {effectiveDateFin && estimatedMontant !== null && (
+                  <p className="room-detail__field" style={{ margin: 0, fontSize: '14px', color: 'var(--ink-soft)' }}>
+                    {isMonthly
+                      ? `Du ${formData.dateDebut} au ${effectiveDateFin} · ${mois} mois`
+                      : `Du ${formData.dateDebut} au ${effectiveDateFin} · ${countNights(formData.dateDebut, effectiveDateFin)} nuit(s)`}
+                    {''} — estimation : <strong>{estimatedMontant.toLocaleString('fr-FR')} FCFA</strong>
+                  </p>
+                )}
                 <div className="room-detail__field">
                   <label htmlFor="rd-msg">Message</label>
                   <textarea id="rd-msg" rows={4} placeholder="Questions supplémentaires..." value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })} />
                 </div>
-                <button type="submit" className="room-detail__submit">Envoyer la demande</button>
+                {submitError && (
+                  <p className="room-detail__field-error" role="alert">{submitError}</p>
+                )}
+                <button type="submit" className="room-detail__submit" disabled={submitting}>
+                  {submitting ? 'Envoi en cours...' : 'Envoyer la demande'}
+                </button>
               </form>
             )}
           </div>

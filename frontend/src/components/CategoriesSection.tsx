@@ -13,15 +13,15 @@ export default function CategoriesSection() {
   const [banners, setBanners] = useState<Banner[]>([]);
 
   useEffect(() => {
-    fetchCategoriesByMarket(market).then(setCategories);
+    fetchCategoriesByMarket(market).then(setCategories).catch(() => {});
   }, [market]);
 
   useEffect(() => {
-    fetchRoomsByMarket(market).then(setRooms);
+    fetchRoomsByMarket(market).then(setRooms).catch(() => {});
   }, [market]);
 
   useEffect(() => {
-    fetchBannersBySection(market, 'categories').then(setBanners);
+    fetchBannersBySection(market, 'categories').then(setBanners).catch(() => {});
   }, [market]);
 
   return (
@@ -40,7 +40,7 @@ export default function CategoriesSection() {
           {categories.map((cat) => {
             const count = rooms.filter((r) => r.category === cat.id).length;
             return (
-              <Link key={cat.id} to={`/${market.toLowerCase()}/categorie/${cat.id}`} className="cat-card reveal">
+              <Link key={cat.id} to={`/${market.toLowerCase()}/categorie/${cat.id}`} className="cat-card">
                 <div className="cat-card__media">
                   <img src={cat.img} alt={cat.alt} loading="lazy" width="400" height="300" />
                   <div className="cat-card__shade" aria-hidden="true"></div>

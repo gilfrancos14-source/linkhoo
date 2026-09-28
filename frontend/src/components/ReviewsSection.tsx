@@ -1,26 +1,5 @@
-const reviews = [
-  {
-    stars: 5,
-    quote: '« T3 loué en dix jours : visite le samedi, bail signé le mardi. Trois ans que nous y vivons et la moindre demande est traitée en 24h. »',
-    author: 'Amélie B.',
-    role: 'Locataire — T3, bail de 3 ans',
-    initials: 'AB',
-  },
-  {
-    stars: 5,
-    quote: '« Voyage d\'affaires prolongé d\'une semaine — service impeccable, WiFi stable, ménage discret. L\'adresse idéale pour les longs séjours de travail. »',
-    author: 'Mehdi K.',
-    role: 'Voyageur — Suite Prestige, séjour d\'une semaine',
-    initials: 'MK',
-  },
-  {
-    stars: 5,
-    quote: '« Je confie mon appartement à Ilehya depuis trois ans. Loyer versé chaque mois, locataire sérieux, et zéro gestion pour moi. »',
-    author: 'Jean-Marc P.',
-    role: 'Propriétaire — gestion complète',
-    initials: 'JP',
-  },
-];
+import { useEffect, useState } from 'react';
+import { apiReviews, type FeaturedReviewData } from '../lib/api';
 
 function StarIcon() {
   return (
@@ -30,7 +9,27 @@ function StarIcon() {
   );
 }
 
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0] ?? '';
+  const last = parts.length > 1 ? parts[parts.length - 1] : '';
+  return (`${first.charAt(0)}${last.charAt(0)}`).toUpperCase() || '?';
+}
+
 export default function ReviewsSection() {
+  const [reviews, setReviews] = useState<FeaturedReviewData[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    apiReviews
+      .featured()
+      .then((data) => { if (alive) setReviews(data); })
+      .catch(() => { if (alive) setReviews([]); });
+    return () => { alive = false; };
+  }, []);
+
+  if (reviews.length === 0) return null;
+
   return (
     <section className="reviews" id="avis">
       <div className="container">
@@ -40,19 +39,24 @@ export default function ReviewsSection() {
         </div>
 
         <div className="reviews__grid">
-          {reviews.map((review, i) => (
-            <figure key={i} className="review reveal">
-              <div className="review__stars" aria-label={`Note : ${review.stars} étoiles sur 5`}>
-                {Array.from({ length: review.stars }).map((_, j) => (
+          {reviews.map((review) => (
+            <figure key={review.id} className="review reveal">
+              <div
+                className="review__stars"
+                aria-label={`Note : ${review.note_appartement} étoiles sur 5`}
+              >
+                {Array.from({ length: review.note_appartement }).map((_, j) => (
                   <StarIcon key={j} />
                 ))}
               </div>
-              <blockquote className="review__quote">{review.quote}</blockquote>
+              <blockquote className="review__quote">« {review.commentaire} »</blockquote>
               <figcaption className="review__author">
-                <span className="review__avatar" aria-hidden="true">{review.initials}</span>
+                <span className="review__avatar" aria-hidden="true">
+                  {initialsOf(review.client_name)}
+                </span>
                 <span>
-                  <strong>{review.author}</strong>
-                  <small>{review.role}</small>
+                  <strong>{review.client_name}</strong>
+                  {review.room?.title && <small>Séjour — {review.room.title}</small>}
                 </span>
               </figcaption>
             </figure>

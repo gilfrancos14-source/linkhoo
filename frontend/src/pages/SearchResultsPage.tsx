@@ -2,7 +2,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { useState, useMemo, useEffect, type FormEvent } from 'react';
 import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
-import { fetchRoomsByMarket, getVillesFromRooms, getQuartiersFromRooms, type Room } from '../data/rooms';
+import { fetchAvailableRooms, fetchRoomsByMarket, getVillesFromRooms, getQuartiersFromRooms, type Room } from '../data/rooms';
 import { fetchCategoriesByMarket } from '../data/categories';
 import StayCard from '../components/StayCard';
 import Pagination from '../components/Pagination';
@@ -31,24 +31,31 @@ export default function SearchResultsPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const query = searchParams.get('q') ?? '';
+  const dateArrivee = searchParams.get('arrivee') ?? '';
+  const dateDepart = searchParams.get('depart') ?? '';
+
   useEffect(() => {
     setLoading(true);
+    const roomsPromise = dateArrivee && dateDepart
+      ? fetchAvailableRooms(market, dateArrivee, dateDepart)
+      : fetchRoomsByMarket(market);
     Promise.all([
-      fetchRoomsByMarket(market),
+      roomsPromise,
       fetchCategoriesByMarket(market),
     ]).then(([r, c]) => {
       setRooms(r);
       setCategories(c);
+    }).catch(() => {
+      setRooms([]);
+      setCategories([]);
+    }).finally(() => {
       setLoading(false);
     });
-  }, [market]);
+  }, [market, dateArrivee, dateDepart]);
 
   const villes = useMemo(() => getVillesFromRooms(rooms), [rooms]);
   const quartiers = useMemo(() => getQuartiersFromRooms(rooms), [rooms]);
-
-  const query = searchParams.get('q') ?? '';
-  const dateArrivee = searchParams.get('arrivee') ?? '';
-  const dateDepart = searchParams.get('depart') ?? '';
 
   // Dates manquantes → on affiche le panneau de sélection
   const needsDates = !dateArrivee || !dateDepart;
@@ -57,8 +64,16 @@ export default function SearchResultsPage() {
   const [selectedVille, setSelectedVille] = useState('');
   const [selectedQuartier, setSelectedQuartier] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
+  const [maxPrice, setMaxPrice] = useState(500);
+  const [priceMax, setPriceMax] = useState(500);
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    const highest = rooms.reduce((max, room) => Math.max(max, room.priceNum), 0);
+    const ceiling = highest > 0 ? Math.ceil(highest / 100) * 100 : 500;
+    setMaxPrice(ceiling);
+    setPriceMax(ceiling);
+  }, [rooms]);
 
   // Panneau de dates
   const [panelArrivee, setPanelArrivee] = useState('');
@@ -86,11 +101,10 @@ export default function SearchResultsPage() {
       if (selectedVille && room.ville !== selectedVille) return false;
       if (selectedQuartier && room.quartier !== selectedQuartier) return false;
       if (selectedCategory && room.category !== selectedCategory) return false;
-      const price = parseInt(room.price.replace(/\s/g, ''), 10);
-      if (price < priceRange[0] || price > priceRange[1]) return false;
+      if (room.priceNum > priceMax) return false;
       return true;
     });
-  }, [rooms, query, selectedVille, selectedQuartier, selectedCategory, priceRange]);
+  }, [rooms, query, selectedVille, selectedQuartier, selectedCategory, priceMax]);
 
   const totalPages = Math.ceil(filteredRooms.length / ITEMS_PER_PAGE);
   const paginatedRooms = filteredRooms.slice(
@@ -210,22 +224,22 @@ export default function SearchResultsPage() {
                   </select>
                 </div>
                 <div className="search-page__filter-group">
-                  <label htmlFor="sp-prix">Prix max : {priceRange[1]} FCFA</label>
+                  <label htmlFor="sp-prix">Prix max : {priceMax.toLocaleString('fr-FR')} FCFA</label>
                   <input
                     type="range"
                     id="sp-prix"
                     min={0}
-                    max={500}
-                    step={10}
-                    value={priceRange[1]}
-                    onChange={(e) => { setPriceRange([0, Number(e.target.value)]); setCurrentPage(1); }}
+                    max={maxPrice}
+                    step={100}
+                    value={priceMax}
+                    onChange={(e) => { setPriceMax(Number(e.target.value)); setCurrentPage(1); }}
                   />
                 </div>
-                {(selectedVille || selectedQuartier || selectedCategory || priceRange[1] < 500) && (
+                {(selectedVille || selectedQuartier || selectedCategory || priceMax < maxPrice) && (
                   <button
                     type="button"
                     className="search-page__filter-reset"
-                    onClick={() => { setSelectedVille(''); setSelectedQuartier(''); setSelectedCategory(''); setPriceRange([0, 500]); setCurrentPage(1); }}
+                    onClick={() => { setSelectedVille(''); setSelectedQuartier(''); setSelectedCategory(''); setPriceMax(maxPrice); setCurrentPage(1); }}
                   >
                     Réinitialiser les filtres
                   </button>
@@ -238,9 +252,13 @@ export default function SearchResultsPage() {
                     <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--ink-2)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
                     </svg>
-                    <p className="search-page__empty-title">Aucun résultat</p>
+                    <p className="search-page__empty-title">
+                      {dateArrivee && dateDepart ? 'Aucune disponibilité pour ces dates' : 'Aucun résultat'}
+                    </p>
                     <p className="search-page__empty-desc">
-                      Essayez de modifier vos critères de recherche ou réinitialisez les filtres.
+                      {dateArrivee && dateDepart
+                        ? 'Essayez d\'autres dates ou modifiez vos critères de recherche.'
+                        : 'Essayez de modifier vos critères de recherche ou réinitialisez les filtres.'}
                     </p>
                   </div>
                 ) : (
@@ -256,7 +274,7 @@ export default function SearchResultsPage() {
                         description={room.subtitle}
                         price={room.price}
                         priceUnit={room.priceUnit}
-                        href={`/${market.toLowerCase()}/chambre/${room.id}`}
+                        href={`/${market.toLowerCase()}/chambre/${room.id}?arrivee=${encodeURIComponent(dateArrivee)}&depart=${encodeURIComponent(dateDepart)}`}
                         badge={room.disponible ? undefined : 'Indisponible'}
                         badgeVariant={room.disponible ? 'default' : 'unavailable'}
                         meta={[room.capacity, `${room.chambres} chambre${room.chambres > 1 ? 's' : ''}`]}

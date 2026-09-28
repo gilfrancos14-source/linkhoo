@@ -26,6 +26,10 @@ export default function CategoryPage() {
     ]).then(([r, c]) => {
       setRooms(r);
       setCategories(c);
+    }).catch(() => {
+      setRooms([]);
+      setCategories([]);
+    }).finally(() => {
       setLoading(false);
     });
   }, [market]);
@@ -55,8 +59,10 @@ export default function CategoryPage() {
     return categoryRooms.filter((room) => {
       if (ville && room.ville !== ville) return false;
       if (quartier && room.quartier !== quartier) return false;
-      if (chambres !== '' && room.chambres !== chambres) return false;
-      if (dateDispo && room.disponible === false) return false;
+      if (chambres !== '') {
+        if (chambres === 3 ? room.chambres < 3 : room.chambres !== chambres) return false;
+      }
+      if (dateDispo && !room.disponible) return false;
       return true;
     });
   }, [categoryRooms, ville, quartier, chambres, dateDispo]);

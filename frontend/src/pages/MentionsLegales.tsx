@@ -14,13 +14,13 @@ export default function MentionsLegales() {
         <section className="page-legal__section">
           <h2>1. Éditeur du site</h2>
           <p>
-            Le site <strong>ilehya.com</strong> est édité par la société <strong>Ilehya</strong>, SAS au capital de 10 000 €,
+            Le site <strong>linkhoo.com</strong> est édité par la société <strong>Linkhoo</strong>, SAS au capital de 10 000 €,
             immatriculée au RCS de Paris sous le numéro 123 456 789, dont le siège social est situé au
             12 Avenue des Artisans, 75010 Paris.
           </p>
           <ul>
             <li><strong>Directeur de la publication :</strong> M. Alassan H.</li>
-            <li><strong>Email :</strong> bonjour@ilehya.com</li>
+            <li><strong>Email :</strong> bonjour@linkhoo.com</li>
             <li><strong>Téléphone :</strong> +33 1 23 45 67 89</li>
           </ul>
         </section>
@@ -36,12 +36,12 @@ export default function MentionsLegales() {
           <h2>3. Propriété intellectuelle</h2>
           <p>
             L'ensemble du contenu de ce site (textes, images, vidéos, logos, icônes, sons, logiciels) est la propriété
-            exclusive d'Ilehya ou de ses partenaires et est protégé par les lois françaises et internationales relatives
+            exclusive d'Linkhoo ou de ses partenaires et est protégé par les lois françaises et internationales relatives
             à la propriété intellectuelle.
           </p>
           <p>
             Toute reproduction, représentation, modification, publication, transmission ou dénaturation du site ou de
-            son contenu, par quelque procédé que ce soit, est interdite sans autorisation préalable écrite d'Ilehya.
+            son contenu, par quelque procédé que ce soit, est interdite sans autorisation préalable écrite d'Linkhoo.
           </p>
         </section>
 
@@ -53,7 +53,7 @@ export default function MentionsLegales() {
           </p>
           <p>
             Pour exercer vos droits ou pour toute question relative à la protection de vos données, vous pouvez
-            nous contacter à l'adresse : <strong>bonjour@ilehya.com</strong>.
+            nous contacter à l'adresse : <strong>bonjour@linkhoo.com</strong>.
           </p>
           <p>
             Pour plus d'informations, consultez notre <Link to={`${homePath}/politique-de-confidentialite`}>Politique de confidentialité</Link>.
@@ -75,7 +75,7 @@ export default function MentionsLegales() {
         <section className="page-legal__section">
           <h2>6. Limitation de responsabilité</h2>
           <p>
-            Ilehya s'efforce de fournir des informations aussi précises que possible sur ce site. Toutefois, il ne
+            Linkhoo s'efforce de fournir des informations aussi précises que possible sur ce site. Toutefois, il ne
             pourra être tenu responsable des omissions, des inexactitudes et des carences dans la mise à jour.
           </p>
           <p>
@@ -87,7 +87,7 @@ export default function MentionsLegales() {
         <section className="page-legal__section">
           <h2>7. Liens hypertextes</h2>
           <p>
-            Le site peut contenir des liens hypertextes vers d'autres sites. Ilehya n'exerce aucun contrôle sur
+            Le site peut contenir des liens hypertextes vers d'autres sites. Linkhoo n'exerce aucun contrôle sur
             le contenu de ces sites tiers et décline toute responsabilité quant à leur contenu.
           </p>
         </section>

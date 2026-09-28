@@ -21,10 +21,11 @@ interface PromoData {
   rooms: PromoRoom[];
 }
 
-const PROMO_CATEGORIES: Record<string, { moinsChers: string; hotel: string; premium: string }> = {
-  BJ: { moinsChers: 'appartements-moins-chers', hotel: 'hotel', premium: 'appartements-premium' },
-  CI: { moinsChers: 'ci-chambres-moins-chères', hotel: 'ci-chambres-premium', premium: 'ci-appartements' },
-};
+const PROMO_CONFIG: { group: string; title: string; text: string }[] = [
+  { group: 'promo_15', title: 'Nos offres promotionnelles à -15 %', text: 'Profitez de 15 % de réduction sur une sélection de biens spacieux. Idéal pour les familles.' },
+  { group: 'promo_10', title: 'Nos offres promotionnelles à -10 %', text: '10 % de réduction sur nos suites prestige. Salon séparé, vue dégagée et petit-déjeuner inclus.' },
+  { group: 'promo_5', title: 'Nos offres promotionnelles à -5 %', text: '5 % de réduction sur nos appartements premium. Parfait pour un séjour avec tout le confort.' },
+];
 
 export default function PromosSection() {
   const { market } = useMarket();
@@ -46,45 +47,46 @@ export default function PromosSection() {
   }, [market]);
 
   const promoData = useMemo((): PromoData[] => {
-    const cats = PROMO_CATEGORIES[market] ?? PROMO_CATEGORIES.BJ;
-    const moinsChers = rooms.filter((r) => r.category === cats.moinsChers).slice(0, 5);
-    const hotel = rooms.filter((r) => r.category === cats.hotel).slice(0, 4);
-    const premium = rooms.filter((r) => r.category === cats.premium).slice(0, 4);
+    const now = new Date();
 
-    const toPromoRoom = (room: Room): PromoRoom => ({
-      title: room.title,
-      info: room.info,
-      priceAmount: `${room.priceNum} FCFA`,
-      priceUnit: room.priceUnit,
-      img: room.img,
-      alt: room.alt,
-      roomId: room.id,
+    const isActive = (r: Room) => {
+      if (!r.promoGroup) return false;
+      if (r.promoStart && new Date(r.promoStart) > now) return false;
+      if (r.promoEnd && new Date(r.promoEnd) < now) return false;
+      return true;
+    };
+
+    return PROMO_CONFIG.map((cfg) => {
+      const promoRooms = rooms.filter((r) => r.promoGroup === cfg.group && isActive(r));
+
+      const toPromoRoom = (room: Room): PromoRoom => ({
+        title: room.title,
+        info: room.info,
+        priceAmount: `${room.priceNum} FCFA`,
+        priceUnit: room.priceUnit,
+        img: room.img,
+        alt: room.alt,
+        roomId: room.id,
+      });
+
+      return {
+        title: cfg.title,
+        text: cfg.text,
+        rooms: promoRooms.map(toPromoRoom),
+      };
     });
-
-    return [
-      {
-        title: 'Nos offres promotionnelles à -15 %',
-        text: 'Profitez de 15 % de réduction sur une sélection de biens spacieux. Idéal pour les familles.',
-        rooms: moinsChers.map(toPromoRoom),
-      },
-      {
-        title: 'Nos offres promotionnelles à -10 %',
-        text: '10 % de réduction sur nos suites prestige. Salon séparé, vue dégagée et petit-déjeuner inclus.',
-        rooms: hotel.map(toPromoRoom),
-      },
-      {
-        title: 'Nos offres promotionnelles à -5 %',
-        text: '5 % de réduction sur nos appartements premium. Parfait pour un séjour avec tout le confort.',
-        rooms: premium.map(toPromoRoom),
-      },
-    ].filter((p) => p.rooms.length > 0);
   }, [market, rooms]);
 
   const promoCards = useMemo(() => {
     const colors = ['-15 %', '-10 %', '-5 %'];
+    const placeholders = [
+      '/images/pexels-artbovich-7214173.jpg',
+      '/images/pexels-artbovich-7045712.jpg',
+      '/images/pexels-artbovich-6782567.jpg',
+    ];
     return promoData.map((p, i) => ({
-      img: p.rooms[0]?.img || '',
-      alt: p.rooms[0]?.alt || '',
+      img: p.rooms[0]?.img || placeholders[i],
+      alt: p.rooms[0]?.alt || p.title,
       badge: colors[i] || '-5 %',
     }));
   }, [promoData]);
@@ -191,16 +193,26 @@ export default function PromosSection() {
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5m6-6l-6 6 6 6"/></svg>
               </button>
               <div className="promo-detail__rooms" ref={roomsRef}>
-                {currentData?.rooms.map((room, i) => (
-                  <Link key={i} to={`/${market.toLowerCase()}/chambre/${room.roomId}`} className="promo-room">
-                    <img className="promo-room__img" src={room.img} alt={room.alt} loading="lazy" width="280" height="175" />
-                    <div className="promo-room__body">
-                      <p className="promo-room__title">{room.title}</p>
-                      <p className="promo-room__info">{room.info}</p>
-                      <p className="promo-room__price">dès <strong>{room.priceAmount}</strong> {room.priceUnit}</p>
-                    </div>
-                  </Link>
-                ))}
+                {currentData && currentData.rooms.length > 0 ? (
+                  currentData.rooms.map((room, i) => (
+                    <Link key={i} to={`/${market.toLowerCase()}/chambre/${room.roomId}`} className="promo-room">
+                      <img className="promo-room__img" src={room.img} alt={room.alt} loading="lazy" width="280" height="175" />
+                      <div className="promo-room__body">
+                        <p className="promo-room__title">{room.title}</p>
+                        <p className="promo-room__info">{room.info}</p>
+                        <p className="promo-room__price">dès <strong>{room.priceAmount}</strong> {room.priceUnit}</p>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--ink-soft, #888)', width: '100%' }}>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ margin: '0 auto 12px', opacity: 0.5 }}>
+                      <circle cx="12" cy="12" r="10"/><path d="M16 16s-1.5-2-4-2-4 2-4 2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
+                    </svg>
+                    <p style={{ fontWeight: 600, fontSize: '15px', margin: 0 }}>Pas d'offre disponible pour le moment</p>
+                    <p style={{ fontSize: '13px', marginTop: '4px', opacity: 0.7 }}>Revenez bientôt pour découvrir nos prochaines promotions.</p>
+                  </div>
+                )}
               </div>
               <button type="button" className="promo-carousel__arrow promo-carousel__arrow--next" aria-label="Suivant" disabled={nextDisabled} onClick={() => scrollRooms('next')}>
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14m-6-6l6 6-6 6"/></svg>

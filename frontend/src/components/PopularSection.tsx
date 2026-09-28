@@ -1,36 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useMarket } from '../contexts/MarketContext';
-import { fetchRoomsByMarket, type Room } from '../data/rooms';
+import { apiRooms, type RoomData } from '../lib/api';
 import { fetchBannersBySection, type Banner } from '../data/banners';
 import StayCard from './StayCard';
 import BannerCarousel from './BannerCarousel';
 
-const POPULAR_IDS: Record<string, readonly string[]> = {
-  BJ: [
-    'lumineux-centre-ville-studio',
-    'cosy-quartier-des-arts',
-    'familial-quartier-des-arts',
-    'vue-mer-corniche',
-    'suite-prestige-front-de-mer',
-    'suite-vue-mer-top-floor',
-  ],
-  CI: [
-    'abidjan-plateau-moderne',
-    'abidjan-cocody-studio',
-    'abidjan-marcoral-ville',
-    'abidjan-treichville-studio',
-    'bouake-centre-appart',
-    'yamoussoukro-paix-chambre',
-  ],
-};
-
 export default function PopularSection() {
   const { market } = useMarket();
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const [rooms, setRooms] = useState<RoomData[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
 
   useEffect(() => {
-    fetchRoomsByMarket(market).then(setRooms);
+    apiRooms.getPopular(market).then(setRooms).catch(() => setRooms([]));
   }, [market]);
 
   useEffect(() => {
@@ -38,23 +19,19 @@ export default function PopularSection() {
   }, [market]);
 
   const popularItems = useMemo(() => {
-    const ids = POPULAR_IDS[market] ?? POPULAR_IDS.BJ;
-    return ids
-      .map((id) => rooms.find((r) => r.id === id))
-      .filter(Boolean)
-      .map((room) => ({
-        image: room!.img,
-        alt: room!.alt,
-        title: room!.title,
-        rating: room!.quartier,
-        description: room!.subtitle,
-        price: room!.price,
-        priceUnit: room!.priceUnit,
-        roomId: room!.id,
-        disponible: room!.disponible,
-        dateDispo: room!.dateDispo,
-      }));
-  }, [market, rooms]);
+    return rooms.map((room) => ({
+      image: room.img,
+      alt: room.alt,
+      title: room.title,
+      rating: room.quartier,
+      description: room.subtitle,
+      price: room.price,
+      priceUnit: room.price_unit,
+      roomId: room.id,
+      disponible: room.disponible,
+      dateDispo: room.date_dispo,
+    }));
+  }, [rooms]);
 
   return (
     <section className="popular" id="plus-loues">

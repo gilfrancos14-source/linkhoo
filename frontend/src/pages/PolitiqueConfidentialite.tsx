@@ -17,9 +17,9 @@ export default function PolitiqueConfidentialite() {
             Le responsable du traitement des données personnelles est :
           </p>
           <ul>
-            <li><strong>Société :</strong> Ilehya SAS</li>
+            <li><strong>Société :</strong> Linkhoo SAS</li>
             <li><strong>Adresse :</strong> 12 Avenue des Artisans, 75010 Paris</li>
-            <li><strong>Email :</strong> bonjour@ilehya.com</li>
+            <li><strong>Email :</strong> bonjour@linkhoo.com</li>
             <li><strong>Téléphone :</strong> +33 1 23 45 67 89</li>
           </ul>
         </section>
@@ -90,14 +90,14 @@ export default function PolitiqueConfidentialite() {
             <li><strong>Droit de limitation :</strong> demander la suspension du traitement</li>
           </ul>
           <p>
-            Pour exercer ces droits, contactez-nous à : <strong>bonjour@ilehya.com</strong>
+            Pour exercer ces droits, contactez-nous à : <strong>bonjour@linkhoo.com</strong>
           </p>
         </section>
 
         <section className="page-legal__section">
           <h2>8. Sécurité</h2>
           <p>
-            Ilehya met en œuvre les mesures techniques et organisationnelles appropriées pour protéger vos données
+            Linkhoo met en œuvre les mesures techniques et organisationnelles appropriées pour protéger vos données
             contre la perte, l'utilisation abusive, l'accès non autorisé, la divulgation, l'altération et la
             destruction.
           </p>
