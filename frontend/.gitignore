@@ -33,6 +33,3 @@ PRODUCT.md
 cleanup-skills.ps1
 instruction.txt
 .oxlintrc.json
-src/assets/react.svg
-src/assets/vite.svg
-src/assets/hero.png
