@@ -1,0 +1,5 @@
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS promo_group TEXT;
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS promo_start TIMESTAMPTZ;
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS promo_end TIMESTAMPTZ;
+
+CREATE INDEX IF NOT EXISTS idx_rooms_promo_group ON rooms(promo_group);
