@@ -1,3 +1,5 @@
+import 'dotenv/config';
+import bcrypt from 'bcrypt';
 import { supabaseAdmin } from './config/supabase';
 
 const defaultCategories = [
@@ -214,7 +216,122 @@ const defaultRooms = [
   },
 ];
 
+// Événements de démonstration : les IDs sont fixes pour rester idempotents,
+// mais les dates sont recalculées à chaque exécution (aujourd'hui + n jours)
+// — des dates écrites en dur deviendraient des dates passées au bout de
+// quelques mois et la section afficherait « l'événement le plus récent ».
+type EventSeed = {
+  id: string;
+  market: 'CI' | 'BJ';
+  city: string;
+  title: string;
+  description: string;
+  inDays: number;
+  img: string;
+  alt: string;
+};
+
+const defaultEvents: EventSeed[] = [
+  { id: 'ev-bj-cotonou-festival', market: 'BJ', city: 'Cotonou', title: 'Festival du film de Cotonou', description: 'Cinq soirées de cinéma africain en plein air sur la Marina, suivies de rencontres avec les réalisateurs.', inDays: 12, img: '/images/1.jpg', alt: 'Vue de Cotonou' },
+  { id: 'ev-bj-cotonou-artisanat', market: 'BJ', city: 'Cotonou', title: "Marché artisanal de la Marina", description: "Deux jours d'artisanat, de musique et de cuisine locale au bord de la lagune.", inDays: 45, img: '/images/1.jpg', alt: 'Marché artisanal à Cotonou' },
+  { id: 'ev-bj-ouidah-memoire', market: 'BJ', city: 'Ouidah', title: 'Journées de la mémoire', description: "Parcours guidé sur la route de l'esclavage, conférences et cérémonie au temple des pythons.", inDays: 21, img: '/images/ouidah.jpg', alt: 'Événement à Ouidah' },
+  { id: 'ev-bj-ouidah-carnaval', market: 'BJ', city: 'Ouidah', title: 'Carnaval de Ouidah', description: 'Déguisements, tambours et chars décorés défilent du marché à la plage.', inDays: 60, img: '/images/ouidah.jpg', alt: 'Carnaval à Ouidah' },
+  { id: 'ev-bj-tori-randonnee', market: 'BJ', city: 'Tori Bossito', title: 'Randonnée des vallées', description: 'Randonnée encadrée de 8 km entre villages, forêt et points de vue sur la rivière.', inDays: 7, img: '/images/tori.jpg', alt: 'Événement à Tori Bossito' },
+  { id: 'ev-bj-tori-villages', market: 'BJ', city: 'Tori Bossito', title: 'Portes des villages', description: "Journée portes ouvertes dans les villages de Tori Bossito : artisanat, danses et repas partagés.", inDays: 40, img: '/images/tori.jpg', alt: 'Villages de Tori Bossito' },
+  { id: 'ev-ci-abidjan-musique', market: 'CI', city: 'Abidjan', title: 'Fête de la musique', description: 'Scènes gratuites à Plateau et Cocody, du coupé-décalé au jazz, jusqu’à minuit.', inDays: 15, img: '/images/pexels-artbovich-7214173.jpg', alt: 'Fête de la musique à Abidjan' },
+  { id: 'ev-ci-abidjan-musees', market: 'CI', city: 'Abidjan', title: 'Nuit des musées', description: 'Entrée libre dans les musées et galeries d’Abidjan, avec visites guidées en soirée.', inDays: 35, img: '/images/pexels-donaldtong94-189333.jpg', alt: 'Nuit des musées à Abidjan' },
+  { id: 'ev-ci-bouake-artisanat', market: 'CI', city: 'Bouaké', title: 'Salon artisanal de Bouaké', description: 'Trois jours d’exposition et de démonstrations au grand marché, entrée gratuite.', inDays: 25, img: '/images/pexels-artbovich-6782567.jpg', alt: 'Salon artisanal à Bouaké' },
+  { id: 'ev-ci-bouake-masques', market: 'CI', city: 'Bouaké', title: 'Carnaval des masques', description: 'Compagnies de masques de tout le pays se succèdent sur l’avenue Kenyatta.', inDays: 55, img: '/images/pexels-fotoaibe-1571460.jpg', alt: 'Carnaval des masques à Bouaké' },
+];
+
+// Date locale AAAA-MM-JJ (toISOString() donnerait la date UTC, ce qui peut
+// reculer d'un jour selon le fuseau de la machine qui lance le seed).
+function isoInDays(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// Contrairement aux catégories/chambres, l'admin est la source de vérité des
+// événements : on n'insère que les IDs absents. Un upsert remettrait à zéro
+// chaque événement que l'admin aurait édité entre deux lancements du seed.
+async function seedEvents() {
+  const rows = defaultEvents.map((e) => ({
+    id: e.id,
+    market: e.market,
+    city: e.city,
+    title: e.title,
+    description: e.description,
+    event_date: isoInDays(e.inDays),
+    img: e.img,
+    alt: e.alt,
+  }));
+
+  const { data: existing, error: checkError } = await supabaseAdmin
+    .from('events')
+    .select('id')
+    .in('id', rows.map((r) => r.id));
+  if (checkError) throw checkError;
+
+  const existingIds = new Set((existing ?? []).map((r) => r.id));
+  const toInsert = rows.filter((r) => !existingIds.has(r.id));
+
+  if (toInsert.length === 0) {
+    console.log('  événements déjà présents — inchangé');
+    return;
+  }
+
+  const { error } = await supabaseAdmin.from('events').insert(toInsert);
+  if (error) throw error;
+  console.log(`  ${toInsert.length} événements créés (${rows.length - toInsert.length} existants conservés)`);
+}
+
+// La table `admins` est vide tant que personne ne l'écrit : sans ce seed,
+// /api/admin/login répond toujours 401 « Email ou mot de passe incorrect ».
+// Aucun mot de passe en dur : il vient de l'environnement. Si le compte
+// existe déjà, son mot de passe n'est PAS réécrit (un admin l'aurait pu
+// changer depuis, réinitialiser le ferait échouer sa connexion).
+async function seedAdmin() {
+  const email = (process.env.ADMIN_SEED_EMAIL || '').trim().toLowerCase();
+  const password = process.env.ADMIN_SEED_PASSWORD || '';
+
+  if (!email || !password) {
+    console.log('[seed] Admin ignoré : ADMIN_SEED_EMAIL / ADMIN_SEED_PASSWORD absents du .env');
+    return;
+  }
+  if (password.length < 6) {
+    throw new Error('[seed] ADMIN_SEED_PASSWORD doit faire au moins 6 caractères (règle de adminChangePasswordSchema)');
+  }
+
+  const { data: existing, error: checkError } = await supabaseAdmin
+    .from('admins')
+    .select('id')
+    .eq('email', email)
+    .maybeSingle();
+  if (checkError) throw checkError;
+
+  if (existing) {
+    console.log(`  admin ${email} déjà présent — mot de passe inchangé`);
+    return;
+  }
+
+  const { error: insertError } = await supabaseAdmin.from('admins').insert({
+    email,
+    password_hash: await bcrypt.hash(password, 12),
+    nom: (process.env.ADMIN_SEED_NOM || 'Linkhoo').trim(),
+    prenom: (process.env.ADMIN_SEED_PRENOM || 'Admin').trim(),
+  });
+  if (insertError) throw insertError;
+  console.log(`  admin ${email} créé`);
+}
+
 async function seed() {
+  if (process.env.NODE_ENV === 'production' && process.env.ALLOW_SEED !== 'true') {
+    console.error('[seed] Refusé : NODE_ENV=production sans ALLOW_SEED=true. Ajoutez ALLOW_SEED=true pour lancer le seed volontairement.');
+    process.exit(1);
+  }
+
   console.log('Seeding categories...');
   const { error: catError } = await supabaseAdmin.from('categories').upsert(defaultCategories, { onConflict: 'id' });
   if (catError) console.error('Categories error:', catError.message);
@@ -225,7 +342,16 @@ async function seed() {
   if (roomError) console.error('Rooms error:', roomError.message);
   else console.log(`  ${defaultRooms.length} rooms seeded`);
 
+  console.log('Seeding admin...');
+  await seedAdmin();
+
+  console.log('Seeding events...');
+  await seedEvents();
+
   console.log('Done!');
 }
 
-seed();
+seed().catch((err) => {
+  console.error('[seed] Échec:', err instanceof Error ? err.message : err);
+  process.exit(1);
+});
