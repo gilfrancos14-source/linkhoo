@@ -1,34 +1,172 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { errorHandler } from './middleware/errorHandler';
+import { requireClerkAuth } from './middleware/clerkAuth';
 import roomsRouter from './routes/rooms';
 import categoriesRouter from './routes/categories';
 import bannersRouter from './routes/banners';
+import eventsRouter from './routes/events';
 import reservationsRouter from './routes/reservations';
+import newsletterRouter from './routes/newsletter';
 import notificationsRouter from './routes/notifications';
 import uploadRouter from './routes/upload';
+import gerantsRouter from './routes/gerants';
+import clientsRouter from './routes/clients';
+import reviewsRouter from './routes/reviews';
+import premiumRouter from './routes/premium';
+import adminRouter from './routes/admin';
+import authRouter from './routes/auth';
+
+const requiredEnvVars = ['CLERK_SECRET_KEY', 'ADMIN_JWT_SECRET', 'FEDAPAY_PUBLIC_KEY', 'FEDAPAY_SECRET_KEY'];
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    console.error(`[FATAL] Missing required environment variable: ${envVar}`);
+    process.exit(1);
+  }
+}
 
 const app = express();
-const PORT = process.env.PORT || 3001;
 
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
+// Derrière un reverse proxy (nginx, Render, Cloudflare…), Express doit lire le
+// client réel dans X-Forwarded-For. Sans ça, req.ip = IP du proxy et TOUS les
+// utilisateurs partagent le même seau de rate limiting (express-rate-limit
+// compte par IP) : quelques clients actifs suffisent à vider la limite globale.
+// TRUST_PROXY = nombre de sauts entre le proxy et nous (1 dans la majorité des
+// cas). Non défini = pas de proxy (dev/local) → comportement inchangé, mais
+// express-rate-limit signale alors la présence d'un header X-Forwarded-For.
+// `true`/`false` sont acceptés ; `true` est converti en 1 pour ne pas déclencher
+// l'erreur ERR_ERL_PERMISSIVE_TRUST_PROXY (qui refuse la valeur booléenne).
+const rawTrustProxy = process.env.TRUST_PROXY?.trim();
+if (rawTrustProxy) {
+  const normalized = rawTrustProxy.toLowerCase();
+  const hops = normalized === 'true' ? 1
+    : normalized === 'false' ? 0
+    : Number(rawTrustProxy);
+  if (!Number.isInteger(hops) || hops < 0) {
+    console.error(`[FATAL] TRUST_PROXY invalide ("${rawTrustProxy}") : attendu un entier >= 0 ou true/false`);
+    process.exit(1);
+  }
+  if (hops > 0) app.set('trust proxy', hops);
+}
+const port = Number(process.env.PORT || 3001);
+const isProduction = process.env.NODE_ENV === 'production';
+const defaultOrigins = isProduction
+  ? ''
+  : 'http://localhost:5173,http://127.0.0.1:5173';
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || defaultOrigins)
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+if (isProduction && allowedOrigins.length === 0) {
+  console.error('[FATAL] ALLOWED_ORIGINS manquant ou vide : définissez la liste des origines autorisées (ex: https://app.ilehya.com)');
+  process.exit(1);
+}
+
+const writeLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 200,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  skip: (req) => req.method === 'GET',
+  message: { error: 'Trop de requêtes, veuillez réessayer plus tard' },
+});
+
+const uploadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 300,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Limite d\'uploads atteinte, veuillez réessayer plus tard' },
+});
+
+const adminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Trop de tentatives de connexion, veuillez réessayer plus tard' },
+});
+
+const webhookLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 60,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Trop de requêtes webhook' },
+});
+
+app.disable('x-powered-by');
+app.use(helmet());
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+app.use('/api/premium/webhook', webhookLimiter, express.json({
+  limit: '1mb',
+  verify: (req: any, _res, buf) => {
+    req.rawBody = buf.toString('utf8');
+  },
+}));
+app.use(express.json({ limit: '1mb' }));
+app.use('/api', writeLimiter);
+app.use('/api/upload', uploadLimiter);
 
 app.use('/api/rooms', roomsRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/banners', bannersRouter);
+app.use('/api/events', eventsRouter);
 app.use('/api/reservations', reservationsRouter);
+app.use('/api/newsletter', newsletterRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api/auth', requireClerkAuth, authRouter);
+app.use('/api/gerants', requireClerkAuth, gerantsRouter);
+app.use('/api/clients', requireClerkAuth, clientsRouter);
+app.use('/api/reviews', reviewsRouter);
+app.use('/api/premium', premiumRouter);
+app.use('/api/admin/login', adminLoginLimiter, adminRouter);
+app.use('/api/admin', adminRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+app.use('/api', (_req, res) => {
+  res.status(404).json({ error: 'Route introuvable' });
+});
+app.use((_req, res) => {
+  res.status(404).json({ error: 'Route introuvable' });
+});
+
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+const server = app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[FATAL] Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught Exception:', err);
+  server.close(() => process.exit(1));
+});
+
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  server.close(() => process.exit(0));
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully...');
+  server.close(() => process.exit(0));
 });
 
 export default app;
