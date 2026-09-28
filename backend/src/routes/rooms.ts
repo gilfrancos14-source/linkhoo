@@ -31,17 +31,27 @@ router.get('/popular', async (req: Request, res: Response, next: NextFunction) =
 
     const market = parsedQuery.data.market;
 
-    const { data: allRooms, error: roomsError } = await supabasePublic
-      .from('rooms')
-      .select('*')
-      .eq('market', market)
-      .order('created_at', { ascending: false });
+    // Les deux lectures partent en parallèle : la latence totale devient le
+    // max des deux au lieu de la somme des deux aller-retours Supabase.
+    // Réservations bornées aux 2000 plus récentes : le classement « top
+    // réservées » se base sur l'essentiel de l'activité, et la requête reste
+    // rapide quel que soit le volume futur (PostgREST tronque silencieusement
+    // à db-max-rows = 1000 sans ORDER/LIMIT explicite).
+    const [{ data: allRooms, error: roomsError }, { data: reservations, error: resError }] =
+      await Promise.all([
+        supabasePublic
+          .from('rooms')
+          .select('*')
+          .eq('market', market)
+          .order('created_at', { ascending: false }),
+        supabaseAdmin
+          .from('reservations')
+          .select('room_id')
+          .eq('statut', 'confirmee')
+          .order('created_at', { ascending: false })
+          .limit(2000),
+      ]);
     if (roomsError) throw roomsError;
-
-    const { data: reservations, error: resError } = await supabaseAdmin
-      .from('reservations')
-      .select('room_id')
-      .eq('statut', 'confirmee');
     if (resError) throw resError;
 
     const bookingCounts = new Map<string, number>();

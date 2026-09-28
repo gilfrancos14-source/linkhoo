@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { errorHandler } from './middleware/errorHandler';
 import { requireClerkAuth } from './middleware/clerkAuth';
@@ -100,6 +101,9 @@ const webhookLimiter = rateLimit({
 });
 
 app.disable('x-powered-by');
+// gzip/brotli : les JSON de la home (salles, bannières, événements) perdent
+// ~70 % de poids. À placer avant toutes les routes.
+app.use(compression());
 app.use(helmet());
 app.use(cors({
   origin: allowedOrigins,
@@ -107,6 +111,24 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// Endpoints publics modifiables depuis le back-office : le navigateur peut
+// réutiliser la réponse immédiatement mais doit la revalider (304 via ETag)
+// dès qu'elle est périmée — jamais de bannière/événement obsolète servi
+// 60 s après une édition. stale-while-revalidate peint sans attendre.
+const PUBLIC_CACHE_PATHS = [
+  '/api/banners',
+  '/api/categories',
+  '/api/events',
+  '/api/reviews/featured',
+  '/api/rooms/popular',
+];
+app.use((req, res, next) => {
+  if (req.method === 'GET' && PUBLIC_CACHE_PATHS.includes(req.path)) {
+    res.set('Cache-Control', 'public, max-age=0, stale-while-revalidate=300');
+  }
+  next();
+});
 app.use('/api/premium/webhook', webhookLimiter, express.json({
   limit: '1mb',
   verify: (req: any, _res, buf) => {

@@ -1,5 +1,5 @@
 import type { MarketCode } from '../contexts/MarketContext';
-import { request } from '../lib/api';
+import { cachedGet } from '../lib/api';
 
 export interface Category {
   id: string;
@@ -25,7 +25,7 @@ const FALLBACK_CATEGORIES: Record<MarketCode, Category[]> = {
 
 export async function fetchCategoriesByMarket(market: MarketCode): Promise<Category[]> {
   try {
-    const data = await request<Category[]>(`/categories?market=${market}`);
+    const data = await cachedGet<Category[]>(`/categories?market=${market}`);
     if (Array.isArray(data) && data.length > 0) return data;
     return FALLBACK_CATEGORIES[market] ?? [];
   } catch {

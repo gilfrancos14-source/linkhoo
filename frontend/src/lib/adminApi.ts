@@ -1,4 +1,4 @@
-import { API_BASE, REQUEST_TIMEOUT_MS, parseJsonBody } from './api';
+import { API_BASE, REQUEST_TIMEOUT_MS, parseJsonBody, clearApiCache } from './api';
 import type { VerificationDocument } from './api';
 
 let adminToken: string | null = localStorage.getItem('admin_token');
@@ -40,6 +40,9 @@ async function adminRequest<T>(path: string, options?: RequestInit): Promise<T> 
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `API error ${res.status}`);
   }
+  // Une mutation admin (bannières, événements, promos…) invalide le cache
+  // public de la home pour que les changements apparaissent immédiatement.
+  if ((options?.method ?? 'GET').toUpperCase() !== 'GET') clearApiCache();
   return parseJsonBody<T>(res);
 }
 

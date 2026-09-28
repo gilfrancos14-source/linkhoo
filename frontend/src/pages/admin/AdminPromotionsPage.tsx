@@ -37,7 +37,9 @@ export default function AdminPromotionsPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await apiRooms.list(marketFilter);
+      // Toujours fraîche : une chambre ajoutée/modifiée par un autre admin
+      // doit apparaître ici sans attendre l'expiration du cache public (60 s).
+      const data = await apiRooms.list(marketFilter, { fresh: true });
       if (!controller.signal.aborted) setRooms(data);
     } catch {
       if (!controller.signal.aborted) setError('Impossible de charger les chambres.');

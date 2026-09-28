@@ -3,6 +3,9 @@ dist/
 .env
 *.log
 
+# Originaux des images avant compression (npm run optimize:images)
+frontend/.image-originals/
+
 # Dev files
 session-state.md
 PRODUCT.md

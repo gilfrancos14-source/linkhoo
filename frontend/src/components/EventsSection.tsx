@@ -12,6 +12,7 @@ import {
 import { fetchAvailableRooms, type Room } from '../data/rooms';
 import BannerCarousel from './BannerCarousel';
 import StayCard from './StayCard';
+import CardSkeleton from './CardSkeleton';
 
 // Image cassée ou absente : on masque l'élément, le fond .event-card__media
 // (var(--mist-2)) reste lisible — jamais de trou blanc.
@@ -27,6 +28,8 @@ export default function EventsSection() {
   const [activeSlide, setActiveSlide] = useState(0);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(false);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [bannersLoaded, setBannersLoaded] = useState(false);
   const [cityFallback, setCityFallback] = useState(false);
   const [detailHeight, setDetailHeight] = useState(0);
   const detailRef = useRef<HTMLDivElement>(null);
@@ -38,11 +41,28 @@ export default function EventsSection() {
     setEvents([]);
     setActiveCity(null);
     setActiveSlide(0);
-    fetchEventsByMarket(market).then(setEvents).catch(() => setEvents([]));
+    setEventsLoading(true);
+    fetchEventsByMarket(market)
+      .then((data) => {
+        setEvents(data);
+        setEventsLoading(false);
+      })
+      .catch(() => {
+        setEvents([]);
+        setEventsLoading(false);
+      });
   }, [market]);
 
   useEffect(() => {
-    fetchBannersBySection(market, 'events').then(setBanners).catch(() => setBanners([]));
+    fetchBannersBySection(market, 'events')
+      .then((data) => {
+        setBanners(data);
+        setBannersLoaded(true);
+      })
+      .catch(() => {
+        setBanners([]);
+        setBannersLoaded(true);
+      });
   }, [market]);
 
   const groups = useMemo(() => groupEventsByCity(events), [events]);
@@ -150,8 +170,9 @@ export default function EventsSection() {
   };
 
   // Section masquée seulement s'il n'y a ni événement ni bannières : des
-  // bannières 'events' doivent rester visibles même sans cartes.
-  if (events.length === 0 && banners.length === 0) return null;
+  // bannières 'events' doivent rester visibles même sans cartes. Pendant le
+  // fetch, la section reste visible avec ses skeletons.
+  if (!eventsLoading && bannersLoaded && events.length === 0 && banners.length === 0) return null;
 
   return (
     <section className="events" id="evenements">
@@ -165,28 +186,32 @@ export default function EventsSection() {
           {banners.length > 0 && <BannerCarousel banners={banners} />}
         </div>
 
-        <div className="events__grid">
-          {groups.map((g) => (
-            <article
-              key={g.city}
-              className="event-card reveal"
-              role="button"
-              tabIndex={0}
-              aria-expanded={activeCity === g.city}
-              aria-controls="event-detail"
-              aria-label={`${g.city} — ${g.events.length} événement${g.events.length > 1 ? 's' : ''}`}
-              onClick={() => toggleCity(g.city)}
-              onKeyDown={(e) => handleKeyDown(e, g.city)}
-            >
-              <div className="event-card__media">
-                <img src={g.cover.img} alt={g.cover.alt} loading="lazy" width="400" height="300" onError={hideBrokenImage} />
-                <div className="event-card__shade" aria-hidden="true"></div>
-                <div className="event-card__body">
-                  <h3 className="event-card__title">{g.city}</h3>
+        <div className="events__grid" aria-busy={eventsLoading}>
+          {eventsLoading ? (
+            <CardSkeleton count={3} />
+          ) : (
+            groups.map((g) => (
+              <article
+                key={g.city}
+                className="event-card reveal"
+                role="button"
+                tabIndex={0}
+                aria-expanded={activeCity === g.city}
+                aria-controls="event-detail"
+                aria-label={`${g.city} — ${g.events.length} événement${g.events.length > 1 ? 's' : ''}`}
+                onClick={() => toggleCity(g.city)}
+                onKeyDown={(e) => handleKeyDown(e, g.city)}
+              >
+                <div className="event-card__media">
+                  <img src={g.cover.img} alt={g.cover.alt} loading="lazy" width="400" height="300" onError={hideBrokenImage} />
+                  <div className="event-card__shade" aria-hidden="true"></div>
+                  <div className="event-card__body">
+                    <h3 className="event-card__title">{g.city}</h3>
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            ))
+          )}
         </div>
 
         <div

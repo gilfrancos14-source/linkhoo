@@ -1,5 +1,5 @@
 import { Routes, Route, useLocation, useParams, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { MarketProvider } from './contexts/MarketContext';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -13,42 +13,56 @@ import ReviewsSection from './components/ReviewsSection';
 import Footer from './components/Footer';
 import BackToTop from './components/BackToTop';
 import ErrorBoundary from './components/ErrorBoundary';
-import MentionsLegales from './pages/MentionsLegales';
-import PolitiqueConfidentialite from './pages/PolitiqueConfidentialite';
-import RoomDetailPage from './pages/RoomDetailPage';
-import CategoryPage from './pages/CategoryPage';
-import SearchResultsPage from './pages/SearchResultsPage';
 import NotFoundPage from './pages/NotFoundPage';
-import ClientReservationPage from './pages/ClientReservationPage';
 import ClientNotificationBanner from './components/ClientNotificationBanner';
-import AdminLayout from './pages/gerant/AdminLayout';
-import DashboardPage from './pages/gerant/DashboardPage';
-import ChambresPage from './pages/gerant/ChambresPage';
-import ReservationsPage from './pages/gerant/ReservationsPage';
-import AjouterChambre from './pages/gerant/AjouterChambre';
-import PremiumPage from './pages/gerant/PremiumPage';
-import PremiumSuccessPage from './pages/gerant/PremiumSuccessPage';
-import ProfilPage from './pages/gerant/ProfilPage';
-import VerificationPage from './pages/gerant/VerificationPage';
-import GerantLogin from './pages/gerant/GerantLogin';
-import OAuthCallback from './pages/gerant/OAuthCallback';
 import GerantRouteGuard from './components/GerantRouteGuard';
 import ClientRouteGuard from './components/ClientRouteGuard';
-import ClientLogin from './pages/ClientLogin';
-import RegisterRolePage from './pages/RegisterRolePage';
-import ClientComptePage from './pages/ClientComptePage';
 import AdminRouteGuard from './components/AdminRouteGuard';
-import SuperAdminLayout from './pages/admin/SuperAdminLayout';
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminDashboardPage from './pages/admin/AdminDashboardPage';
-import AdminChangePasswordPage from './pages/admin/AdminChangePasswordPage';
-import AdminGerantsPage from './pages/admin/AdminGerantsPage';
-import AdminBannersPage from './pages/admin/AdminBannersPage';
-import AdminEventsPage from './pages/admin/AdminEventsPage';
-import AdminReservationsPage from './pages/admin/AdminReservationsPage';
-import AdminPromotionsPage from './pages/admin/AdminPromotionsPage';
 import LandingPage from './pages/LandingPage';
 import { useRevealOnScroll } from './hooks/useRevealOnScroll';
+
+// Routes hors accueil : chargées à la demande pour ne pas embarquer Leaflet,
+// le back-office et l'espace gérant dans le premier chunk de la home.
+const MentionsLegales = lazy(() => import('./pages/MentionsLegales'));
+const PolitiqueConfidentialite = lazy(() => import('./pages/PolitiqueConfidentialite'));
+const RoomDetailPage = lazy(() => import('./pages/RoomDetailPage'));
+const CategoryPage = lazy(() => import('./pages/CategoryPage'));
+const SearchResultsPage = lazy(() => import('./pages/SearchResultsPage'));
+const ClientReservationPage = lazy(() => import('./pages/ClientReservationPage'));
+const ClientComptePage = lazy(() => import('./pages/ClientComptePage'));
+const ClientLogin = lazy(() => import('./pages/ClientLogin'));
+const RegisterRolePage = lazy(() => import('./pages/RegisterRolePage'));
+
+const AdminLayout = lazy(() => import('./pages/gerant/AdminLayout'));
+const DashboardPage = lazy(() => import('./pages/gerant/DashboardPage'));
+const ChambresPage = lazy(() => import('./pages/gerant/ChambresPage'));
+const ReservationsPage = lazy(() => import('./pages/gerant/ReservationsPage'));
+const AjouterChambre = lazy(() => import('./pages/gerant/AjouterChambre'));
+const PremiumPage = lazy(() => import('./pages/gerant/PremiumPage'));
+const PremiumSuccessPage = lazy(() => import('./pages/gerant/PremiumSuccessPage'));
+const ProfilPage = lazy(() => import('./pages/gerant/ProfilPage'));
+const VerificationPage = lazy(() => import('./pages/gerant/VerificationPage'));
+const GerantLogin = lazy(() => import('./pages/gerant/GerantLogin'));
+const OAuthCallback = lazy(() => import('./pages/gerant/OAuthCallback'));
+
+const SuperAdminLayout = lazy(() => import('./pages/admin/SuperAdminLayout'));
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
+const AdminChangePasswordPage = lazy(() => import('./pages/admin/AdminChangePasswordPage'));
+const AdminGerantsPage = lazy(() => import('./pages/admin/AdminGerantsPage'));
+const AdminBannersPage = lazy(() => import('./pages/admin/AdminBannersPage'));
+const AdminEventsPage = lazy(() => import('./pages/admin/AdminEventsPage'));
+const AdminReservationsPage = lazy(() => import('./pages/admin/AdminReservationsPage'));
+const AdminPromotionsPage = lazy(() => import('./pages/admin/AdminPromotionsPage'));
+
+function RouteFallback() {
+  return (
+    <div className="route-loading">
+      <div className="auth-loading__spinner" />
+      <p>Chargement...</p>
+    </div>
+  );
+}
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -95,8 +109,9 @@ function MarketContent() {
   return (
     <>
       {!hideChrome && <Header />}
-      <Routes>
-        <Route path="/" element={<HomePage />} />
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
         <Route path="/mentions-legales" element={<MentionsLegales />} />
         <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialite />} />
         <Route path="/chambre/:id" element={<RoomDetailPage />} />
@@ -148,7 +163,8 @@ function MarketContent() {
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />
-      </Routes>
+        </Routes>
+      </Suspense>
       {!hideChrome && <ClientNotificationBanner />}
       {!hideChrome && <Footer />}
       {!hideChrome && <BackToTop />}
@@ -170,25 +186,27 @@ function AppRoutes() {
     <MarketProvider>
       <ScrollToTop />
       <ErrorBoundary key={pathname}>
-        <Routes>
-          <Route path="/" element={<RootRedirect />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={
-            <AdminRouteGuard>
-              <SuperAdminLayout />
-            </AdminRouteGuard>
-          }>
-            <Route index element={<AdminDashboardPage />} />
-            <Route path="reservations" element={<AdminReservationsPage />} />
-            <Route path="mot-de-passe" element={<AdminChangePasswordPage />} />
-            <Route path="gerants" element={<AdminGerantsPage />} />
-            <Route path="banners" element={<AdminBannersPage />} />
-            <Route path="evenements" element={<AdminEventsPage />} />
-            <Route path="promotions" element={<AdminPromotionsPage />} />
-          </Route>
-          <Route path="/:market/*" element={<MarketRoute />} />
-          <Route path="*" element={<CatchAllRedirect />} />
-        </Routes>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/" element={<RootRedirect />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin" element={
+              <AdminRouteGuard>
+                <SuperAdminLayout />
+              </AdminRouteGuard>
+            }>
+              <Route index element={<AdminDashboardPage />} />
+              <Route path="reservations" element={<AdminReservationsPage />} />
+              <Route path="mot-de-passe" element={<AdminChangePasswordPage />} />
+              <Route path="gerants" element={<AdminGerantsPage />} />
+              <Route path="banners" element={<AdminBannersPage />} />
+              <Route path="evenements" element={<AdminEventsPage />} />
+              <Route path="promotions" element={<AdminPromotionsPage />} />
+            </Route>
+            <Route path="/:market/*" element={<MarketRoute />} />
+            <Route path="*" element={<CatchAllRedirect />} />
+          </Routes>
+        </Suspense>
       </ErrorBoundary>
     </MarketProvider>
   );

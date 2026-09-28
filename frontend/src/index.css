@@ -2327,7 +2327,7 @@ body.nav-open {
 .reveal {
   opacity: 0;
   transform: translateY(16px);
-  transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
+  transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
 }
 
 .reveal.is-visible {
@@ -7410,6 +7410,76 @@ body.nav-open {
 
 @keyframes auth-spin {
   to { transform: rotate(360deg); }
+}
+
+/* Fallback du <Suspense> : pendant le chargement d'un chunk de route */
+.route-loading {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+/* ── Skeletons des sections de la home ── */
+.card-skeleton {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--mist);
+}
+
+.card-skeleton__media {
+  aspect-ratio: 4 / 3;
+  background: var(--mist-2);
+}
+
+.card-skeleton__body {
+  padding: 1rem 1.1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.card-skeleton__line {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--mist-2);
+}
+
+.card-skeleton__line--sm {
+  height: 10px;
+}
+
+.card-skeleton__media,
+.card-skeleton__line {
+  animation: skeleton-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-skeleton__media,
+  .card-skeleton__line {
+    animation: none;
+  }
+}
+
+/* Même gabarit que les cartes réelles dans chaque grille */
+.popular__track .card-skeleton {
+  flex: 0 0 280px;
+}
+
+.events__grid .card-skeleton {
+  flex: 0 0 calc((100% - 3.2rem) / 3 - 1px);
+  min-width: 0;
 }
 
 /* ==========================================================================

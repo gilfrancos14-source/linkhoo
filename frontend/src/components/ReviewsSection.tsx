@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiReviews, type FeaturedReviewData } from '../lib/api';
+import CardSkeleton from './CardSkeleton';
 
 function StarIcon() {
   return (
@@ -18,17 +19,29 @@ function initialsOf(name: string): string {
 
 export default function ReviewsSection() {
   const [reviews, setReviews] = useState<FeaturedReviewData[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
     apiReviews
       .featured()
-      .then((data) => { if (alive) setReviews(data); })
-      .catch(() => { if (alive) setReviews([]); });
-    return () => { alive = false; };
+      .then((data) => {
+        if (!alive) return;
+        setReviews(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setReviews([]);
+        setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
   }, []);
 
-  if (reviews.length === 0) return null;
+  // Pas d'avis (ou erreur) : la section disparaît, comme avant.
+  if (!loading && reviews.length === 0) return null;
 
   return (
     <section className="reviews" id="avis">
@@ -38,29 +51,33 @@ export default function ReviewsSection() {
           <h2 className="section-title">Ce qu'ils <em>en disent</em></h2>
         </div>
 
-        <div className="reviews__grid">
-          {reviews.map((review) => (
-            <figure key={review.id} className="review reveal">
-              <div
-                className="review__stars"
-                aria-label={`Note : ${review.note_appartement} étoiles sur 5`}
-              >
-                {Array.from({ length: review.note_appartement }).map((_, j) => (
-                  <StarIcon key={j} />
-                ))}
-              </div>
-              <blockquote className="review__quote">« {review.commentaire} »</blockquote>
-              <figcaption className="review__author">
-                <span className="review__avatar" aria-hidden="true">
-                  {initialsOf(review.client_name)}
-                </span>
-                <span>
-                  <strong>{review.client_name}</strong>
-                  {review.room?.title && <small>Séjour — {review.room.title}</small>}
-                </span>
-              </figcaption>
-            </figure>
-          ))}
+        <div className="reviews__grid" aria-busy={loading}>
+          {loading ? (
+            <CardSkeleton count={3} />
+          ) : (
+            reviews.map((review) => (
+              <figure key={review.id} className="review reveal">
+                <div
+                  className="review__stars"
+                  aria-label={`Note : ${review.note_appartement} étoiles sur 5`}
+                >
+                  {Array.from({ length: review.note_appartement }).map((_, j) => (
+                    <StarIcon key={j} />
+                  ))}
+                </div>
+                <blockquote className="review__quote">« {review.commentaire} »</blockquote>
+                <figcaption className="review__author">
+                  <span className="review__avatar" aria-hidden="true">
+                    {initialsOf(review.client_name)}
+                  </span>
+                  <span>
+                    <strong>{review.client_name}</strong>
+                    {review.room?.title && <small>Séjour — {review.room.title}</small>}
+                  </span>
+                </figcaption>
+              </figure>
+            ))
+          )}
         </div>
       </div>
     </section>

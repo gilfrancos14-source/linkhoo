@@ -8,6 +8,42 @@ export function setAuthTokenGetter(getter: () => Promise<string | null>) {
   authTokenGetter = getter;
 }
 
+// ── Cache public (GET) ──
+// Déduplication des appels en vol + TTL : les 4 sections de la home qui
+// demandent les mêmes bannières/salles ne déclenchent qu'une seule requête
+// réseau, et un retour sur l'accueil ne re-télécharge rien pendant `ttl`.
+//
+// Règles :
+// - ne mettre en cache QUE des endpoints publics (réponses identiques pour
+//   tous les utilisateurs) ;
+// - ne JAMAIS muter le tableau/objet résolu : il est partagé entre tous les
+//   consommateurs (toujours .map()/.filter(), jamais .sort() sur place) ;
+// - toute écriture appelle clearApiCache() via request()/adminRequest().
+const PUBLIC_CACHE_TTL_MS = 60_000;
+const publicCache = new Map<string, { expires: number; promise: Promise<unknown> }>();
+
+export function clearApiCache(): void {
+  publicCache.clear();
+}
+
+export async function cachedGet<T>(path: string, ttlMs = PUBLIC_CACHE_TTL_MS): Promise<T> {
+  const now = Date.now();
+  const hit = publicCache.get(path);
+  if (hit && hit.expires > now) return hit.promise as Promise<T>;
+
+  // `cache: 'no-cache'` force une revalidation conditionnelle (304) auprès du
+  // serveur : après une mutation qui a purgé ce cache mémoire, la réponse
+  // serveur fraîche doit être visible immédiatement — le cache HTTP du
+  // navigateur ne doit jamais nous servir une version périmée.
+  const promise = request<T>(path, { cache: 'no-cache' }).catch((err) => {
+    // Une erreur n'est jamais mise en cache : le prochain appel réessaiera.
+    publicCache.delete(path);
+    throw err;
+  });
+  publicCache.set(path, { expires: now + ttlMs, promise });
+  return promise;
+}
+
 /**
  * Lit une réponse JSON en tolérant un corps vide : `res.json()` lève
  * « Unexpected end of JSON input » sur une 204 ou une réponse sans corps.
@@ -46,6 +82,9 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `API error ${res.status}`);
   }
+  // Toute mutation invalide le cache public : une création/édition ne doit
+  // jamais être masquée par une réponse mise en cache 60 s plus tôt.
+  if ((options?.method ?? 'GET').toUpperCase() !== 'GET') clearApiCache();
   return parseJsonBody<T>(res);
 }
 
@@ -90,9 +129,15 @@ export interface RoomData {
 }
 
 export const apiRooms = {
-  list: (market?: string) => request<RoomData[]>(market ? `/rooms?market=${market}` : '/rooms'),
+  // `fresh: true` contourne le cache mémoire : réservé aux écrans de gestion
+  // (back-office) qui doivent refléter l'état exact de la base au montage.
+  list: (market?: string, opts?: { fresh?: boolean }) => {
+    const path = market ? `/rooms?market=${market}` : '/rooms';
+    if (opts?.fresh) return request<RoomData[]>(path, { cache: 'no-cache' });
+    return cachedGet<RoomData[]>(path);
+  },
   listMine: () => request<RoomData[]>('/rooms/mine'),
-  getPopular: (market: string) => request<RoomData[]>(`/rooms/popular?market=${market}`),
+  getPopular: (market: string) => cachedGet<RoomData[]>(`/rooms/popular?market=${market}`),
   listAvailable: (market: string, arrivee: string, depart: string, ville?: string) =>
     request<RoomData[]>(
       `/rooms/available?market=${market}&arrivee=${arrivee}&depart=${depart}` +
@@ -118,7 +163,7 @@ export interface BannerData {
 }
 
 export const apiBanners = {
-  list: (market?: string) => request<BannerData[]>(market ? `/banners?market=${market}` : '/banners'),
+  list: (market?: string) => cachedGet<BannerData[]>(market ? `/banners?market=${market}` : '/banners'),
 };
 
 // ── Events ──
@@ -137,7 +182,7 @@ export interface EventData {
 }
 
 export const apiEvents = {
-  list: (market: string) => request<EventData[]>(`/events?market=${market}`),
+  list: (market: string) => cachedGet<EventData[]>(`/events?market=${market}`),
 };
 
 // ── Reservations ──
@@ -414,7 +459,7 @@ export const apiReviews = {
   listByRoom: (roomId: string) =>
     request<RoomReviewsResponse>(`/reviews?room_id=${encodeURIComponent(roomId)}`),
   listMine: () => request<ReviewData[]>('/reviews/mine'),
-  featured: () => request<FeaturedReviewData[]>('/reviews/featured'),
+  featured: () => cachedGet<FeaturedReviewData[]>('/reviews/featured'),
   create: (data: {
     reservation_id: string;
     note_appartement: number;

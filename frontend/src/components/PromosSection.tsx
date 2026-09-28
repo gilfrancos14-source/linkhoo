@@ -4,6 +4,7 @@ import { useMarket } from '../contexts/MarketContext';
 import { fetchRoomsByMarket, type Room } from '../data/rooms';
 import { fetchBannersBySection, type Banner } from '../data/banners';
 import BannerCarousel from './BannerCarousel';
+import CardSkeleton from './CardSkeleton';
 
 interface PromoRoom {
   title: string;
@@ -37,13 +38,38 @@ export default function PromosSection() {
   const [activeDot, setActiveDot] = useState(0);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [roomsLoading, setRoomsLoading] = useState(true);
 
   useEffect(() => {
-    fetchRoomsByMarket(market).then(setRooms);
+    let alive = true;
+    setRoomsLoading(true);
+    fetchRoomsByMarket(market)
+      .then((data) => {
+        if (alive) setRooms(data);
+      })
+      .catch(() => {
+        if (alive) setRooms([]);
+      })
+      .finally(() => {
+        if (alive) setRoomsLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
   }, [market]);
 
   useEffect(() => {
-    fetchBannersBySection(market, 'promos').then(setBanners);
+    let alive = true;
+    fetchBannersBySection(market, 'promos')
+      .then((data) => {
+        if (alive) setBanners(data);
+      })
+      .catch(() => {
+        if (alive) setBanners([]);
+      });
+    return () => {
+      alive = false;
+    };
   }, [market]);
 
   const promoData = useMemo((): PromoData[] => {
@@ -163,22 +189,26 @@ export default function PromosSection() {
           {banners.length > 0 && <BannerCarousel banners={banners} />}
         </div>
 
-        <div className="promos__grid">
-          {promoCards.map((card, i) => (
-            <article
-              key={i}
-              className="promo-card reveal"
-              role="button"
-              tabIndex={0}
-              onClick={() => openPromo(i)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPromo(i); } }}
-            >
-              <div className="promo-card__media">
-                <img src={card.img} alt={card.alt} loading="lazy" width="400" height="300" />
-                <span className="promo-card__badge">{card.badge}</span>
-              </div>
-            </article>
-          ))}
+        <div className="promos__grid" aria-busy={roomsLoading}>
+          {roomsLoading ? (
+            <CardSkeleton count={3} />
+          ) : (
+            promoCards.map((card, i) => (
+              <article
+                key={i}
+                className="promo-card reveal"
+                role="button"
+                tabIndex={0}
+                onClick={() => openPromo(i)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPromo(i); } }}
+              >
+                <div className="promo-card__media">
+                  <img src={card.img} alt={card.alt} loading="lazy" width="400" height="300" />
+                  <span className="promo-card__badge">{card.badge}</span>
+                </div>
+              </article>
+            ))
+          )}
         </div>
 
         <div className={`promo-detail${activePromo !== null ? ' is-open' : ''}`} id="promo-detail" aria-hidden={activePromo === null} ref={detailRef}>
