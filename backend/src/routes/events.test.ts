@@ -1,57 +1,22 @@
-import express from 'express';
 import request from 'supertest';
-import jwt from 'jsonwebtoken';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import eventsRouter from './events';
 import { supabaseAdmin, supabasePublic } from '../config/supabase';
+import {
+  adminToken,
+  buildTestApp,
+  fakeChain,
+  type FakeChain,
+} from '../testHelpers/supertestApp';
 
 vi.hoisted(() => {
   process.env.ADMIN_JWT_SECRET = 'secret-de-test';
 });
 
-vi.mock('../config/supabase', () => ({
-  supabasePublic: { from: vi.fn() },
-  supabaseAdmin: { from: vi.fn() },
-}));
-
-type AnyFn = ReturnType<typeof vi.fn>;
-
-interface FakeChain {
-  select: AnyFn;
-  eq: AnyFn;
-  gte: AnyFn;
-  order: AnyFn;
-  insert: AnyFn;
-  update: AnyFn;
-  delete: AnyFn;
-  single: AnyFn;
-  maybeSingle: AnyFn;
-  then: (onFulfilled: unknown, onRejected: unknown) => Promise<unknown>;
-}
-
-function fakeChain(result: { data?: unknown; error?: unknown }): FakeChain {
-  const chain = {} as FakeChain;
-  chain.select = vi.fn(() => chain);
-  chain.eq = vi.fn(() => chain);
-  chain.gte = vi.fn(() => chain);
-  chain.order = vi.fn(() => chain);
-  chain.insert = vi.fn(() => chain);
-  chain.update = vi.fn(() => chain);
-  chain.delete = vi.fn(() => chain);
-  chain.single = vi.fn(async () => result);
-  chain.maybeSingle = vi.fn(async () => result);
-  chain.then = (onFulfilled, onRejected) =>
-    Promise.resolve(result).then(
-      onFulfilled as (value: unknown) => unknown,
-      onRejected as (reason: unknown) => unknown,
-    );
-  return chain;
-}
-
-const adminToken = () =>
-  jwt.sign({ adminId: 'admin-1', email: 'admin@test.ci' }, process.env.ADMIN_JWT_SECRET!, {
-    expiresIn: '1h',
-  });
+vi.mock('../config/supabase', async () => {
+  const helper = await import('../testHelpers/supertestApp');
+  return helper.createSupabaseMock();
+});
 
 const validEvent = {
   market: 'CI',
@@ -66,14 +31,7 @@ const validEvent = {
 let publicChain: FakeChain;
 let adminChain: FakeChain;
 
-const app = express();
-app.use(express.json());
-app.use('/api/events', eventsRouter);
-app.use(
-  (_err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    res.status(500).json({ error: 'internal' });
-  },
-);
+const app = buildTestApp('/api/events', eventsRouter);
 
 beforeEach(() => {
   vi.clearAllMocks();

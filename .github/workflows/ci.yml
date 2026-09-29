@@ -22,6 +22,12 @@ jobs:
       - run: npm run lint
       - run: npx tsc -b
       - run: npm test
+      # Le build Vite échoue là où `tsc -b` passe (import cassé, asset manquant).
+      - run: npm run build
+      # Informatif uniquement : ne bloque pas la CI tant qu'aucun correctif
+      # n'existe en amont (cas axios transitif via fedapay côté backend).
+      - run: npm audit --audit-level=high
+        continue-on-error: true
 
   backend:
     runs-on: ubuntu-latest
@@ -36,5 +42,9 @@ jobs:
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
+      - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: npm run build
+      - run: npm audit --audit-level=high
+        continue-on-error: true
