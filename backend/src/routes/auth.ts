@@ -50,7 +50,7 @@ async function setClerkRole(
 ) {
   const user = await clerk.users.getUser(userId);
   const publicMetadata = {
-    ...((user.publicMetadata as Record<string, unknown>) || {}),
+    ...(user.publicMetadata as Record<string, unknown>),
     role,
   };
   await clerk.users.updateUser(userId, { publicMetadata });
@@ -58,7 +58,7 @@ async function setClerkRole(
 
 router.get('/me', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authUserId = (req as any).auth?.userId as string | undefined;
+    const authUserId = req.auth?.userId;
     if (!authUserId) {
       return res.status(401).json({ error: 'Non autorisé' });
     }
@@ -90,7 +90,7 @@ router.post('/bootstrap', async (req: Request, res: Response, next: NextFunction
       return res.status(400).json({ error: 'Données invalides', details: parsed.error.flatten() });
     }
 
-    const authUserId = (req as any).auth?.userId as string | undefined;
+    const authUserId = req.auth?.userId;
     if (!authUserId) {
       return res.status(401).json({ error: 'Non autorisé' });
     }

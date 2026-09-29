@@ -7,7 +7,7 @@ export async function requireGerantMarket(
   opts: { requireVerified?: boolean } = {},
 ): Promise<{ market: string; userId: string } | null> {
   const requireVerified = opts.requireVerified !== false;
-  const authUserId = (req as any).auth?.userId;
+  const authUserId = req.auth?.userId;
   if (!authUserId) {
     res.status(401).json({ error: 'Non autorisé' });
     return null;

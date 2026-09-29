@@ -18,7 +18,7 @@ export async function requireClerkAuth(req: Request, res: Response, next: NextFu
       secretKey: process.env.CLERK_SECRET_KEY!,
       clockSkewInMs: CLOCK_SKEW_IN_MS,
     });
-    (req as any).auth = {
+    req.auth = {
       userId: payload.sub,
       sessionId: payload.sid,
       sessionClaims: payload,
@@ -43,7 +43,7 @@ export async function requireClerkOrAdminAuth(req: Request, res: Response, next:
       secretKey: process.env.CLERK_SECRET_KEY!,
       clockSkewInMs: CLOCK_SKEW_IN_MS,
     });
-    (req as any).auth = {
+    req.auth = {
       userId: payload.sub,
       sessionId: payload.sid,
       sessionClaims: payload,
@@ -55,7 +55,7 @@ export async function requireClerkOrAdminAuth(req: Request, res: Response, next:
 
   try {
     const payload = jwt.verify(token, ADMIN_JWT_SECRET) as { adminId: string; email: string };
-    (req as any).admin = payload;
+    req.admin = payload;
     return next();
   } catch {
     return res.status(401).json({ error: 'Token invalide ou expiré' });
@@ -69,9 +69,9 @@ export async function requireClerkOrAdminAuth(req: Request, res: Response, next:
  * Un simple client connecté est refusé.
  */
 export async function requireAdminOrGerant(req: Request, res: Response, next: NextFunction) {
-  if ((req as any).admin) return next();
+  if (req.admin) return next();
 
-  const authUserId = (req as any).auth?.userId as string | undefined;
+  const authUserId = req.auth?.userId;
   if (!authUserId) {
     return res.status(401).json({ error: 'Non autorisé' });
   }

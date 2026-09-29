@@ -6,7 +6,7 @@ type AllowedRole = 'client' | 'gerant';
 export function requireProfile(role: AllowedRole) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const authUserId = (req as any).auth?.userId as string | undefined;
+      const authUserId = req.auth?.userId;
       if (!authUserId) {
         return res.status(401).json({ error: 'Non autorisé' });
       }

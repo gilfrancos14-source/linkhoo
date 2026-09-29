@@ -131,7 +131,7 @@ router.post('/initiate', requireClerkAuth, async (req: Request, res: Response, n
       return res.status(400).json({ error: 'Données invalides', details: parsedBody.error.flatten() });
     }
 
-    const authUserId = (req as any).auth?.userId as string | undefined;
+    const authUserId = req.auth?.userId;
     if (!authUserId) {
       return res.status(401).json({ error: 'Non autorisé' });
     }
@@ -215,7 +215,7 @@ router.post('/confirm', requireClerkAuth, async (req: Request, res: Response, ne
       return res.status(400).json({ error: 'Données invalides', details: parsedBody.error.flatten() });
     }
 
-    const authUserId = (req as any).auth?.userId as string | undefined;
+    const authUserId = req.auth?.userId;
     if (!authUserId) {
       return res.status(401).json({ error: 'Non autorisé' });
     }
@@ -317,8 +317,8 @@ router.post('/webhook', async (req: Request, res: Response, _next: NextFunction)
   }
 
   const rawBody =
-    typeof (req as any).rawBody === 'string' && (req as any).rawBody.length > 0
-      ? (req as any).rawBody
+    typeof req.rawBody === 'string' && req.rawBody.length > 0
+      ? req.rawBody
       : JSON.stringify(req.body);
 
   let event: any;
@@ -426,7 +426,7 @@ router.post('/webhook', async (req: Request, res: Response, _next: NextFunction)
 
 router.get('/status', requireClerkAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authUserId = (req as any).auth?.userId as string | undefined;
+    const authUserId = req.auth?.userId;
     if (!authUserId) {
       return res.status(401).json({ error: 'Non autorisé' });
     }

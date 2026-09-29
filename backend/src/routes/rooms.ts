@@ -197,7 +197,7 @@ router.get('/villes', async (req: Request, res: Response, next: NextFunction) =>
 
 router.get('/mine', requireClerkAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authUserId = (req as any).auth?.userId;
+    const authUserId = req.auth?.userId;
     if (!authUserId) return res.status(401).json({ error: 'Non autorisé' });
 
     const { data, error } = await supabaseAdmin

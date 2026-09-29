@@ -15,7 +15,7 @@ type NotificationRow = Record<string, any> & { id: string; date: string | null }
 
 router.get('/', requireClerkAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authUserId = (req as any).auth?.userId;
+    const authUserId = req.auth?.userId;
     if (!authUserId) {
       return res.status(401).json({ error: 'Non autorisé' });
     }
@@ -94,7 +94,7 @@ router.patch('/:id/read', requireClerkAuth, async (req: Request, res: Response, 
       return res.status(400).json({ error: 'Identifiant invalide' });
     }
 
-    const authUserId = (req as any).auth?.userId;
+    const authUserId = req.auth?.userId;
     if (!authUserId) return res.status(401).json({ error: 'Non autorisé' });
 
     const { data: notif, error: fetchError } = await supabaseAdmin
@@ -137,7 +137,7 @@ router.patch('/:id/read', requireClerkAuth, async (req: Request, res: Response, 
 
 router.get('/client', requireClerkAuth, notificationsLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authUserId = (req as any).auth?.userId;
+    const authUserId = req.auth?.userId;
     if (!authUserId) return res.status(401).json({ error: 'Non autorisé' });
 
     const { data: client } = await supabaseAdmin
@@ -179,7 +179,7 @@ router.post('/client', requireClerkAuth, async (req: Request, res: Response, nex
       return res.status(400).json({ error: 'Données de notification invalides' });
     }
 
-    const authUserId = (req as any).auth?.userId;
+    const authUserId = req.auth?.userId;
     if (!authUserId) return res.status(401).json({ error: 'Non autorisé' });
 
     // 1. La chambre doit appartenir à l'appelant. Sans ça, n'importe quel
@@ -233,7 +233,7 @@ router.post('/client', requireClerkAuth, async (req: Request, res: Response, nex
 
 router.patch('/client/:id/read', requireClerkAuth, notificationsLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authUserId = (req as any).auth?.userId;
+    const authUserId = req.auth?.userId;
     if (!authUserId) return res.status(401).json({ error: 'Non autorisé' });
 
     const parsedParams = idParamsSchema.safeParse(req.params);

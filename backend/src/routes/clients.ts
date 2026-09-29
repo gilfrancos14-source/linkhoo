@@ -7,7 +7,7 @@ const router = Router();
 
 router.get('/me', requireProfile('client'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authUserId = (req as any).auth?.userId;
+    const authUserId = req.auth?.userId;
     if (!authUserId) {
       return res.status(401).json({ error: 'Non autorisé' });
     }
@@ -27,7 +27,7 @@ router.get('/me', requireProfile('client'), async (req: Request, res: Response, 
 
 router.patch('/me', requireProfile('client'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authUserId = (req as any).auth?.userId;
+    const authUserId = req.auth?.userId;
     if (!authUserId) {
       return res.status(401).json({ error: 'Non autorisé' });
     }
@@ -67,7 +67,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       return res.status(400).json({ error: 'Données invalides', details: parsedBody.error.flatten() });
     }
 
-    const authUserId = (req as any).auth?.userId;
+    const authUserId = req.auth?.userId;
     if (!authUserId) {
       return res.status(401).json({ error: 'Non autorisé' });
     }

@@ -34,9 +34,14 @@ export const propertyAddressSchema = z
     lng: z.number().min(-180).max(180).optional(),
   })
   .strict()
-  .refine((data) => data.lat === undefined === (data.lng === undefined), {
-    message: 'lat et lng doivent être fournis ensemble',
-  });
+  .refine(
+    (data) =>
+      (data.lat === undefined && data.lng === undefined) ||
+      (data.lat !== undefined && data.lng !== undefined),
+    {
+      message: 'lat et lng doivent être fournis ensemble',
+    },
+  );
 
 export const verificationReviewSchema = z
   .object({

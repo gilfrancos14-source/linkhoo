@@ -7,15 +7,6 @@ import { reviewCreateSchema, reviewRoomQuerySchema } from '../validations/review
 const router = Router();
 const reviewsLimiter = createClientLimiter();
 
-async function getClientEmail(authUserId: string): Promise<string | null> {
-  const { data: client } = await supabaseAdmin
-    .from('clients')
-    .select('id, email, nom, prenom')
-    .eq('clerk_user_id', authUserId)
-    .maybeSingle();
-  return client?.email ?? null;
-}
-
 // GET /api/reviews?room_id= — avis publics d'un appartement + agrégats
 router.get('/', reviewsLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -74,7 +65,7 @@ router.get('/', reviewsLimiter, async (req: Request, res: Response, next: NextFu
 // GET /api/reviews/mine — avis du client connecté
 router.get('/mine', requireClerkAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authUserId = (req as any).auth?.userId;
+    const authUserId = req.auth?.userId;
     if (!authUserId) return res.status(401).json({ error: 'Non autorisé' });
 
     const { data: client } = await supabaseAdmin
@@ -121,7 +112,7 @@ router.post('/', requireClerkAuth, async (req: Request, res: Response, next: Nex
       return res.status(400).json({ error: 'Données d\'avis invalides', details: parsedBody.error.flatten() });
     }
 
-    const authUserId = (req as any).auth?.userId;
+    const authUserId = req.auth?.userId;
     if (!authUserId) return res.status(401).json({ error: 'Non autorisé' });
 
     const { data: client } = await supabaseAdmin

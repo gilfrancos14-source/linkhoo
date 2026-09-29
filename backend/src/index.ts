@@ -6,6 +6,7 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { errorHandler } from './middleware/errorHandler';
 import { requireClerkAuth } from './middleware/clerkAuth';
+import type { RawBodyRequest } from './types/express';
 import roomsRouter from './routes/rooms';
 import categoriesRouter from './routes/categories';
 import bannersRouter from './routes/banners';
@@ -131,8 +132,8 @@ app.use((req, res, next) => {
 });
 app.use('/api/premium/webhook', webhookLimiter, express.json({
   limit: '1mb',
-  verify: (req: any, _res, buf) => {
-    req.rawBody = buf.toString('utf8');
+  verify: (req, _res, buf) => {
+    (req as RawBodyRequest).rawBody = buf.toString('utf8');
   },
 }));
 app.use(express.json({ limit: '1mb' }));
@@ -172,7 +173,7 @@ const server = app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason, _promise) => {
   console.error('[FATAL] Unhandled Rejection:', reason);
 });
 

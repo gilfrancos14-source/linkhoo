@@ -1,20 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import type { RequestAdminInfo } from '../types/express';
 
 const JWT_SECRET = process.env.ADMIN_JWT_SECRET!;
-
-interface AdminPayload {
-  adminId: string;
-  email: string;
-}
-
-declare global {
-  namespace Express {
-    interface Request {
-      admin?: AdminPayload;
-    }
-  }
-}
 
 export function requireAdminAuth(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
@@ -24,7 +12,7 @@ export function requireAdminAuth(req: Request, res: Response, next: NextFunction
 
   const token = authHeader.slice(7);
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as AdminPayload;
+    const payload = jwt.verify(token, JWT_SECRET) as RequestAdminInfo;
     req.admin = payload;
     next();
   } catch {
@@ -32,6 +20,6 @@ export function requireAdminAuth(req: Request, res: Response, next: NextFunction
   }
 }
 
-export function signAdminToken(payload: AdminPayload): string {
+export function signAdminToken(payload: RequestAdminInfo): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
 }
