@@ -15,8 +15,7 @@ import BackToTop from './components/BackToTop';
 import ErrorBoundary from './components/ErrorBoundary';
 import NotFoundPage from './pages/NotFoundPage';
 import ClientNotificationBanner from './components/ClientNotificationBanner';
-import GerantRouteGuard from './components/GerantRouteGuard';
-import ClientRouteGuard from './components/ClientRouteGuard';
+import RoleRouteGuard from './components/RoleRouteGuard';
 import AdminRouteGuard from './components/AdminRouteGuard';
 import LandingPage from './pages/LandingPage';
 import { useRevealOnScroll } from './hooks/useRevealOnScroll';
@@ -72,6 +71,28 @@ function ScrollToTop() {
   return null;
 }
 
+// Arborescence back-office déclarée une seule fois : elle est montée à la fois
+// depuis les routes de marché et depuis les routes racine, sinon les définitions
+// divergent à chaque ajout de page admin.
+const adminSectionRoutes = (
+  <>
+    <Route path="/admin/login" element={<AdminLogin />} />
+    <Route path="/admin" element={
+      <AdminRouteGuard>
+        <SuperAdminLayout />
+      </AdminRouteGuard>
+    }>
+      <Route index element={<AdminDashboardPage />} />
+      <Route path="reservations" element={<AdminReservationsPage />} />
+      <Route path="mot-de-passe" element={<AdminChangePasswordPage />} />
+      <Route path="gerants" element={<AdminGerantsPage />} />
+      <Route path="banners" element={<AdminBannersPage />} />
+      <Route path="evenements" element={<AdminEventsPage />} />
+      <Route path="promotions" element={<AdminPromotionsPage />} />
+    </Route>
+  </>
+);
+
 function HomePage() {
   useRevealOnScroll();
   return (
@@ -119,9 +140,9 @@ function MarketContent() {
         <Route path="/recherche" element={<SearchResultsPage />} />
         <Route path="/suivi-reservation" element={<ClientReservationPage />} />
         <Route path="/compte" element={
-          <ClientRouteGuard>
+          <RoleRouteGuard role="client">
             <ClientComptePage />
-          </ClientRouteGuard>
+          </RoleRouteGuard>
         } />
 
         <Route path="/login/gerant/*" element={<GerantLogin />} />
@@ -131,25 +152,12 @@ function MarketContent() {
         <Route path="/inscription/gerant/*" element={<RegisterRolePage />} />
         <Route path="/sso-callback/*" element={<OAuthCallback />} />
 
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin" element={
-          <AdminRouteGuard>
-            <SuperAdminLayout />
-          </AdminRouteGuard>
-        }>
-          <Route index element={<AdminDashboardPage />} />
-          <Route path="reservations" element={<AdminReservationsPage />} />
-          <Route path="mot-de-passe" element={<AdminChangePasswordPage />} />
-          <Route path="gerants" element={<AdminGerantsPage />} />
-          <Route path="banners" element={<AdminBannersPage />} />
-          <Route path="evenements" element={<AdminEventsPage />} />
-          <Route path="promotions" element={<AdminPromotionsPage />} />
-        </Route>
+        {adminSectionRoutes}
 
         <Route path="/gerant" element={
-          <GerantRouteGuard>
+          <RoleRouteGuard role="gerant">
             <AdminLayout />
-          </GerantRouteGuard>
+          </RoleRouteGuard>
         }>
           <Route index element={<DashboardPage />} />
           <Route path="chambres" element={<ChambresPage />} />
@@ -189,20 +197,7 @@ function AppRoutes() {
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/" element={<RootRedirect />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin" element={
-              <AdminRouteGuard>
-                <SuperAdminLayout />
-              </AdminRouteGuard>
-            }>
-              <Route index element={<AdminDashboardPage />} />
-              <Route path="reservations" element={<AdminReservationsPage />} />
-              <Route path="mot-de-passe" element={<AdminChangePasswordPage />} />
-              <Route path="gerants" element={<AdminGerantsPage />} />
-              <Route path="banners" element={<AdminBannersPage />} />
-              <Route path="evenements" element={<AdminEventsPage />} />
-              <Route path="promotions" element={<AdminPromotionsPage />} />
-            </Route>
+            {adminSectionRoutes}
             <Route path="/:market/*" element={<MarketRoute />} />
             <Route path="*" element={<CatchAllRedirect />} />
           </Routes>

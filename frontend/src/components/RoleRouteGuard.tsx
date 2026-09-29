@@ -6,6 +6,19 @@ import { apiAuth, setAuthTokenGetter, type AuthRole } from '../lib/api';
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkConfigured = Boolean(clerkKey && clerkKey.startsWith('pk_'));
 
+// Routes de sortie par rôle : le rôle attendu décide où rediriger quand
+// l'utilisateur n'est pas connecté ou possède un autre rôle.
+const rolePaths: Record<AuthRole, { login: (m: string) => string; wrongRole: (m: string) => string }> = {
+  client: {
+    login: (m) => `/${m}/login`,
+    wrongRole: (m) => `/${m}/gerant`,
+  },
+  gerant: {
+    login: (m) => `/${m}/login/gerant`,
+    wrongRole: (m) => `/${m}/compte`,
+  },
+};
+
 function Loading() {
   return (
     <div className="auth-loading">
@@ -15,6 +28,8 @@ function Loading() {
   );
 }
 
+// Hooks Clerk uniquement ici : ce composant n'est jamais rendu quand Clerk
+// n'est pas configuré, donc useAuth()/useClerk() restent sous le provider.
 function AuthenticatedGuard({
   children,
   expectedRole,
@@ -113,7 +128,12 @@ function AuthenticatedGuard({
   return <>{children}</>;
 }
 
-export default function ClientRouteGuard({ children }: { children: React.ReactNode }) {
+interface RoleRouteGuardProps {
+  role: AuthRole;
+  children: React.ReactNode;
+}
+
+export default function RoleRouteGuard({ role, children }: RoleRouteGuardProps) {
   const { market } = useParams<{ market: string }>();
   const currentMarket = (market ?? 'ci').toLowerCase();
 
@@ -121,11 +141,13 @@ export default function ClientRouteGuard({ children }: { children: React.ReactNo
     return <Navigate to={`/${currentMarket}`} replace />;
   }
 
+  const paths = rolePaths[role];
+
   return (
     <AuthenticatedGuard
-      expectedRole="client"
-      loginPath={`/${currentMarket}/login`}
-      wrongRolePath={`/${currentMarket}/gerant`}
+      expectedRole={role}
+      loginPath={paths.login(currentMarket)}
+      wrongRolePath={paths.wrongRole(currentMarket)}
     >
       {children}
     </AuthenticatedGuard>
