@@ -79,12 +79,12 @@ describe('requireGerantMarket — refus (403)', () => {
     });
   });
 
-  it('403 si la requête Supabase échoue', async () => {
+  it('500 si la requête Supabase échoue (panne DB distincte d’un accès refusé)', async () => {
     gerants = fakeChain({ data: null, error: { message: 'délai dépassé' } });
     useSupabaseTables(supabaseAdmin.from, { gerants });
     const res = await asGerant('user_1');
-    expect(res.status).toBe(403);
-    expect(res.body.error).toBe('Seuls les gérants vérifiés peuvent effectuer cette action');
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Erreur interne du serveur');
   });
 
   it('403 si le gérant n’est pas vérifié (comportement par défaut)', async () => {

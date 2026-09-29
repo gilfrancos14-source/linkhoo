@@ -17,7 +17,12 @@ export async function requireGerantMarket(
     .select('market, is_verified')
     .eq('clerk_user_id', authUserId)
     .maybeSingle();
-  if (error || !gerant || (requireVerified && !gerant.is_verified)) {
+  if (error) {
+    // Panne base de données : 500, pour ne pas la présenter comme un refus.
+    res.status(500).json({ error: 'Erreur interne du serveur' });
+    return null;
+  }
+  if (!gerant || (requireVerified && !gerant.is_verified)) {
     res.status(403).json({ error: 'Seuls les gérants vérifiés peuvent effectuer cette action' });
     return null;
   }

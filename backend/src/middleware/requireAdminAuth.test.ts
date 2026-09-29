@@ -93,15 +93,27 @@ describe('requireAdminAuth', () => {
     expect(res.body.error).toBe('Token invalide ou expiré');
   });
 
-  it('ne vérifie que la signature : un JWT HS256 du secret admin passe sans claims admin', async () => {
-    // Comportement constaté : le middleware ne contrôle ni adminId ni email.
+  it('401 pour un JWT HS256 du secret admin sans claims admin', async () => {
+    // Un jeton Clerk (sub/sid) signé avec le secret admin ne doit pas passer :
+    // le middleware exige un adminId non vide.
     const clerkLike = jwt.sign({ sub: 'user_1', sid: 'sess' }, 'secret-de-test');
     const res = await request(app)
       .get('/api/secure/me')
       .set('Authorization', `Bearer ${clerkLike}`);
-    expect(res.status).toBe(200);
-    expect(res.body.admin).toMatchObject({ sub: 'user_1', sid: 'sess' });
-    expect(res.body.admin.adminId).toBeUndefined();
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe('Token invalide ou expiré');
+    expect(res.body.admin).toBeUndefined();
+  });
+
+  it('401 pour un adminId vide ou non string', async () => {
+    for (const payload of [{ adminId: '', email: 'a@test.ci' }, { adminId: 42, email: 'a@test.ci' }]) {
+      const token = jwt.sign(payload, 'secret-de-test');
+      const res = await request(app)
+        .get('/api/secure/me')
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(401);
+      expect(res.body.error).toBe('Token invalide ou expiré');
+    }
   });
 
   it('200 : pose req.admin et appelle next()', async () => {

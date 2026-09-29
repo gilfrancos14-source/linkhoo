@@ -12,12 +12,26 @@ export function requireAdminAuth(req: Request, res: Response, next: NextFunction
 
   const token = authHeader.slice(7);
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as RequestAdminInfo;
-    req.admin = payload;
+    const payload = jwt.verify(token, JWT_SECRET) as Partial<RequestAdminInfo>;
+    if (!hasAdminClaims(payload)) {
+      return res.status(401).json({ error: 'Token invalide ou expiré' });
+    }
+    req.admin = payload as RequestAdminInfo;
     next();
   } catch {
     return res.status(401).json({ error: 'Token invalide ou expiré' });
   }
+}
+
+// La signature seule ne suffit pas : un jeton Clerk signé avec le même secret
+// n'a ni adminId ni email et ne doit pas ouvrir l'accès admin.
+function hasAdminClaims(payload: Partial<RequestAdminInfo> | null | undefined): boolean {
+  return (
+    typeof payload?.adminId === 'string' &&
+    payload.adminId.trim().length > 0 &&
+    typeof payload.email === 'string' &&
+    payload.email.trim().length > 0
+  );
 }
 
 export function signAdminToken(payload: RequestAdminInfo): string {

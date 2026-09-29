@@ -20,8 +20,9 @@ export function requireProfile(role: AllowedRole) {
       if (error) throw error;
 
       if (!data) {
+        const roleLabel = role === 'gerant' ? 'gérant' : 'client';
         return res.status(403).json({
-          error: `Accès réservé aux comptes ${role}`,
+          error: `Accès réservé aux comptes ${roleLabel}`,
           role,
         });
       }

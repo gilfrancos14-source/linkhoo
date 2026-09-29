@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import { verifyToken } from '@clerk/backend';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { requireAdminOrGerant, requireClerkAuth, requireClerkOrAdminAuth } from './clerkAuth';
@@ -137,6 +138,18 @@ describe('requireClerkOrAdminAuth', () => {
     expect(res.status).toBe(200);
     expect(res.body.admin).toMatchObject({ adminId: 'a7', email: 'a7@test.ci' });
     expect(res.body.auth).toBeNull();
+  });
+
+  it('401 pour un JWT admin signé du bon secret mais sans claims admin', async () => {
+    vi.mocked(verifyToken).mockRejectedValue(new Error('pas un jeton Clerk'));
+    const sansClaims = jwt.sign({ sub: 'user_1', sid: 'sess' }, 'secret-de-test');
+    const res = await request(orAdminApp)
+      .get('/api/or-admin/whoami')
+      .set('Authorization', `Bearer ${sansClaims}`);
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe('Token invalide ou expiré');
+    expect(res.body.admin).toBeUndefined();
+    expect(res.body.auth).toBeUndefined();
   });
 
   it('401 quand ni Clerk ni l’admin ne reconnaissent le jeton', async () => {

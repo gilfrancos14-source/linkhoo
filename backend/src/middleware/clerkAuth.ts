@@ -54,8 +54,19 @@ export async function requireClerkOrAdminAuth(req: Request, res: Response, next:
   }
 
   try {
-    const payload = jwt.verify(token, ADMIN_JWT_SECRET) as { adminId: string; email: string };
-    req.admin = payload;
+    const payload = jwt.verify(token, ADMIN_JWT_SECRET) as {
+      adminId?: unknown;
+      email?: unknown;
+    };
+    if (
+      typeof payload.adminId !== 'string' ||
+      !payload.adminId.trim() ||
+      typeof payload.email !== 'string' ||
+      !payload.email.trim()
+    ) {
+      return res.status(401).json({ error: 'Token invalide ou expiré' });
+    }
+    req.admin = { adminId: payload.adminId, email: payload.email };
     return next();
   } catch {
     return res.status(401).json({ error: 'Token invalide ou expiré' });

@@ -69,8 +69,17 @@ describe('isQualifiedGerant', () => {
     expect(isQualifiedGerant(gerant)).toBe(false);
   });
 
-  it('considère une date d’expiration invalide comme non expirée (comportement actuel)', () => {
-    // NaN <= now est faux : la branche « expiré » n'est jamais prise.
-    expect(isQualifiedGerant({ is_verified: true, is_premium: true, premium_expires_at: 'pas-une-date' })).toBe(true);
+  it('refuse un gérant dont la date d’expiration est illisible (accès refusé, pas maintenu)', () => {
+    // Un premium_expires_at corrompu ne doit jamais laisser l'accès ouvert :
+    // NaN <= now est faux, d'où un contrôle Number.isFinite explicite.
+    expect(
+      isQualifiedGerant({ is_verified: true, is_premium: true, premium_expires_at: 'pas-une-date' }),
+    ).toBe(false);
+    expect(
+      isQualifiedGerant({ is_verified: true, is_premium: true, premium_expires_at: '' }),
+    ).toBe(false);
+    expect(
+      isQualifiedGerant({ is_verified: true, is_premium: true, premium_expires_at: '2026-13-01' }),
+    ).toBe(false);
   });
 });

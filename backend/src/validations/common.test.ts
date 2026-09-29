@@ -138,6 +138,23 @@ describe('dateStringSchema', () => {
     expect(dateStringSchema.safeParse('2026-05-00').success).toBe(false);
   });
 
+  it('refuse un jour qui n’existe pas dans le mois (roulage silencieux de Date.parse)', () => {
+    // Date.parse('2026-02-30') renvoie le 2 mars : la validation calendrier
+    // doit comparer année/mois/jour reconstruits.
+    for (const value of ['2026-02-30', '2026-04-31', '2027-02-29', '2026-06-31']) {
+      const parsed = dateStringSchema.safeParse(value);
+      expect(parsed.success).toBe(false);
+      if (parsed.success) continue;
+      expect(parsed.error.issues[0]?.message).toBe('Date invalide');
+    }
+  });
+
+  it('accepte le dernier jour de chaque mois, y compris 29 février d’une année bissextile', () => {
+    for (const value of ['2026-01-31', '2026-02-28', '2026-04-30', '2028-02-29', '2026-12-31']) {
+      expect(dateStringSchema.safeParse(value).success).toBe(true);
+    }
+  });
+
   it('refuse les valeurs non chaînes', () => {
     expect(dateStringSchema.safeParse(20_260_501).success).toBe(false);
     expect(dateStringSchema.safeParse(null).success).toBe(false);

@@ -124,7 +124,7 @@ describe('requireProfile — rôle gérant', () => {
       .get('/api/require-profile/gerant')
       .set('x-user-id', 'user_2');
     expect(res.status).toBe(403);
-    expect(res.body).toEqual({ error: 'Accès réservé aux comptes gerant', role: 'gerant' });
+    expect(res.body).toEqual({ error: 'Accès réservé aux comptes gérant', role: 'gerant' });
   });
 
   it('cible la bonne table selon le rôle demandé', async () => {
