@@ -1871,10 +1871,17 @@ body.nav-open {
 
 /* ---------- Tourisme Bénin ---------- */
 .tourism {
+  /* Palette locale du bloc sombre (bleu-nuit profond + accent de marché) */
+  --tourism-bg: #04151f;
+  --tourism-panel: #0a202b;
+  --tourism-accent: var(--sun);
+  --tourism-muted: #c5d0d4;
+
   position: relative;
-  padding: calc(var(--space-section) * 0.75) 0;
+  padding: calc(var(--space-section) * 0.85) 0;
   color: var(--white);
   overflow: hidden;
+  background: var(--tourism-bg);
 }
 
 .tourism__bg {
@@ -1891,7 +1898,15 @@ body.nav-open {
 .tourism__overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.6) 0%, rgba(15, 23, 42, 0.85) 100%);
+  background:
+    linear-gradient(
+      90deg,
+      rgba(2, 18, 28, 0.97) 0%,
+      rgba(2, 18, 28, 0.82) 38%,
+      rgba(2, 18, 28, 0.48) 70%,
+      rgba(2, 18, 28, 0.72) 100%
+    ),
+    linear-gradient(180deg, rgba(2, 15, 24, 0.3) 0%, rgba(2, 15, 24, 0.9) 92%);
 }
 
 .tourism__content {
@@ -1899,63 +1914,164 @@ body.nav-open {
   z-index: 2;
 }
 
+/* ---------- Tourism : Badge ---------- */
 .tourism__badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1.1rem;
+  gap: 9px;
+  padding: 9px 17px;
+  border: 1px solid var(--tourism-accent);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(8px);
-  font-size: 0.82rem;
+  background: rgba(0, 20, 28, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  margin-bottom: 1.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tourism__badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tourism-accent);
+}
+
+/* ---------- Tourism : Hero ---------- */
+.tourism__hero {
+  position: relative;
+  margin-top: 20px;
 }
 
 .tourism__title {
-  font-family: var(--font-serif);
-  font-size: clamp(2rem, 5vw, 3.2rem);
-  font-weight: 500;
-  line-height: 1.15;
-  margin-bottom: 1.2rem;
+  max-width: 850px;
+  font-family: var(--font-sans);
+  font-size: clamp(2.4rem, 5vw, 4.4rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  margin-bottom: 1.3rem;
 }
 
 .tourism__title em {
   font-style: normal;
-  font-weight: 400;
-  color: var(--sun);
+  color: var(--tourism-accent);
 }
 
 .tourism__text {
-  font-size: 1.05rem;
+  max-width: 620px;
+  font-size: 1rem;
   line-height: 1.65;
-  color: rgba(255, 255, 255, 0.85);
-  max-width: 60ch;
+  color: #d9e1e4;
   margin-bottom: 2.4rem;
 }
 
-/* ---------- Tourism : Big Cards ---------- */
+/* Signature manuscrite ( décoratif ) */
+.tourism__signature {
+  position: absolute;
+  right: 10px;
+  top: 40px;
+  width: 180px;
+  color: var(--white);
+  font-family: "Brush Script MT", "Segoe Script", cursive;
+  font-size: 35px;
+  line-height: 0.9;
+  text-align: center;
+  transform: rotate(-5deg);
+}
+
+.tourism__signature span {
+  display: block;
+  color: var(--tourism-accent);
+}
+
+.tourism__signature::after {
+  content: "";
+  display: block;
+  width: 115px;
+  height: 3px;
+  margin: 12px auto 0;
+  background: var(--tourism-accent);
+  border-radius: 10px;
+  transform: rotate(-5deg);
+}
+
+/* ---------- Tourism : Avantages ---------- */
+.tourism__benefits {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 27px 0 32px;
+}
+
+.tourism__benefit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-right: 32px;
+  margin-right: 32px;
+  border-right: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.tourism__benefit:last-child {
+  border-right: none;
+  margin-right: 0;
+  padding-right: 0;
+}
+
+.tourism__benefit-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--tourism-accent);
+  border-radius: 50%;
+  color: var(--tourism-accent);
+  font-size: 18px;
+}
+
+.tourism__benefit-title {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.tourism__benefit-text {
+  font-size: 12px;
+  color: var(--tourism-muted);
+}
+
+/* ---------- Tourism : Grandes cartes ---------- */
 .tourism__big-cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.2rem;
-  margin-bottom: 1.6rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
 }
 
 .tourism__big-card {
   position: relative;
-  display: flex;
-  flex-direction: column;
+  min-height: 365px;
+  width: 100%;
+  padding: 0;
   overflow: hidden;
-  aspect-ratio: 16 / 9;
-  transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease);
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--radius-lg);
+  background: var(--tourism-panel);
+  transition:
+    transform 0.4s var(--ease),
+    border-color 0.4s var(--ease),
+    box-shadow 0.4s var(--ease);
 }
 
 .tourism__big-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transform: translateY(-6px);
+  border-color: var(--tourism-accent);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
 }
 
 .tourism__big-card img {
@@ -1964,131 +2080,302 @@ body.nav-open {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.7s var(--ease);
+  transition: transform 0.6s var(--ease);
 }
 
 .tourism__big-card:hover img {
-  transform: scale(1.03);
+  transform: scale(1.06);
 }
 
 .tourism__big-card-shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0) 30%, rgba(15, 23, 42, 0.85) 100%);
-}
-
-.tourism__big-card-body {
-  position: relative;
-  z-index: 1;
-  margin-top: auto;
-  padding: 1.5rem;
-  color: var(--white);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.08) 15%,
+    rgba(0, 0, 0, 0.18) 35%,
+    rgba(1, 14, 21, 0.96) 100%
+  );
 }
 
 .tourism__big-card-tag {
-  display: inline-block;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 0.35rem 0.75rem;
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 15px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(6px);
-  margin-bottom: 0.6rem;
+  background: rgba(5, 24, 32, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tourism__big-card-tag span {
+  color: var(--tourism-accent);
+  font-size: 15px;
+}
+
+.tourism__big-card-body {
+  position: absolute;
+  z-index: 3;
+  left: 28px;
+  right: 28px;
+  bottom: 25px;
 }
 
 .tourism__big-card-title {
-  font-family: var(--font-serif);
-  font-size: 1.4rem;
-  font-weight: 600;
-  margin-bottom: 0.3rem;
+  font-family: var(--font-sans);
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.tourism__big-card-location {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tourism__big-card-location span {
+  color: var(--tourism-accent);
+  font-size: 18px;
 }
 
 .tourism__big-card-text {
-  font-size: 0.88rem;
-  color: rgba(255, 255, 255, 0.8);
+  max-width: 430px;
+  margin-top: 9px;
+  color: #d2dadd;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
-/* ---------- Tourism : Small Cards (horizontal scroll) ---------- */
+.tourism__discover {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 11px 20px;
+  border: 1px solid var(--white);
+  border-radius: 999px;
+  color: var(--white);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.3s var(--ease);
+}
+
+.tourism__big-card:hover .tourism__discover,
+.tourism__big-card--primary .tourism__discover {
+  background: var(--tourism-accent);
+  border-color: var(--tourism-accent);
+  color: #002119;
+}
+
+.tourism__big-card--primary:hover .tourism__discover {
+  background: var(--white);
+  border-color: var(--white);
+}
+
+/* ---------- Tourism : Petites cartes ---------- */
 .tourism__small-cards {
-  display: flex;
-  gap: 1rem;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding-bottom: 0.5rem;
-  margin-top: 1.2rem;
-}
-
-.tourism__small-cards::-webkit-scrollbar {
-  display: none;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-top: 20px;
 }
 
 .tourism__small-card {
   position: relative;
-  flex: 0 0 240px;
-  scroll-snap-align: start;
-  display: flex;
-  flex-direction: column;
+  width: 100%;
+  min-height: 245px;
+  padding: 0;
   overflow: hidden;
-  aspect-ratio: 3 / 4;
-  transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease);
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: var(--tourism-panel);
+  transition:
+    transform 0.35s var(--ease),
+    border-color 0.35s var(--ease);
 }
 
 .tourism__small-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+  transform: translateY(-5px);
+  border-color: var(--tourism-accent);
 }
 
 .tourism__small-card img {
-  position: absolute;
-  inset: 0;
+  display: block;
   width: 100%;
-  height: 100%;
+  height: 145px;
   object-fit: cover;
-  transition: transform 0.7s var(--ease);
+  transition: transform 0.5s var(--ease);
 }
 
 .tourism__small-card:hover img {
-  transform: scale(1.03);
+  transform: scale(1.06);
 }
 
 .tourism__small-card-shade {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0) 30%, rgba(15, 23, 42, 0.85) 100%);
+  top: 70px;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: linear-gradient(transparent, var(--tourism-panel));
+  pointer-events: none;
 }
 
 .tourism__small-card-body {
   position: relative;
-  z-index: 1;
-  margin-top: auto;
-  padding: 1.2rem;
+  z-index: 2;
+  margin-top: -3px;
+  padding: 0 56px 17px 17px;
+}
+
+.tourism__small-card-icon {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin-top: -20px;
+  margin-bottom: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  background: var(--tourism-panel);
   color: var(--white);
+  font-size: 18px;
 }
 
 .tourism__small-card-title {
-  font-family: var(--font-serif);
-  font-size: 1.15rem;
-  font-weight: 600;
-  margin-bottom: 0.25rem;
+  font-family: var(--font-sans);
+  font-size: 19px;
+  font-weight: 800;
+  margin-bottom: 5px;
 }
 
 .tourism__small-card-text {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--tourism-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.tourism__small-card-arrow {
+  position: absolute;
+  right: 15px;
+  bottom: 15px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--tourism-accent);
+  border-radius: 50%;
+  color: var(--tourism-accent);
+  font-size: 18px;
+  transition: all 0.3s var(--ease);
+}
+
+.tourism__small-card:hover .tourism__small-card-arrow {
+  background: var(--tourism-accent);
+  color: #001d15;
+}
+
+/* ---------- Tourism : Pied de section ---------- */
+.tourism__footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  margin-top: 31px;
+  color: #d3dcdf;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.tourism__footer::before,
+.tourism__footer::after {
+  content: "";
+  width: 35px;
+  height: 1px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+@media (max-width: 1000px) {
+  .tourism__signature {
+    display: none;
+  }
+
+  .tourism__benefit {
+    margin-right: 0;
+    padding-right: 0;
+    border-right: none;
+    gap: 8px;
+  }
+
+  .tourism__small-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
+  .tourism__title {
+    font-size: clamp(2.1rem, 9vw, 2.6rem);
+    line-height: 1.05;
+  }
+
+  .tourism__text {
+    font-size: 0.95rem;
+    margin-bottom: 1.6rem;
+  }
+
+  .tourism__benefits {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin: 22px 0 26px;
+  }
+
   .tourism__big-cards {
     grid-template-columns: 1fr;
   }
 
+  .tourism__big-card {
+    min-height: 390px;
+  }
+
+  .tourism__big-card-body {
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+  }
+
+  .tourism__small-cards {
+    grid-template-columns: 1fr;
+  }
+
   .tourism__small-card {
-    flex: 0 0 200px;
+    min-height: 270px;
   }
 }
 
@@ -3043,7 +3330,7 @@ body.nav-open {
 
 .room-detail__field-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.4fr 0.8fr 0.8fr;
   gap: 0.8rem;
   margin-bottom: 0.8rem;
 }
@@ -3061,7 +3348,8 @@ body.nav-open {
 }
 
 .room-detail__field input,
-.room-detail__field textarea {
+.room-detail__field textarea,
+.room-detail__field select {
   width: 100%;
   padding: 0.65rem 0.9rem;
   border: 1px solid var(--line);
@@ -3075,8 +3363,13 @@ body.nav-open {
   box-sizing: border-box;
 }
 
+.room-detail__field select {
+  cursor: not-allowed;
+}
+
 .room-detail__field input:focus,
-.room-detail__field textarea:focus {
+.room-detail__field textarea:focus,
+.room-detail__field select:focus {
   outline: none;
   border-color: var(--sky);
 }
@@ -3114,6 +3407,10 @@ body.nav-open {
 /* Responsive */
 @media (max-width: 768px) {
   .room-detail__content {
+    grid-template-columns: 1fr;
+  }
+
+  .room-detail__field-row {
     grid-template-columns: 1fr;
   }
 
