@@ -68,6 +68,8 @@ CREATE TABLE IF NOT EXISTS reservations (
   date_debut TEXT,
   date_fin TEXT,
   montant INTEGER,
+  duree_nombre INTEGER,
+  duree_unite TEXT CHECK (duree_unite IN ('nuit', 'mois')),
   message TEXT,
   statut TEXT CHECK (statut IN ('en_attente', 'confirmee', 'annulee')) DEFAULT 'en_attente',
   created_at TIMESTAMPTZ DEFAULT now(),
@@ -323,6 +325,9 @@ CREATE POLICY public_select_events ON events FOR SELECT USING (true);
 -- Réservation atomique : verrou de la chambre + test de conflit
 -- dans une seule transaction (anti double-réservation)
 -- ============================================================
+-- La signature a changé (durée de réservation) : CREATE OR REPLACE ne
+-- remplace pas une signature différente, il créerait une seconde surcharge.
+DROP FUNCTION IF EXISTS public.create_reservation_checked;
 CREATE OR REPLACE FUNCTION public.create_reservation_checked(
   p_id TEXT,
   p_client_name TEXT,
@@ -333,7 +338,9 @@ CREATE OR REPLACE FUNCTION public.create_reservation_checked(
   p_date_debut TEXT,
   p_date_fin TEXT,
   p_montant INTEGER,
-  p_message TEXT
+  p_message TEXT,
+  p_duree_nombre INTEGER DEFAULT NULL,
+  p_duree_unite TEXT DEFAULT NULL
 ) RETURNS SETOF public.reservations
 LANGUAGE plpgsql
 AS $$
@@ -356,10 +363,10 @@ BEGIN
   RETURN QUERY
   INSERT INTO public.reservations (
     id, client_name, client_email, client_phone, room_id, room_title,
-    date_debut, date_fin, montant, message, statut
+    date_debut, date_fin, montant, duree_nombre, duree_unite, message, statut
   ) VALUES (
     p_id, p_client_name, p_client_email, p_client_phone, p_room_id, p_room_title,
-    p_date_debut, p_date_fin, p_montant, p_message, 'en_attente'
+    p_date_debut, p_date_fin, p_montant, p_duree_nombre, p_duree_unite, p_message, 'en_attente'
   )
   RETURNING *;
 END;

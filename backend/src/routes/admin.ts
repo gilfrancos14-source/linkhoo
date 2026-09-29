@@ -539,6 +539,8 @@ router.get('/reservations', requireAdminAuth, async (req: Request, res: Response
       date_debut: r.date_debut,
       date_fin: r.date_fin,
       montant: r.montant,
+      duree_nombre: r.duree_nombre,
+      duree_unite: r.duree_unite,
       message: r.message,
       statut: r.statut,
       created_at: r.created_at,

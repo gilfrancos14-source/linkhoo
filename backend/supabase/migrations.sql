@@ -344,3 +344,76 @@ ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS public_select_events ON events;
 CREATE POLICY public_select_events ON events FOR SELECT USING (true);
+
+-- ============================================================
+-- 21. Durée de réservation : nombre + unité (nuit | mois)
+-- ============================================================
+-- Le client saisit une durée ; date_fin reste calculée et sert aux tests de
+-- conflit. La durée est stockée pour un affichage et un audit fiables.
+ALTER TABLE reservations ADD COLUMN IF NOT EXISTS duree_nombre INTEGER;
+ALTER TABLE reservations ADD COLUMN IF NOT EXISTS duree_unite TEXT;
+
+-- Même nom que la contrainte générée à la création (schema.sql) → guard DO.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'reservations_duree_unite_check'
+  ) THEN
+    ALTER TABLE reservations ADD CONSTRAINT reservations_duree_unite_check
+      CHECK (duree_unite IN ('nuit', 'mois'));
+  END IF;
+END $$;
+
+-- La signature de la RPC change (2 params ajoutés avec défaut) :
+-- CREATE OR REPLACE ne remplace pas une signature différente, il créerait une
+-- seconde surcharge et rendrait l'appel rpc() ambigu → on drop toutes les
+-- surcharges existantes avant de recréer.
+DROP FUNCTION IF EXISTS public.create_reservation_checked;
+
+CREATE FUNCTION public.create_reservation_checked(
+  p_id TEXT,
+  p_client_name TEXT,
+  p_client_email TEXT,
+  p_client_phone TEXT,
+  p_room_id TEXT,
+  p_room_title TEXT,
+  p_date_debut TEXT,
+  p_date_fin TEXT,
+  p_montant INTEGER,
+  p_message TEXT,
+  p_duree_nombre INTEGER DEFAULT NULL,
+  p_duree_unite TEXT DEFAULT NULL
+) RETURNS SETOF public.reservations
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  PERFORM 1 FROM public.rooms WHERE id = p_room_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'ROOM_NOT_FOUND';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM public.reservations r
+    WHERE r.room_id = p_room_id
+      AND r.statut IS DISTINCT FROM 'annulee'
+      AND r.date_debut IS NOT NULL
+      AND r.date_fin IS NOT NULL
+      AND r.date_debut < p_date_fin
+      AND r.date_fin > p_date_debut
+  ) THEN
+    RAISE EXCEPTION 'DATE_CONFLICT';
+  END IF;
+  RETURN QUERY
+  INSERT INTO public.reservations (
+    id, client_name, client_email, client_phone, room_id, room_title,
+    date_debut, date_fin, montant, duree_nombre, duree_unite, message, statut
+  ) VALUES (
+    p_id, p_client_name, p_client_email, p_client_phone, p_room_id, p_room_title,
+    p_date_debut, p_date_fin, p_montant, p_duree_nombre, p_duree_unite, p_message, 'en_attente'
+  )
+  RETURNING *;
+END;
+$$;
+
+-- Recharge le cache de schéma de PostgREST pour que rpc() voie la nouvelle
+-- signature immédiatement.
+NOTIFY pgrst, 'reload schema';

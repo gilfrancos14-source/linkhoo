@@ -366,7 +366,9 @@ export default function ClientComptePage() {
                           {r.montant ? (
                             <span className="client-compte__price">
                               {r.montant.toLocaleString('fr-FR')}
-                              <span className="client-compte__price-unit">FCFA / mois</span>
+                              <span className="client-compte__price-unit">
+                                FCFA / {r.duree_unite === 'mois' ? 'mois' : 'nuit'}
+                              </span>
                             </span>
                           ) : null}
                         </div>

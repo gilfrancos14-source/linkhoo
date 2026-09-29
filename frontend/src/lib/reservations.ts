@@ -1,4 +1,5 @@
 import { apiReservations, type ReservationData, type ClientMineReservationData } from './api';
+import type { DureeUnite } from './duration';
 
 export interface Reservation {
   id: string;
@@ -9,6 +10,8 @@ export interface Reservation {
   roomTitle: string;
   dateDebut: string;
   dateFin: string;
+  dureeNombre: number;
+  dureeUnite: DureeUnite;
   montant: number;
   message: string;
   statut: 'en_attente' | 'confirmee' | 'annulee';
@@ -43,6 +46,8 @@ function mapReservation(d: ReservationData): Reservation {
     roomTitle: d.room_title,
     dateDebut: d.date_debut,
     dateFin: d.date_fin,
+    dureeNombre: d.duree_nombre ?? 1,
+    dureeUnite: d.duree_unite ?? 'nuit',
     montant: d.montant,
     message: d.message,
     statut: d.statut,
@@ -70,6 +75,8 @@ export async function addReservation(data: Omit<Reservation, 'id' | 'createdAt' 
     room_title: data.roomTitle,
     date_debut: data.dateDebut,
     date_fin: data.dateFin,
+    duree_nombre: data.dureeNombre,
+    duree_unite: data.dureeUnite,
     montant: data.montant,
     message: data.message,
   };

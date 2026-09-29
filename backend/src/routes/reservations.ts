@@ -6,6 +6,7 @@ import { idParamsSchema } from '../validations/common';
 import { createClientLimiter } from '../utils/rateLimiters';
 import { isQualifiedGerant } from '../utils/gerantQualification';
 import { fetchAllRows } from '../utils/fetchAll';
+import { calculateMontant, unitFromPriceUnit } from '../utils/duration';
 import {
   clientReservationQuerySchema,
   reservationCheckQuerySchema,
@@ -15,23 +16,6 @@ import {
 
 const router = Router();
 const clientLimiter = createClientLimiter();
-
-// Montant recalculé côté serveur selon l'unité de la chambre :
-// '/ nuit' → nombre de nuits × prix ; '/ mois' → nombre exact de mois × prix
-function calculateMontant(priceNum: number, priceUnit: string, dateDebut: string, dateFin: string): number {
-  const start = new Date(dateDebut);
-  const end = new Date(dateFin);
-
-  if (priceUnit === '/ mois') {
-    let months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-    if (end.getDate() < start.getDate()) months -= 1;
-    return priceNum * Math.max(1, months);
-  }
-
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const nights = Math.ceil((end.getTime() - start.getTime()) / msPerDay);
-  return priceNum * Math.max(1, nights);
-}
 
 async function requireQualifiedGerant(authUserId: string): Promise<boolean> {
   const { data: gerant } = await supabaseAdmin
@@ -44,7 +28,7 @@ async function requireQualifiedGerant(authUserId: string): Promise<boolean> {
 
 router.get('/', requireClerkAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authUserId = (req as any).auth?.userId;
+    const authUserId = req.auth?.userId;
     if (!authUserId) {
       return res.status(401).json({ error: 'Non autorisé' });
     }
@@ -83,7 +67,7 @@ router.get('/', requireClerkAuth, async (req: Request, res: Response, next: Next
 // GET /api/reservations/mine — réservations du client connecté (Clerk)
 router.get('/mine', requireClerkAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authUserId = (req as any).auth?.userId;
+    const authUserId = req.auth?.userId;
     if (!authUserId) return res.status(401).json({ error: 'Non autorisé' });
 
     const { data: client } = await supabaseAdmin
@@ -96,7 +80,7 @@ router.get('/mine', requireClerkAuth, async (req: Request, res: Response, next: 
     const data = await fetchAllRows<any>((from, to) =>
       supabaseAdmin
         .from('reservations')
-        .select('id, room_id, room_title, date_debut, date_fin, montant, statut, created_at, responded_at, room:rooms(img, alt, description)')
+        .select('id, room_id, room_title, date_debut, date_fin, montant, duree_nombre, duree_unite, statut, created_at, responded_at, room:rooms(img, alt, description)')
         .eq('client_email', client.email)
         .order('created_at', { ascending: false })
         .order('id', { ascending: true })
@@ -109,7 +93,7 @@ router.get('/mine', requireClerkAuth, async (req: Request, res: Response, next: 
 
 router.get('/client', requireClerkAuth, clientLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authUserId = (req as any).auth?.userId;
+    const authUserId = req.auth?.userId;
     if (!authUserId) return res.status(401).json({ error: 'Non autorisé' });
 
     const { data: client } = await supabaseAdmin
@@ -133,7 +117,7 @@ router.get('/client', requireClerkAuth, clientLimiter, async (req: Request, res:
     const data = await fetchAllRows<any>((from, to) =>
       supabaseAdmin
         .from('reservations')
-        .select('id, room_title, date_debut, date_fin, statut, created_at')
+        .select('id, room_title, date_debut, date_fin, montant, duree_nombre, duree_unite, statut, created_at')
         .eq('client_email', client.email)
         .order('created_at', { ascending: false })
         .order('id', { ascending: true })
@@ -160,7 +144,14 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     if (!room) return res.status(404).json({ error: 'Chambre introuvable' });
     if (!room.disponible) return res.status(409).json({ error: 'Cette chambre n\'est plus disponible' });
 
-    const montant = calculateMontant(room.price_num, room.price_unit, parsedBody.data.date_debut, parsedBody.data.date_fin);
+    // L'unité facturée est celle du tarif du gérant : le client ne peut pas
+    // demander « mois » sur une chambre tarifée « / nuit » (ni l'inverse).
+    const expectedUnit = unitFromPriceUnit(room.price_unit);
+    if (parsedBody.data.duree_unite !== expectedUnit) {
+      return res.status(400).json({ error: `Cette chambre est facturée ${room.price_unit}` });
+    }
+
+    const montant = calculateMontant(room.price_num, parsedBody.data.duree_nombre);
 
     const reservationId = randomUUID();
     const { data: rpcRows, error: rpcError } = await supabaseAdmin.rpc('create_reservation_checked', {
@@ -174,6 +165,8 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       p_date_fin: parsedBody.data.date_fin,
       p_montant: montant,
       p_message: parsedBody.data.message,
+      p_duree_nombre: parsedBody.data.duree_nombre,
+      p_duree_unite: parsedBody.data.duree_unite,
     });
     if (rpcError) {
       const msg = rpcError.message || '';
@@ -216,7 +209,7 @@ router.patch('/:id', requireClerkAuth, async (req: Request, res: Response, next:
       return res.status(400).json({ error: 'Données de réservation invalides' });
     }
 
-    const authUserId = (req as any).auth?.userId;
+    const authUserId = req.auth?.userId;
     if (!authUserId) {
       return res.status(401).json({ error: 'Non autorisé' });
     }
@@ -290,7 +283,7 @@ router.post('/:id/cancel', requireClerkAuth, async (req: Request, res: Response,
       return res.status(400).json({ error: 'Identifiant invalide' });
     }
 
-    const authUserId = (req as any).auth?.userId;
+    const authUserId = req.auth?.userId;
     if (!authUserId) return res.status(401).json({ error: 'Non autorisé' });
 
     const { data: client } = await supabaseAdmin

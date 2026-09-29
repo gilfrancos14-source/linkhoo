@@ -1,3 +1,5 @@
+import type { DureeUnite } from './duration';
+
 export const API_BASE = '/api';
 
 export const REQUEST_TIMEOUT_MS = 15_000;
@@ -195,6 +197,8 @@ export interface ReservationData {
   room_title: string;
   date_debut: string;
   date_fin: string;
+  duree_nombre: number | null;
+  duree_unite: DureeUnite | null;
   montant: number;
   message: string;
   statut: 'en_attente' | 'confirmee' | 'annulee';
@@ -212,6 +216,8 @@ export interface ClientReservationData {
   room_title: string;
   date_debut: string;
   date_fin: string;
+  duree_nombre: number | null;
+  duree_unite: DureeUnite | null;
   statut: 'en_attente' | 'confirmee' | 'annulee';
   created_at: string;
 }
@@ -223,12 +229,20 @@ export interface ClientMineReservationData extends ClientReservationData {
   room?: { img: string | null; alt: string | null; description: string | null } | null;
 }
 
+export type ReservationCreatePayload = Omit<
+  ReservationData,
+  'id' | 'created_at' | 'responded_at' | 'statut' | 'duree_nombre' | 'duree_unite'
+> & {
+  duree_nombre: number;
+  duree_unite: DureeUnite;
+};
+
 export const apiReservations = {
   list: () => request<ReservationData[]>('/reservations'),
   listMine: () => request<ClientMineReservationData[]>('/reservations/mine'),
   cancelMine: (id: string) =>
     request<ClientMineReservationData>(`/reservations/${id}/cancel`, { method: 'POST' }),
-  create: (data: Omit<ReservationData, 'id' | 'created_at' | 'responded_at' | 'statut'>) => request<ReservationData>('/reservations', { method: 'POST', body: JSON.stringify(data) }),
+  create: (data: ReservationCreatePayload) => request<ReservationData>('/reservations', { method: 'POST', body: JSON.stringify(data) }),
   updateStatut: (id: string, statut: string) => request<ReservationData>(`/reservations/${id}`, { method: 'PATCH', body: JSON.stringify({ statut }) }),
   checkConflict: (roomId: string, dateDebut: string, dateFin: string, excludeId?: string) =>
     request<{ hasConflict: boolean }>(`/reservations/check?room_id=${roomId}&date_debut=${dateDebut}&date_fin=${dateFin}${excludeId ? `&exclude_id=${excludeId}` : ''}`),

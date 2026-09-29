@@ -7,35 +7,41 @@ import { fetchRoomsByMarket, fetchRoomById, type Room } from '../data/rooms';
 import { fetchCategoriesByMarket } from '../data/categories';
 import { isValidEmail } from '../utils/validators';
 import { addReservation } from '../lib/reservations';
+import {
+  DUREE_MAX_MOIS,
+  DUREE_MAX_NUIT,
+  computeDateFin,
+  isValidDateStr,
+  maxDuree,
+  nightsBetween,
+  pluralDuree,
+  type DureeUnite,
+} from '../lib/duration';
 import { apiReviews, type RoomReviewsResponse } from '../lib/api';
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkConfigured = Boolean(clerkKey && clerkKey.startsWith('pk_'));
-
-function addMonths(dateStr: string, months: number): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1 + months, d);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function countNights(dateDebut: string, dateFin: string): number {
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const nights = Math.ceil((new Date(dateFin).getTime() - new Date(dateDebut).getTime()) / msPerDay);
-  return Math.max(1, nights);
-}
 
 interface FormErrors {
   name?: string;
   email?: string;
   phone?: string;
   dateDebut?: string;
-  dateFin?: string;
+  duree?: string;
 }
 
-function validateForm(data: { name: string; email: string; phone: string; dateDebut: string; dateFin: string }, isMonthly: boolean): FormErrors {
+function initialDuree(searchParams: URLSearchParams): string {
+  const arrivee = searchParams.get('arrivee');
+  const depart = searchParams.get('depart');
+  const nights = arrivee && depart ? nightsBetween(arrivee, depart) : null;
+  if (nights && nights >= 1) return String(Math.min(nights, DUREE_MAX_NUIT));
+  return '1';
+}
+
+function validateForm(
+  data: { name: string; email: string; phone: string; dateDebut: string; duree: number },
+  unite: DureeUnite,
+): FormErrors {
   const errors: FormErrors = {};
   if (!data.name.trim()) errors.name = 'Veuillez renseigner votre nom.';
   if (!data.email.trim()) {
@@ -50,14 +56,14 @@ function validateForm(data: { name: string; email: string; phone: string; dateDe
   }
   if (!data.dateDebut) {
     errors.dateDebut = 'Veuillez choisir une date de début.';
+  } else if (!isValidDateStr(data.dateDebut)) {
+    errors.dateDebut = 'Date de début invalide.';
   }
-  if (!isMonthly) {
-    if (!data.dateFin) {
-      errors.dateFin = 'Veuillez choisir une date de fin.';
-    }
-    if (data.dateDebut && data.dateFin && new Date(data.dateFin) <= new Date(data.dateDebut)) {
-      errors.dateFin = 'La date de fin doit être après la date de début.';
-    }
+  const max = maxDuree(unite);
+  if (!Number.isInteger(data.duree) || data.duree < 1) {
+    errors.duree = 'Veuillez saisir une durée valide.';
+  } else if (data.duree > max) {
+    errors.duree = `La durée maximale est de ${max} ${unite === 'mois' ? 'mois' : 'nuits'}.`;
   }
   return errors;
 }
@@ -79,9 +85,8 @@ export default function RoomDetailPage() {
     phone: '',
     message: '',
     dateDebut: searchParams.get('arrivee') ?? '',
-    dateFin: searchParams.get('depart') ?? '',
   });
-  const [mois, setMois] = useState(1);
+  const [duree, setDuree] = useState(() => initialDuree(searchParams));
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -134,33 +139,46 @@ export default function RoomDetailPage() {
   const room = rooms.find((r) => r.id === id);
   const category = room ? categories.find((c: any) => c.id === room.category) : null;
   const isMonthly = room?.priceUnit === '/ mois';
+  const unite: DureeUnite = isMonthly ? 'mois' : 'nuit';
+  const dureeNombre = Number(duree);
+  const dureeValide = Number.isInteger(dureeNombre) && dureeNombre >= 1;
 
-  const effectiveDateFin = isMonthly && formData.dateDebut
-    ? addMonths(formData.dateDebut, mois)
-    : formData.dateFin;
+  useEffect(() => {
+    if (!isMonthly) return;
+    setDuree((prev) => {
+      const n = Number(prev);
+      if (!Number.isFinite(n) || n < 1) return '1';
+      if (n <= DUREE_MAX_MOIS) return String(Math.max(1, Math.round(n / 30)));
+      return String(DUREE_MAX_MOIS);
+    });
+  }, [isMonthly]);
 
-  const estimatedMontant = (() => {
-    if (!room || !formData.dateDebut || !effectiveDateFin) return null;
-    if (isMonthly) return room.priceNum * Math.max(1, mois);
-    return room.priceNum * countNights(formData.dateDebut, effectiveDateFin);
-  })();
+  const effectiveDateFin =
+    formData.dateDebut && dureeValide
+      ? computeDateFin(formData.dateDebut, dureeNombre, unite)
+      : '';
+
+  const estimatedMontant =
+    room && formData.dateDebut && dureeValide
+      ? room.priceNum * dureeNombre
+      : null;
 
   const handleBlur = useCallback((field: string) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
-    const partialData = { name: formData.name, email: formData.email, phone: formData.phone, dateDebut: formData.dateDebut, dateFin: effectiveDateFin };
-    const validation = validateForm(partialData, Boolean(isMonthly));
+    const partialData = { name: formData.name, email: formData.email, phone: formData.phone, dateDebut: formData.dateDebut, duree: dureeNombre };
+    const validation = validateForm(partialData, unite);
     if (field in validation) {
       setErrors((prev) => ({ ...prev, [field]: validation[field as keyof FormErrors] }));
     } else {
       setErrors((prev) => { const next = { ...prev }; delete next[field as keyof FormErrors]; return next; });
     }
-  }, [formData, effectiveDateFin, isMonthly]);
+  }, [formData, dureeNombre, unite]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const validation = validateForm({ ...formData, dateFin: effectiveDateFin }, Boolean(isMonthly));
+    const validation = validateForm({ ...formData, duree: dureeNombre }, unite);
     setErrors(validation);
-    setTouched({ name: true, email: true, phone: true, dateDebut: true, dateFin: true });
+    setTouched({ name: true, email: true, phone: true, dateDebut: true, duree: true });
     if (Object.keys(validation).length > 0) return;
     if (!room) return;
 
@@ -176,6 +194,8 @@ export default function RoomDetailPage() {
         roomTitle: room.title,
         dateDebut: formData.dateDebut,
         dateFin: effectiveDateFin,
+        dureeNombre,
+        dureeUnite: unite,
         montant: estimatedMontant ?? room.priceNum,
         message: formData.message,
       });
@@ -487,47 +507,49 @@ export default function RoomDetailPage() {
                       <p className="room-detail__field-error" id="rd-date-debut-error" role="alert">{errors.dateDebut}</p>
                     )}
                   </div>
-                  {isMonthly ? (
-                    <div className="room-detail__field">
-                      <label htmlFor="rd-mois">Durée (mois) <span aria-hidden="true">*</span></label>
-                      <select
-                        id="rd-mois"
-                        required
-                        aria-required="true"
-                        value={mois}
-                        onChange={(e) => setMois(Number(e.target.value))}
-                      >
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
-                          <option key={n} value={n}>{n} mois</option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : (
-                    <div className="room-detail__field">
-                      <label htmlFor="rd-date-fin">Date de fin <span aria-hidden="true">*</span></label>
-                      <input
-                        id="rd-date-fin"
-                        type="date"
-                        required
-                        aria-required="true"
-                        aria-invalid={!!errors.dateFin && touched.dateFin}
-                        aria-describedby={errors.dateFin ? 'rd-date-fin-error' : undefined}
-                        value={formData.dateFin}
-                        onChange={(e) => setFormData({ ...formData, dateFin: e.target.value })}
-                        onBlur={() => handleBlur('dateFin')}
-                      />
-                      {errors.dateFin && touched.dateFin && (
-                        <p className="room-detail__field-error" id="rd-date-fin-error" role="alert">{errors.dateFin}</p>
-                      )}
-                    </div>
-                  )}
+                  <div className="room-detail__field">
+                    <label htmlFor="rd-duree">Durée <span aria-hidden="true">*</span></label>
+                    <input
+                      id="rd-duree"
+                      type="number"
+                      min={1}
+                      max={maxDuree(unite)}
+                      step={1}
+                      required
+                      aria-required="true"
+                      aria-invalid={!!errors.duree && touched.duree}
+                      aria-describedby={errors.duree ? 'rd-duree-error' : undefined}
+                      value={duree}
+                      onChange={(e) => setDuree(e.target.value)}
+                      onBlur={() => handleBlur('duree')}
+                    />
+                    {errors.duree && touched.duree && (
+                      <p className="room-detail__field-error" id="rd-duree-error" role="alert">{errors.duree}</p>
+                    )}
+                  </div>
+                  <div className="room-detail__field">
+                    <label htmlFor="rd-unite">Unité <span aria-hidden="true">*</span></label>
+                    <select id="rd-unite" value={unite} disabled aria-required="true">
+                      <option value={unite}>{unite === 'mois' ? 'mois' : 'nuit'}</option>
+                    </select>
+                  </div>
                 </div>
+                {effectiveDateFin && (
+                  <div className="room-detail__field">
+                    <label htmlFor="rd-date-fin">Date de fin (calculée)</label>
+                    <input
+                      id="rd-date-fin"
+                      type="date"
+                      value={effectiveDateFin}
+                      readOnly
+                      aria-readonly="true"
+                    />
+                  </div>
+                )}
                 {effectiveDateFin && estimatedMontant !== null && (
                   <p className="room-detail__field" style={{ margin: 0, fontSize: '14px', color: 'var(--ink-soft)' }}>
-                    {isMonthly
-                      ? `Du ${formData.dateDebut} au ${effectiveDateFin} · ${mois} mois`
-                      : `Du ${formData.dateDebut} au ${effectiveDateFin} · ${countNights(formData.dateDebut, effectiveDateFin)} nuit(s)`}
-                    {''} — estimation : <strong>{estimatedMontant.toLocaleString('fr-FR')} FCFA</strong>
+                    Du {formData.dateDebut} au {effectiveDateFin} · {pluralDuree(dureeNombre, unite)} — estimation :{' '}
+                    <strong>{estimatedMontant.toLocaleString('fr-FR')} FCFA</strong>
                   </p>
                 )}
                 <div className="room-detail__field">
