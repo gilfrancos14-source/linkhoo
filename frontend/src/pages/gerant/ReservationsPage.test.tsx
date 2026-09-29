@@ -213,19 +213,17 @@ describe('ReservationsPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('garde la page vide mais affichée quand la liste échoue pour une autre raison', async () => {
+  it('affiche un message d’échec quand la liste échoue pour une autre raison', async () => {
     mocks.getReservations.mockRejectedValue(new Error('réseau coupé'));
 
     renderReservations();
 
-    // Comportement actuel : l'erreur est avalée, aucune mention d'échec.
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('réseau coupé');
     expect(
       await screen.findByText('Aucune réservation trouvée'),
     ).toBeInTheDocument();
     expect(screen.queryByText('Tableau de bord gérant')).not.toBeInTheDocument();
-    expect(
-      screen.queryByText('réseau coupé'),
-    ).not.toBeInTheDocument();
   });
 
   it('affiche les réservations avec dates, montant et statut', async () => {

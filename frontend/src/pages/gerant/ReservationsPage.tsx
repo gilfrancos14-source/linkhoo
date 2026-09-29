@@ -22,6 +22,7 @@ export default function ReservationsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [gerant, setGerant] = useState<GerantData | null>(null);
   const [accessDenied, setAccessDenied] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const itemsPerPage = 8;
 
   const isQualified = !!gerant?.is_verified
@@ -43,6 +44,10 @@ export default function ReservationsPage() {
       const message = err instanceof Error ? err.message : '';
       if (message.includes("gérées par l'administrateur") || message.includes('403')) {
         setAccessDenied(true);
+      } else {
+        // Hors refus d'accès, on n'avale pas l'échec : la page resterait
+        // vide sans explication.
+        setLoadError(message || 'Impossible de charger vos réservations.');
       }
     } finally {
       setLoading(false);
@@ -132,6 +137,10 @@ export default function ReservationsPage() {
           Montant cumulé (confirmées) : <strong>{totalRevenu.toLocaleString()} FCFA</strong>
         </span>
       </div>
+
+      {loadError && (
+        <p className="verif-alert verif-alert--danger" role="alert">{loadError}</p>
+      )}
 
       <div className="admin-filters">
         <input

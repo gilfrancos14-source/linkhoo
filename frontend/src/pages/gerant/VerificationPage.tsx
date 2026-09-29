@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useMarket } from '../../contexts/MarketContext';
 import { apiGerants, apiUpload, request, type GerantData, type VerificationDocument, type VerificationStatusResponse } from '../../lib/api';
@@ -59,6 +59,7 @@ export default function VerificationPage() {
   const [dragging, setDragging] = useState<DocType | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const confirmRanRef = useRef(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [address, setAddress] = useState<AddressState>({
@@ -291,9 +292,14 @@ export default function VerificationPage() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('id') && gerant) {
-      handleConfirmPayment();
-    }
+    const transactionId = urlParams.get('id');
+    if (!transactionId || !gerant) return;
+    // Verrou : loadData() rappelé après la confirmation crée un nouvel objet
+    // gerant, ce qui relancerait l’effet et reconfirmerait en boucle tant que
+    // ?id= reste dans l’URL.
+    if (confirmRanRef.current) return;
+    confirmRanRef.current = true;
+    handleConfirmPayment();
   }, [gerant]);
 
   const hasBothDocs = Boolean(uploads.id_card_front.uploaded && uploads.id_card_back.uploaded);

@@ -615,18 +615,22 @@ describe('ClientComptePage — appels réseau', () => {
     expect(mocks.listMine).toHaveBeenCalledTimes(1);
   });
 
-  it('continue de fonctionner si la liste des avis échoue', async () => {
+  it('masque les invitations à noter quand la liste des avis échoue', async () => {
     mocks.listMine.mockRejectedValue(new Error('404'));
 
     await renderLoaded();
 
     expect(await screen.findByText('Suite vue mer')).toBeInTheDocument();
-    // Sans avis chargés, les deux séjours confirmés (« Suite vue mer » et
-    // « Chambre vue ») redeviennent notables : le bandeau affiche 2 et la page
-    // continue de fonctionner sans afficher d'erreur.
+    // Sans avis, on ignore quels séjours sont déjà notés : on n'annonce ni de
+    // compte de séjours notables, ni de bouton « Laisser un avis » (risque de
+    // doublon), mais on explique l'état dégradé — sans page en erreur.
     expect(
-      await screen.findByText('Vous avez 2 séjour(s) confirmé(s) que vous pouvez noter.'),
+      await screen.findByText(/Impossible de charger vos avis/),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Vous avez \d+ séjour\(s\) confirmé\(s\)/),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Laisser un avis' })).not.toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 

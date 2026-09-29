@@ -103,6 +103,7 @@ export default function ClientComptePage() {
   const [tab, setTab] = useState<Tab>('reservations');
   const [reservations, setReservations] = useState<ClientMineReservationData[]>([]);
   const [reviews, setReviews] = useState<ReviewData[]>([]);
+  const [reviewsError, setReviewsError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -133,10 +134,14 @@ export default function ClientComptePage() {
     try {
       const [res, revs] = await Promise.all([
         getMyReservations(),
-        apiReviews.listMine().catch(() => [] as ReviewData[]),
+        apiReviews
+          .listMine()
+          .then((loaded) => ({ loaded, ok: true }))
+          .catch(() => ({ loaded: [] as ReviewData[], ok: false })),
       ]);
       setReservations(res);
-      setReviews(revs);
+      setReviews(revs.loaded);
+      setReviewsError(!revs.ok);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Impossible de charger vos données.');
     } finally {
@@ -320,7 +325,7 @@ export default function ClientComptePage() {
             ) : (
               <div className="client-compte__list">
                 {reservations.map((r) => {
-                  const canReview = reviewable.some((x) => x.id === r.id);
+                  const canReview = !reviewsError && reviewable.some((x) => x.id === r.id);
                   const isReviewed = reviewedReservationIds.has(r.id);
                   const statutColor = statutColors[r.statut] || 'var(--ink-soft)';
                   return (
@@ -404,7 +409,14 @@ export default function ClientComptePage() {
               </div>
             )}
 
-            {reviewable.length > 0 && !reviewForm && (
+            {reviewsError && (
+              <p className="client-compte__error" role="status">
+                Impossible de charger vos avis : le bouton « Laisser un avis » est masqué
+                pour éviter de publier deux fois le même séjour.
+              </p>
+            )}
+
+            {!reviewsError && reviewable.length > 0 && !reviewForm && (
               <div className="client-compte__hint">
                 <span className="client-compte__hint-icon"><Glyph>{glyphStar}</Glyph></span>
                 <p>Vous avez {reviewable.length} séjour(s) confirmé(s) que vous pouvez noter.</p>

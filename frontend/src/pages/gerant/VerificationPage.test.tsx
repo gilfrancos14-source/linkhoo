@@ -808,6 +808,23 @@ describe('VerificationPage — soumission et paiement', () => {
     expect(mocks.getMe).toHaveBeenCalledTimes(2);
   });
 
+  it('ne confirme qu’une seule fois quand getMe renvoie un objet neuf à chaque appel', async () => {
+    // En production getMe crée un nouvel objet : l’effet [gerant] se relance
+    // à chaque rechargement et reconfirme indéfiniment tant que ?id= reste.
+    window.history.replaceState({}, '', '?id=42');
+    mocks.getMe.mockImplementation(async () => ({ ...makeGerant() }));
+
+    await renderLoaded();
+
+    await waitFor(() => expect(mocks.getMe).toHaveBeenCalledTimes(2));
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(mocks.confirmVerification).toHaveBeenCalledTimes(1);
+    expect(mocks.getMe).toHaveBeenCalledTimes(2);
+    expect(
+      await screen.findByText('Paiement confirmé. Votre dossier passe en examen.'),
+    ).toBeInTheDocument();
+  });
+
   it('affiche l’état de confirmation pendant l’appel', async () => {
     mocks.confirmVerification.mockImplementation(() => new Promise(() => {}));
     window.history.replaceState({}, '', '?id=7');
