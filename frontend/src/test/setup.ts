@@ -18,3 +18,17 @@ if (!('IntersectionObserver' in globalThis)) {
 if (!window.scrollTo) {
   window.scrollTo = (() => {}) as typeof window.scrollTo;
 }
+
+// Les suites ne doivent pas dépendre du .env local : un clone vierge et la CI
+// n'ont pas de frontend/.env, Clerk serait alors déclaré non configuré et une
+// vingtaine de tests tomberaient. Valeur de clé de développement (publique)
+// identique à celle de .env, lue par import.meta.env via process.env.
+const nodeProcess = (
+  globalThis as {
+    process?: { env: Record<string, string | undefined> };
+  }
+).process;
+if (nodeProcess && !nodeProcess.env.VITE_CLERK_PUBLISHABLE_KEY) {
+  nodeProcess.env.VITE_CLERK_PUBLISHABLE_KEY =
+    'pk_test_ZXBpYy1zcG9uZ2UtODkzMy5jbGVyay5hY2NvdW50cy5kZXYk';
+}

@@ -146,6 +146,11 @@ function renderPage(entry = '/ci/chambre/r1') {
 async function renderLoaded(entry = '/ci/chambre/r1') {
   const view = renderPage(entry);
   await screen.findByRole('heading', { level: 1, name: 'Suite vue mer' });
+  // Le titre apparaît dès le commit de chargement, avant les effets passifs
+  // (dont la conversion nuit → mois qui réécrit la durée). Sans ce flush, un
+  // test qui tape dans la durée immédiatement peut se faire écraser par cet
+  // effet quand la machine est chargée : la valeur atterrit à 24 au lieu de 30.
+  await act(async () => {});
   return view;
 }
 
