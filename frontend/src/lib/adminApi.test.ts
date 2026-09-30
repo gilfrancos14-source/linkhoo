@@ -189,6 +189,200 @@ describe('invalidation du cache public', () => {
   });
 });
 
+describe('apiAdmin — endpoints back-office', () => {
+  beforeEach(() => {
+    setAdminToken('jwt-admin');
+  });
+
+  it('getGerants construit la query string market/verification_status', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse([]));
+
+    await apiAdmin.getGerants({ market: 'CI', verification_status: 'pending' });
+    expect(firstCall().url).toBe('/api/admin/gerants?market=CI&verification_status=pending');
+    expect(firstCall().init.method).toBeUndefined();
+
+    fetchMock.mockResolvedValueOnce(jsonResponse([]));
+    await apiAdmin.getGerants();
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/admin/gerants');
+  });
+
+  it('getReservations construit la query string statut/search', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse([]));
+
+    await apiAdmin.getReservations({ statut: 'confirmee', search: 'akou' });
+    expect(firstCall().url).toBe('/api/admin/reservations?statut=confirmee&search=akou');
+
+    fetchMock.mockResolvedValueOnce(jsonResponse([]));
+    await apiAdmin.getReservations();
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/admin/reservations');
+  });
+
+  it('getBanners construit la query string market/section', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse([]));
+
+    await apiAdmin.getBanners('BJ', 'events');
+    expect(firstCall().url).toBe('/api/banners?market=BJ&section=events');
+
+    fetchMock.mockResolvedValueOnce(jsonResponse([]));
+    await apiAdmin.getBanners();
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/banners');
+  });
+
+  it('getEvents force include_past=1 pour le back-office', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse([]));
+
+    await apiAdmin.getEvents('CI');
+
+    const { url } = firstCall();
+    expect(url).toBe('/api/events?market=CI&include_past=1');
+  });
+
+  it('changePassword envoie les deux mots de passe en JSON', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ message: 'ok' }));
+
+    await apiAdmin.changePassword('ancien', 'nouveau');
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/admin/change-password');
+    expect(init.method).toBe('POST');
+    expect(init.body).toBe(JSON.stringify({ currentPassword: 'ancien', newPassword: 'nouveau' }));
+  });
+
+  it('reviewDocument PATCH le verdict avec le motif de rejet', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'doc-1', status: 'rejected' }));
+
+    await apiAdmin.reviewDocument('doc-1', 'rejected', 'Photo floue');
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/admin/documents/doc-1/review');
+    expect(init.method).toBe('PATCH');
+    expect(init.body).toBe(JSON.stringify({ status: 'rejected', rejection_reason: 'Photo floue' }));
+  });
+
+  it('rejectGerantVerification transmet le motif de refus', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'g1' }));
+
+    await apiAdmin.rejectGerantVerification('g1', 'Pièces incomplètes');
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/admin/gerants/g1/reject-verification');
+    expect(init.method).toBe('PATCH');
+    expect(init.body).toBe(JSON.stringify({ rejection_reason: 'Pièces incomplètes' }));
+  });
+
+  it('createBanner envoie les champs de la bannière', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'b1' }));
+
+    await apiAdmin.createBanner({
+      section: 'popular',
+      img: '/img/a.webp',
+      alt: 'Appartement',
+      link: '/ci/logement/1',
+      market: 'CI',
+      order: 1,
+    });
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/banners');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(String(init.body))).toMatchObject({ section: 'popular', market: 'CI', order: 1 });
+  });
+
+  it('updateBanner PUT les champs modifiés', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'b1' }));
+
+    await apiAdmin.updateBanner('b1', { alt: 'Nouvel alt', order: 3 });
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/banners/b1');
+    expect(init.method).toBe('PUT');
+    expect(init.body).toBe(JSON.stringify({ alt: 'Nouvel alt', order: 3 }));
+  });
+
+  it('updateEvent PUT les champs modifiés', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'e1' }));
+
+    await apiAdmin.updateEvent('e1', { title: 'Nouveau titre' });
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/events/e1');
+    expect(init.method).toBe('PUT');
+    expect(init.body).toBe(JSON.stringify({ title: 'Nouveau titre' }));
+  });
+
+  it('deleteEvent DELETE la ressource', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 200 }));
+
+    await apiAdmin.deleteEvent('e1');
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/events/e1');
+    expect(init.method).toBe('DELETE');
+    expect(clearCacheMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('les mutations gérant utilisent les verbes PATCH/POST attendus', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(jsonResponse({ id: 'g1' })));
+
+    await apiAdmin.revokeGerantVerification('g1');
+    expect(firstCall()).toMatchObject({ url: '/api/admin/gerants/g1/revoke-verification' });
+    expect(firstCall().init.method).toBe('PATCH');
+
+    await apiAdmin.startGerantReview('g1');
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/admin/gerants/g1/start-review');
+    expect(fetchMock.mock.calls[1][1]?.method).toBe('PATCH');
+
+    await apiAdmin.approveGerantVerification('g1');
+    expect(fetchMock.mock.calls[2][0]).toBe('/api/admin/gerants/g1/approve-verification');
+    expect(fetchMock.mock.calls[2][1]?.method).toBe('PATCH');
+
+    await apiAdmin.checkAvailability('res-1');
+    expect(fetchMock.mock.calls[3][0]).toBe('/api/admin/reservations/res-1/check-availability');
+    expect(fetchMock.mock.calls[3][1]?.method).toBe('POST');
+  });
+
+  it('getVerificationDocuments et getNotifications ciblent les bonnes URLs', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(jsonResponse([])));
+
+    await apiAdmin.getVerificationDocuments('g1');
+    expect(firstCall().url).toBe('/api/admin/gerants/g1/documents');
+
+    await apiAdmin.getNotifications();
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/admin/notifications');
+    expect(fetchMock.mock.calls[1][1]?.method).toBeUndefined();
+  });
+
+  it('markNotificationRead PATCH la notification lue', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 200 }));
+
+    await apiAdmin.markNotificationRead('n1');
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/admin/notifications/n1/read');
+    expect(init.method).toBe('PATCH');
+  });
+
+  it('updateRoomPromoGroup PATCH la promotion de la chambre', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'room-1' }));
+
+    await apiAdmin.updateRoomPromoGroup('room-1', {
+      promo_group: 'ete-2026',
+      promo_start: '2026-06-01',
+      promo_end: '2026-08-31',
+    });
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/admin/rooms/room-1/promo-group');
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(String(init.body))).toEqual({
+      promo_group: 'ete-2026',
+      promo_start: '2026-06-01',
+      promo_end: '2026-08-31',
+    });
+    expect(clearCacheMock).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('apiAdmin.uploadFile', () => {
   it('envoie le fichier en FormData et renvoie url + path', async () => {
     setAdminToken('jwt-admin');

@@ -52,7 +52,7 @@ const validDoc = {
   file_size: 12345,
 };
 
-let gerants: FakeChain;
+let gerants: FakeChain | FakeChain[];
 let clients: FakeChain;
 let documents: FakeChain;
 let notifications: FakeChain;
@@ -127,7 +127,7 @@ describe('POST /api/gerants', () => {
 
   it('201 : crée le profil gérant', async () => {
     const created = fakeChain({ data: { id: 'g1', ...validGerant }, error: null });
-    stubTables({ gerants: [gerants, created] });
+    stubTables({ gerants: [fakeChain({ data: null, error: null }), created] });
 
     const res = await request(app)
       .post('/api/gerants')
@@ -497,6 +497,50 @@ describe('POST /api/gerants/:id/submit-verification', () => {
     expect(res.status).toBe(400);
   });
 
+  it('400 quand le profil gérant na pas demail', async () => {
+    gerants = fakeChain({ data: { ...readyGerant, email: null }, error: null });
+    documents = fakeChain({
+      data: [{ document_type: 'id_card_front' }, { document_type: 'id_card_back' }],
+      error: null,
+    });
+    stubTables({});
+
+    const res = await request(app)
+      .post('/api/gerants/g1/submit-verification')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Email gérant manquant. Mettez à jour votre profil.');
+    expect(Transaction.create).not.toHaveBeenCalled();
+  });
+
+  it('200 : construit lURL de retour à partir de lentête Origin', async () => {
+    gerants = fakeChain({ data: readyGerant, error: null });
+    documents = fakeChain({
+      data: [{ document_type: 'id_card_front' }, { document_type: 'id_card_back' }],
+      error: null,
+    });
+    stubTables({});
+    vi.mocked(Transaction.create).mockResolvedValue({
+      id: 43,
+      generateToken: async () => ({ token: 'tok_xyz' }),
+    } as never);
+
+    const res = await request(app)
+      .post('/api/gerants/g1/submit-verification')
+      .set('Authorization', clerkBearer('user_1'))
+      .set('Origin', 'https://lienhebergement.ci')
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(Transaction.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        callback_url: 'https://lienhebergement.ci/ci/gerant/verification/success',
+      }),
+    );
+  });
+
   it('200 : crée la transaction FedaPay de vérification', async () => {
     gerants = fakeChain({ data: readyGerant, error: null });
     documents = fakeChain({
@@ -528,6 +572,231 @@ describe('POST /api/gerants/:id/submit-verification', () => {
   });
 });
 
+describe('POST /api/gerants/:id/confirm-verification', () => {
+  const transaction = (overrides: Record<string, unknown> = {}) => ({
+    id: 42,
+    amount: 2000,
+    status: 'approved',
+    metadata: { clerk_user_id: 'user_1', type: 'verification' },
+    customer: { email: 'gerant@example.ci' },
+    ...overrides,
+  });
+
+  /** gerants est appelé quatre fois : fetch, état, update, retour final. */
+  function stubGerantSequence(currentStatus: string): void {
+    const finalGerant = { data: { id: 'g1', verification_status: 'pending' }, error: null };
+    gerants = [
+      fakeChain({ data: { clerk_user_id: 'user_1', market: 'CI' }, error: null }),
+      fakeChain({ data: { verification_status: currentStatus }, error: null }),
+      fakeChain(finalGerant),
+      fakeChain(finalGerant),
+    ];
+    stubTables({});
+  }
+
+  function confirm(payload: unknown): request.Test {
+    return request(app)
+      .post('/api/gerants/g1/confirm-verification')
+      .set('Authorization', clerkBearer('user_1'))
+      .send(payload as Record<string, unknown>);
+  }
+
+  it('401 sans token', async () => {
+    const res = await request(app).post('/api/gerants/g1/confirm-verification').send({ transaction_id: 42 });
+    expect(res.status).toBe(401);
+  });
+
+  it('400 quand lidentifiant du dossier dépasse la longueur maximale', async () => {
+    const res = await request(app)
+      .post(`/api/gerants/${'x'.repeat(201)}/confirm-verification`)
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ transaction_id: 42 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Identifiant invalide');
+    expect(Transaction.retrieve).not.toHaveBeenCalled();
+  });
+
+  it('400 sans transaction_id', async () => {
+    const res = await confirm({});
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Transaction ID invalide');
+  });
+
+  it('400 quand transaction_id nest pas un entier strictement positif', async () => {
+    for (const transactionId of [-5, 0, 'abc', null]) {
+      const res = await confirm({ transaction_id: transactionId });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe('Transaction ID invalide');
+    }
+    expect(Transaction.retrieve).not.toHaveBeenCalled();
+  });
+
+  it('404 quand le gérant nexiste pas', async () => {
+    gerants = [fakeChain({ data: null, error: null })];
+    stubTables({});
+
+    const res = await confirm({ transaction_id: 42 });
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('Gérant introuvable');
+    expect(Transaction.retrieve).not.toHaveBeenCalled();
+  });
+
+  it('403 quand le dossier appartient à un autre gérant', async () => {
+    gerants = [fakeChain({ data: { clerk_user_id: 'autre_user', market: 'CI' }, error: null })];
+    stubTables({});
+
+    const res = await confirm({ transaction_id: 42 });
+    expect(res.status).toBe(403);
+    expect(Transaction.retrieve).not.toHaveBeenCalled();
+  });
+
+  it('404 quand FedaPay ne connaît pas la transaction', async () => {
+    stubGerantSequence('none');
+    vi.mocked(Transaction.retrieve).mockRejectedValue(
+      Object.assign(new Error('Resource not found'), { httpStatus: 404 }),
+    );
+
+    const res = await confirm({ transaction_id: 42 });
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('Transaction introuvable');
+  });
+
+  it('500 quand FedaPay échoue pour une autre raison', async () => {
+    stubGerantSequence('none');
+    vi.mocked(Transaction.retrieve).mockRejectedValue(new Error('réseau FedaPay'));
+
+    const res = await confirm({ transaction_id: 42 });
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Erreur interne du serveur');
+  });
+
+  it('403 quand la transaction nexiste pas en méta pour lutilisateur', async () => {
+    stubGerantSequence('none');
+    vi.mocked(Transaction.retrieve).mockResolvedValue(
+      transaction({ metadata: { clerk_user_id: 'autre_user', type: 'verification' } }) as never,
+    );
+
+    const res = await confirm({ transaction_id: 42 });
+    expect(res.status).toBe(403);
+    expect(res.body.error).toBe('Cette transaction ne vous appartient pas');
+  });
+
+  it('400 quand la transaction nest pas de type vérification', async () => {
+    stubGerantSequence('none');
+    vi.mocked(Transaction.retrieve).mockResolvedValue(
+      transaction({ metadata: { clerk_user_id: 'user_1', type: 'premium_subscription' } }) as never,
+    );
+
+    const res = await confirm({ transaction_id: 42 });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Transaction non éligible à la vérification');
+  });
+
+  it('400 quand le montant est inférieur au tarif de vérification', async () => {
+    stubGerantSequence('none');
+    vi.mocked(Transaction.retrieve).mockResolvedValue(transaction({ amount: 1000 }) as never);
+
+    const res = await confirm({ transaction_id: 42 });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Montant de transaction insuffisant');
+  });
+
+  it('400 quand le paiement nenst pas encore approuvé (statut brut vide)', async () => {
+    stubGerantSequence('none');
+    vi.mocked(Transaction.retrieve).mockResolvedValue(transaction({ status: '' }) as never);
+
+    const res = await confirm({ transaction_id: 42 });
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      error: 'Paiement en attente de confirmation',
+      status: 'pending',
+    });
+  });
+
+  it('400 quand le paiement est décliné', async () => {
+    stubGerantSequence('none');
+    vi.mocked(Transaction.retrieve).mockResolvedValue(transaction({ status: 'declined' }) as never);
+
+    const res = await confirm({ transaction_id: 42 });
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: 'Paiement declined', status: 'declined' });
+  });
+
+  it('200 sans remise à zéro quand le dossier est déjà en cours dexamen', async () => {
+    stubGerantSequence('pending');
+    vi.mocked(Transaction.retrieve).mockResolvedValue(transaction() as never);
+
+    const res = await confirm({ transaction_id: 42 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(notifications.insert).not.toHaveBeenCalled();
+    expect((gerants as FakeChain[])[2].update).not.toHaveBeenCalled();
+  });
+
+  it('500 quand la lecture du dossier échoue en base', async () => {
+    gerants = [fakeChain({ data: null, error: { message: 'connexion perdue' } })];
+    stubTables({});
+
+    const res = await confirm({ transaction_id: 42 });
+
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Erreur interne du serveur');
+    expect(Transaction.retrieve).not.toHaveBeenCalled();
+  });
+
+  it('500 quand lexécution de la mise à jour échoue en base', async () => {
+    gerants = [
+      fakeChain({ data: { clerk_user_id: 'user_1', market: 'CI' }, error: null }),
+      fakeChain({ data: { verification_status: 'none' }, error: null }),
+      fakeChain({ data: null, error: { message: 'connexion perdue' } }),
+    ];
+    stubTables({});
+    vi.mocked(Transaction.retrieve).mockResolvedValue(transaction() as never);
+
+    const res = await confirm({ transaction_id: 42 });
+
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Erreur interne du serveur');
+  });
+
+  it('404 quand la mise à jour vise une ressource disparue', async () => {
+    gerants = [
+      fakeChain({ data: { clerk_user_id: 'user_1', market: 'CI' }, error: null }),
+      fakeChain({ data: { verification_status: 'none' }, error: null }),
+      fakeChain({ data: null, error: { message: 'not found' } }),
+    ];
+    stubTables({});
+    vi.mocked(Transaction.retrieve).mockResolvedValue(transaction() as never);
+
+    const res = await confirm({ transaction_id: 42 });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('Transaction introuvable');
+  });
+
+  it('200 : passe le dossier en attente, journalise la transaction et notifie', async () => {
+    stubGerantSequence('none');
+    vi.mocked(Transaction.retrieve).mockResolvedValue(transaction() as never);
+
+    const res = await confirm({ transaction_id: 42 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(Transaction.retrieve).toHaveBeenCalledWith(42);
+    expect((gerants as FakeChain[])[2].update).toHaveBeenCalledWith(
+      expect.objectContaining({ verification_status: 'pending' }),
+    );
+    expect(notifications.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'verification_submitted',
+        gerant_id: 'user_1',
+      }),
+    );
+  });
+});
+
 describe('GET /api/gerants/:id/verification-status', () => {
   it('403 si le dossier appartient à un autre gérant', async () => {
     gerants = fakeChain({ data: { clerk_user_id: 'autre_user' }, error: null });
@@ -537,6 +806,52 @@ describe('GET /api/gerants/:id/verification-status', () => {
       .get('/api/gerants/g1/verification-status')
       .set('Authorization', clerkBearer('user_1'));
     expect(res.status).toBe(403);
+  });
+
+  it('400 quand lidentifiant du dossier dépasse la longueur maximale', async () => {
+    const res = await request(app)
+      .get(`/api/gerants/${'x'.repeat(201)}/verification-status`)
+      .set('Authorization', clerkBearer('user_1'));
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Identifiant invalide');
+  });
+
+  it('404 quand le gérant nexiste pas', async () => {
+    gerants = [fakeChain({ data: null, error: null })];
+    stubTables({});
+
+    const res = await request(app)
+      .get('/api/gerants/g1/verification-status')
+      .set('Authorization', clerkBearer('user_1'));
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe('Gérant introuvable');
+  });
+
+  it('500 quand la lecture du dossier échoue en base', async () => {
+    gerants = [fakeChain({ data: null, error: { message: 'connexion perdue' } })];
+    stubTables({});
+
+    const res = await request(app)
+      .get('/api/gerants/g1/verification-status')
+      .set('Authorization', clerkBearer('user_1'));
+
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Erreur interne du serveur');
+  });
+
+  it('500 quand la lecture des documents échoue en base', async () => {
+    gerants = [fakeChain({ data: { clerk_user_id: 'user_1', verification_status: 'none' }, error: null })];
+    documents = fakeChain({ data: null, error: { message: 'connexion perdue' } });
+    stubTables({});
+
+    const res = await request(app)
+      .get('/api/gerants/g1/verification-status')
+      .set('Authorization', clerkBearer('user_1'));
+
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Erreur interne du serveur');
   });
 
   it('200 : renvoie létat de la demande et les documents', async () => {

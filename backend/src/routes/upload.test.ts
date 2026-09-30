@@ -237,6 +237,132 @@ describe('POST /api/upload — mise en ligne', () => {
   });
 });
 
+describe('POST /api/upload — signatures dart', () => {
+  beforeEach(() => {
+    gerants = fakeChain({ data: { id: 'g1' }, error: null });
+    useSupabaseTables(supabaseAdmin.from, { gerants });
+  });
+
+  const JPEG_SIGNATURE = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46]);
+  const GIF87A = Buffer.from('GIF87a\x01\x00\x01\x00\x80\x00\x00', 'binary');
+  const GIF89A = Buffer.from('GIF89a\x01\x00\x01\x00\x80\x00\x00', 'binary');
+  const WEBP = Buffer.from('RIFF\x24\x00\x00\x00WEBPVP8 ', 'binary');
+
+  it('200 : une image JPEG dont la signature correspond', async () => {
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', clerkBearer('user_1'))
+      .attach('file', JPEG_SIGNATURE, { filename: 'photo.jpg', contentType: 'image/jpeg' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.path).toMatch(/\.webp$/);
+  });
+
+  it('200 : un GIF87a dont la signature correspond', async () => {
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', clerkBearer('user_1'))
+      .attach('file', GIF87A, { filename: 'anim.gif', contentType: 'image/gif' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.path).toMatch(/\.webp$/);
+  });
+
+  it('200 : un GIF89a dont la signature correspond', async () => {
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', clerkBearer('user_1'))
+      .attach('file', GIF89A, { filename: 'anim2.gif', contentType: 'image/gif' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.path).toMatch(/\.webp$/);
+  });
+
+  it('200 : un WebP dont lentête RIFF/WEBP correspond', async () => {
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', clerkBearer('user_1'))
+      .attach('file', WEBP, { filename: 'image.webp', contentType: 'image/webp' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.path).toMatch(/\.webp$/);
+  });
+
+  it('400 : une image JPEG dont la signature ne correspond pas', async () => {
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', clerkBearer('user_1'))
+      .attach('file', Buffer.from('pas-un-jpeg'), {
+        filename: 'photo.jpg',
+        contentType: 'image/jpeg',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Le fichier envoyé n'est pas un fichier valide");
+  });
+
+  it('400 : un fichier dont lentête RIFF ne correspond pas', async () => {
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', clerkBearer('user_1'))
+      .attach('file', Buffer.from('NOPE\x00\x00\x00\x00WEBP'), {
+        filename: 'image.webp',
+        contentType: 'image/webp',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe("Le fichier envoyé n'est pas un fichier valide");
+  });
+});
+
+describe('POST /api/upload — échecs des artefacts', () => {
+  beforeEach(() => {
+    gerants = fakeChain({ data: { id: 'g1' }, error: null });
+    useSupabaseTables(supabaseAdmin.from, { gerants });
+  });
+
+  it('400 sur un champ de fichier inattendu (erreur multer)', async () => {
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', clerkBearer('user_1'))
+      .attach('photo', PNG_HEADER, { filename: 'photo.png', contentType: 'image/png' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Fichier invalide');
+  });
+
+  it('500 quand le téléversement vers le bucket échoue', async () => {
+    vi.mocked(supabaseStorage().upload).mockResolvedValueOnce({
+      data: null,
+      error: { message: 'quota dépassé' },
+    } as never);
+
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', clerkBearer('user_1'))
+      .attach('file', PNG_HEADER, { filename: 'photo.png', contentType: 'image/png' });
+
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Erreur interne du serveur');
+  });
+
+  it('500 quand la génération de lURL signée échoue', async () => {
+    vi.mocked(supabaseStorage().createSignedUrl).mockResolvedValueOnce({
+      data: null,
+      error: { message: 'bucket verrouillé' },
+    } as never);
+
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', clerkBearer('user_1'))
+      .field('bucket', 'verification-docs')
+      .attach('file', PDF_HEADER, { filename: 'carte.pdf', contentType: 'application/pdf' });
+
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Erreur interne du serveur');
+  });
+});
+
 function Bearer(token: string): string {
   return `Bearer ${token}`;
 }
