@@ -48,3 +48,32 @@ jobs:
       - run: npm run build
       - run: npm audit --audit-level=high
         continue-on-error: true
+
+  # Parcours Playwright : le serveur de dev Vite est lancé par Playwright et
+  # toutes les appels /api/** sont interceptés dans le navigateur (aucun
+  # backend, aucune base). Sans frontend/.env, Clerk afficherait
+  # « Configuration manquante » : on injecte la même clé publique de
+  # développement que celle déjà présente dans src/test/setup.ts.
+  e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      VITE_CLERK_PUBLISHABLE_KEY: pk_test_ZXBpYy1zcG9uZ2UtODkzMy5jbGVyay5hY2NvdW50cy5kZXYk
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-test-results
+          path: frontend/test-results/
+          retention-days: 7
