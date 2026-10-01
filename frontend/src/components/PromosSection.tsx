@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMarket } from '../contexts/MarketContext';
 import { fetchRoomsByMarket, type Room } from '../data/rooms';
 import { fetchBannersBySection, type Banner } from '../data/banners';
+import { priceWithCurrency } from '../lib/roomDisplay';
 import BannerCarousel from './BannerCarousel';
 import CardSkeleton from './CardSkeleton';
 
@@ -88,7 +89,7 @@ export default function PromosSection() {
       const toPromoRoom = (room: Room): PromoRoom => ({
         title: room.title,
         info: room.info,
-        priceAmount: `${room.priceNum} FCFA`,
+        priceAmount: priceWithCurrency(room.priceNum, room.priceUnit),
         priceUnit: room.priceUnit,
         img: room.img,
         alt: room.alt,

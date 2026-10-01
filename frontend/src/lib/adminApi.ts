@@ -121,6 +121,27 @@ export interface AdminEvent {
   created_at?: string;
 }
 
+export interface AdminDestination {
+  id: string;
+  market: 'CI' | 'BJ';
+  city: string;
+  title: string;
+  description: string;
+  img: string;
+  alt: string | null;
+  featured: boolean;
+  created_at?: string;
+}
+
+// Réponse de GET /tourism : le serveur a déjà tranché quelles destinations
+// sont grosses cartes. Le back-office concatène `big` puis `small` pour
+// obtenir la liste complète dans l'ordre serveur, avec l'effet réel de la
+// règle (et du checkbox « mettre en avant »).
+export interface AdminTourismPartition {
+  big: AdminDestination[];
+  small: AdminDestination[];
+}
+
 export interface AdminReservation {
   id: string;
   client_name: string;
@@ -267,6 +288,25 @@ export const apiAdmin = {
 
   deleteEvent: (id: string) =>
     adminRequest<void>(`/events/${id}`, { method: 'DELETE' }),
+
+  // `market` est obligatoire : le GET /tourism exige ?market=CI|BJ (400 sinon).
+  getDestinations: (market: string) =>
+    adminRequest<AdminTourismPartition>(`/tourism?market=${market}`),
+
+  createDestination: (data: Omit<AdminDestination, 'id' | 'created_at'>) =>
+    adminRequest<AdminDestination>('/tourism', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateDestination: (id: string, data: Partial<Omit<AdminDestination, 'id' | 'created_at'>>) =>
+    adminRequest<AdminDestination>(`/tourism/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteDestination: (id: string) =>
+    adminRequest<void>(`/tourism/${id}`, { method: 'DELETE' }),
 
   uploadFile: async (file: File): Promise<{ url: string; path: string }> => {
     const headers: Record<string, string> = {};

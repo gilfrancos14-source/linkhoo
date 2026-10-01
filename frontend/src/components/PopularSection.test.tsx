@@ -127,6 +127,29 @@ describe('PopularSection', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Nos biens les plus demandés' })).toBeInTheDocument();
   });
 
+  it("affiche le nombre de chambres sous le titre", async () => {
+    renderSection();
+
+    expect(
+      await screen.findByRole('heading', { level: 3, name: 'Studio Cocody' }),
+    ).toBeInTheDocument();
+    const meta = document.querySelector('.stay-card__meta');
+    expect(meta).toHaveAttribute('aria-label', 'Caractéristiques');
+    expect(meta).toHaveTextContent('1 chambre');
+    expect(meta).not.toHaveTextContent('personnes');
+  });
+
+  it("n'affiche aucune pastille vide pour un bien sans caractéristique", async () => {
+    mocks.getPopular.mockResolvedValue([room({ capacity: '', chambres: 0 })]);
+
+    const { container } = renderSection();
+
+    expect(
+      await screen.findByRole('heading', { level: 3, name: 'Studio Cocody' }),
+    ).toBeInTheDocument();
+    expect(container.querySelector('.stay-card__meta')).not.toBeInTheDocument();
+  });
+
   it("mène vers la page du bien au clic sur la carte", async () => {
     renderSection();
     await screen.findByRole('heading', { level: 3, name: 'Studio Cocody' });

@@ -188,6 +188,19 @@ describe('ChambresPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('ne répète pas la devise quand le prix stocké contient déjà FCFA', async () => {
+    mocks.fetchMyRooms.mockResolvedValue([
+      makeRoom({ price: '25 000 FCFA', priceUnit: '/ mois' }),
+    ]);
+
+    renderChambres();
+
+    expect(await screen.findByRole('table')).toBeInTheDocument();
+    const cell = rowOf('Suite vue mer').querySelector('.admin-table__price');
+    expect(cell).toHaveTextContent('25 000 FCFA / mois');
+    expect(cell?.textContent).not.toContain('FCFA FCFA');
+  });
+
   it('affiche l’état vide quand aucune chambre n’est enregistrée', async () => {
     mocks.fetchMyRooms.mockResolvedValue([]);
 

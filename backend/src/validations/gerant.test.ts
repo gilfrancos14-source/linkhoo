@@ -63,6 +63,20 @@ describe('gerantUpdateSchema', () => {
     expect(parsed.success).toBe(true);
   });
 
+  it("accepte l'adresse de domicile du gérant", () => {
+    const parsed = gerantUpdateSchema.safeParse({
+      address: 'Cocody Angré, 7e tranche, Abidjan',
+    });
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    expect(parsed.data.address).toBe('Cocody Angré, 7e tranche, Abidjan');
+  });
+
+  it("refuse une adresse de domicile trop longue", () => {
+    const parsed = gerantUpdateSchema.safeParse({ address: 'x'.repeat(301) });
+    expect(parsed.success).toBe(false);
+  });
+
   it('accepte un objet vide (tous les champs sont facultatifs)', () => {
     const parsed = gerantUpdateSchema.safeParse({});
     expect(parsed.success).toBe(true);

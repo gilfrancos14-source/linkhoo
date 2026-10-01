@@ -4,6 +4,7 @@ import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
 import { fetchRoomsByMarket, getVillesFromRooms, getQuartiersFromRooms, type Room } from '../data/rooms';
 import { fetchCategoriesByMarket } from '../data/categories';
+import { roomMeta, roomSubtitle } from '../lib/roomDisplay';
 import StayCard from '../components/StayCard';
 import Pagination from '../components/Pagination';
 
@@ -184,13 +185,13 @@ export default function CategoryPage() {
                     title={room.title}
                     rating={room.ville}
                     ratingType="loc"
-                    description={room.subtitle}
+                    description={roomSubtitle(room)}
                     price={room.price}
                     priceUnit={room.priceUnit}
                     href={`${homePath}/chambre/${room.id}`}
                     badge={room.disponible ? undefined : 'Indisponible'}
                     badgeVariant={room.disponible ? 'default' : 'unavailable'}
-                    meta={[room.capacity, `${room.chambres} chambre${room.chambres > 1 ? 's' : ''}`]}
+                    meta={roomMeta(room)}
                   />
                 ))}
               </div>

@@ -6,6 +6,7 @@ import { useHomePath } from '../../hooks/useHomePath';
 import { fetchMyRooms, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import { apiGerants, type GerantData } from '../../lib/api';
+import { priceWithCurrency } from '../../lib/roomDisplay';
 
 const PAGE_SIZE = 5;
 
@@ -214,14 +215,12 @@ export default function DashboardPage() {
                     return (
                       <tr key={room.id}>
                         <td>
-                          <div className="cell-customer">
-                            <img src={room.img} alt={room.alt} className="cell-avatar" style={{ objectFit: 'cover' }} />
-                            <span className="cell-name">{room.title}</span>
-                          </div>
+                          <img src={room.img} alt={room.alt} className="admin-table__img" />
                         </td>
+                        <td className="admin-table__name">{room.title}</td>
                         <td>{room.ville}</td>
-                        <td>{category?.title}</td>
-                        <td className="admin-table__price">{room.price} FCFA <span className="admin-table__unit">{room.priceUnit}</span></td>
+                        <td>{category?.title ?? '—'}</td>
+                        <td className="admin-table__price">{priceWithCurrency(room.price, room.priceUnit)} <span className="admin-table__unit">{room.priceUnit}</span></td>
                         <td>
                           <span className={`admin-badge ${room.disponible ? 'admin-badge--success' : 'admin-badge--danger'}`}>
                             <span className="badge-dot"></span>

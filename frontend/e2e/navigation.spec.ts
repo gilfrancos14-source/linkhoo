@@ -20,4 +20,32 @@ test.describe('navigation', () => {
     await expect(page.locator('h2.section-title').first()).toContainText('plus demand');
     expect(page.url()).toContain('/ci');
   });
+
+  test('affiche la landing blanche à la racine', async ({ page }) => {
+    await mockApi(page);
+
+    await page.goto('/');
+
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator('header, footer')).toHaveCount(0);
+    await expect(page.locator('div[style*="min-height: 100vh"]')).toHaveCount(1);
+  });
+
+  test('redirige une route hors marché vers la racine', async ({ page }) => {
+    await mockApi(page);
+
+    await page.goto('/togo/quelque-part');
+
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator('header, footer')).toHaveCount(0);
+  });
+
+  test('redirige un marché invalide vers la racine', async ({ page }) => {
+    await mockApi(page);
+
+    await page.goto('/xx/chambre/1');
+
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator('header, footer')).toHaveCount(0);
+  });
 });

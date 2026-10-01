@@ -6,21 +6,9 @@ import { requireGerantMarket } from '../middleware/requireGerantMarket';
 import { idParamsSchema, marketQuerySchema } from '../validations/common';
 import { roomAvailableQuerySchema, roomCreateSchema, roomUpdateSchema } from '../validations/room';
 import { fetchAllRows } from '../utils/fetchAll';
+import { normalizeCity } from '../utils/city';
 
 const router = Router();
-
-// Ville côté events / ville côté rooms : deux textes libres saisis à la main.
-// Normalisation : casse + accents, puis on retire espaces/tirets/ponctuation
-// pour comparer « Bouaké » = « bouake », « San-Pédro » = « sanpedro »,
-// « Tori Bossito » = « toribossito ».
-function normalizeCity(value: unknown): string {
-  return String(value ?? '')
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .replace(/[^\p{L}\p{N}]+/gu, '');
-}
 
 router.get('/popular', async (req: Request, res: Response, next: NextFunction) => {
   try {

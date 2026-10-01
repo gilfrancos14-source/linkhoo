@@ -26,6 +26,16 @@ const validRoom = {
 };
 
 describe('roomCreateSchema', () => {
+  it('accepte au maximum trois images', () => {
+    const images = ['a', 'b', 'c'].map((n) => `https://storage.test/${n}.webp`);
+    expect(roomCreateSchema.safeParse({ ...validRoom, images }).success).toBe(true);
+  });
+
+  it('refuse plus de trois images', () => {
+    const images = ['a', 'b', 'c', 'd'].map((n) => `https://storage.test/${n}.webp`);
+    expect(roomCreateSchema.safeParse({ ...validRoom, images }).success).toBe(false);
+  });
+
   it('accepte une chambre complète', () => {
     const parsed = roomCreateSchema.safeParse(validRoom);
     expect(parsed.success).toBe(true);

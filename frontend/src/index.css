@@ -1584,16 +1584,16 @@ body.nav-open {
   max-height: 0;
   opacity: 0;
   margin-top: 0;
-  padding: 0 clamp(1.4rem, 3vw, 2.2rem);
-  border: 0 solid var(--line);
-  border-radius: var(--radius);
+  padding: 0 clamp(1.4rem, 3vw, 2.4rem);
+  border: 0 solid rgba(15, 23, 42, 0.07);
+  border-radius: 26px;
   background: var(--white);
   /* Fermé : hauteur strictement 0 (pas de bordure, pas d'ombre) — sinon un
      filet blanc de 2px resterait visible sous la grille. */
   box-shadow: none;
   transition: max-height 0.5s var(--ease), opacity 0.35s var(--ease),
     padding 0.4s var(--ease), margin-top 0.4s var(--ease),
-    border-width 0.3s var(--ease), box-shadow 0.3s var(--ease);
+    border-width 0.3s var(--ease), box-shadow 0.4s var(--ease);
 }
 
 /* max-height DOIT être une valeur finie : « none » n'est pas interpolable,
@@ -1603,9 +1603,41 @@ body.nav-open {
   max-height: 3600px;
   opacity: 1;
   margin-top: 1.6rem;
-  padding: clamp(1.4rem, 3vw, 2.2rem);
+  padding: clamp(1.4rem, 3vw, 2.4rem);
   border-width: 1px;
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04),
+    0 28px 64px -34px rgba(15, 23, 42, 0.35);
+}
+
+/* Ouverture en fondu-montée, décalée par bloc (tête → visuel → navigation →
+   séjours) : le panneau se déploie au lieu d'apparaître d'un coup. Les
+   éléments ne sont rendus qu'à l'ouverture ({activeGroup && …}), donc
+   l'animation repart à chaque ouverture sans boucle. */
+@keyframes eventDetailIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.event-detail.is-open .event-detail__head {
+  animation: eventDetailIn 0.5s var(--ease) both;
+}
+
+.event-detail.is-open .event-detail__viewport {
+  animation: eventDetailIn 0.55s 0.07s var(--ease) both;
+}
+
+.event-detail.is-open .event-carousel {
+  animation: eventDetailIn 0.55s 0.13s var(--ease) both;
+}
+
+.event-detail.is-open .event-detail__stays {
+  animation: eventDetailIn 0.55s 0.19s var(--ease) both;
 }
 
 .event-detail__close {
@@ -1614,57 +1646,74 @@ body.nav-open {
   right: 1rem;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  border: 1px solid var(--line);
-  background: var(--white);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
   color: var(--ink);
   cursor: pointer;
   z-index: 3;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
   transition: background-color 0.25s var(--ease), color 0.25s var(--ease),
-    border-color 0.25s var(--ease);
+    border-color 0.25s var(--ease), transform 0.25s var(--ease);
 }
 
 .event-detail__close:hover {
   background: var(--sky);
   border-color: var(--sky);
   color: var(--white);
+  transform: rotate(90deg);
+}
+
+.event-detail__close:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 3px;
 }
 
 .event-detail__head {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.7rem;
-  margin-bottom: 1.2rem;
-  padding-right: 3rem;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 0 3.4rem 1.15rem 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
 }
 
 .event-detail__marker {
   display: inline-flex;
   align-items: center;
-  height: 1.6rem;
-  padding: 0 0.6rem;
+  height: 1.7rem;
+  padding: 0 0.7rem;
   border-radius: 999px;
-  background: var(--sky);
+  background: linear-gradient(135deg, var(--sky), var(--sky-dark));
   color: var(--white);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  box-shadow: 0 4px 12px -4px rgba(37, 99, 235, 0.6);
 }
 
 .event-detail__city {
   font-family: var(--font-serif);
-  font-size: 1.4rem;
-  font-weight: 600;
+  font-size: clamp(1.5rem, 3vw, 1.95rem);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
   margin: 0;
 }
 
 .event-detail__total {
-  font-size: 0.85rem;
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--ink-soft);
+  white-space: nowrap;
 }
 
 .event-detail__viewport {
@@ -1673,24 +1722,42 @@ body.nav-open {
 
 .event-detail__track {
   display: flex;
-  transition: transform 0.5s var(--ease);
+  transition: transform 0.55s var(--ease);
 }
 
 .event-slide {
   flex: 0 0 100%;
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  gap: clamp(1rem, 2.5vw, 1.8rem);
-  align-items: start;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: clamp(1.2rem, 3vw, 2.4rem);
+  align-items: center;
 }
 
 .event-slide__media {
   position: relative;
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  border-radius: calc(var(--radius) - 4px);
+  border-radius: 20px;
   background: var(--mist-2);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04),
+    0 24px 48px -28px rgba(15, 23, 42, 0.45);
+}
+
+/* Voile en bas de photo : garantit la lisibilité des badges posés dessus,
+   quelle que soit la luminosité de l'image. */
+.event-slide__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.32) 0%,
+    rgba(15, 23, 42, 0) 34%,
+    rgba(15, 23, 42, 0) 56%,
+    rgba(15, 23, 42, 0.55) 104%
+  );
+  pointer-events: none;
 }
 
 .event-slide__media img {
@@ -1698,32 +1765,78 @@ body.nav-open {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.8s var(--ease);
 }
 
-.event-slide__date {
-  display: inline-block;
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-  background: var(--sky);
-  color: var(--white);
-  font-size: 0.75rem;
+.event-slide:hover .event-slide__media img {
+  transform: scale(1.045);
+}
+
+/* Index de magazine, en haut à gauche — purement décoratif. */
+.event-slide__number {
+  position: absolute;
+  top: 0.9rem;
+  left: 1rem;
+  z-index: 1;
+  font-family: var(--font-serif);
+  font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 6px rgba(15, 23, 42, 0.5);
+}
+
+/* Pastille date en verre posée sur la photo (bas gauche). */
+.event-slide__date {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  height: 1.85rem;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(15, 23, 42, 0.62);
+  backdrop-filter: blur(8px);
+  color: var(--white);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.event-slide__body {
+  min-width: 0;
+  padding-right: clamp(0rem, 1.5vw, 1rem);
 }
 
 .event-slide__title {
   font-family: var(--font-serif);
-  font-size: 1.35rem;
-  font-weight: 600;
-  line-height: 1.3;
-  margin: 0.8rem 0 0.5rem;
+  font-size: clamp(1.35rem, 2.4vw, 1.7rem);
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+  margin: 0 0 0.7rem;
+  text-wrap: balance;
+}
+
+/* Filet d'accent entre le titre et la description. */
+.event-slide__rule {
+  display: block;
+  width: 46px;
+  height: 3px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--sky), color-mix(in srgb, var(--sky) 25%, transparent));
+  margin-bottom: 0.95rem;
 }
 
 .event-slide__desc {
   margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.65;
+  font-size: 1rem;
+  line-height: 1.7;
   color: var(--ink-soft);
   overflow-wrap: break-word;
   white-space: pre-wrap;
@@ -1733,62 +1846,111 @@ body.nav-open {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.8rem;
-  margin-top: 1.2rem;
+  gap: clamp(0.8rem, 2vw, 1.4rem);
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.07);
 }
 
 .event-carousel__arrow {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  border: 1px solid var(--line);
-  background: var(--mist);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: var(--white);
   color: var(--ink);
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
   transition: background-color 0.25s var(--ease), border-color 0.25s var(--ease),
-    color 0.25s var(--ease);
+    color 0.25s var(--ease), transform 0.25s var(--ease),
+    box-shadow 0.25s var(--ease);
 }
 
 .event-carousel__arrow:hover:not(:disabled) {
   background: var(--sky);
   border-color: var(--sky);
   color: var(--white);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -12px rgba(37, 99, 235, 0.9);
+}
+
+.event-carousel__arrow:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .event-carousel__arrow:disabled {
-  opacity: 0.35;
+  opacity: 0.3;
   cursor: default;
+}
+
+.event-carousel__arrow:focus-visible,
+.event-carousel__dot:focus-visible {
+  outline: 2px solid var(--sky);
+  outline-offset: 3px;
+}
+
+.event-carousel__nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
 .event-carousel__dots {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.4rem;
 }
 
+/* Puces en filets : la barre active s'allonge, comme une progression. */
 .event-carousel__dot {
-  width: 8px;
-  height: 8px;
+  width: 26px;
+  height: 4px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
-  background: var(--line);
+  border-radius: 99px;
+  background: rgba(15, 23, 42, 0.14);
   cursor: pointer;
-  transition: background-color 0.25s var(--ease), transform 0.25s var(--ease);
+  transition: background-color 0.3s var(--ease), width 0.35s var(--ease);
+}
+
+.event-carousel__dot:hover {
+  background: rgba(15, 23, 42, 0.3);
 }
 
 .event-carousel__dot.is-active {
+  width: 42px;
   background: var(--sky);
-  transform: scale(1.35);
+}
+
+.event-carousel__count {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.event-carousel__count strong {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink);
 }
 
 /* ---------- Appartements disponibles autour de l'événement ---------- */
+/* Bloc cartonné : sans lui, les cartes blanches se fondraient dans le fond
+   blanc du panneau (séparateur = un simple filet, rendu plat). */
 .event-detail__stays {
   margin-top: 1.6rem;
-  padding-top: 1.4rem;
-  border-top: 1px solid var(--line);
+  padding: clamp(1rem, 2vw, 1.4rem);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--sky-pale), var(--mist));
 }
 
 .event-detail__stays-head {
@@ -1865,11 +2027,109 @@ body.nav-open {
    écrasée). La hauteur reste sous la max-height de .event-detail.is-open. */
 .event-detail__stays-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.15rem;
 }
 
-/* ---------- Tourisme Bénin ---------- */
+/* Surcharge du bloc logements uniquement (même principe que
+   .popular__track) : la recherche, les catégories et les promos gardent
+   leur StayCard d'origine. */
+.event-detail__stays-grid .stay-card {
+  background: var(--white);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.event-detail__stays-grid .stay-card:hover {
+  transform: translateY(-6px);
+  border-color: color-mix(in srgb, var(--sky) 30%, transparent);
+  box-shadow: 0 18px 40px -22px rgba(15, 23, 42, 0.35);
+}
+
+.event-detail__stays-grid .stay-card__media {
+  aspect-ratio: 16 / 10;
+}
+
+.event-detail__stays-grid .stay-card__body {
+  padding: 1rem 1.05rem 1.05rem;
+}
+
+.event-detail__stays-grid .stay-card__head {
+  align-items: flex-start;
+}
+
+.event-detail__stays-grid .stay-card__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.event-detail__stays-grid .stay-card__rating {
+  padding: 0.24rem 0.55rem;
+  border-radius: 999px;
+  background: var(--sky-pale);
+  color: var(--sky-dark);
+  font-size: 0.74rem;
+}
+
+.event-detail__stays-grid .stay-card__desc {
+  margin-top: 0.4rem;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.event-detail__stays-grid .stay-card__meta {
+  gap: 0.35rem;
+  margin-top: 0.7rem;
+}
+
+.event-detail__stays-grid .stay-card__meta li {
+  background: color-mix(in srgb, var(--sky) 10%, white);
+  border: 0;
+  color: var(--sky-dark);
+}
+
+/* margin-top: auto : le prix et la flèche s'alignent en bas de chaque carte,
+   même quand une description est plus courte que sa voisine. */
+.event-detail__stays-grid .stay-card__foot {
+  margin-top: auto;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.event-detail__stays-grid .stay-card__price {
+  font-size: 0.75rem;
+}
+
+.event-detail__stays-grid .stay-card__price strong {
+  font-size: 1.15rem;
+}
+
+.event-detail__stays-grid .stay-card__arrow {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  background: var(--sky);
+  color: var(--white);
+}
+
+.event-detail__stays-grid .stay-card:hover .stay-card__arrow {
+  background: var(--sky-dark);
+  border-color: var(--sky-dark);
+  color: var(--white);
+  transform: translateX(3px);
+}
+
+/* ---------- Tourisme (contenu par marché : /ci et /bj) ---------- */
 .tourism {
   /* Palette locale du bloc sombre (bleu-nuit profond + accent de marché) */
   --tourism-bg: #04151f;
@@ -2096,32 +2356,6 @@ body.nav-open {
     rgba(0, 0, 0, 0.18) 35%,
     rgba(1, 14, 21, 0.96) 100%
   );
-}
-
-.tourism__big-card-tag {
-  position: absolute;
-  top: 22px;
-  left: 22px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 15px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 999px;
-  background: rgba(5, 24, 32, 0.78);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: var(--white);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.tourism__big-card-tag span {
-  color: var(--tourism-accent);
-  font-size: 15px;
 }
 
 .tourism__big-card-body {
@@ -2791,6 +3025,17 @@ body.nav-open {
     display: none;
   }
 
+  /* 1 colonne : la carte passe en ligne (vignette carrée à gauche) —
+     quatre cartes verticales empilées noieraient le panneau sous l'image. */
+  .event-detail__stays-grid .stay-card__link {
+    flex-direction: row;
+  }
+
+  .event-detail__stays-grid .stay-card__media {
+    flex: 0 0 104px;
+    aspect-ratio: 1 / 1;
+  }
+
   .site-footer__grid {
     grid-template-columns: 1fr;
     gap: 2rem;
@@ -3169,12 +3414,6 @@ body.nav-open {
 
 .room-detail__price span {
   font-size: 0.85rem;
-}
-
-.room-detail__capacity {
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-  margin-top: 0.3rem;
 }
 
 .room-detail__desc,
@@ -4124,6 +4363,7 @@ body.nav-open {
   --admin-surface:#FFFFFF;
   --admin-surface-alt:#f8fafc;
   --admin-border:#e2e8f0;
+  --admin-line:#eef2f7;
 
   --admin-success:#16a34a;
   --admin-success-bg:#f0fdf4;
@@ -5445,6 +5685,57 @@ body.nav-open {
   margin-top: -4px;
 }
 
+/* ---------- Récapitulatif (étape 3) ---------- */
+.verif-recap {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.verif-recap__section {
+  padding: 14px 16px;
+  background: var(--admin-surface-alt);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+}
+
+.verif-recap__title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--admin-ink-soft);
+}
+
+.verif-recap__list {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.verif-recap__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.verif-recap__row dt {
+  font-size: 13px;
+  color: var(--admin-ink-soft);
+  flex-shrink: 0;
+}
+
+.verif-recap__row dd {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--admin-ink);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
 .verif-spinner {
   display: inline-block;
   width: 14px;
@@ -5796,6 +6087,23 @@ body.nav-open {
 .cell-ref {
   color: var(--admin-ink-faint);
   font-variant-numeric: tabular-nums;
+}
+
+/* Cases à cocher du back-office (ex. « Mettre en avant ») */
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--admin-ink);
+  cursor: pointer;
+}
+
+.checkbox-label input[type='checkbox'] {
+  width: auto;
+  flex: 0 0 auto;
+  margin-top: 2px;
+  accent-color: var(--sky-600);
 }
 
 /* Badges */
@@ -9814,6 +10122,18 @@ body.nav-open {
   gap: 0.6rem;
 }
 
+/* ── Room detail : alerte mode hors-ligne ── */
+.room-detail__offline {
+  margin: 0 0 1.25rem;
+  padding: 0.9rem 1.1rem;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius-sm);
+  color: #92400e;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
 /* ── Room detail : CTA authentification ── */
 .room-detail__auth-cta {
   background: var(--sky-pale);
@@ -10067,5 +10387,40 @@ body.nav-open {
 
   .review-form {
     padding: 1.25rem;
+  }
+}
+/* ---------- Mode hors-ligne (PWA) ---------- */
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #1f2937;
+  color: #f9fafb;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: var(--shadow-card-lg, 0 8px 24px rgba(0, 0, 0, 0.18));
+}
+
+.offline-banner__dot {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.25);
+}
+
+@media (max-width: 640px) {
+  .offline-banner {
+    font-size: 0.8rem;
+    padding: 8px 12px;
   }
 }

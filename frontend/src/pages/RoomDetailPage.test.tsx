@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { MarketProvider } from '../contexts/MarketContext';
 import type { Room } from '../data/rooms';
 import type { GerantInfo } from '../lib/api';
+import { clearQueue, readQueue } from '../lib/offlineQueue';
 import RoomDetailPage from './RoomDetailPage';
 
 const mocks = vi.hoisted(() => ({
@@ -316,15 +317,36 @@ describe('RoomDetailPage — galerie', () => {
 });
 
 describe('RoomDetailPage — contenu', () => {
-  it('affiche le titre, le prix, la capacité et la description', async () => {
+  it('affiche le titre, le prix, le sous-titre et la description', async () => {
     await renderLoaded();
 
     expect(screen.getByRole('heading', { level: 1, name: 'Suite vue mer' })).toBeInTheDocument();
     expect(screen.getByText('À deux pas de la plage')).toBeInTheDocument();
     expect(screen.getByText('Nouveau')).toBeInTheDocument();
     expect(screen.getByText(/dès/)).toHaveTextContent('25 000');
-    expect(screen.getByText('Capacité : 2 personnes')).toBeInTheDocument();
     expect(screen.getByText('Un espace lumineux avec terrasse.')).toBeInTheDocument();
+  });
+
+  it("n'affiche aucune capacité même quand le bien en porte une", async () => {
+    await renderLoaded();
+
+    expect(document.querySelector('.room-detail__capacity')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Capacité/)).not.toBeInTheDocument();
+  });
+
+  it("complète le sous-titre quand le bien est saisi sans lui", async () => {
+    mocks.fetchRoomsByMarket.mockResolvedValue([
+      makeRoom({
+        subtitle: '',
+        description: 'Vue sur mer, calme absolu. Proche des commerces.',
+      }),
+    ]);
+
+    await renderLoaded();
+
+    expect(document.querySelector('.room-detail__subtitle')).toHaveTextContent(
+      'Vue sur mer, calme absolu.',
+    );
   });
 
   it('découpe les conditions en éléments de liste', async () => {
@@ -835,4 +857,78 @@ describe('RoomDetailPage — appels réseau', () => {
     expect(mocks.request).not.toHaveBeenCalled();
     expect(mocks.cachedGet).not.toHaveBeenCalled();
   });
+});
+
+describe('RoomDetailPage — mode hors-ligne', () => {
+  function setOnline(value: boolean): void {
+    Object.defineProperty(window.navigator, 'onLine', {
+      configurable: true,
+      get: () => value,
+    });
+  }
+
+  afterEach(() => {
+    setOnline(true);
+    clearQueue();
+  });
+
+  it("informe que la demande sera mise en file d'attente hors-ligne", async () => {
+    setOnline(false);
+    const { container } = await renderLoaded();
+
+    const notice = screen.getByRole('status');
+    expect(notice).toHaveTextContent('hors-ligne');
+    expect(notice).toHaveTextContent(/envoyée automatiquement/);
+    expect(getSubmitButton()).toBeEnabled();
+    // La consultation reste possible : la fiche est bien rendue.
+    expect(container.querySelector('.room-detail__title')).not.toBeNull();
+  });
+
+  it("enregistre la demande en file d'attente sans appeler l'API", async () => {
+    setOnline(false);
+    const { container } = await renderLoaded();
+
+    fillForm();
+    fireEvent.submit(getForm(container));
+
+    expect(mocks.addReservation).not.toHaveBeenCalled();
+    const stored = readQueue();
+    expect(stored).toHaveLength(1);
+    expect(stored[0]?.type).toBe('reservation');
+    expect(screen.getByText('Votre demande a été enregistrée hors-ligne.')).toBeInTheDocument();
+    expect(screen.queryByText('Suivre ma réservation')).not.toBeInTheDocument();
+  });
+
+  it("envoie la demande enregistrée quand la connexion revient", async () => {
+    setOnline(false);
+    const { container } = await renderLoaded();
+
+    fillForm();
+    fireEvent.submit(getForm(container));
+    expect(readQueue()).toHaveLength(1);
+
+    act(() => {
+      setOnline(true);
+      window.dispatchEvent(new Event('online'));
+    });
+
+    await waitFor(() => expect(mocks.addReservation).toHaveBeenCalledTimes(1));
+    expect(readQueue()).toEqual([]);
+    expect(screen.getByText('Votre demande a été enregistrée hors-ligne.')).toBeInTheDocument();
+  });
+
+  it("valide les champs avant de mettre en file d'attente", async () => {
+    setOnline(false);
+    const { container } = await renderLoaded();
+
+    fireEvent.submit(getForm(container));
+
+    expect(readQueue()).toEqual([]);
+    expect(screen.getByText('Veuillez renseigner votre nom.')).toBeInTheDocument();
+  });
+
+  function getSubmitButton(): HTMLButtonElement {
+    const btn = screen.getByRole('button', { name: /Envoyer la demande/ }) as HTMLButtonElement;
+    return btn;
+  }
 });

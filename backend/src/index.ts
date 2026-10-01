@@ -11,6 +11,7 @@ import roomsRouter from './routes/rooms';
 import categoriesRouter from './routes/categories';
 import bannersRouter from './routes/banners';
 import eventsRouter from './routes/events';
+import tourismRouter from './routes/tourism';
 import reservationsRouter from './routes/reservations';
 import newsletterRouter from './routes/newsletter';
 import notificationsRouter from './routes/notifications';
@@ -121,6 +122,7 @@ const PUBLIC_CACHE_PATHS = [
   '/api/banners',
   '/api/categories',
   '/api/events',
+  '/api/tourism',
   '/api/reviews/featured',
   '/api/rooms/popular',
 ];
@@ -144,6 +146,7 @@ app.use('/api/rooms', roomsRouter);
 app.use('/api/categories', categoriesRouter);
 app.use('/api/banners', bannersRouter);
 app.use('/api/events', eventsRouter);
+app.use('/api/tourism', tourismRouter);
 app.use('/api/reservations', reservationsRouter);
 app.use('/api/newsletter', newsletterRouter);
 app.use('/api/notifications', notificationsRouter);

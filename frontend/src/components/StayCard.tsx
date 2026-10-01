@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { priceWithCurrency } from '../lib/roomDisplay';
 
 interface StayCardProps {
   image: string;
@@ -33,9 +34,25 @@ export default function StayCard({
   badgeVariant = 'default',
   meta,
 }: StayCardProps) {
+  // Prix groupé + devise (ex. « 75 000 FCFA ») : les chambres saisies par un
+  // gérant sont stockées sans séparateur de milliers ni devise.
+  const displayPrice = priceWithCurrency(price, priceUnit);
+  // Les pastilles vides (capacité non renseignée sur un bien ancien) ne
+  // doivent pas laisser un carré blanc dans la carte.
+  const metaItems = (meta ?? []).map((item) => (item ?? '').trim()).filter(Boolean);
+  const descriptionText = (description ?? '').trim();
+  const priceLabel = displayPrice
+    ? `dès ${displayPrice} ${priceUnit ?? ''}`.trim()
+    : '';
+  const defaultLabel = priceLabel ? `${title}, ${priceLabel}` : title;
+
   return (
     <article className="stay-card">
-      <Link to={href} className="stay-card__link" aria-label={ariaLabel || `${title}, dès ${price} ${priceUnit}`}>
+      <Link
+        to={href}
+        className="stay-card__link"
+        aria-label={ariaLabel || defaultLabel}
+      >
         <div className="stay-card__media">
           <img
             src={image}
@@ -66,17 +83,17 @@ export default function StayCard({
               </span>
             )}
           </div>
-          <p className="stay-card__desc">{description}</p>
-          {meta && meta.length > 0 && (
+          {descriptionText && <p className="stay-card__desc">{descriptionText}</p>}
+          {metaItems.length > 0 && (
             <ul className="stay-card__meta" aria-label="Caractéristiques">
-              {meta.map((item, i) => (
+              {metaItems.map((item, i) => (
                 <li key={i}>{item}</li>
               ))}
             </ul>
           )}
           <div className="stay-card__foot">
-            <p className="stay-card__price">dès <strong>{price}{'\u00A0'}{priceUnit}</strong></p>
-            {meta && meta.length > 0 && (
+            <p className="stay-card__price">dès <strong>{displayPrice}{'\u00A0'}{priceUnit}</strong></p>
+            {metaItems.length > 0 && (
               <span className="stay-card__arrow" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14m-6-6l6 6-6 6"/></svg>
               </span>

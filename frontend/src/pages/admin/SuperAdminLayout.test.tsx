@@ -82,6 +82,7 @@ function layoutRoute(path: string) {
       <Route path="gerants" element={<p>Contenu gérants</p>} />
       <Route path="banners" element={<p>Contenu bannières</p>} />
       <Route path="evenements" element={<p>Contenu événements</p>} />
+      <Route path="destinations" element={<p>Contenu destinations</p>} />
       <Route path="promotions" element={<p>Contenu promotions</p>} />
       <Route path="mot-de-passe" element={<p>Contenu mot de passe</p>} />
     </Route>
@@ -155,7 +156,7 @@ describe('SuperAdminLayout — navigation de la barre latérale', () => {
     expect(screen.getByText('Contenu tableau de bord')).toBeInTheDocument();
   });
 
-  it("construit les sept liens de navigation depuis la route racine", () => {
+  it("construit les huit liens de navigation depuis la route racine", () => {
     renderLayout('/admin');
 
     expect(navLink(/Tableau de bord/)).toHaveAttribute('href', '/admin');
@@ -163,6 +164,7 @@ describe('SuperAdminLayout — navigation de la barre latérale', () => {
     expect(navLink(/Gérants/)).toHaveAttribute('href', '/admin/gerants');
     expect(navLink(/Bannières/)).toHaveAttribute('href', '/admin/banners');
     expect(navLink(/Événements/)).toHaveAttribute('href', '/admin/evenements');
+    expect(navLink(/Destinations/)).toHaveAttribute('href', '/admin/destinations');
     expect(navLink(/Promotions/)).toHaveAttribute('href', '/admin/promotions');
     expect(navLink(/Mot de passe/)).toHaveAttribute('href', '/admin/mot-de-passe');
   });
@@ -175,6 +177,7 @@ describe('SuperAdminLayout — navigation de la barre latérale', () => {
     expect(navLink(/Gérants/)).toHaveAttribute('href', '/ci/admin/gerants');
     expect(navLink(/Bannières/)).toHaveAttribute('href', '/ci/admin/banners');
     expect(navLink(/Événements/)).toHaveAttribute('href', '/ci/admin/evenements');
+    expect(navLink(/Destinations/)).toHaveAttribute('href', '/ci/admin/destinations');
     expect(navLink(/Promotions/)).toHaveAttribute('href', '/ci/admin/promotions');
     expect(navLink(/Mot de passe/)).toHaveAttribute('href', '/ci/admin/mot-de-passe');
   });

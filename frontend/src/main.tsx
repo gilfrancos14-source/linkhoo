@@ -2,8 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, useNavigate } from 'react-router-dom'
 import { ClerkProvider } from '@clerk/clerk-react'
+import './fonts.css'
 import './index.css'
 import App from './App.tsx'
+import { registerServiceWorker } from './lib/swRegister'
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkReady = Boolean(clerkPubKey && clerkPubKey.startsWith('pk_'));
@@ -50,3 +52,6 @@ createRoot(document.getElementById('root')!).render(
     <Root />
   </StrictMode>,
 )
+
+// Offline : PROD uniquement, jamais en dev ni pendant les tests e2e.
+registerServiceWorker()

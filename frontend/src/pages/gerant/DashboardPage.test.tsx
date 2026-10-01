@@ -378,6 +378,27 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Cotonou')).toBeInTheDocument();
   });
 
+  it("aligne chaque cellule sur son en-tête dans « Chambres récentes »", async () => {
+    mocks.fetchMyRooms.mockResolvedValue([makeRoom(1, { disponible: false })]);
+
+    renderDashboard();
+
+    expect(await screen.findByRole('table')).toBeInTheDocument();
+    const headers = Array.from(
+      document.querySelectorAll('.admin-table thead th'),
+      (th) => th.textContent,
+    );
+    expect(headers).toEqual(['Image', 'Titre', 'Ville', 'Catégorie', 'Prix', 'Statut']);
+
+    const cells = document.querySelectorAll('.admin-table tbody tr td');
+    expect(cells).toHaveLength(headers.length);
+    expect(cells[1]).toHaveTextContent('Chambre 1');
+    expect(cells[2]).toHaveTextContent('Abidjan');
+    expect(cells[3]).toHaveTextContent('Chambres premium');
+    expect(cells[4]).toHaveTextContent('9 000 FCFA');
+    expect(cells[5]).toHaveTextContent('Occupée');
+  });
+
   it('pagine les huit chambres récentes sur deux pages', async () => {
     mocks.fetchMyRooms.mockResolvedValue(
       Array.from({ length: 8 }, (_, i) => makeRoom(i + 1)),

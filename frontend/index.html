@@ -8,9 +8,13 @@
 
   <link rel="icon" type="image/jpeg" href="/logo.jpg" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,400&display=swap" rel="stylesheet" />
+  <!-- PWA : manifest + icônes d'installation -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#2563eb" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+  <!-- Polices Lato auto-hébergées (src/fonts.css) : aucune requête externe,
+       la typographie survit hors-ligne. -->
 
   <!-- Fond du Hero (LCP) : préchargé pour ne pas attendre la CSS/JS -->
   <link rel="preload" as="image" href="/images/4.jpg" fetchpriority="high" />

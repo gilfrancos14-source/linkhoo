@@ -288,7 +288,7 @@ describe('SearchResultsPage — requêtes', () => {
 
     expect(mocks.fetchAvailableRooms).toHaveBeenCalledWith('BJ', '2026-03-01', '2026-03-04');
     expect(screen.getByRole('link', { name: 'Accueil' })).toHaveAttribute('href', '/bj');
-    expect(screen.getByRole('link', { name: 'Suite vue mer, dès 25 000 / nuit' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Suite vue mer, dès 25 000 FCFA / nuit' })).toHaveAttribute(
       'href',
       '/bj/chambre/r1?arrivee=2026-03-01&depart=2026-03-04',
     );
@@ -347,7 +347,7 @@ describe('SearchResultsPage — résultats', () => {
   });
 
   it('construit le lien de chaque carte avec les dates en query', () => {
-    const link = screen.getByRole('link', { name: 'Suite Ficaye, dès 25 000 / nuit' });
+    const link = screen.getByRole('link', { name: 'Suite Ficaye, dès 25 000 FCFA / nuit' });
     expect(link).toHaveAttribute('href', '/ci/chambre/r1?arrivee=2026-03-01&depart=2026-03-04');
   });
 

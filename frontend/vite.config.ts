@@ -1,9 +1,31 @@
 /// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
+
+/* Offline : le service worker ne doit JAMAIS être servi en dev — un SW
+   servi sur le serveur de dev parasite l'HMR et contournerait les mocks
+   des tests e2e (page.route ne voit pas les fetch émis depuis un SW).
+   Double garde-fou avec le `import.meta.env.PROD` de swRegister.ts. */
+function blockServiceWorkerInDev(): Plugin {
+  return {
+    name: 'block-service-worker-in-dev',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url === '/sw.js' || req.url?.startsWith('/sw.js?')) {
+          res.statusCode = 404
+          res.setHeader('Content-Type', 'text/plain; charset=utf-8')
+          res.end('Service worker désactivé en développement')
+          return
+        }
+        next()
+      })
+    },
+  }
+}
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), blockServiceWorkerInDev()],
   server: {
     proxy: {
       '/api': {

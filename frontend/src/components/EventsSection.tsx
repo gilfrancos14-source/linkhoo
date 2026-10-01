@@ -10,6 +10,7 @@ import {
   type Event,
 } from '../data/events';
 import { fetchAvailableRooms, type Room } from '../data/rooms';
+import { roomMeta, roomSubtitle } from '../lib/roomDisplay';
 import BannerCarousel from './BannerCarousel';
 import StayCard from './StayCard';
 import CardSkeleton from './CardSkeleton';
@@ -240,14 +241,18 @@ export default function EventsSection() {
                   className="event-detail__track"
                   style={{ transform: `translateX(-${activeSlide * 100}%)` }}
                 >
-                  {slides.map((s) => (
+                  {slides.map((s, i) => (
                     <div className="event-slide" key={s.id}>
                       <div className="event-slide__media">
                         <img src={s.img} alt={s.alt} loading="lazy" width="640" height="420" onError={hideBrokenImage} />
+                        <span className="event-slide__number" aria-hidden="true">
+                          {String(i + 1).padStart(2, '0')}
+                        </span>
+                        <span className="event-slide__date">{formatEventDate(s.eventDate)}</span>
                       </div>
                       <div className="event-slide__body">
-                        <p className="event-slide__date">{formatEventDate(s.eventDate)}</p>
                         <h4 className="event-slide__title">{s.title}</h4>
+                        <span className="event-slide__rule" aria-hidden="true"></span>
                         <p className="event-slide__desc">{s.description}</p>
                       </div>
                     </div>
@@ -267,18 +272,24 @@ export default function EventsSection() {
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5m6-6l-6 6 6 6"/></svg>
                   </button>
 
-                  <div className="event-carousel__dots" role="tablist" aria-label="Liste des événements">
-                    {slides.map((s, i) => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        role="tab"
-                        aria-selected={i === activeSlide}
-                        aria-label={`${s.title} — ${formatEventDate(s.eventDate)}`}
-                        className={`event-carousel__dot${i === activeSlide ? ' is-active' : ''}`}
-                        onClick={() => setActiveSlide(i)}
-                      />
-                    ))}
+                  <div className="event-carousel__nav">
+                    <div className="event-carousel__dots" role="tablist" aria-label="Liste des événements">
+                      {slides.map((s, i) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          role="tab"
+                          aria-selected={i === activeSlide}
+                          aria-label={`${s.title} — ${formatEventDate(s.eventDate)}`}
+                          className={`event-carousel__dot${i === activeSlide ? ' is-active' : ''}`}
+                          onClick={() => setActiveSlide(i)}
+                        />
+                      ))}
+                    </div>
+                    <p className="event-carousel__count" aria-hidden="true">
+                      <strong>{String(activeSlide + 1).padStart(2, '0')}</strong>
+                      <span> / {String(slides.length).padStart(2, '0')}</span>
+                    </p>
                   </div>
 
                   <button
@@ -343,13 +354,13 @@ export default function EventsSection() {
                       title={room.title}
                       rating={room.ville}
                       ratingType="loc"
-                      description={room.subtitle}
+                      description={roomSubtitle(room)}
                       price={room.price}
                       priceUnit={room.priceUnit}
                       href={`/${market.toLowerCase()}/chambre/${room.id}?arrivee=${encodeURIComponent(
                         shiftIsoDate(activeEvent.eventDate, -7)
                       )}&depart=${encodeURIComponent(shiftIsoDate(activeEvent.eventDate, 7))}`}
-                      meta={[room.capacity, `${room.chambres} chambre${room.chambres > 1 ? 's' : ''}`]}
+                      meta={roomMeta(room)}
                     />
                   ))}
                 </div>

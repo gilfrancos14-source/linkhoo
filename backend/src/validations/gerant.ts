@@ -16,6 +16,7 @@ export const gerantUpdateSchema = z
     nom: z.string().trim().max(100).optional(),
     prenom: z.string().trim().max(100).optional(),
     phone: z.string().trim().max(20).optional(),
+    address: z.string().trim().max(300).optional(),
     market: marketSchema.optional(),
   })
   .strict();

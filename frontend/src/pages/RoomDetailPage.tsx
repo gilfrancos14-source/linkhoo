@@ -3,10 +3,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { useOfflineQueueSync } from '../hooks/useOfflineQueueSync';
 import { fetchRoomsByMarket, fetchRoomById, type Room } from '../data/rooms';
 import { fetchCategoriesByMarket } from '../data/categories';
 import { isValidEmail } from '../utils/validators';
 import { addReservation } from '../lib/reservations';
+import { enqueue } from '../lib/offlineQueue';
 import {
   DUREE_MAX_MOIS,
   DUREE_MAX_NUIT,
@@ -18,6 +21,7 @@ import {
   type DureeUnite,
 } from '../lib/duration';
 import { apiReviews, type RoomReviewsResponse } from '../lib/api';
+import { priceWithCurrency, roomSubtitle } from '../lib/roomDisplay';
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkConfigured = Boolean(clerkKey && clerkKey.startsWith('pk_'));
@@ -92,6 +96,9 @@ export default function RoomDetailPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const online = useOnlineStatus();
+  const [queued, setQueued] = useState(false);
+  useOfflineQueueSync();
   const [shareFeedback, setShareFeedback] = useState(false);
   const [reviewsData, setReviewsData] = useState<RoomReviewsResponse | null>(null);
 
@@ -185,21 +192,32 @@ export default function RoomDetailPage() {
     setSubmitting(true);
     setSubmitError('');
 
-    try {
-      await addReservation({
-        clientName: formData.name,
-        clientEmail: formData.email,
-        clientPhone: formData.phone,
-        roomId: room.id,
-        roomTitle: room.title,
-        dateDebut: formData.dateDebut,
-        dateFin: effectiveDateFin,
-        dureeNombre,
-        dureeUnite: unite,
-        montant: estimatedMontant ?? room.priceNum,
-        message: formData.message,
-      });
+    const payload = {
+      clientName: formData.name,
+      clientEmail: formData.email,
+      clientPhone: formData.phone,
+      roomId: room.id,
+      roomTitle: room.title,
+      dateDebut: formData.dateDebut,
+      dateFin: effectiveDateFin,
+      dureeNombre,
+      dureeUnite: unite,
+      montant: estimatedMontant ?? room.priceNum,
+      message: formData.message,
+    };
 
+    // Hors-ligne : la demande est mise en file d'attente et partira
+    // automatiquement au retour de la connexion.
+    if (!online) {
+      enqueue({ type: 'reservation', payload });
+      setQueued(true);
+      setSubmitted(true);
+      setSubmitting(false);
+      return;
+    }
+
+    try {
+      await addReservation(payload);
       setSubmitted(true);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Une erreur est survenue. Veuillez réessayer.');
@@ -244,6 +262,11 @@ export default function RoomDetailPage() {
       </main>
     );
   }
+
+  // Bien saisi sans sous-titre : on retombe sur la première phrase de la
+  // description plutôt que d'afficher une ligne vide.
+  const subtitleText = roomSubtitle(room);
+  const priceText = priceWithCurrency(room.price, room.priceUnit);
 
   return (
     <main className="room-detail">
@@ -315,11 +338,10 @@ export default function RoomDetailPage() {
           <div className="room-detail__info">
             <p className="eyebrow">{room.info}</p>
             <h1 className="room-detail__title">{room.title}</h1>
-            <p className="room-detail__subtitle">{room.subtitle}</p>
+            {subtitleText && <p className="room-detail__subtitle">{subtitleText}</p>}
 
             <div className="room-detail__price-box">
-              <p className="room-detail__price">dès <strong>{room.price}</strong> <span>{room.priceUnit}</span></p>
-              <p className="room-detail__capacity">Capacité : {room.capacity}</p>
+              <p className="room-detail__price">dès <strong>{priceText}</strong> <span>{room.priceUnit}</span></p>
             </div>
 
             <div className="room-detail__desc">
@@ -403,6 +425,12 @@ export default function RoomDetailPage() {
 
           <div className="room-detail__form-box">
             <h2>Demande de réservation</h2>
+            {!online && !submitted && (
+              <p className="room-detail__offline" role="status">
+                Vous êtes hors-ligne : votre demande sera enregistrée puis
+                envoyée automatiquement au retour de la connexion.
+              </p>
+            )}
             {!clerkSignedIn && !submitted && (
               <div className="room-detail__auth-cta">
                 <p>Connectez-vous pour pré-remplir vos infos et suivre facilement vos réservations.</p>
@@ -419,15 +447,24 @@ export default function RoomDetailPage() {
             {submitted ? (
               <div className="room-detail__success" role="status">
                 <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--sun)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>
-                <p>Votre demande a bien été envoyée !</p>
-                <p>Nous vous recontacterons dans les plus brefs délais.</p>
-                <Link to={clerkSignedIn ? `/${market.toLowerCase()}/compte` : `${homePath}/suivi-reservation`} className="room-detail__track-link">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2"/>
-                    <path d="M16 2v4M8 2v4M3 10h18"/>
-                  </svg>
-                  Suivre ma réservation
-                </Link>
+                {queued ? (
+                  <>
+                    <p>Votre demande a été enregistrée hors-ligne.</p>
+                    <p>Elle sera envoyée automatiquement dès le retour de la connexion.</p>
+                  </>
+                ) : (
+                  <>
+                    <p>Votre demande a bien été envoyée !</p>
+                    <p>Nous vous recontacterons dans les plus brefs délais.</p>
+                    <Link to={clerkSignedIn ? `/${market.toLowerCase()}/compte` : `${homePath}/suivi-reservation`} className="room-detail__track-link">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2"/>
+                        <path d="M16 2v4M8 2v4M3 10h18"/>
+                      </svg>
+                      Suivre ma réservation
+                    </Link>
+                  </>
+                )}
               </div>
             ) : (
               <form className="room-detail__form" onSubmit={handleSubmit} noValidate>

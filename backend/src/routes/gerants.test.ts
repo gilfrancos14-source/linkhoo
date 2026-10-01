@@ -214,6 +214,36 @@ describe('PATCH /api/gerants/me', () => {
       expect.objectContaining({ nom: 'Nouveau' }),
     );
   });
+
+  it('200 : enregistre les coordonnées de la vérification', async () => {
+    const profileCheck = fakeChain({ data: { id: 'g1' }, error: null });
+    const existing = fakeChain({ data: { id: 'g1' }, error: null });
+    const updated = fakeChain({
+      data: { id: 'g1', address: 'Cocody Angré, Abidjan' },
+      error: null,
+    });
+    stubTables({ gerants: [profileCheck, existing, updated] });
+
+    const res = await request(app)
+      .patch('/api/gerants/me')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({
+        nom: 'Kouassi',
+        prenom: 'Awa',
+        phone: '+2250700000000',
+        address: 'Cocody Angré, Abidjan',
+      });
+
+    expect(res.status).toBe(200);
+    expect(updated.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nom: 'Kouassi',
+        prenom: 'Awa',
+        phone: '+2250700000000',
+        address: 'Cocody Angré, Abidjan',
+      }),
+    );
+  });
 });
 
 describe('POST /api/gerants/:id/documents', () => {

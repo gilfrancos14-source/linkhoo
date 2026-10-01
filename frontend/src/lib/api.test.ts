@@ -373,6 +373,27 @@ describe('apiBanners / apiEvents', () => {
   });
 });
 
+describe('apiTourism', () => {
+  it('list GET /tourism avec le marché (partition big/small)', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ big: [], small: [] }));
+
+    const partition = await api.apiTourism.list('CI');
+
+    expect(lastCall().url).toBe('/api/tourism?market=CI');
+    expect(partition).toEqual({ big: [], small: [] });
+  });
+
+  it('list met la réponse en cache public (60 s) comme les autres cartes de la home', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ big: [], small: [] }));
+    fetchMock.mockResolvedValueOnce(jsonResponse({ big: [], small: [] }));
+
+    await api.apiTourism.list('BJ');
+    await api.apiTourism.list('BJ');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('apiReservations', () => {
   it('list GET /reservations', async () => {
     await api.apiReservations.list();
@@ -736,6 +757,7 @@ describe("propagation d'erreurs par namespace", () => {
     ['apiRooms.get', () => api.apiRooms.get('1')],
     ['apiBanners.list', () => api.apiBanners.list('CI')],
     ['apiEvents.list', () => api.apiEvents.list('CI')],
+    ['apiTourism.list', () => api.apiTourism.list('CI')],
     ['apiReservations.list', () => api.apiReservations.list()],
     ['apiReservations.create', () => api.apiReservations.create(reservationInput())],
     ['apiNewsletter.subscribe', () => api.apiNewsletter.subscribe({ email: 'a@b.ci' })],

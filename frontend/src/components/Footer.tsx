@@ -4,7 +4,10 @@ import { useAuth } from '@clerk/clerk-react';
 import { useHomePath } from '../hooks/useHomePath';
 import { useMarket } from '../contexts/MarketContext';
 import { useEspace } from '../hooks/useEspace';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { useOfflineQueueSync } from '../hooks/useOfflineQueueSync';
 import { apiNewsletter } from '../lib/api';
+import { enqueue } from '../lib/offlineQueue';
 import { isValidEmail } from '../utils/validators';
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -57,6 +60,8 @@ export default function Footer() {
   const [emailError, setEmailError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const online = useOnlineStatus();
+  useOfflineQueueSync();
 
   const handleNewsletter = async (e: FormEvent) => {
     e.preventDefault();
@@ -75,6 +80,16 @@ export default function Footer() {
 
     setEmailError('');
     setSubmitError('');
+
+    // Hors-ligne : l'inscription est mise en file d'attente et partira
+    // automatiquement au retour de la connexion.
+    if (!online) {
+      enqueue({ type: 'newsletter', payload: { email, market } });
+      if (emailInput) emailInput.value = '';
+      setNote('Inscription enregistrée : elle sera envoyée au retour de la connexion.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await apiNewsletter.subscribe({ email, market });
@@ -160,7 +175,9 @@ export default function Footer() {
                 {emailError || submitError}
               </p>
             )}
-            <p className="newsletter__note" aria-live="polite">{note}</p>
+            <p className="newsletter__note" aria-live="polite">
+              {note}
+            </p>
           </div>
         </div>
 

@@ -4,12 +4,16 @@ import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
 import { createRoom, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
+import { formatPrice, roomSubtitle } from '../../lib/roomDisplay';
 import { apiRooms, apiUpload } from '../../lib/api';
 
 interface PhotoItem {
   file: File;
   preview: string;
 }
+
+/** Nombre maximum de photos par appartement. */
+const MAX_PHOTOS = 3;
 
 interface FormData {
   title: string;
@@ -83,20 +87,34 @@ export default function AjouterChambre() {
     if (!files) return;
     setPhotoError('');
 
+    const available = MAX_PHOTOS - photos.length;
+    if (available <= 0) {
+      setPhotoError(`Maximum ${MAX_PHOTOS} photos par appartement.`);
+      e.target.value = '';
+      return;
+    }
+
     const accepted: PhotoItem[] = [];
+    let overflow = 0;
     Array.from(files).forEach((file) => {
       if (file.size > 2 * 1024 * 1024) {
         setPhotoError(`"${file.name}" dépasse 2 Mo. Choisissez une image plus petite.`);
         return;
       }
+      if (accepted.length >= available) {
+        overflow += 1;
+        return;
+      }
       accepted.push({ file, preview: URL.createObjectURL(file) });
     });
+    if (overflow > 0) setPhotoError(`Maximum ${MAX_PHOTOS} photos par appartement.`);
     if (accepted.length > 0) setPhotos((prev) => [...prev, ...accepted]);
     e.target.value = '';
   };
 
   const removePhoto = (index: number) => {
     setPhotos((prev) => prev.filter((_, i) => i !== index));
+    setPhotoError('');
     setMainPhotoIndex((prev) => {
       if (prev === index) return 0;
       if (prev > index) return prev - 1;
@@ -145,7 +163,12 @@ export default function AjouterChambre() {
 
       const room: Omit<Room, 'id'> = {
         title: form.title,
-        subtitle: '',
+        // Accroche de carte : première phrase de la description, sinon le lieu.
+        subtitle: roomSubtitle({
+          description: form.description,
+          quartier: form.quartier,
+          ville: form.ville,
+        }),
         info: `${form.chambres} ch. · ${form.douches} d.`,
         price: String(form.priceNum),
         priceNum: form.priceNum,
@@ -154,7 +177,6 @@ export default function AjouterChambre() {
         alt: form.title,
         images: urls,
         description: form.description,
-        capacity: '',
         category: form.category,
         market,
         pays: marketPays[market] || 'Bénin',
@@ -359,6 +381,7 @@ export default function AjouterChambre() {
             <div className={`photo-section ${(errors.photos || photoError) ? 'photo-section--error' : ''}`}>
               <div className="photo-section__head">
                 <span>Photos *</span>
+                <span>{photos.length} / {MAX_PHOTOS}</span>
                 {(errors.photos || photoError) && <span className="field-error">{errors.photos || photoError}</span>}
               </div>
 
@@ -380,10 +403,12 @@ export default function AjouterChambre() {
                   </div>
                 ))}
 
-                <button type="button" className="photo-add" onClick={() => fileInputRef.current?.click()}>
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  <span>Ajouter</span>
-                </button>
+                {photos.length < MAX_PHOTOS && (
+                  <button type="button" className="photo-add" onClick={() => fileInputRef.current?.click()}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span>Ajouter</span>
+                  </button>
+                )}
               </div>
 
               <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handlePhotos} />
@@ -453,7 +478,7 @@ export default function AjouterChambre() {
                 <p className="preview-info__meta">{form.chambres} ch. · {form.douches} d.</p>
 
                 <div className="preview-info__price">
-                  <span className="preview-info__amount">{form.priceNum > 0 ? form.priceNum.toLocaleString('fr-FR') : '—'}</span>
+                  <span className="preview-info__amount">{form.priceNum > 0 ? formatPrice(form.priceNum) : '—'}</span>
                   <span className="preview-info__currency"> FCFA {form.priceUnit}</span>
                 </div>
 

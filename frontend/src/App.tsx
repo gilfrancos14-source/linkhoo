@@ -15,6 +15,7 @@ import BackToTop from './components/BackToTop';
 import ErrorBoundary from './components/ErrorBoundary';
 import NotFoundPage from './pages/NotFoundPage';
 import ClientNotificationBanner from './components/ClientNotificationBanner';
+import OfflineBanner from './components/OfflineBanner';
 import RoleRouteGuard from './components/RoleRouteGuard';
 import AdminRouteGuard from './components/AdminRouteGuard';
 import LandingPage from './pages/LandingPage';
@@ -51,6 +52,7 @@ const AdminChangePasswordPage = lazy(() => import('./pages/admin/AdminChangePass
 const AdminGerantsPage = lazy(() => import('./pages/admin/AdminGerantsPage'));
 const AdminBannersPage = lazy(() => import('./pages/admin/AdminBannersPage'));
 const AdminEventsPage = lazy(() => import('./pages/admin/AdminEventsPage'));
+const AdminDestinationsPage = lazy(() => import('./pages/admin/AdminDestinationsPage'));
 const AdminReservationsPage = lazy(() => import('./pages/admin/AdminReservationsPage'));
 const AdminPromotionsPage = lazy(() => import('./pages/admin/AdminPromotionsPage'));
 
@@ -88,6 +90,7 @@ const adminSectionRoutes = (
       <Route path="gerants" element={<AdminGerantsPage />} />
       <Route path="banners" element={<AdminBannersPage />} />
       <Route path="evenements" element={<AdminEventsPage />} />
+      <Route path="destinations" element={<AdminDestinationsPage />} />
       <Route path="promotions" element={<AdminPromotionsPage />} />
     </Route>
   </>
@@ -129,6 +132,7 @@ function MarketContent() {
     pathname.includes('/sso-callback');
   return (
     <>
+      <OfflineBanner />
       {!hideChrome && <Header />}
       <Suspense fallback={<RouteFallback />}>
         <Routes>

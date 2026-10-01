@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS gerants (
   phone TEXT,
   nom TEXT,
   prenom TEXT,
+  address TEXT,
   market TEXT NOT NULL CHECK (market IN ('CI', 'BJ')),
   is_verified BOOLEAN DEFAULT false,
   verified_at TIMESTAMPTZ,
@@ -165,6 +166,7 @@ CREATE INDEX IF NOT EXISTS idx_rooms_promo_group ON rooms(promo_group);
 CREATE INDEX IF NOT EXISTS idx_rooms_is_popular ON rooms(is_popular);
 CREATE INDEX IF NOT EXISTS idx_events_market_city ON events(market, city);
 CREATE INDEX IF NOT EXISTS idx_events_market_date ON events(market, event_date);
+CREATE INDEX IF NOT EXISTS idx_tourism_market ON tourism_destinations(market);
 CREATE INDEX IF NOT EXISTS idx_premium_tx_clerk_user_id ON premium_transactions(clerk_user_id);
 CREATE INDEX IF NOT EXISTS idx_premium_tx_status ON premium_transactions(status);
 CREATE INDEX IF NOT EXISTS idx_premium_tx_created_at ON premium_transactions(created_at);
@@ -241,6 +243,22 @@ CREATE TABLE IF NOT EXISTS events (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Destinations touristiques (section accueil « Tourisme »)
+-- Une ligne = une destination affichée en carte (image, titre, ville,
+-- description). `featured` force la grosse carte ; sinon la carte n'est
+-- grosse que si `city` a un événement dans les 30 prochains jours.
+CREATE TABLE IF NOT EXISTS tourism_destinations (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  market TEXT CHECK (market IN ('CI', 'BJ')) NOT NULL,
+  city TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  img TEXT NOT NULL,
+  alt TEXT,
+  featured BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Premium transactions : audit + idempotence webhook FedaPay.
 -- Une ligne par transaction, upsert par fedapay_transaction_id (UNIQUE) ;
 -- le premium n'est activé que si status = 'approved'.
@@ -297,6 +315,7 @@ ALTER TABLE IF EXISTS verification_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS premium_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS newsletter_subscribers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS tourism_destinations ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
 -- Colonnes ajoutées par les migrations (idempotent) : les bases
@@ -320,6 +339,8 @@ CREATE POLICY public_select_banners ON banners FOR SELECT USING (true);
 -- qui bypasse la RLS.
 DROP POLICY IF EXISTS public_select_events ON events;
 CREATE POLICY public_select_events ON events FOR SELECT USING (true);
+DROP POLICY IF EXISTS public_select_tourism ON tourism_destinations;
+CREATE POLICY public_select_tourism ON tourism_destinations FOR SELECT USING (true);
 
 -- ============================================================
 -- Réservation atomique : verrou de la chambre + test de conflit

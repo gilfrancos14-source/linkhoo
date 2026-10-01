@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useMarket } from '../contexts/MarketContext';
 import { apiRooms, type RoomData } from '../lib/api';
+import { roomMeta, roomSubtitle } from '../lib/roomDisplay';
 import { fetchBannersBySection, type Banner } from '../data/banners';
 import StayCard from './StayCard';
 import BannerCarousel from './BannerCarousel';
@@ -57,7 +58,8 @@ export default function PopularSection() {
       alt: room.alt,
       title: room.title,
       rating: room.quartier,
-      description: room.subtitle,
+      description: roomSubtitle(room),
+      meta: roomMeta(room),
       price: room.price,
       priceUnit: room.price_unit,
       roomId: room.id,
@@ -96,6 +98,7 @@ export default function PopularSection() {
                 title={item.title}
                 rating={item.rating}
                 description={item.description}
+                meta={item.meta}
                 price={item.price}
                 priceUnit={item.priceUnit}
                 href={`/${market.toLowerCase()}/chambre/${item.roomId}`}

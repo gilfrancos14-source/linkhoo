@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useMarket } from '../../contexts/MarketContext';
+import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { apiGerants, apiUpload, request, type GerantData, type VerificationDocument, type VerificationStatusResponse } from '../../lib/api';
 import PropertyMap from '../../components/PropertyMap';
 
@@ -46,6 +47,15 @@ interface ManualCoords {
   lng: number;
 }
 
+type Step = 1 | 2 | 3;
+
+interface ContactState {
+  nom: string;
+  prenom: string;
+  phone: string;
+  address: string;
+}
+
 export default function VerificationPage() {
   const { market } = useMarket();
   const { userId } = useAuth();
@@ -58,6 +68,7 @@ export default function VerificationPage() {
   });
   const [dragging, setDragging] = useState<DocType | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const online = useOnlineStatus();
   const [confirming, setConfirming] = useState(false);
   const confirmRanRef = useRef(false);
   const [error, setError] = useState('');
@@ -69,11 +80,27 @@ export default function VerificationPage() {
   });
   const [manualMode, setManualMode] = useState(false);
   const [manualCoords, setManualCoords] = useState<ManualCoords | null>(null);
+  const [step, setStep] = useState<Step>(1);
+  const [contact, setContact] = useState<ContactState>({
+    nom: '',
+    prenom: '',
+    phone: '',
+    address: '',
+  });
+  const [contactErrors, setContactErrors] = useState<Partial<Record<keyof ContactState, string>>>({});
+  const [savingContact, setSavingContact] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
       const g = await apiGerants.getMe();
       setGerant(g);
+      setContact({
+        nom: g.nom || '',
+        prenom: g.prenom || '',
+        phone: g.phone || '',
+        address: g.address || '',
+      });
+      setContactErrors({});
       const status = await apiGerants.getVerificationStatus(g.id);
       setVerificationStatus(status);
 
@@ -259,8 +286,41 @@ export default function VerificationPage() {
   const manualFallbackCenter: ManualCoords =
     market === 'BJ' ? { lat: 6.3703, lng: 2.3912 } : { lat: 5.36, lng: -4.008 };
 
+  const handleContinueContact = async () => {
+    const trimmed = {
+      nom: contact.nom.trim(),
+      prenom: contact.prenom.trim(),
+      phone: contact.phone.trim(),
+      address: contact.address.trim(),
+    };
+    const errors: Partial<Record<keyof ContactState, string>> = {};
+    if (!trimmed.nom) errors.nom = 'Le nom est requis.';
+    if (!trimmed.prenom) errors.prenom = 'Le prénom est requis.';
+    if (!trimmed.phone) errors.phone = 'Le téléphone est requis.';
+    if (!trimmed.address) errors.address = 'L\'adresse de domicile est requise.';
+    setContactErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    setSavingContact(true);
+    setError('');
+    try {
+      const updated = await apiGerants.updateMe(trimmed);
+      setGerant(updated);
+      setStep(2);
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de l\'enregistrement');
+    } finally {
+      setSavingContact(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!gerant) return;
+    // Le paiement FedaPay exige le réseau : jamais de redirection offline.
+    if (!online) {
+      setError('Connexion requise pour effectuer le paiement.');
+      return;
+    }
     setSubmitting(true);
     setError('');
     try {
@@ -388,18 +448,104 @@ export default function VerificationPage() {
 
       {showForm && (
         <div className="steps verif-steps">
-          <div className={`step ${!isReady ? 'step--active' : 'step--done'}`}>
-            <span className="step__num">{isReady ? '' : '1'}</span>
+          <div className={`step ${step === 1 ? 'step--active' : step > 1 ? 'step--done' : ''}`}>
+            <span className="step__num">{step > 1 ? '' : '1'}</span>
+            <span className="step__label">Coordonnées</span>
+          </div>
+          <div className={`step ${step === 2 ? 'step--active' : step > 2 ? 'step--done' : ''}`}>
+            <span className="step__num">{step > 2 ? '' : '2'}</span>
             <span className="step__label">Documents + adresse</span>
           </div>
-          <div className={`step ${isReady ? 'step--active' : ''}`}>
-            <span className="step__num">2</span>
+          <div className={`step ${step === 3 ? 'step--active' : ''}`}>
+            <span className="step__num">3</span>
             <span className="step__label">Paiement</span>
           </div>
         </div>
       )}
 
-      {showForm && (
+      {showForm && step === 1 && (
+        <section className="panel verif-panel">
+          <div className="panel__head">
+            <div className="verif-head">
+              <h2>Vos coordonnées</h2>
+            </div>
+          </div>
+
+          <p className="verif-intro">
+            Ces informations permettent à l&apos;équipe de vous contacter au sujet de votre
+            dossier de vérification.
+          </p>
+
+          <div className="form-grid">
+            <label className={`admin-field${contactErrors.nom ? ' admin-field--error' : ''}`}>
+              <span>Nom *</span>
+              <input
+                type="text"
+                value={contact.nom}
+                onChange={(e) => setContact((prev) => ({ ...prev, nom: e.target.value }))}
+                disabled={savingContact}
+              />
+              {contactErrors.nom && <span className="field-error">{contactErrors.nom}</span>}
+            </label>
+
+            <label className={`admin-field${contactErrors.prenom ? ' admin-field--error' : ''}`}>
+              <span>Prénom *</span>
+              <input
+                type="text"
+                value={contact.prenom}
+                onChange={(e) => setContact((prev) => ({ ...prev, prenom: e.target.value }))}
+                disabled={savingContact}
+              />
+              {contactErrors.prenom && <span className="field-error">{contactErrors.prenom}</span>}
+            </label>
+
+            <label className="admin-field">
+              <span>Email</span>
+              <input type="email" value={gerant?.email || ''} readOnly disabled />
+            </label>
+
+            <label className={`admin-field${contactErrors.phone ? ' admin-field--error' : ''}`}>
+              <span>Téléphone *</span>
+              <input
+                type="tel"
+                value={contact.phone}
+                placeholder="+225 07 00 00 00"
+                onChange={(e) => setContact((prev) => ({ ...prev, phone: e.target.value }))}
+                disabled={savingContact}
+              />
+              {contactErrors.phone && <span className="field-error">{contactErrors.phone}</span>}
+            </label>
+
+            <label className={`admin-field admin-field--full${contactErrors.address ? ' admin-field--error' : ''}`}>
+              <span>Adresse de domicile *</span>
+              <input
+                type="text"
+                value={contact.address}
+                placeholder="Quartier, rue, ville"
+                onChange={(e) => setContact((prev) => ({ ...prev, address: e.target.value }))}
+                disabled={savingContact}
+              />
+              {contactErrors.address && <span className="field-error">{contactErrors.address}</span>}
+            </label>
+          </div>
+
+          <div className="verif-foot">
+            <p className="verif-foot__hint">
+              L&apos;adresse de domicile n&apos;est visible que par l&apos;équipe de vérification.
+            </p>
+            <button
+              className="admin-btn admin-btn--primary"
+              onClick={handleContinueContact}
+              disabled={savingContact}
+            >
+              {savingContact && <span className="verif-spinner" />}
+              {savingContact ? 'Enregistrement...' : 'Enregistrer et continuer →'}
+            </button>
+          </div>
+        </section>
+      )}
+
+      {showForm && step === 2 && (
         <section className="panel verif-panel">
           <div className="panel__head">
             <div className="verif-head">
@@ -634,6 +780,9 @@ export default function VerificationPage() {
           </div>
 
           <div className="verif-foot">
+            <button className="admin-btn" onClick={() => setStep(1)} disabled={savingContact}>
+              ← Retour
+            </button>
             <p className={`verif-foot__hint${isReady ? ' verif-foot__hint--ready' : ''}`}>
               {isReady
                 ? 'Documents et adresse prêts. Passons au paiement.'
@@ -643,8 +792,127 @@ export default function VerificationPage() {
             </p>
             <button
               className="admin-btn admin-btn--primary"
+              onClick={() => setStep(3)}
+              disabled={!isReady}
+            >
+              Continuer vers le paiement →
+            </button>
+          </div>
+        </section>
+      )}
+
+      {showForm && step === 3 && (
+        <section className="panel verif-panel">
+          <div className="panel__head">
+            <div className="verif-head">
+              <h2>Récapitulatif et paiement</h2>
+              <span className="verif-fee">2 000 XOF</span>
+            </div>
+          </div>
+
+          <p className="verif-intro">
+            Vérifiez le récapitulatif ci-dessous avant de régler les{' '}
+            <strong>frais de vérification de 2 000 XOF</strong>.
+          </p>
+
+          <div className="verif-recap">
+            <div className="verif-recap__section">
+              <h3 className="verif-recap__title">Coordonnées</h3>
+              <dl className="verif-recap__list">
+                <div className="verif-recap__row">
+                  <dt>Nom</dt>
+                  <dd>{contact.nom} {contact.prenom}</dd>
+                </div>
+                <div className="verif-recap__row">
+                  <dt>Email</dt>
+                  <dd>{gerant?.email || '—'}</dd>
+                </div>
+                <div className="verif-recap__row">
+                  <dt>Téléphone</dt>
+                  <dd>{contact.phone}</dd>
+                </div>
+                <div className="verif-recap__row">
+                  <dt>Adresse de domicile</dt>
+                  <dd>{contact.address}</dd>
+                </div>
+              </dl>
+            </div>
+
+            <div className="verif-recap__section">
+              <h3 className="verif-recap__title">Documents</h3>
+              <dl className="verif-recap__list">
+                {DOC_ORDER.map((docType) => {
+                  const doc = uploads[docType].uploaded;
+                  return (
+                    <div className="verif-recap__row" key={docType}>
+                      <dt>{DOC_LABELS[docType].title}</dt>
+                      <dd>
+                        <span
+                          className={`admin-badge ${doc ? 'admin-badge--success' : 'admin-badge--warning'}`}
+                        >
+                          <span className="badge-dot"></span>
+                          {doc ? 'Déposé' : 'Manquant'}
+                        </span>
+                      </dd>
+                    </div>
+                  );
+                })}
+              </dl>
+            </div>
+
+            <div className="verif-recap__section">
+              <h3 className="verif-recap__title">Adresse de l&apos;appartement</h3>
+              <dl className="verif-recap__list">
+                <div className="verif-recap__row">
+                  <dt>Google Maps</dt>
+                  <dd>
+                    {hasAddress && verificationStatus?.property_maps_url ? (
+                      <a
+                        className="verif-address__link"
+                        href={verificationStatus.property_maps_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Ouvrir dans Google Maps ↗
+                      </a>
+                    ) : (
+                      'Non enregistrée'
+                    )}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+
+          <div className="verif-fee-note">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="16" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+            <span>
+              Frais de vérification : <strong>2 000 XOF</strong>. Le paiement ouvre une page
+              sécurisée, puis votre dossier passe en examen.
+            </span>
+          </div>
+
+          <div className="verif-foot">
+            <button className="admin-btn" onClick={() => setStep(2)}>
+              ← Retour
+            </button>
+            <p className={`verif-foot__hint${isReady && online ? ' verif-foot__hint--ready' : ''}`}>
+              {!online
+                ? 'Connexion requise pour payer.'
+                : isReady
+                  ? 'Dossier complet. Vous pouvez payer.'
+                  : !hasBothDocs
+                    ? 'Les 2 faces de la carte sont requises.'
+                    : 'L\'adresse Google Maps est requise.'}
+            </p>
+            <button
+              className="admin-btn admin-btn--primary"
               onClick={handleSubmit}
-              disabled={!isReady || submitting}
+              disabled={!isReady || submitting || !online}
             >
               {submitting && <span className="verif-spinner" />}
               {submitting ? 'Redirection...' : 'Soumettre et payer 2 000 XOF'}

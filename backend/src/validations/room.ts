@@ -13,7 +13,7 @@ export const roomCreateSchema = z
     price_unit: z.enum(['/ mois', '/ nuit']),
     img: imageUrlSchema,
     alt: optionalText(300),
-    images: z.array(imageUrlSchema).min(1).max(20),
+    images: z.array(imageUrlSchema).min(1).max(3),
     description: z.string().trim().min(1).max(10000),
     capacity: optionalText(100),
     category: z.string().trim().min(1).max(200),

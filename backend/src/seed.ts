@@ -287,6 +287,63 @@ async function seedEvents() {
   console.log(`  ${toInsert.length} événements créés (${rows.length - toInsert.length} existants conservés)`);
 }
 
+// Section Tourisme : une ligne = une destination affichée en carte.
+// `featured: false` partout : avec les événements seedés ci-dessus, la règle
+// (ville avec événement dans les 30 jours) place Tori Bossito + Ouidah en
+// grosses cartes côté BJ et Abidjan + Bouaké côté CI. L'admin reste libre de
+// forcer une autre destination via « mettre en avant ».
+type TourismSeed = {
+  id: string;
+  market: 'CI' | 'BJ';
+  city: string;
+  title: string;
+  description: string;
+  img: string;
+  alt: string;
+};
+
+const defaultTourismDestinations: TourismSeed[] = [
+  { id: 'des-bj-ouidah', market: 'BJ', city: 'Ouidah', title: 'Ouidah', description: "Plages de sable fin, cœur touristique et berceau de la mémoire de l'esclavage.", img: '/images/ouidah.jpg', alt: "Plage d'Ouidah" },
+  { id: 'des-bj-tori-bossito', market: 'BJ', city: 'Tori Bossito', title: 'Tori Bossito', description: 'Vallées, rivières et villages : randonnées encadrées et artisanat local.', img: '/images/tori.jpg', alt: 'Vallées de Tori Bossito' },
+  { id: 'des-bj-grand-popo', market: 'BJ', city: 'Grand Popo', title: 'Grand Popo', description: 'Une ambiance chaleureuse, une plage magnifique et une culture vivante.', img: '/images/tori.jpg', alt: 'Plage de Grand Popo' },
+  { id: 'des-bj-nikki', market: 'BJ', city: 'Nikki', title: 'Nikki', description: 'Village lacustre aux maisons colorées sur pilotis.', img: '/images/pexels-artbovich-7214173.jpg', alt: 'Maisons colorées de Nikki' },
+  { id: 'des-bj-ganvie', market: 'BJ', city: 'Ganvié', title: 'Ganvié', description: "Venise de l'Afrique, marchés flottants et traditions.", img: '/images/pexels-fotoaibe-1571460.jpg', alt: 'Marché flottant de Ganvié' },
+  { id: 'des-bj-porto-novo', market: 'BJ', city: 'Porto-Novo', title: 'Porto-Novo', description: 'Capitale culturelle, architecture afro-brésilienne.', img: '/images/pexels-artbovich-7045712.jpg', alt: 'Architecture de Porto-Novo' },
+  { id: 'des-bj-abomey', market: 'BJ', city: 'Abomey', title: 'Abomey', description: 'Palais royaux classés au patrimoine mondial UNESCO.', img: '/images/pexels-artbovich-6283961.jpg', alt: 'Palais royaux d’Abomey' },
+  { id: 'des-ci-abidjan', market: 'CI', city: 'Abidjan', title: 'Abidjan', description: 'Le Plateau, Cocody et la lagune Ébrié : énergie, maquis et scènes culturelles.', img: '/images/pexels-artbovich-7214173.jpg', alt: 'Abidjan vue depuis la ville' },
+  { id: 'des-ci-bouake', market: 'CI', city: 'Bouaké', title: 'Bouaké', description: 'Deuxième ville du pays : grand marché, artisanat et capitale des masques.', img: '/images/pexels-artbovich-6782567.jpg', alt: 'Grand marché de Bouaké' },
+  { id: 'des-ci-grand-bassam', market: 'CI', city: 'Grand-Bassam', title: 'Grand-Bassam', description: "Première capitale du pays, classée à l'UNESCO : patrimoine créole et plages de sable fin.", img: '/images/pexels-fotoaibe-1571460.jpg', alt: 'Plage de Grand-Bassam' },
+  { id: 'des-ci-assinie', market: 'CI', city: 'Assinie', title: 'Assinie', description: 'Plages et lagunes entre cocotiers, à deux pas d’Abidjan.', img: '/images/pexels-artbovich-7045712.jpg', alt: 'Lagune d’Assinie' },
+  { id: 'des-ci-yamoussoukro', market: 'CI', city: 'Yamoussoukro', title: 'Yamoussoukro', description: 'Basilique de la Paix et jardins de la capitale politique.', img: '/images/pexels-artbovich-6283961.jpg', alt: 'Basilique de Yamoussoukro' },
+  { id: 'des-ci-korhogo', market: 'CI', city: 'Korhogo', title: 'Korhogo', description: 'Capitale du nord : tissages, masques et savanes.', img: '/images/ouidah.jpg', alt: 'Tissages de Korhogo' },
+  { id: 'des-ci-san-pedro', market: 'CI', city: 'San-Pédro', title: 'San-Pédro', description: 'Premier port du pays, plages et faune marine.', img: '/images/tori.jpg', alt: 'Plage de San-Pédro' },
+];
+
+// Comme les événements : l'admin est la source de vérité, on n'insère que les
+// IDs absents pour ne pas réinitialiser ce qu'il aurait édité entre deux
+// lancements du seed.
+async function seedTourism() {
+  const rows = defaultTourismDestinations.map((destination) => ({ ...destination, featured: false }));
+
+  const { data: existing, error: checkError } = await supabaseAdmin
+    .from('tourism_destinations')
+    .select('id')
+    .in('id', rows.map((r) => r.id));
+  if (checkError) throw checkError;
+
+  const existingIds = new Set((existing ?? []).map((r) => r.id));
+  const toInsert = rows.filter((r) => !existingIds.has(r.id));
+
+  if (toInsert.length === 0) {
+    console.log('  destinations déjà présentes — inchangé');
+    return;
+  }
+
+  const { error } = await supabaseAdmin.from('tourism_destinations').insert(toInsert);
+  if (error) throw error;
+  console.log(`  ${toInsert.length} destinations créées (${rows.length - toInsert.length} existantes conservées)`);
+}
+
 // La table `admins` est vide tant que personne ne l'écrit : sans ce seed,
 // /api/admin/login répond toujours 401 « Email ou mot de passe incorrect ».
 // Aucun mot de passe en dur : il vient de l'environnement. Si le compte
@@ -347,6 +404,9 @@ async function seed() {
 
   console.log('Seeding events...');
   await seedEvents();
+
+  console.log('Seeding tourism destinations...');
+  await seedTourism();
 
   console.log('Done!');
 }

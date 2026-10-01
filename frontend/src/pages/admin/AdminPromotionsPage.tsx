@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiAdmin } from '../../lib/adminApi';
 import { apiRooms, type RoomData } from '../../lib/api';
+import { priceWithCurrency } from '../../lib/roomDisplay';
 
 type PromoKey = 'promo_15' | 'promo_10' | 'promo_5';
 
@@ -206,7 +207,7 @@ export default function AdminPromotionsPage() {
                         <td style={{ fontSize: '13px', color: 'var(--admin-ink-soft)' }}>
                           {(room as any).gerant?.prenom} {(room as any).gerant?.nom}
                         </td>
-                        <td style={{ fontSize: '13px' }}>{room.price} {room.price_unit}</td>
+                        <td style={{ fontSize: '13px' }}>{priceWithCurrency(room.price, room.price_unit)}</td>
                         <td style={{ fontSize: '13px' }}>
                           {room.promo_start ? new Date(room.promo_start).toLocaleDateString('fr-FR') : '—'}
                         </td>
@@ -272,7 +273,7 @@ export default function AdminPromotionsPage() {
                         <td style={{ fontSize: '13px', color: 'var(--admin-ink-soft)' }}>
                           {(room as any).gerant?.prenom} {(room as any).gerant?.nom}
                         </td>
-                        <td style={{ fontSize: '13px' }}>{room.price} {room.price_unit}</td>
+                        <td style={{ fontSize: '13px' }}>{priceWithCurrency(room.price, room.price_unit)}</td>
                         <td style={{ fontSize: '13px', color: 'var(--admin-ink-soft)' }}>{room.category}</td>
                         <td>
                           <button

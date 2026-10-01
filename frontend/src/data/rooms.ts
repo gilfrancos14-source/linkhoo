@@ -13,7 +13,8 @@ export interface Room {
   alt: string;
   images: string[];
   description: string;
-  capacity: string;
+  /** Plus saisi ni affiché : conservé pour les données existantes. */
+  capacity?: string;
   category: string;
   market: MarketCode;
   pays: string;

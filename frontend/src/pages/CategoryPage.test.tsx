@@ -214,7 +214,7 @@ describe('CategoryPage — contenu', () => {
     renderPage();
     await screen.findByRole('heading', { level: 1, name: 'Chambres premium' });
 
-    const link = screen.getByRole('link', { name: 'Suite vue mer, dès 25 000 / nuit' });
+    const link = screen.getByRole('link', { name: 'Suite vue mer, dès 25 000 FCFA / nuit' });
     expect(link).toHaveAttribute('href', '/ci/chambre/r1');
     await userEvent.click(link);
 
@@ -262,7 +262,7 @@ describe('CategoryPage — contenu', () => {
     await screen.findByRole('heading', { level: 1, name: 'Chambres premium' });
 
     expect(screen.getByRole('link', { name: 'Accueil' })).toHaveAttribute('href', '/bj');
-    expect(screen.getByRole('link', { name: 'Suite vue mer, dès 25 000 / nuit' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Suite vue mer, dès 25 000 FCFA / nuit' })).toHaveAttribute(
       'href',
       '/bj/chambre/r1',
     );

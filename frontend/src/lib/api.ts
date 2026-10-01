@@ -4,10 +4,37 @@ export const API_BASE = '/api';
 
 export const REQUEST_TIMEOUT_MS = 15_000;
 
+/** Attente maximale du jeton Clerk avant de requêter sans lui : un appel
+   dont le getter ne résout jamais (clerk-js absent, hors-ligne) ne doit
+   jamais bloquer une requête — surtout pas un GET public de la home. */
+export const AUTH_TOKEN_WAIT_MS = 4_000;
+
 let authTokenGetter: (() => Promise<string | null>) | null = null;
 
 export function setAuthTokenGetter(getter: () => Promise<string | null>) {
   authTokenGetter = getter;
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), ms);
+      }),
+    ]);
+  } catch {
+    return null;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+/** Jeton courant, borné : jamais d'attente indéfinie (voir AUTH_TOKEN_WAIT_MS). */
+async function resolveAuthToken(): Promise<string | null> {
+  if (!authTokenGetter) return null;
+  return withTimeout(authTokenGetter(), AUTH_TOKEN_WAIT_MS);
 }
 
 // ── Cache public (GET) ──
@@ -37,7 +64,7 @@ export async function cachedGet<T>(path: string, ttlMs = PUBLIC_CACHE_TTL_MS): P
   // serveur : après une mutation qui a purgé ce cache mémoire, la réponse
   // serveur fraîche doit être visible immédiatement — le cache HTTP du
   // navigateur ne doit jamais nous servir une version périmée.
-  const promise = request<T>(path, { cache: 'no-cache' }).catch((err) => {
+  const promise = request<T>(path, { cache: 'no-cache', public: true }).catch((err) => {
     // Une erreur n'est jamais mise en cache : le prochain appel réessaiera.
     publicCache.delete(path);
     throw err;
@@ -57,23 +84,32 @@ export async function parseJsonBody<T>(res: Response): Promise<T> {
   return JSON.parse(text) as T;
 }
 
-export async function request<T>(path: string, options?: RequestInit): Promise<T> {
+/** Options étendues : `public` marque un GET d'endpoint public. */
+export interface RequestOptions extends RequestInit {
+  /** GET public : ni attente ni envoi du jeton. Nécessaire pour que le
+      service worker puisse intercepter et mettre en cache ces requêtes
+      (il refuse toute requête portant `Authorization`). */
+  public?: boolean;
+}
+
+export async function request<T>(path: string, options?: RequestOptions): Promise<T> {
+  const { public: isPublic, headers: extraHeaders, ...rest } = options ?? {};
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(options?.headers as Record<string, string>),
+    ...(extraHeaders as Record<string, string> | undefined),
   };
 
-  if (authTokenGetter) {
-    const token = await authTokenGetter();
+  if (!isPublic) {
+    const token = await resolveAuthToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
   }
 
   const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
+    ...rest,
     headers,
-    signal: options?.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    signal: rest.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   }).catch((e: unknown) => {
     if (e instanceof Error && e.name === 'TimeoutError') {
       throw new Error('Délai dépassé. Vérifiez votre connexion puis réessayez.');
@@ -86,7 +122,7 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
   }
   // Toute mutation invalide le cache public : une création/édition ne doit
   // jamais être masquée par une réponse mise en cache 60 s plus tôt.
-  if ((options?.method ?? 'GET').toUpperCase() !== 'GET') clearApiCache();
+  if ((rest.method ?? 'GET').toUpperCase() !== 'GET') clearApiCache();
   return parseJsonBody<T>(res);
 }
 
@@ -111,7 +147,7 @@ export interface RoomData {
   alt: string;
   images: string[];
   description: string;
-  capacity: string;
+  capacity?: string;
   category: string;
   market: 'CI' | 'BJ';
   pays: string;
@@ -145,8 +181,9 @@ export const apiRooms = {
       `/rooms/available?market=${market}&arrivee=${arrivee}&depart=${depart}` +
         (ville ? `&ville=${encodeURIComponent(ville)}` : '')
     ),
-  get: (id: string) => request<RoomData>(`/rooms/${id}`),
-  villes: (market?: string) => request<string[]>(market ? `/rooms/villes?market=${market}` : '/rooms/villes'),
+  get: (id: string) => request<RoomData>(`/rooms/${id}`, { public: true }),
+  villes: (market?: string) =>
+    request<string[]>(market ? `/rooms/villes?market=${market}` : '/rooms/villes', { public: true }),
   create: (data: Omit<RoomData, 'id'>) => request<RoomData>('/rooms', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: Partial<RoomData>) => request<RoomData>(`/rooms/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => request<void>(`/rooms/${id}`, { method: 'DELETE' }),
@@ -185,6 +222,32 @@ export interface EventData {
 
 export const apiEvents = {
   list: (market: string) => cachedGet<EventData[]>(`/events?market=${market}`),
+};
+
+// ── Tourisme ──
+// Une destination = une carte de la section Tourisme. Le serveur répond par
+// la partition { big, small } : `big` = les grosses cartes (ville avec un
+// événement dans les 30 prochains jours, ou « mettre en avant » coché par un
+// admin), `small` = le reste — jamais de carte inventée pour compléter.
+export interface DestinationData {
+  id: string;
+  market: 'CI' | 'BJ';
+  city: string;
+  title: string;
+  description: string;
+  img: string;
+  alt: string | null;
+  featured: boolean;
+  created_at?: string;
+}
+
+export interface TourismPartition {
+  big: DestinationData[];
+  small: DestinationData[];
+}
+
+export const apiTourism = {
+  list: (market: string) => cachedGet<TourismPartition>(`/tourism?market=${market}`),
 };
 
 // ── Reservations ──
@@ -301,6 +364,8 @@ export interface GerantData {
   nom: string;
   prenom: string;
   phone: string | null;
+  /** Adresse de domicile saisie à l'étape 1 de la vérification. */
+  address?: string | null;
   market: 'CI' | 'BJ';
   is_verified: boolean;
   verified_at: string | null;
@@ -353,7 +418,7 @@ export const apiGerants = {
   getMe: () => {
     return request<GerantData>('/gerants/me');
   },
-  updateMe: (data: { nom?: string; prenom?: string; phone?: string }) =>
+  updateMe: (data: { nom?: string; prenom?: string; phone?: string; address?: string }) =>
     request<GerantData>('/gerants/me', { method: 'PATCH', body: JSON.stringify(data) }),
   deleteDocument: (id: string, docId: string) =>
     request<void>(`/gerants/${id}/documents/${docId}`, { method: 'DELETE' }),
@@ -471,7 +536,7 @@ export interface FeaturedReviewData {
 
 export const apiReviews = {
   listByRoom: (roomId: string) =>
-    request<RoomReviewsResponse>(`/reviews?room_id=${encodeURIComponent(roomId)}`),
+    request<RoomReviewsResponse>(`/reviews?room_id=${encodeURIComponent(roomId)}`, { public: true }),
   listMine: () => request<ReviewData[]>('/reviews/mine'),
   featured: () => cachedGet<FeaturedReviewData[]>('/reviews/featured'),
   create: (data: {

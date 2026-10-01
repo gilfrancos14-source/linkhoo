@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { MarketProvider } from '../../contexts/MarketContext';
@@ -9,6 +9,7 @@ import type { GerantData, VerificationDocument, VerificationStatusResponse } fro
 const mocks = vi.hoisted(() => ({
   userId: 'user_clerk_1' as string | null,
   getMe: vi.fn<() => Promise<GerantData>>(),
+  updateMe: vi.fn<(data: Partial<GerantData>) => Promise<GerantData>>(),
   getStatus: vi.fn<(id: string) => Promise<VerificationStatusResponse>>(),
   deleteDocument: vi.fn<(id: string, docId: string) => Promise<void>>(),
   submitVerification: vi.fn<
@@ -55,6 +56,7 @@ vi.mock('@clerk/clerk-react', () => ({
 vi.mock('../../lib/api', () => ({
   apiGerants: {
     getMe: mocks.getMe,
+    updateMe: mocks.updateMe,
     getVerificationStatus: mocks.getStatus,
     deleteDocument: mocks.deleteDocument,
     submitVerification: mocks.submitVerification,
@@ -100,6 +102,7 @@ function makeGerant(overrides: Partial<GerantData> = {}): GerantData {
     nom: 'Kouassi',
     prenom: 'Awa',
     phone: '+225 07 00 00 00',
+    address: 'Cocody Angré, 7e tranche, Abidjan',
     market: 'CI',
     is_verified: false,
     verified_at: null,
@@ -180,6 +183,19 @@ async function renderLoaded(entry = '/ci/gerant/verification') {
   return view;
 }
 
+/** Valide l'étape 1 et ouvre l'étape Documents + adresse. */
+async function openDocuments() {
+  await userEvent.click(screen.getByRole('button', { name: /Enregistrer et continuer/ }));
+  await screen.findByRole('heading', { level: 2, name: 'Documents requis' });
+}
+
+/** Traverse les deux premières étapes jusqu'au récapitulatif (dossier complet). */
+async function openPayment() {
+  await openDocuments();
+  await userEvent.click(screen.getByRole('button', { name: /Continuer vers le paiement/ }));
+  await screen.findByRole('heading', { level: 2, name: 'Récapitulatif et paiement' });
+}
+
 function fileInputs(): HTMLInputElement[] {
   return Array.from(document.querySelectorAll<HTMLInputElement>('input[type="file"]'));
 }
@@ -210,6 +226,7 @@ beforeEach(() => {
   urlStubs.reset();
   mocks.userId = 'user_clerk_1';
   mocks.getMe.mockResolvedValue(makeGerant());
+  mocks.updateMe.mockImplementation(async (data) => ({ ...makeGerant(), ...data }));
   mocks.getStatus.mockResolvedValue(makeStatus());
   mocks.deleteDocument.mockResolvedValue(undefined);
   mocks.submitVerification.mockResolvedValue({
@@ -260,7 +277,8 @@ describe('VerificationPage — chargement', () => {
     renderPage();
 
     expect(await screen.findByText(/Confirmez votre identité/)).toBeInTheDocument();
-    expect(screen.getByText('Documents requis')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Vos coordonnées' })).toBeInTheDocument();
+    expect(screen.queryByText('Documents requis')).not.toBeInTheDocument();
     expect(mocks.getStatus).not.toHaveBeenCalled();
   });
 
@@ -278,6 +296,7 @@ describe('VerificationPage — chargement', () => {
 
   it('présente le panneau Documents requis avec ses frais', async () => {
     const { container } = await renderLoaded();
+    await openDocuments();
 
     expect(screen.getByRole('heading', { level: 2, name: 'Documents requis' })).toBeInTheDocument();
     expect(container.querySelector('.verif-fee')).toHaveTextContent('2 000 XOF');
@@ -353,8 +372,8 @@ describe('VerificationPage — états de vérification', () => {
     expect(screen.getByRole('heading', { level: 3, name: 'Demande rejetée' })).toBeInTheDocument();
     expect(screen.getByText('Photo illisible')).toBeInTheDocument();
     expect(screen.getByText(/téléverser de nouveaux documents/)).toBeInTheDocument();
-    // Un dossier rejeté retombe sur le formulaire.
-    expect(screen.getByText('Documents requis')).toBeInTheDocument();
+    // Un dossier rejeté retombe sur le formulaire, à l'étape Coordonnées.
+    expect(screen.getByRole('heading', { level: 2, name: 'Vos coordonnées' })).toBeInTheDocument();
   });
 
   it('affiche une raison de rejet par défaut quand aucune raison n’est fournie', async () => {
@@ -373,6 +392,7 @@ describe('VerificationPage — états de vérification', () => {
 describe('VerificationPage — documents et étapes', () => {
   it('présente les deux faces de la carte avec leurs consignes', async () => {
     await renderLoaded();
+    await openDocuments();
 
     expect(screen.getByRole('heading', { level: 3, name: /Recto/ })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 3, name: /Verso/ })).toBeInTheDocument();
@@ -383,6 +403,7 @@ describe('VerificationPage — documents et étapes', () => {
 
   it('numérote les trois éléments du dossier', async () => {
     const { container } = await renderLoaded();
+    await openDocuments();
 
     const nums = Array.from(container.querySelectorAll('.verif-doc__num')).map(
       (n) => n.textContent,
@@ -390,19 +411,23 @@ describe('VerificationPage — documents et étapes', () => {
     expect(nums).toEqual(['01', '02', '03']);
   });
 
-  it('garde l’étape 1 active tant que le dossier n’est pas complet', async () => {
+  it('affiche les trois étapes du parcours', async () => {
     const { container } = await renderLoaded();
 
-    const [first, second] = steps(container);
+    const [first, second, third] = steps(container);
     expect(first).toHaveClass('step--active');
+    expect(first).toHaveTextContent('Coordonnées');
     expect(second).not.toHaveClass('step--active');
-    expect(second).toHaveTextContent('Paiement');
+    expect(second).toHaveTextContent('Documents + adresse');
+    expect(third).not.toHaveClass('step--active');
+    expect(third).toHaveTextContent('Paiement');
   });
 
-  it('passe l’étape 1 pour terminée quand documents et adresse sont présents', async () => {
+  it('passe l’étape Coordonnées pour terminée une fois les documents ouverts', async () => {
     mocks.getStatus.mockResolvedValue(readyStatus);
 
     const { container } = await renderLoaded();
+    await openDocuments();
 
     const [first, second] = steps(container);
     expect(first).toHaveClass('step--done');
@@ -413,6 +438,7 @@ describe('VerificationPage — documents et étapes', () => {
     mocks.getStatus.mockResolvedValue(makeStatus({ documents: [makeDoc()] }));
 
     await renderLoaded();
+    await openDocuments();
 
     expect(screen.getByAltText(/Recto/)).toHaveAttribute('src', 'https://cdn.test/recto.jpg');
     expect(screen.getByText('En attente')).toBeInTheDocument();
@@ -426,6 +452,7 @@ describe('VerificationPage — documents et étapes', () => {
     );
 
     await renderLoaded();
+    await openDocuments();
 
     expect(screen.getByText('Approuvé')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Remplacer' })).not.toBeInTheDocument();
@@ -439,6 +466,7 @@ describe('VerificationPage — documents et étapes', () => {
     );
 
     await renderLoaded();
+    await openDocuments();
 
     expect(screen.getByText('Rejeté')).toBeInTheDocument();
     expect(screen.getByText('Raison : Corners cut off')).toBeInTheDocument();
@@ -453,6 +481,7 @@ describe('VerificationPage — documents et étapes', () => {
     );
 
     await renderLoaded();
+    await openDocuments();
 
     expect(screen.getByText('carte.pdf')).toBeInTheDocument();
     expect(screen.queryByAltText(/Recto/)).not.toBeInTheDocument();
@@ -462,6 +491,7 @@ describe('VerificationPage — documents et étapes', () => {
 describe('VerificationPage — sélection des fichiers', () => {
   it('affiche l’aperçu local et les actions d’envoi après sélection', async () => {
     await renderLoaded();
+    await openDocuments();
 
     chooseFile(fileInputs()[0], makeFile('recto-choisi.jpg'));
 
@@ -474,6 +504,7 @@ describe('VerificationPage — sélection des fichiers', () => {
 
   it('retire le fichier sélectionné et révoque son aperçu', async () => {
     await renderLoaded();
+    await openDocuments();
 
     chooseFile(fileInputs()[0], makeFile());
     await userEvent.click(screen.getByRole('button', { name: 'Annuler' }));
@@ -486,6 +517,7 @@ describe('VerificationPage — sélection des fichiers', () => {
 
   it('accepte un fichier déposé par glisser-déposer', async () => {
     await renderLoaded();
+    await openDocuments();
 
     fireEvent.drop(dropZones()[0], { dataTransfer: { files: [makeFile('drop.png', 'image/png')] } });
 
@@ -495,6 +527,7 @@ describe('VerificationPage — sélection des fichiers', () => {
 
   it('refuse un fichier déposé qui n’est pas une image', async () => {
     await renderLoaded();
+    await openDocuments();
 
     fireEvent.drop(dropZones()[0], { dataTransfer: { files: [makeFile('notes.txt', 'text/plain')] } });
 
@@ -505,6 +538,7 @@ describe('VerificationPage — sélection des fichiers', () => {
 
   it('surligne la zone de dépôt au survol', async () => {
     await renderLoaded();
+    await openDocuments();
 
     fireEvent.dragOver(dropZones()[0]);
     expect(dropZones()[0]).toHaveClass('verif-drop--dragover');
@@ -517,6 +551,7 @@ describe('VerificationPage — sélection des fichiers', () => {
 describe('VerificationPage — envoi et suppression', () => {
   it('enregistre le document auprès du service puis le persiste', async () => {
     await renderLoaded();
+    await openDocuments();
 
     chooseFile(fileInputs()[0], makeFile('mon-recto.jpg'));
     await userEvent.click(screen.getByRole('button', { name: 'Envoyer' }));
@@ -544,6 +579,7 @@ describe('VerificationPage — envoi et suppression', () => {
   it('verrouille le bouton pendant l’envoi', async () => {
     mocks.upload.mockImplementation(() => new Promise(() => {}));
     await renderLoaded();
+    await openDocuments();
 
     chooseFile(fileInputs()[0], makeFile());
     await userEvent.click(screen.getByRole('button', { name: 'Envoyer' }));
@@ -555,6 +591,7 @@ describe('VerificationPage — envoi et suppression', () => {
   it('affiche l’erreur remontée par le service d’upload', async () => {
     mocks.upload.mockRejectedValue(new Error('Quota dépassé'));
     await renderLoaded();
+    await openDocuments();
 
     chooseFile(fileInputs()[0], makeFile());
     await userEvent.click(screen.getByRole('button', { name: 'Envoyer' }));
@@ -567,6 +604,7 @@ describe('VerificationPage — envoi et suppression', () => {
   it('affiche l’erreur remontée à la persistance du document', async () => {
     mocks.request.mockRejectedValue(new Error('Type de document inconnu'));
     await renderLoaded();
+    await openDocuments();
 
     chooseFile(fileInputs()[0], makeFile());
     await userEvent.click(screen.getByRole('button', { name: 'Envoyer' }));
@@ -578,6 +616,7 @@ describe('VerificationPage — envoi et suppression', () => {
   it('remplace le document déjà déposé', async () => {
     mocks.getStatus.mockResolvedValue(makeStatus({ documents: [makeDoc()] }));
     await renderLoaded();
+    await openDocuments();
 
     await userEvent.click(screen.getByRole('button', { name: 'Remplacer' }));
 
@@ -590,6 +629,7 @@ describe('VerificationPage — envoi et suppression', () => {
     mocks.getStatus.mockResolvedValue(makeStatus({ documents: [makeDoc()] }));
     mocks.deleteDocument.mockRejectedValue(new Error('Suppression impossible'));
     await renderLoaded();
+    await openDocuments();
 
     await userEvent.click(screen.getByRole('button', { name: 'Remplacer' }));
 
@@ -601,12 +641,14 @@ describe('VerificationPage — envoi et suppression', () => {
 describe('VerificationPage — adresse Google Maps', () => {
   it('désactive l’enregistrement tant que l’adresse est vide', async () => {
     await renderLoaded();
+    await openDocuments();
 
     expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeDisabled();
   });
 
   it('enregistre l’adresse saisie et met à jour la position affichée', async () => {
     await renderLoaded();
+    await openDocuments();
     mocks.getStatus.mockResolvedValueOnce(addressStatus);
     const input = screen.getByPlaceholderText(/google\.com\/maps/);
     setText(input, '  https://www.google.com/maps/place/Ilehya  ');
@@ -630,6 +672,7 @@ describe('VerificationPage — adresse Google Maps', () => {
 
   it('déclenche l’enregistrement avec la touche Entrée', async () => {
     await renderLoaded();
+    await openDocuments();
     const input = screen.getByPlaceholderText(/google\.com\/maps/);
     setText(input, 'https://www.google.com/maps/place/Entrer');
 
@@ -646,6 +689,7 @@ describe('VerificationPage — adresse Google Maps', () => {
   it('affiche l’erreur quand le lien est refusé', async () => {
     mocks.setPropertyAddress.mockRejectedValue(new Error('Lien expiré'));
     await renderLoaded();
+    await openDocuments();
     setText(screen.getByPlaceholderText(/google\.com\/maps/), 'https://maps/place/x');
 
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
@@ -658,6 +702,7 @@ describe('VerificationPage — adresse Google Maps', () => {
   it('propose de placer le marqueur quand le lien n’est pas reconnu', async () => {
     mocks.setPropertyAddress.mockRejectedValue(new Error('Lien Google Maps non reconnu'));
     await renderLoaded();
+    await openDocuments();
     setText(screen.getByPlaceholderText(/google\.com\/maps/), 'https://maps/mauvais-lien');
 
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
@@ -671,6 +716,7 @@ describe('VerificationPage — adresse Google Maps', () => {
   it('centre la carte manuelle sur le marché BJ', async () => {
     mocks.setPropertyAddress.mockRejectedValue(new Error('Lien non reconnu'));
     await renderLoaded('/bj/gerant/verification');
+    await openDocuments();
     setText(screen.getByPlaceholderText(/google\.com\/maps/), 'https://maps/mauvais-lien');
 
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
@@ -687,6 +733,7 @@ describe('VerificationPage — adresse Google Maps', () => {
       verification_status: 'none',
     });
     await renderLoaded();
+    await openDocuments();
     // La prochaine recharge de statut renvoie l'adresse déjà enregistrée.
     mocks.getStatus.mockResolvedValueOnce(addressStatus);
     setText(screen.getByPlaceholderText(/google\.com\/maps/), 'https://www.google.com/maps/place/Ilehya');
@@ -714,6 +761,7 @@ describe('VerificationPage — adresse Google Maps', () => {
     mocks.setPropertyAddress.mockRejectedValueOnce(new Error('Lien non reconnu'));
     mocks.setPropertyAddress.mockRejectedValueOnce(new Error('Sauvegarde impossible'));
     await renderLoaded();
+    await openDocuments();
     setText(screen.getByPlaceholderText(/google\.com\/maps/), 'https://maps/mauvais-lien');
     await userEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
     await screen.findByText('Lien non reconnu');
@@ -729,6 +777,7 @@ describe('VerificationPage — adresse Google Maps', () => {
     mocks.getStatus.mockResolvedValue(addressStatus);
 
     await renderLoaded();
+    await openDocuments();
 
     expect(screen.getByTestId('property-map')).toBeInTheDocument();
     expect(screen.getByTestId('property-map')).toHaveAttribute('data-interactive', 'false');
@@ -740,9 +789,10 @@ describe('VerificationPage — adresse Google Maps', () => {
 describe('VerificationPage — soumission et paiement', () => {
   it('indique que les deux faces de la carte manquent', async () => {
     await renderLoaded();
+    await openDocuments();
 
     expect(screen.getByText('Les 2 faces de la carte sont requises.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Soumettre et payer/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Continuer vers le paiement/ })).toBeDisabled();
   });
 
   it('indique que l’adresse manque quand les documents sont présents', async () => {
@@ -753,23 +803,32 @@ describe('VerificationPage — soumission et paiement', () => {
     );
 
     await renderLoaded();
+    await openDocuments();
 
     expect(screen.getByText("L'adresse Google Maps est requise.")).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Soumettre et payer/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Continuer vers le paiement/ })).toBeDisabled();
   });
 
   it('autorise la soumission quand le dossier est complet', async () => {
     mocks.getStatus.mockResolvedValue(readyStatus);
 
     await renderLoaded();
+    await openDocuments();
 
     expect(screen.getByText('Documents et adresse prêts. Passons au paiement.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Continuer vers le paiement/ })).toBeEnabled();
+
+    await userEvent.click(screen.getByRole('button', { name: /Continuer vers le paiement/ }));
+    await screen.findByRole('heading', { level: 2, name: 'Récapitulatif et paiement' });
+
+    expect(screen.getByText('Dossier complet. Vous pouvez payer.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Soumettre et payer/ })).toBeEnabled();
   });
 
   it('soumet le dossier et verrouille le bouton sur la redirection', async () => {
     mocks.getStatus.mockResolvedValue(readyStatus);
     await renderLoaded();
+    await openPayment();
 
     await userEvent.click(screen.getByRole('button', { name: /Soumettre et payer/ }));
 
@@ -782,6 +841,7 @@ describe('VerificationPage — soumission et paiement', () => {
     mocks.getStatus.mockResolvedValue(readyStatus);
     mocks.submitVerification.mockRejectedValue(new Error('Paiement indisponible'));
     await renderLoaded();
+    await openPayment();
 
     await userEvent.click(screen.getByRole('button', { name: /Soumettre et payer/ }));
 
@@ -845,3 +905,142 @@ describe('VerificationPage — soumission et paiement', () => {
     expect(screen.queryByText(/Paiement confirmé/)).not.toBeInTheDocument();
   });
 });
+
+describe('VerificationPage — étape Coordonnées', () => {
+  it('pré-remplit les champs avec le profil du gérant', async () => {
+    await renderLoaded();
+
+    expect(screen.getByLabelText(/Nom \*/)).toHaveValue('Kouassi');
+    expect(screen.getByLabelText(/Prénom \*/)).toHaveValue('Awa');
+    expect(screen.getByLabelText(/^Téléphone \*/)).toHaveValue('+225 07 00 00 00');
+    expect(screen.getByLabelText(/Adresse de domicile \*/)).toHaveValue(
+      'Cocody Angré, 7e tranche, Abidjan',
+    );
+    expect(screen.getByLabelText(/Email/)).toHaveValue('awa@ilehya.ci');
+    expect(screen.getByLabelText(/Email/)).toBeDisabled();
+  });
+
+  it('bloque la continuation tant qu’un champ requis est vide', async () => {
+    await renderLoaded();
+
+    setText(screen.getByLabelText(/Adresse de domicile \*/), '');
+    await userEvent.click(screen.getByRole('button', { name: /Enregistrer et continuer/ }));
+
+    expect(screen.getByText("L'adresse de domicile est requise.")).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { level: 2, name: 'Documents requis' }),
+    ).not.toBeInTheDocument();
+    expect(mocks.updateMe).not.toHaveBeenCalled();
+  });
+
+  it('enregistre les coordonnées puis ouvre l’étape Documents', async () => {
+    await renderLoaded();
+
+    setText(screen.getByLabelText(/Adresse de domicile \*/), '  Riviera Palmeraie, Abidjan  ');
+    await userEvent.click(screen.getByRole('button', { name: /Enregistrer et continuer/ }));
+
+    await screen.findByRole('heading', { level: 2, name: 'Documents requis' });
+    expect(mocks.updateMe).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nom: 'Kouassi',
+        prenom: 'Awa',
+        phone: '+225 07 00 00 00',
+        address: 'Riviera Palmeraie, Abidjan',
+      }),
+    );
+  });
+
+  it('affiche l’erreur quand l’enregistrement échoue', async () => {
+    mocks.updateMe.mockRejectedValue(new Error('Profil introuvable'));
+    await renderLoaded();
+
+    await userEvent.click(screen.getByRole('button', { name: /Enregistrer et continuer/ }));
+
+    expect(await screen.findByText('Profil introuvable')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Vos coordonnées' })).toBeInTheDocument();
+  });
+
+  it('verrouille le bouton pendant l’enregistrement', async () => {
+    mocks.updateMe.mockImplementation(() => new Promise(() => {}));
+    await renderLoaded();
+
+    await userEvent.click(screen.getByRole('button', { name: /Enregistrer et continuer/ }));
+
+    expect(await screen.findByRole('button', { name: /Enregistrement/ })).toBeDisabled();
+  });
+});
+
+describe('VerificationPage — récapitulatif', () => {
+  it('récapitule les coordonnées, les documents et l’adresse avant paiement', async () => {
+    mocks.getStatus.mockResolvedValue(readyStatus);
+
+    await renderLoaded();
+    await openPayment();
+
+    expect(screen.getByText('+225 07 00 00 00')).toBeInTheDocument();
+    expect(screen.getByText('Cocody Angré, 7e tranche, Abidjan')).toBeInTheDocument();
+    expect(screen.getAllByText('Déposé')).toHaveLength(2);
+    expect(screen.getByRole('link', { name: /Ouvrir dans Google Maps/ })).toHaveAttribute(
+      'href',
+      'https://www.google.com/maps/place/Ilehya',
+    );
+    expect(screen.getAllByText(/2 000 XOF/).length).toBeGreaterThan(0);
+  });
+
+  it('revient aux documents depuis le récapitulatif', async () => {
+    mocks.getStatus.mockResolvedValue(readyStatus);
+
+    await renderLoaded();
+    await openPayment();
+
+    await userEvent.click(screen.getByRole('button', { name: /Retour/ }));
+
+    await screen.findByRole('heading', { level: 2, name: 'Documents requis' });
+    expect(mocks.submitVerification).not.toHaveBeenCalled();
+  });
+});
+
+describe('VerificationPage — mode hors-ligne', () => {
+  function setOnline(value: boolean): void {
+    Object.defineProperty(window.navigator, 'onLine', {
+      configurable: true,
+      get: () => value,
+    });
+  }
+
+  afterEach(() => {
+    setOnline(true);
+  });
+
+  it('explique et bloque le paiement hors-ligne', async () => {
+    mocks.getStatus.mockResolvedValue(readyStatus);
+    setOnline(false);
+
+    await renderLoaded();
+    await openPayment();
+
+    expect(screen.getByText('Connexion requise pour payer.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Soumettre et payer/ })).toBeDisabled();
+    expect(mocks.submitVerification).not.toHaveBeenCalled();
+  });
+
+  it('réactive le paiement quand la connexion revient', async () => {
+    mocks.getStatus.mockResolvedValue(readyStatus);
+    setOnline(false);
+
+    await renderLoaded();
+    await openPayment();
+
+    expect(screen.getByRole('button', { name: /Soumettre et payer/ })).toBeDisabled();
+
+    act(() => {
+      setOnline(true);
+      window.dispatchEvent(new Event('online'));
+    });
+
+    expect(screen.getByText('Dossier complet. Vous pouvez payer.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Soumettre et payer/ })).toBeEnabled();
+    expect(mocks.submitVerification).not.toHaveBeenCalled();
+  });
+});
+

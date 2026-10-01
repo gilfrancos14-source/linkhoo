@@ -348,6 +348,10 @@ describe('étape 2 — détails', () => {
     expect(douches).toHaveValue(2);
     expect(screen.getByRole('checkbox')).toBeChecked();
   });
+
+  it("ne demande aucune capacité", async () => {
+    expect(screen.queryByLabelText(/Capacité/)).not.toBeInTheDocument();
+  });
 });
 
 describe('étape 3 — photos', () => {
@@ -371,6 +375,35 @@ describe('étape 3 — photos', () => {
     expect(screen.getByText('Principale')).toBeInTheDocument();
     expect(stubs.createObjectURL).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('Ajoutez au moins une photo')).toBeNull();
+  });
+
+  it('accepte au maximum trois photos', async () => {
+    await selectPhoto(makeFile('a.jpg'));
+    await selectPhoto(makeFile('b.jpg'));
+    await selectPhoto(makeFile('c.jpg'));
+
+    expect(screen.getByAltText('Photo 3')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ajouter' })).toBeNull();
+
+    await selectPhoto(makeFile('d.jpg'));
+
+    expect(screen.queryByAltText('Photo 4')).toBeNull();
+    expect(screen.getAllByTitle('Supprimer')).toHaveLength(3);
+    expect(screen.getByText(/Maximum 3 photos/)).toBeInTheDocument();
+  });
+
+  it('reactive le bouton Ajouter apres une suppression', async () => {
+    await selectPhoto(makeFile('a.jpg'));
+    await selectPhoto(makeFile('b.jpg'));
+    await selectPhoto(makeFile('c.jpg'));
+    await selectPhoto(makeFile('d.jpg'));
+
+    expect(screen.queryByRole('button', { name: 'Ajouter' })).toBeNull();
+
+    await userEvent.click(screen.getAllByTitle('Supprimer')[2]);
+
+    expect(screen.queryByText(/Maximum 3 photos/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Ajouter' })).toBeInTheDocument();
   });
 
   it('refuse un fichier plus lourd que 2 Mo', async () => {
@@ -491,6 +524,7 @@ describe('étape 4 — aperçu et enregistrement', () => {
         ville: 'Cotonou',
         quartier: 'Haie Vive',
         description: 'Vue sur mer, calme absolu.',
+        subtitle: 'Vue sur mer, calme absolu.',
         category: 'cat-appart',
         priceNum: 660,
         price: '660',

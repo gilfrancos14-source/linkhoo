@@ -74,6 +74,30 @@ describe('StayCard', () => {
     expect(document.querySelector('.stay-card__arrow')).not.toBeInTheDocument();
   });
 
+  it("n'affiche pas de paragraphe de description quand elle est vide", () => {
+    renderCard({ description: '   ' });
+
+    expect(document.querySelector('.stay-card__desc')).not.toBeInTheDocument();
+  });
+
+  it('retire les caractéristiques vides (capacité non renseignée)', () => {
+    renderCard({ meta: ['', '   ', '2 chambres'] });
+
+    const items = screen.getAllByRole('listitem');
+    expect(items).toHaveLength(1);
+    expect(items[0]).toHaveTextContent('2 chambres');
+  });
+
+  it('groupe les milliers et ajoute la devise absente', () => {
+    renderCard({ price: '75000', priceUnit: '/ mois' });
+
+    const price = document.querySelector('.stay-card__price');
+    expect(price?.querySelector('strong')?.textContent).toBe('75 000 FCFA\u00A0/ mois');
+    expect(
+      screen.getByRole('link', { name: 'Villa Azur, dès 75 000 FCFA / mois' }),
+    ).toBeInTheDocument();
+  });
+
   it('affiche le tag et le badge quand ils sont fournis', () => {
     renderCard({ tag: 'Nouveau', badge: 'Complet', badgeVariant: 'unavailable' });
 

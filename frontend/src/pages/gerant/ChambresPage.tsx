@@ -4,6 +4,7 @@ import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
 import { fetchMyRooms, updateRoom, deleteRoom, toggleRoom, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
+import { priceWithCurrency } from '../../lib/roomDisplay';
 
 export default function ChambresPage() {
   const { market } = useMarket();
@@ -143,7 +144,7 @@ export default function ChambresPage() {
                     </select>
                   </td>
                   <td className="admin-table__price">
-                    {room.price} FCFA <span className="admin-table__unit">{room.priceUnit}</span>
+                    {priceWithCurrency(room.price, room.priceUnit)} <span className="admin-table__unit">{room.priceUnit}</span>
                   </td>
                   <td>
                     <button

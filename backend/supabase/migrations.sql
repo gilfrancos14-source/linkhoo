@@ -417,3 +417,38 @@ $$;
 -- Recharge le cache de schéma de PostgREST pour que rpc() voie la nouvelle
 -- signature immédiatement.
 NOTIFY pgrst, 'reload schema';
+
+
+-- ============================================================
+-- 22. Section Tourisme (destinations)
+-- ============================================================
+-- Une ligne = une destination touristique affichée en carte (image, titre,
+-- ville, description). `featured` laisse l'admin forcer la grosse carte ;
+-- sinon une destination n'est grosse carte que si sa `city` a un événement
+-- dans les UPCOMING_WINDOW_DAYS prochains jours (src/utils/tourism.ts).
+CREATE TABLE IF NOT EXISTS tourism_destinations (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  market TEXT CHECK (market IN ('CI', 'BJ')) NOT NULL,
+  city TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  img TEXT NOT NULL,
+  alt TEXT,
+  featured BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tourism_market ON tourism_destinations(market);
+
+-- Lecture publique uniquement : les écritures passent par le service role
+-- (routes admin), qui ignore RLS.
+ALTER TABLE tourism_destinations ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS public_select_tourism ON tourism_destinations;
+CREATE POLICY public_select_tourism ON tourism_destinations FOR SELECT USING (true);
+
+-- 23. Adresse de domicile du gérant (étape 1 de la vérification)
+ALTER TABLE gerants ADD COLUMN IF NOT EXISTS address TEXT;
+
+-- PostgREST doit recharger son schéma pour voir la nouvelle table.
+NOTIFY pgrst, 'reload schema';

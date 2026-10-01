@@ -192,7 +192,7 @@ describe('PromosSection', () => {
     expect(offers).toHaveLength(2);
     expect(offers[0]).toHaveAttribute('href', '/ci/chambre/r15');
     expect(offers[1]).toHaveAttribute('href', '/ci/chambre/r15b');
-    expect(container.querySelector('.promo-room__price')).toHaveTextContent('50000 FCFA');
+    expect(container.querySelector('.promo-room__price')).toHaveTextContent('50 000 FCFA');
     expect(screen.getAllByText('Salon séparé')).toHaveLength(2);
   });
 

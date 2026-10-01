@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { MarketProvider } from '../contexts/MarketContext';
 import Footer from './Footer';
+import { clearQueue, readQueue } from '../lib/offlineQueue';
 
 const mocks = vi.hoisted(() => ({
   isLoaded: true,
@@ -292,3 +293,64 @@ describe('Footer', () => {
     expect(screen.queryByRole('button', { name: 'Mon espace' })).not.toBeInTheDocument();
   });
 });
+
+describe('Footer — mode hors-ligne', () => {
+  function setOnline(value: boolean): void {
+    Object.defineProperty(window.navigator, 'onLine', {
+      configurable: true,
+      get: () => value,
+    });
+  }
+
+  afterEach(() => {
+    setOnline(true);
+    clearQueue();
+  });
+
+  it("enregistre l'inscription en file d'attente hors-ligne", async () => {
+    setOnline(false);
+    renderFooter();
+
+    await userEvent.type(emailInput(), 'awa@example.com');
+    await submitNewsletter();
+
+    expect(mocks.subscribe).not.toHaveBeenCalled();
+    const stored = readQueue();
+    expect(stored).toHaveLength(1);
+    expect(stored[0]?.type).toBe('newsletter');
+    expect(screen.getByText('Inscription enregistrée : elle sera envoyée au retour de la connexion.')).toBeInTheDocument();
+    expect(emailInput().value).toBe('');
+  });
+
+  it("envoie l'inscription enregistrée quand la connexion revient", async () => {
+    setOnline(false);
+    renderFooter();
+
+    await userEvent.type(emailInput(), 'awa@example.com');
+    await submitNewsletter();
+    expect(readQueue()).toHaveLength(1);
+
+    act(() => {
+      setOnline(true);
+      window.dispatchEvent(new Event('online'));
+    });
+
+    await waitFor(() =>
+      expect(mocks.subscribe).toHaveBeenCalledWith({
+        email: 'awa@example.com',
+        market: 'CI',
+      }),
+    );
+    expect(readQueue()).toEqual([]);
+  });
+
+  it("garde le formulaire utilisable hors-ligne", () => {
+    setOnline(false);
+    renderFooter();
+
+    expect(emailInput()).toBeEnabled();
+    expect(screen.getByRole('button', { name: "S'abonner à la newsletter" })).toBeEnabled();
+    expect(screen.getByText('Nouveaux biens disponibles et offres de séjour, une fois par mois.')).toBeInTheDocument();
+  });
+});
+

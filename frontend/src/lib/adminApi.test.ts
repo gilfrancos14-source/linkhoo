@@ -321,6 +321,62 @@ describe('apiAdmin — endpoints back-office', () => {
     expect(clearCacheMock).toHaveBeenCalledTimes(1);
   });
 
+  it('getDestinations lit la partition big/small du serveur', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ big: [{ id: 'd1', featured: false }], small: [{ id: 'd2', featured: false }] }),
+    );
+
+    const partition = await apiAdmin.getDestinations('BJ');
+
+    expect(firstCall().url).toBe('/api/tourism?market=BJ');
+    expect(firstCall().init.method).toBeUndefined();
+    expect(partition.big.map((d) => d.id)).toEqual(['d1']);
+    expect(partition.small.map((d) => d.id)).toEqual(['d2']);
+    expect(clearCacheMock).not.toHaveBeenCalled();
+  });
+
+  it('createDestination envoie la destination avec featured', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'd1' }));
+
+    await apiAdmin.createDestination({
+      market: 'BJ',
+      city: 'Ouidah',
+      title: 'Ouidah',
+      description: 'Plages et histoire.',
+      img: '/images/ouidah.jpg',
+      alt: "Plage d'Ouidah",
+      featured: true,
+    });
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/tourism');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(String(init.body))).toMatchObject({ city: 'Ouidah', featured: true });
+    expect(clearCacheMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('updateDestination PUT le checkbox « mettre en avant »', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'd1', featured: true }));
+
+    await apiAdmin.updateDestination('d1', { featured: true });
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/tourism/d1');
+    expect(init.method).toBe('PUT');
+    expect(init.body).toBe(JSON.stringify({ featured: true }));
+  });
+
+  it('deleteDestination DELETE la ressource', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 200 }));
+
+    await apiAdmin.deleteDestination('d1');
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/tourism/d1');
+    expect(init.method).toBe('DELETE');
+    expect(clearCacheMock).toHaveBeenCalledTimes(1);
+  });
+
   it('les mutations gérant utilisent les verbes PATCH/POST attendus', async () => {
     fetchMock.mockImplementation(() => Promise.resolve(jsonResponse({ id: 'g1' })));
 

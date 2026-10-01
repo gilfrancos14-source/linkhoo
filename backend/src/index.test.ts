@@ -166,6 +166,14 @@ describe('montage de src/index.ts', () => {
     expect(res.body).toEqual([]);
   });
 
+  it('expose GET /api/tourism (partition big/small) et le met en cache publiquement', async () => {
+    const res = await request(app).get('/api/tourism?market=CI');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ big: [], small: [] });
+    expect(res.headers['cache-control']).toBe('public, max-age=0, stale-while-revalidate=300');
+  });
+
   it('refuse /api/admin/me sans jeton admin', async () => {
     const res = await request(app).get('/api/admin/me');
 
