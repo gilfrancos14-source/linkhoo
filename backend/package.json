@@ -9,6 +9,8 @@
     "start": "node dist/index.js",
     "seed": "tsx src/seed.ts",
     "migrate": "tsx src/db/migrateCli.ts",
+    "migrate:check": "tsx src/db/migrateCli.ts --check",
+    "migrate:audit": "tsx src/db/auditConstraints.ts",
     "seed:demo": "tsx src/seedDemo.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",

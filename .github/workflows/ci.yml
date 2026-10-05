@@ -45,6 +45,17 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      # Pré-vol SQL : lit les fichiers de migration et la base cible
+      # (lecture seule). Sans secret, on saute proprement.
+      - name: Pré-vol des migrations
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "SUPABASE_DB_URL absent — pré-vol ignoré"
+            exit 0
+          fi
+          npm run migrate:check
       - run: npm run build
       - run: npm audit --audit-level=high
         continue-on-error: true

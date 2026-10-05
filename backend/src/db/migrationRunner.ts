@@ -176,6 +176,22 @@ export async function runMigrations(
   return result;
 }
 
+/**
+ * Garde d'exécution : au-delà de `--baseline`, rien ne s'applique sans
+ * `--yes`. Les lignes renvoyées décrivent la marche à suivre complète
+ * (pré-vol, snapshot, exécution) — testées à part.
+ */
+export function pendingGateLines(pending: MigrationStatusEntry[]): string[] {
+  if (pending.length === 0) return [];
+  return [
+    `${pending.length} migration(s) en attente :`,
+    ...pending.map((entry) => `  [ ] ${entry.filename}`),
+    '1. npm run migrate:check   (pré-vol lecture seule)',
+    '2. Snapshot : Supabase → Database → Backups',
+    '3. npm run migrate -- --yes',
+  ];
+}
+
 async function recordMigration(client: MigrationClient, migration: MigrationFile): Promise<void> {
   await client.query(
     'INSERT INTO schema_migrations (version, name) VALUES ($1, $2)',

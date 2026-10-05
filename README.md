@@ -33,9 +33,23 @@ Le script de seed est dans `backend/src/seed.ts`.
 
 ```bash
 cd backend
-npm run migrate            # applique les migrations en attente (SUPABASE_DB_URL requis)
+npm run migrate:check        # pré-vol lecture seule : détecte les blocages avant tout exécution
 npm run migrate -- --status  # état appliquée / en attente
+npm run migrate              # sans migration en attente, ne fait rien
+npm run migrate -- --yes     # exécution explicite quand des migrations attendent
 npm run migrate -- --baseline # enregistre l'état courant sans exécuter (1re installation)
+npm run migrate:audit        # contraintes CHECK non validées + lignes qui les violent
 npm run seed
 ```
+
+### Règles
+
+- **Une migration appliquée ne se modifie plus** : le runner ne la relira
+  jamais, l'édition passe inaperçue. Toute évolution part dans un nouveau
+  fichier `0011_*.sql`.
+- **Avant de pousser** : `npm run migrate:check` (lit les fichiers et la base)
+  et les tests, qui incluent le lint statique des migrations
+  (`backend/src/db/migrationLint.test.ts`, donc la CI).
+- **Avant d'exécuter sur la production** : `npm run migrate:check`, puis un
+  snapshot (Supabase → Database → Backups), puis `npm run migrate -- --yes`.
 

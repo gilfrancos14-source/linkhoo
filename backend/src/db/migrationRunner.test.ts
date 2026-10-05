@@ -7,6 +7,7 @@ import {
   ensureMigrationsTable,
   loadMigrations,
   migrationStatus,
+  pendingGateLines,
   runMigrations,
   type MigrationClient,
 } from './migrationRunner';
@@ -166,6 +167,28 @@ describe('migrationRunner', () => {
       expect(status).toEqual([
         { version: '001', name: 'alpha', filename: '001_alpha.sql', applied: false },
         { version: '002', name: 'beta', filename: '002_beta.sql', applied: true },
+      ]);
+    });
+  });
+
+  describe('pendingGateLines', () => {
+    it('reste vide quand tout est déjà appliqué', () => {
+      expect(pendingGateLines([])).toEqual([]);
+    });
+
+    it('dresse la marche à suivre complète quand des migrations attendent', () => {
+      const lines = pendingGateLines([
+        { version: '001', name: 'alpha', filename: '001_alpha.sql', applied: false },
+        { version: '002', name: 'beta', filename: '002_beta.sql', applied: false },
+      ]);
+
+      expect(lines).toEqual([
+        '2 migration(s) en attente :',
+        '  [ ] 001_alpha.sql',
+        '  [ ] 002_beta.sql',
+        '1. npm run migrate:check   (pré-vol lecture seule)',
+        '2. Snapshot : Supabase → Database → Backups',
+        '3. npm run migrate -- --yes',
       ]);
     });
   });
