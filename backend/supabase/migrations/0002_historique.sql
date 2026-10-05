@@ -368,7 +368,12 @@ END $$;
 -- CREATE OR REPLACE ne remplace pas une signature différente, il créerait une
 -- seconde surcharge et rendrait l'appel rpc() ambigu → on drop toutes les
 -- surcharges existantes avant de recréer.
-DROP FUNCTION IF EXISTS public.create_reservation_checked;
+-- DROP sans liste de types échoue « function name is not unique » dès que
+-- plusieurs surcharges coexistent (0001 en a créé une) : signatures à une à une.
+DROP FUNCTION IF EXISTS public.create_reservation_checked(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, INTEGER, TEXT, INTEGER, TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.create_reservation_checked(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, INTEGER, TEXT, INTEGER, TEXT);
+DROP FUNCTION IF EXISTS public.create_reservation_checked(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, INTEGER, TEXT, INTEGER);
+DROP FUNCTION IF EXISTS public.create_reservation_checked(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, INTEGER, TEXT);
 
 CREATE FUNCTION public.create_reservation_checked(
   p_id TEXT,

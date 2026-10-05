@@ -84,6 +84,10 @@ CREATE TABLE IF NOT EXISTS reservations (
   CHECK (date_debut IS NULL OR date_fin IS NULL OR date_fin > date_debut)
 );
 
+-- Base déjà en production : CREATE TABLE IF NOT EXISTS ne réinjecte pas la
+-- colonne, l'index ci-dessous échouerait sinon. Même geste que 0006.
+ALTER TABLE reservations ADD COLUMN IF NOT EXISTS client_key TEXT;
+
 -- Idempotence : une même clé client ne peut désigner qu'une seule réservation.
 -- Index partiel : les lignes sans client_key (écrites avant cette migration)
 -- n'y prennent pas part et ne bloquent rien.
@@ -362,7 +366,12 @@ CREATE POLICY public_select_tourism ON tourism_destinations FOR SELECT USING (tr
 -- ============================================================
 -- La signature a changé (durée de réservation) : CREATE OR REPLACE ne
 -- remplace pas une signature différente, il créerait une seconde surcharge.
-DROP FUNCTION IF EXISTS public.create_reservation_checked;
+-- DROP sans liste de types échoue « function name is not unique » dès que
+-- plusieurs surcharges coexistent : on drop les signatures connues une à une.
+DROP FUNCTION IF EXISTS public.create_reservation_checked(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, INTEGER, TEXT, INTEGER, TEXT, TEXT);
+DROP FUNCTION IF EXISTS public.create_reservation_checked(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, INTEGER, TEXT, INTEGER, TEXT);
+DROP FUNCTION IF EXISTS public.create_reservation_checked(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, INTEGER, TEXT, INTEGER);
+DROP FUNCTION IF EXISTS public.create_reservation_checked(TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, INTEGER, TEXT);
 CREATE OR REPLACE FUNCTION public.create_reservation_checked(
   p_id TEXT,
   p_client_name TEXT,
