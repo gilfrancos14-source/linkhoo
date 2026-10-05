@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
 import { supabaseAdmin } from '../config/supabase';
+import { publishNotificationChanged } from '../utils/realtime';
 import { requireClerkAuth } from '../middleware/clerkAuth';
 import { idParamsSchema } from '../validations/common';
 import { createClientLimiter } from '../utils/rateLimiters';
@@ -225,6 +226,7 @@ router.post('/client', requireClerkAuth, async (req: Request, res: Response, nex
       .select()
       .single();
     if (error) throw error;
+    void publishNotificationChanged('client');
     res.status(201).json(data);
   } catch (err) {
     next(err);

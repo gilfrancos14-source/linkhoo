@@ -7,17 +7,32 @@ import type { Room } from '../data/rooms';
 import type { Category } from '../data/categories';
 import CategoryPage from './CategoryPage';
 
+type RoomsPage = { items: Room[]; total: number; page: number; limit: number };
+
+type RoomsPageParams = {
+  market: 'CI' | 'BJ';
+  category?: string;
+  ville?: string;
+  quartier?: string;
+  chambres?: number;
+  disponible?: true;
+  page?: number;
+  limit?: number;
+};
+
 const mocks = vi.hoisted(() => ({
-  fetchRoomsByMarket: vi.fn<(market: 'CI' | 'BJ') => Promise<unknown[]>>(),
+  fetchRoomsPage: vi.fn<(params: RoomsPageParams) => Promise<RoomsPage>>(),
+  fetchVilles: vi.fn<(market?: 'CI' | 'BJ') => Promise<string[]>>(),
+  fetchQuartiers: vi.fn<(market?: 'CI' | 'BJ') => Promise<string[]>>(),
   fetchCategoriesByMarket: vi.fn<(market: 'CI' | 'BJ') => Promise<unknown[]>>(),
   request: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   cachedGet: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
 }));
 
 // Les modules de données sont la couche réseau de cette page : ils sont
-// remplacés intégralement (helpers de villes/quartiers conservés via
-// importOriginal). `request`/`cachedGet` sont verrouillés en rejet pour
-// garantir qu'aucun vrai fetch ne peut partir depuis ce fichier de test.
+// remplacés intégralement (helpers de display conservés via importOriginal).
+// `request`/`cachedGet` sont verrouillés en rejet pour garantir qu'aucun
+// vrai fetch ne peut partir depuis ce fichier de test.
 vi.mock('../lib/api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../lib/api')>();
   return {
@@ -31,7 +46,9 @@ vi.mock('../data/rooms', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../data/rooms')>();
   return {
     ...actual,
-    fetchRoomsByMarket: mocks.fetchRoomsByMarket,
+    fetchRoomsPage: mocks.fetchRoomsPage,
+    fetchVilles: mocks.fetchVilles,
+    fetchQuartiers: mocks.fetchQuartiers,
   };
 });
 
@@ -76,6 +93,33 @@ function makeRoom(overrides: Partial<Room> = {}): Room {
   };
 }
 
+// Simule le contrat serveur de GET /api/rooms (filtres + pagination),
+// à partir d'un jeu de biens, comme le ferait la base de données.
+function serverDataset(rows: Room[]): void {
+  mocks.fetchRoomsPage.mockImplementation(async (params) => {
+    const filtered = rows.filter((row) => {
+      if (params.category && row.category !== params.category) return false;
+      if (params.ville && row.ville !== params.ville) return false;
+      if (params.quartier && row.quartier !== params.quartier) return false;
+      if (params.chambres !== undefined) {
+        if (params.chambres >= 3 ? row.chambres < 3 : row.chambres !== params.chambres) return false;
+      }
+      if (params.disponible === true && !row.disponible) return false;
+      return true;
+    });
+    const page = params.page || 1;
+    const limit = params.limit || 6;
+    return {
+      items: filtered.slice((page - 1) * limit, page * limit),
+      total: filtered.length,
+      page,
+      limit,
+    };
+  });
+  mocks.fetchVilles.mockResolvedValue([...new Set(rows.map((row) => row.ville))]);
+  mocks.fetchQuartiers.mockResolvedValue([...new Set(rows.map((row) => row.quartier))]);
+}
+
 function renderPage(entry = '/ci/categorie/cat-premium') {
   return render(
     <MemoryRouter initialEntries={[entry]}>
@@ -104,8 +148,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.request.mockRejectedValue(new Error('réseau interdit dans les tests'));
   mocks.cachedGet.mockRejectedValue(new Error('réseau interdit dans les tests'));
-  mocks.fetchRoomsByMarket.mockResolvedValue([]);
   mocks.fetchCategoriesByMarket.mockResolvedValue(CATEGORIES);
+  serverDataset([]);
 });
 
 afterEach(() => {
@@ -116,8 +160,8 @@ afterEach(() => {
 
 describe('CategoryPage — états', () => {
   it('affiche le chargement tant que les données ne sont pas revenues', () => {
-    mocks.fetchRoomsByMarket.mockReturnValue(new Promise<Room[]>(() => {}));
-    mocks.fetchCategoriesByMarket.mockReturnValue(new Promise<Category[]>(() => {}));
+    mocks.fetchRoomsPage.mockReturnValue(new Promise<never>(() => {}));
+    mocks.fetchCategoriesByMarket.mockReturnValue(new Promise<never>(() => {}));
 
     renderPage();
 
@@ -126,7 +170,7 @@ describe('CategoryPage — états', () => {
   });
 
   it('affiche le titre de la catégorie et son nombre de résultats', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([
+    serverDataset([
       makeRoom(),
       makeRoom({ id: 'r2', title: 'Bungalow jardin' }),
       makeRoom({ id: 'r3', title: 'Loft terrasse' }),
@@ -139,7 +183,7 @@ describe('CategoryPage — états', () => {
   });
 
   it('accorde le compteur au singulier pour un seul résultat', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom()]);
+    serverDataset([makeRoom()]);
 
     renderPage();
 
@@ -154,7 +198,7 @@ describe('CategoryPage — états', () => {
   });
 
   it("remonte l'erreur de chargement en état catégorie introuvable", async () => {
-    mocks.fetchRoomsByMarket.mockRejectedValue(new Error('panne api'));
+    mocks.fetchRoomsPage.mockRejectedValue(new Error('panne api'));
     mocks.fetchCategoriesByMarket.mockRejectedValue(new Error('panne api'));
 
     renderPage();
@@ -163,9 +207,10 @@ describe('CategoryPage — états', () => {
   });
 
   it("affiche l'état vide des filtres quand aucun bien ne correspond", async () => {
-    // Les options des listes dérivent des biens : la combinaison Ville +
-    // Quartier (Abidjan + Ficaye, qui appartient à Grand-Bassam) est vide.
-    mocks.fetchRoomsByMarket.mockResolvedValue([
+    // Les options des listes viennent du serveur pour tout le marché : la
+    // combinaison Ville + Quartier (Abidjan + Ficaye, qui appartient à
+    // Grand-Bassam) est vide.
+    serverDataset([
       makeRoom({ ville: 'Grand-Bassam', quartier: 'Ficaye' }),
       makeRoom({ id: 'r2', ville: 'Abidjan', quartier: 'Cocody' }),
     ]);
@@ -176,14 +221,14 @@ describe('CategoryPage — états', () => {
     await userEvent.selectOptions(screen.getByLabelText('Ville'), 'Abidjan');
     await userEvent.selectOptions(screen.getByLabelText('Quartier'), 'Ficaye');
 
-    expect(screen.getByText('Aucun résultat ne correspond à vos filtres.')).toBeInTheDocument();
+    expect(await screen.findByText('Aucun résultat ne correspond à vos filtres.')).toBeInTheDocument();
     expect(cardCount(document.body)).toBe(0);
   });
 });
 
 describe('CategoryPage — contenu', () => {
   it('affiche le fil d’Ariane avec la catégorie courante', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom()]);
+    serverDataset([makeRoom()]);
 
     renderPage();
 
@@ -195,21 +240,20 @@ describe('CategoryPage — contenu', () => {
   });
 
   it("n'affiche que les chambres de la catégorie demandée", async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([
+    serverDataset([
       makeRoom(),
       makeRoom({ id: 'r2', category: 'cat-moins', title: 'Chambre économique' }),
     ]);
 
     renderPage();
 
-    await screen.findByRole('heading', { level: 1, name: 'Chambres premium' });
-    expect(screen.getByRole('heading', { level: 3, name: 'Suite vue mer' })).toBeInTheDocument();
+    await screen.findByRole('heading', { level: 3, name: 'Suite vue mer' });
     expect(screen.queryByRole('heading', { level: 3, name: 'Chambre économique' })).not.toBeInTheDocument();
     expect(cardCount(document.body)).toBe(1);
   });
 
   it('mène vers la page de la chambre au clic', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom()]);
+    serverDataset([makeRoom()]);
 
     renderPage();
     await screen.findByRole('heading', { level: 1, name: 'Chambres premium' });
@@ -222,7 +266,7 @@ describe('CategoryPage — contenu', () => {
   });
 
   it('marque les chambres indisponibles d’un badge explicite', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([
+    serverDataset([
       makeRoom(),
       makeRoom({ id: 'r2', disponible: false, title: 'Chambre fermée' }),
     ]);
@@ -234,8 +278,19 @@ describe('CategoryPage — contenu', () => {
     expect(document.querySelectorAll('.stay-card__badge')).toHaveLength(1);
   });
 
+  it("affiche le badge « Premium » sur les biens d’un gérant premium", async () => {
+    serverDataset([makeRoom({ gerantPremium: true }), makeRoom({ id: 'r2', title: 'Chambre classique' })]);
+
+    renderPage();
+    await screen.findByRole('heading', { level: 1, name: 'Chambres premium' });
+
+    expect(screen.getByText('Premium')).toBeInTheDocument();
+    expect(document.querySelector('.stay-card__badge--premium')).toBeInTheDocument();
+    expect(document.querySelectorAll('.stay-card__badge')).toHaveLength(1);
+  });
+
   it('détaille les caractéristiques (capacité et chambres) de chaque bien', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([
+    serverDataset([
       makeRoom({ id: 'r1', title: 'Suite deux chambres', chambres: 2 }),
       makeRoom({ id: 'r2', title: 'Chambre simple', chambres: 1 }),
     ]);
@@ -251,12 +306,16 @@ describe('CategoryPage — contenu', () => {
     renderPage('/bj/categorie/cat-premium');
 
     await screen.findByRole('heading', { level: 1, name: 'Chambres premium' });
-    expect(mocks.fetchRoomsByMarket).toHaveBeenCalledWith('BJ');
+    expect(mocks.fetchRoomsPage).toHaveBeenCalledWith(
+      expect.objectContaining({ market: 'BJ', category: 'cat-premium' }),
+    );
     expect(mocks.fetchCategoriesByMarket).toHaveBeenCalledWith('BJ');
+    expect(mocks.fetchVilles).toHaveBeenCalledWith('BJ');
+    expect(mocks.fetchQuartiers).toHaveBeenCalledWith('BJ');
   });
 
   it('construit les liens dans le marché courant (BJ)', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom({ market: 'BJ' })]);
+    serverDataset([makeRoom({ market: 'BJ' })]);
 
     renderPage('/bj/categorie/cat-premium');
     await screen.findByRole('heading', { level: 1, name: 'Chambres premium' });
@@ -269,7 +328,7 @@ describe('CategoryPage — contenu', () => {
   });
 
   it('ne laisse partir aucune requête réseau non mockée', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom()]);
+    serverDataset([makeRoom()]);
 
     renderPage();
     await screen.findByRole('heading', { level: 1, name: 'Chambres premium' });
@@ -279,7 +338,7 @@ describe('CategoryPage — contenu', () => {
   });
 
   it('repasse par l’état de chargement quand le marché change', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom({ market: 'BJ' })]);
+    serverDataset([makeRoom({ market: 'BJ' })]);
 
     renderPage('/ci/categorie/cat-premium');
     await screen.findByRole('heading', { level: 1, name: 'Chambres premium' });
@@ -288,13 +347,15 @@ describe('CategoryPage — contenu', () => {
 
     expect(screen.getByText('Chargement...')).toBeInTheDocument();
     expect(await screen.findByRole('heading', { level: 1, name: 'Chambres premium' })).toBeInTheDocument();
-    expect(mocks.fetchRoomsByMarket).toHaveBeenLastCalledWith('BJ');
+    expect(mocks.fetchRoomsPage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ market: 'BJ', category: 'cat-premium' }),
+    );
   });
 });
 
 describe('CategoryPage — filtres', () => {
   beforeEach(async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([
+    serverDataset([
       makeRoom({ id: 'r1', title: 'Suite Ficaye', ville: 'Grand-Bassam', quartier: 'Ficaye', chambres: 1 }),
       makeRoom({ id: 'r2', title: 'Bungalow Cocody', ville: 'Abidjan', quartier: 'Cocody', chambres: 2 }),
       makeRoom({
@@ -313,59 +374,59 @@ describe('CategoryPage — filtres', () => {
   it('filtre par ville', async () => {
     await userEvent.selectOptions(screen.getByLabelText('Ville'), 'Abidjan');
 
-    expect(screen.getByText('2 résultats')).toBeInTheDocument();
+    expect(await screen.findByText('2 résultats')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 3, name: 'Suite Ficaye' })).not.toBeInTheDocument();
   });
 
   it('filtre par quartier', async () => {
     await userEvent.selectOptions(screen.getByLabelText('Quartier'), 'Cocody');
 
-    expect(screen.getByText('1 résultat')).toBeInTheDocument();
+    expect(await screen.findByText('1 résultat')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 3, name: 'Bungalow Cocody' })).toBeInTheDocument();
   });
 
   it('filtre par nombre de chambres avec la borne « 3+ »', async () => {
     await userEvent.selectOptions(screen.getByLabelText('Chambres'), '1');
+    expect(await screen.findByRole('heading', { level: 3, name: 'Suite Ficaye' })).toBeInTheDocument();
     expect(screen.getByText('1 résultat')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 3, name: 'Suite Ficaye' })).toBeInTheDocument();
 
     await userEvent.selectOptions(screen.getByLabelText('Chambres'), '3');
-    expect(screen.getByText('1 résultat')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 3, name: 'Loft Plateau' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 3, name: 'Suite Ficaye' })).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 3, name: 'Loft Plateau' })).toBeInTheDocument();
+    expect(screen.getByText('1 résultat')).toBeInTheDocument();
   });
 
   it('filtre sur les seules chambres disponibles', async () => {
     await userEvent.selectOptions(screen.getByLabelText('Disponible'), 'yes');
 
-    expect(screen.getByText('2 résultats')).toBeInTheDocument();
+    expect(await screen.findByText('2 résultats')).toBeInTheDocument();
     expect(screen.queryByText('Indisponible')).not.toBeInTheDocument();
   });
 
   it('réinitialise les filtres avec le bouton du panneau', async () => {
     await userEvent.selectOptions(screen.getByLabelText('Ville'), 'Abidjan');
-    expect(screen.getByText('2 résultats')).toBeInTheDocument();
+    expect(await screen.findByText('2 résultats')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Réinitialiser' }));
 
-    expect(screen.getByText('3 résultats')).toBeInTheDocument();
+    expect(await screen.findByText('3 résultats')).toBeInTheDocument();
     expect(screen.getByLabelText('Ville')).toHaveValue('');
   });
 
   it('réinitialise les filtres depuis l’état vide', async () => {
     await userEvent.selectOptions(screen.getByLabelText('Ville'), 'Abidjan');
     await userEvent.selectOptions(screen.getByLabelText('Quartier'), 'Ficaye');
-    expect(screen.getByText('Aucun résultat ne correspond à vos filtres.')).toBeInTheDocument();
+    expect(await screen.findByText('Aucun résultat ne correspond à vos filtres.')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Réinitialiser les filtres' }));
 
-    expect(screen.getByText('3 résultats')).toBeInTheDocument();
+    expect(await screen.findByText('3 résultats')).toBeInTheDocument();
   });
 });
 
 describe('CategoryPage — pagination et changement de catégorie', () => {
   it('pagine au-delà de six chambres', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue(
+    serverDataset(
       Array.from({ length: 7 }, (_, i) => makeRoom({ id: `r${i + 1}`, title: `Chambre ${i + 1}` })),
     );
 
@@ -377,12 +438,12 @@ describe('CategoryPage — pagination et changement de catégorie', () => {
 
     await userEvent.click(screen.getByRole('button', { name: '2' }));
 
+    expect(await screen.findByRole('heading', { level: 3, name: 'Chambre 7' })).toBeInTheDocument();
     expect(cardCount(container)).toBe(1);
-    expect(screen.getByRole('heading', { level: 3, name: 'Chambre 7' })).toBeInTheDocument();
   });
 
   it('réinitialise la page courante quand un filtre est modifié', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([
+    serverDataset([
       makeRoom({ id: 'r1', title: 'Suite Abidjan', ville: 'Abidjan' }),
       ...Array.from({ length: 7 }, (_, i) =>
         makeRoom({ id: `x${i}`, title: `Suite ${i}`, ville: 'Grand-Bassam' }),
@@ -393,16 +454,17 @@ describe('CategoryPage — pagination et changement de catégorie', () => {
     await screen.findByRole('heading', { level: 1, name: 'Chambres premium' });
 
     await userEvent.click(screen.getByRole('button', { name: '2' }));
-    expect(screen.getByRole('heading', { level: 3, name: 'Suite 6' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 3, name: 'Suite 6' })).toBeInTheDocument();
 
     await userEvent.selectOptions(screen.getByLabelText('Ville'), 'Abidjan');
 
+    expect(await screen.findByText('1 résultat')).toBeInTheDocument();
     expect(cardCount(container)).toBe(1);
     expect(screen.queryByRole('navigation', { name: 'Pagination' })).not.toBeInTheDocument();
   });
 
   it('remet les filtres à zéro quand on change de catégorie', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([
+    serverDataset([
       makeRoom({ id: 'r1', title: 'Suite Abidjan', ville: 'Abidjan' }),
       makeRoom({ id: 'r2', title: 'Suite Bassam', ville: 'Grand-Bassam' }),
     ]);

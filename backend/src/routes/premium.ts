@@ -5,6 +5,7 @@ import '../config/fedapay';
 import { requireClerkAuth } from '../middleware/clerkAuth';
 import { premiumInitiateSchema, premiumConfirmSchema } from '../validations/premium';
 import { isValidEmail, withFedapayTimeout } from '../config/fedapayHttp';
+import { isPremiumActive, isPremiumExpired } from '../utils/premium';
 import { mapFedaPayStatus, isNotFoundError, type PremiumTxStatus } from '../smoke/fedapayRiskTests.helpers';
 
 const PREMIUM_AMOUNT = 5000;
@@ -94,11 +95,7 @@ async function hasActivePremiumOnOtherMarket(clerkUserId: string, currentMarket:
   if (error) throw error;
   if (!data) return false;
   if (data.market === currentMarket) return false;
-  return Boolean(
-    data.is_premium &&
-      data.premium_expires_at &&
-      new Date(data.premium_expires_at) > new Date()
-  );
+  return isPremiumActive(data);
 }
 
 async function activatePremiumForClerkUser(
@@ -147,7 +144,7 @@ router.post('/initiate', requireClerkAuth, async (req: Request, res: Response, n
     if (fetchError) throw fetchError;
     if (!gerant) return res.status(404).json({ error: 'Gérant introuvable' });
 
-    if (gerant.is_premium && gerant.premium_expires_at && new Date(gerant.premium_expires_at) > new Date()) {
+    if (isPremiumActive(gerant)) {
       return res.status(400).json({ error: 'Vous êtes déjà premium', expires_at: gerant.premium_expires_at });
     }
 
@@ -440,7 +437,7 @@ router.get('/status', requireClerkAuth, async (req: Request, res: Response, next
     if (!data) return res.status(404).json({ error: 'Gérant introuvable' });
 
     const now = new Date();
-    const isExpired = data.is_premium && data.premium_expires_at && new Date(data.premium_expires_at) <= now;
+    const isExpired = isPremiumExpired(data, now);
 
     if (isExpired) {
       await supabaseAdmin
@@ -449,7 +446,7 @@ router.get('/status', requireClerkAuth, async (req: Request, res: Response, next
         .eq('clerk_user_id', authUserId);
     }
 
-    const isActive = data.is_premium && data.premium_expires_at && new Date(data.premium_expires_at) > now;
+    const isActive = isPremiumActive(data, now);
 
     const { data: pendingTx } = await supabaseAdmin
       .from('premium_transactions')

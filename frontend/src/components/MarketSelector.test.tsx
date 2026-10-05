@@ -11,19 +11,19 @@ function PathProbe() {
 }
 
 function renderSelector(entry: string, options: { withOutside?: boolean } = {}) {
+  const pane = (
+    <MarketProvider>
+      <MarketSelector />
+      <PathProbe />
+    </MarketProvider>
+  );
   return render(
     <>
       <MemoryRouter initialEntries={[entry]}>
         <Routes>
-          <Route
-            path="/:market"
-            element={
-              <MarketProvider>
-                <MarketSelector />
-                <PathProbe />
-              </MarketProvider>
-            }
-          />
+          <Route path="/" element={pane} />
+          <Route path="/:market" element={pane} />
+          <Route path="/:market/*" element={pane} />
         </Routes>
       </MemoryRouter>
       {options.withOutside && (
@@ -41,20 +41,57 @@ afterEach(() => {
   cleanup();
 });
 
-describe('MarketSelector', () => {
-  it('affiche le code du marché courant et annonce la liste', () => {
+describe('MarketSelector — pages de marché', () => {
+  it("n'affiche que le drapeau sur /ci : pas de sélecteur", () => {
     renderSelector('/ci');
+
+    expect(screen.queryByRole('button', { name: 'Choisir le marché' })).toBeNull();
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(
+      screen.getByRole('img', { name: "Marché Côte d'Ivoire" }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('path')).toHaveTextContent('/ci');
+  });
+
+  it("n'affiche que le drapeau sur /bj", () => {
+    renderSelector('/bj');
+
+    expect(screen.queryByRole('button', { name: 'Choisir le marché' })).toBeNull();
+    expect(screen.getByRole('img', { name: 'Marché Bénin' })).toBeInTheDocument();
+  });
+
+  it('reste statique sur une page profonde de marché', () => {
+    renderSelector('/ci/chambre/12');
+
+    expect(screen.queryByRole('button', { name: 'Choisir le marché' })).toBeNull();
+    expect(
+      screen.getByRole('img', { name: "Marché Côte d'Ivoire" }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('MarketSelector — page d’accueil', () => {
+  it("garde le sélecteur sur les pages racine /contact et /a-propos", () => {
+    renderSelector('/contact');
+
+    expect(screen.getByRole('button', { name: 'Choisir le marché' })).toBeInTheDocument();
+    expect(screen.getByTestId('path')).toHaveTextContent('/contact');
+  });
+
+  it("affiche l'état neutre (aucun marché) et annonce la liste", () => {
+    renderSelector('/');
 
     const trigger = triggerButton();
     expect(trigger).toHaveAttribute('aria-haspopup', 'listbox');
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByText('CI')).toBeInTheDocument();
-    expect(screen.getByTestId('path')).toHaveTextContent('/ci');
+    expect(screen.getByText('Marché')).toBeInTheDocument();
+    expect(screen.queryByText('CI')).toBeNull();
+    expect(screen.getByTestId('path')).toHaveTextContent('/');
     expect(screen.queryByRole('listbox')).toBeNull();
   });
 
   it('ouvre la liste des marchés au clic sur le déclencheur', async () => {
-    renderSelector('/ci');
+    renderSelector('/');
 
     await userEvent.click(triggerButton());
 
@@ -66,7 +103,7 @@ describe('MarketSelector', () => {
     expect(options).toHaveLength(2);
     expect(screen.getByRole('option', { name: "Côte d'Ivoire" })).toHaveAttribute(
       'aria-selected',
-      'true',
+      'false',
     );
     expect(screen.getByRole('option', { name: 'Bénin' })).toHaveAttribute(
       'aria-selected',
@@ -74,45 +111,34 @@ describe('MarketSelector', () => {
     );
   });
 
-  it('bascule vers le marché Bénin : URL, libellé et fermeture', async () => {
-    renderSelector('/ci');
+  it('bascule vers le marché Bénin : URL puis drapeau statique', async () => {
+    renderSelector('/');
 
     await userEvent.click(triggerButton());
     await userEvent.click(screen.getByRole('button', { name: 'Bénin' }));
 
     expect(screen.getByTestId('path')).toHaveTextContent('/bj');
-    expect(screen.getByText('BJ')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Choisir le marché' })).toBeNull();
+    expect(screen.getByRole('img', { name: 'Marché Bénin' })).toBeInTheDocument();
     expect(screen.queryByRole('listbox')).toBeNull();
-    expect(triggerButton()).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('bascule vers le marché Côte d’Ivoire depuis /bj', async () => {
-    renderSelector('/bj');
-
-    expect(screen.getByText('BJ')).toBeInTheDocument();
+  it("choisit Côte d'Ivoire : navigation vers /ci puis drapeau statique", async () => {
+    renderSelector('/');
 
     await userEvent.click(triggerButton());
     await userEvent.click(screen.getByRole('button', { name: "Côte d'Ivoire" }));
 
     expect(screen.getByTestId('path')).toHaveTextContent('/ci');
-    expect(screen.getByText('CI')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Choisir le marché' })).toBeNull();
+    expect(
+      screen.getByRole('img', { name: "Marché Côte d'Ivoire" }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('listbox')).toBeNull();
-  });
-
-  it('referme la liste sans naviguer quand on clique le marché déjà actif', async () => {
-    renderSelector('/ci');
-
-    await userEvent.click(triggerButton());
-    await userEvent.click(
-      screen.getByRole('button', { name: "Côte d'Ivoire" }),
-    );
-
-    expect(screen.queryByRole('listbox')).toBeNull();
-    expect(screen.getByTestId('path')).toHaveTextContent('/ci');
   });
 
   it('referme la liste avec la touche Échap', async () => {
-    renderSelector('/ci');
+    renderSelector('/');
 
     await userEvent.click(triggerButton());
     expect(screen.getByRole('listbox')).toBeInTheDocument();
@@ -123,7 +149,7 @@ describe('MarketSelector', () => {
   });
 
   it('referme la liste quand on clique à l’extérieur', async () => {
-    renderSelector('/ci', { withOutside: true });
+    renderSelector('/', { withOutside: true });
 
     await userEvent.click(triggerButton());
     expect(screen.getByRole('listbox')).toBeInTheDocument();
@@ -134,7 +160,7 @@ describe('MarketSelector', () => {
   });
 
   it('ne referme pas la liste sur un mousedown à l’intérieur du sélecteur', async () => {
-    renderSelector('/ci', { withOutside: true });
+    renderSelector('/', { withOutside: true });
 
     await userEvent.click(triggerButton());
     const listbox = screen.getByRole('listbox');
@@ -145,7 +171,7 @@ describe('MarketSelector', () => {
   });
 
   it('referme la liste sur un mousedown extérieur même sans clic complet', async () => {
-    renderSelector('/ci', { withOutside: true });
+    renderSelector('/', { withOutside: true });
 
     await userEvent.click(triggerButton());
     expect(screen.getByRole('listbox')).toBeInTheDocument();

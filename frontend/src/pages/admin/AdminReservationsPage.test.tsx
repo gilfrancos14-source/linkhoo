@@ -2,10 +2,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AdminReservationsPage from './AdminReservationsPage';
-import type { AdminReservation } from '../../lib/adminApi';
+import type {
+  AdminReservation,
+  AdminReservationCounts,
+  AdminReservationsResponse,
+} from '../../lib/adminApi';
+
+interface PageParams {
+  statut?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
 
 const mocks = vi.hoisted(() => ({
-  getReservations: vi.fn<() => Promise<AdminReservation[]>>(),
+  getReservations: vi.fn<(params?: PageParams) => Promise<AdminReservationsResponse>>(),
   checkAvailability: vi.fn<(id: string) => Promise<{ statut: string; reason: string | null }>>(),
 }));
 
@@ -52,6 +63,57 @@ function makeMany(count: number): AdminReservation[] {
   );
 }
 
+/** Compteurs globaux (toutes lignes, indépendamment de la page courante). */
+function countsOf(rows: AdminReservation[]): AdminReservationCounts {
+  return {
+    total: rows.length,
+    pending: rows.filter((r) => r.statut === 'en_attente').length,
+    confirmed: rows.filter((r) => r.statut === 'confirmee').length,
+    cancelled: rows.filter((r) => r.statut === 'annulee').length,
+  };
+}
+
+function makeResponse(
+  items: AdminReservation[],
+  overrides: Partial<AdminReservationsResponse> = {},
+): AdminReservationsResponse {
+  return {
+    items,
+    total: items.length,
+    page: 1,
+    limit: 10,
+    counts: countsOf(items),
+    ...overrides,
+  };
+}
+
+/**
+ * Simule le contrat serveur de GET /api/admin/reservations (RPC SQL) :
+ * filtre statut + recherche, pagination, compteurs globaux.
+ */
+function serverDataset(rows: AdminReservation[]): void {
+  mocks.getReservations.mockImplementation(async (params = {}) => {
+    const term = (params.search ?? '').toLowerCase();
+    const searched = rows.filter((row) =>
+      !term ||
+      row.client_name.toLowerCase().includes(term) ||
+      row.room_title?.toLowerCase().includes(term) ||
+      row.client_email?.toLowerCase().includes(term),
+    );
+    const statut = params.statut && params.statut !== 'all' ? params.statut : undefined;
+    const filtered = statut ? searched.filter((row) => row.statut === statut) : searched;
+    const page = params.page ?? 1;
+    const limit = params.limit ?? 10;
+    return {
+      items: filtered.slice((page - 1) * limit, page * limit),
+      total: filtered.length,
+      page,
+      limit,
+      counts: countsOf(rows),
+    };
+  });
+}
+
 /** Retourne la cellule/la ligne du tableau correspondant au client affiché. */
 function rowOf(clientName: string) {
   const cell = screen.getByText(clientName);
@@ -62,7 +124,7 @@ function rowOf(clientName: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.getReservations.mockResolvedValue([makeReservation()]);
+  mocks.getReservations.mockResolvedValue(makeResponse([makeReservation()]));
   mocks.checkAvailability.mockResolvedValue({ statut: 'confirmee', reason: null });
 });
 
@@ -72,7 +134,7 @@ afterEach(() => {
 
 describe('AdminReservationsPage', () => {
   it("affiche l'état de chargement tant que la liste n'est pas résolue", () => {
-    mocks.getReservations.mockImplementation(() => new Promise<AdminReservation[]>(() => {}));
+    mocks.getReservations.mockImplementation(() => new Promise<AdminReservationsResponse>(() => {}));
 
     render(<AdminReservationsPage />);
 
@@ -82,7 +144,7 @@ describe('AdminReservationsPage', () => {
   });
 
   it('affiche un tableau vide et des compteurs à zéro sans réservation', async () => {
-    mocks.getReservations.mockResolvedValue([]);
+    mocks.getReservations.mockResolvedValue(makeResponse([]));
 
     render(<AdminReservationsPage />);
 
@@ -91,22 +153,29 @@ describe('AdminReservationsPage', () => {
     expect(screen.getByText('Total')).toBeInTheDocument();
     expect(screen.getAllByText('0').length).toBeGreaterThanOrEqual(4);
     expect(mocks.getReservations).toHaveBeenCalledTimes(1);
-    expect(mocks.getReservations).toHaveBeenCalledWith();
+    expect(mocks.getReservations).toHaveBeenCalledWith({
+      statut: 'all',
+      search: '',
+      page: 1,
+      limit: 10,
+    });
   });
 
   it('affiche une ligne complète pour chaque réservation', async () => {
-    mocks.getReservations.mockResolvedValue([
-      makeReservation(),
-      makeReservation({
-        id: 'r-2',
-        client_name: 'Boli Traoré',
-        client_email: 'boli@example.com',
-        client_phone: '+22505050505',
-        room_title: 'Studio Acacia',
-        montant: 45000,
-        statut: 'confirmee',
-      }),
-    ]);
+    mocks.getReservations.mockResolvedValue(
+      makeResponse([
+        makeReservation(),
+        makeReservation({
+          id: 'r-2',
+          client_name: 'Boli Traoré',
+          client_email: 'boli@example.com',
+          client_phone: '+22505050505',
+          room_title: 'Studio Acacia',
+          montant: 45000,
+          statut: 'confirmee',
+        }),
+      ]),
+    );
 
     render(<AdminReservationsPage />);
 
@@ -123,11 +192,13 @@ describe('AdminReservationsPage', () => {
   });
 
   it('affiche le badge de statut correspondant à chaque réservation', async () => {
-    mocks.getReservations.mockResolvedValue([
-      makeReservation({ id: 'r-1', statut: 'en_attente' }),
-      makeReservation({ id: 'r-2', client_name: 'Boli Traoré', statut: 'confirmee' }),
-      makeReservation({ id: 'r-3', client_name: 'Chef Moussa', statut: 'annulee' }),
-    ]);
+    mocks.getReservations.mockResolvedValue(
+      makeResponse([
+        makeReservation({ id: 'r-1', statut: 'en_attente' }),
+        makeReservation({ id: 'r-2', client_name: 'Boli Traoré', statut: 'confirmee' }),
+        makeReservation({ id: 'r-3', client_name: 'Chef Moussa', statut: 'annulee' }),
+      ]),
+    );
 
     render(<AdminReservationsPage />);
 
@@ -140,10 +211,12 @@ describe('AdminReservationsPage', () => {
   });
 
   it('formate les dates de séjour et affiche un tiret si la date manque', async () => {
-    mocks.getReservations.mockResolvedValue([
-      makeReservation(),
-      makeReservation({ id: 'r-2', date_debut: '', date_fin: '' }),
-    ]);
+    mocks.getReservations.mockResolvedValue(
+      makeResponse([
+        makeReservation(),
+        makeReservation({ id: 'r-2', date_debut: '', date_fin: '' }),
+      ]),
+    );
 
     render(<AdminReservationsPage />);
 
@@ -155,15 +228,17 @@ describe('AdminReservationsPage', () => {
   });
 
   it('masque le téléphone absent plutôt que d’afficher une valeur vide', async () => {
-    mocks.getReservations.mockResolvedValue([
-      makeReservation({ client_phone: null }),
-      makeReservation({
-        id: 'r-2',
-        client_name: 'Boli Traoré',
-        client_email: 'boli@example.com',
-        client_phone: '+22501020304',
-      }),
-    ]);
+    mocks.getReservations.mockResolvedValue(
+      makeResponse([
+        makeReservation({ client_phone: null }),
+        makeReservation({
+          id: 'r-2',
+          client_name: 'Boli Traoré',
+          client_email: 'boli@example.com',
+          client_phone: '+22501020304',
+        }),
+      ]),
+    );
 
     render(<AdminReservationsPage />);
 
@@ -173,8 +248,8 @@ describe('AdminReservationsPage', () => {
     expect(rowOf('Boli Traoré').getByText('+22501020304')).toBeInTheDocument();
   });
 
-  it('filtre par statut sans rappeler l’API', async () => {
-    mocks.getReservations.mockResolvedValue([
+  it('filtre par statut en reinterrogeant le serveur avec le bon paramètre', async () => {
+    serverDataset([
       makeReservation({ id: 'r-1', statut: 'en_attente' }),
       makeReservation({ id: 'r-2', client_name: 'Boli Traoré', statut: 'confirmee' }),
     ]);
@@ -185,14 +260,19 @@ describe('AdminReservationsPage', () => {
 
     await user.selectOptions(screen.getByRole('combobox'), 'confirmee');
 
+    await waitFor(() => expect(screen.queryByText('Aya Koné')).not.toBeInTheDocument());
     expect(screen.getByText('Boli Traoré')).toBeInTheDocument();
-    expect(screen.queryByText('Aya Koné')).not.toBeInTheDocument();
     expect(screen.queryByText('Aucune réservation trouvée')).not.toBeInTheDocument();
-    expect(mocks.getReservations).toHaveBeenCalledTimes(1);
+    expect(mocks.getReservations).toHaveBeenCalledWith({
+      statut: 'confirmee',
+      search: '',
+      page: 1,
+      limit: 10,
+    });
   });
 
-  it('filtre par nom de client (insensible à la casse)', async () => {
-    mocks.getReservations.mockResolvedValue([
+  it('filtre par nom de client (insensible à la casse) côté serveur', async () => {
+    serverDataset([
       makeReservation({ id: 'r-1', statut: 'en_attente' }),
       makeReservation({
         id: 'r-2',
@@ -208,13 +288,18 @@ describe('AdminReservationsPage', () => {
 
     await user.type(screen.getByPlaceholderText('Rechercher par client ou chambre...'), 'AYA');
 
+    await waitFor(() => expect(screen.queryByText('Boli Traoré')).not.toBeInTheDocument());
     expect(screen.getByText('Aya Koné')).toBeInTheDocument();
-    expect(screen.queryByText('Boli Traoré')).not.toBeInTheDocument();
-    expect(mocks.getReservations).toHaveBeenCalledTimes(1);
+    expect(mocks.getReservations).toHaveBeenCalledWith({
+      statut: 'all',
+      search: 'AYA',
+      page: 1,
+      limit: 10,
+    });
   });
 
   it('filtre par chambre et par email du client', async () => {
-    mocks.getReservations.mockResolvedValue([
+    serverDataset([
       makeReservation(),
       makeReservation({
         id: 'r-2',
@@ -229,17 +314,17 @@ describe('AdminReservationsPage', () => {
     const input = await screen.findByPlaceholderText('Rechercher par client ou chambre...');
 
     await user.type(input, 'loft');
+    await waitFor(() => expect(screen.queryByText('Aya Koné')).not.toBeInTheDocument());
     expect(screen.getByText('Boli Traoré')).toBeInTheDocument();
-    expect(screen.queryByText('Aya Koné')).not.toBeInTheDocument();
 
     await user.clear(input);
     await user.type(input, 'AYA@EXAMPLE');
+    await waitFor(() => expect(screen.queryByText('Boli Traoré')).not.toBeInTheDocument());
     expect(screen.getByText('Aya Koné')).toBeInTheDocument();
-    expect(screen.queryByText('Boli Traoré')).not.toBeInTheDocument();
   });
 
   it('affiche l’état vide quand la recherche ne correspond à rien', async () => {
-    mocks.getReservations.mockResolvedValue([makeReservation()]);
+    serverDataset([makeReservation()]);
     const user = userEvent.setup();
 
     render(<AdminReservationsPage />);
@@ -250,12 +335,12 @@ describe('AdminReservationsPage', () => {
       'introuvable',
     );
 
-    expect(screen.getByText('Aucune réservation trouvée')).toBeInTheDocument();
+    expect(await screen.findByText('Aucune réservation trouvée')).toBeInTheDocument();
     expect(screen.queryByText('Aya Koné')).not.toBeInTheDocument();
   });
 
   it('maintient les compteurs globaux même quand le tableau est filtré', async () => {
-    mocks.getReservations.mockResolvedValue([
+    serverDataset([
       makeReservation({ id: 'r-1', statut: 'en_attente' }),
       makeReservation({
         id: 'r-2',
@@ -271,17 +356,20 @@ describe('AdminReservationsPage', () => {
 
     await user.type(screen.getByPlaceholderText('Rechercher par client ou chambre...'), 'AYA');
 
-    expect(screen.queryByText('Boli Traoré')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText('Boli Traoré')).not.toBeInTheDocument());
+    // Les cartes restent globales (counts SQL sur toutes les lignes).
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getByText('Gérants non qualifiés — 1 en attente')).toBeInTheDocument();
   });
 
   it('ne propose la vérification de disponibilité que pour les réservations en attente', async () => {
-    mocks.getReservations.mockResolvedValue([
-      makeReservation({ id: 'r-1', statut: 'en_attente' }),
-      makeReservation({ id: 'r-2', client_name: 'Boli Traoré', statut: 'confirmee' }),
-      makeReservation({ id: 'r-3', client_name: 'Chef Moussa', statut: 'annulee' }),
-    ]);
+    mocks.getReservations.mockResolvedValue(
+      makeResponse([
+        makeReservation({ id: 'r-1', statut: 'en_attente' }),
+        makeReservation({ id: 'r-2', client_name: 'Boli Traoré', statut: 'confirmee' }),
+        makeReservation({ id: 'r-3', client_name: 'Chef Moussa', statut: 'annulee' }),
+      ]),
+    );
 
     render(<AdminReservationsPage />);
 
@@ -349,8 +437,8 @@ describe('AdminReservationsPage', () => {
     expect(screen.queryByText('Chargement...')).not.toBeInTheDocument();
   });
 
-  it('pagine les réservations au-delà de dix lignes', async () => {
-    mocks.getReservations.mockResolvedValue(makeMany(25));
+  it('pagine les réservations au-delà de dix lignes côté serveur', async () => {
+    serverDataset(makeMany(25));
     const user = userEvent.setup();
 
     render(<AdminReservationsPage />);
@@ -367,6 +455,12 @@ describe('AdminReservationsPage', () => {
     expect(await screen.findByText('Client 11')).toBeInTheDocument();
     expect(screen.getByText('Client 20')).toBeInTheDocument();
     expect(screen.queryByText('Client 1')).not.toBeInTheDocument();
+    expect(mocks.getReservations).toHaveBeenCalledWith({
+      statut: 'all',
+      search: '',
+      page: 2,
+      limit: 10,
+    });
     expect(screen.getByRole('button', { name: '2' })).toHaveClass(
       'admin-pagination__btn--active',
     );
@@ -374,7 +468,7 @@ describe('AdminReservationsPage', () => {
   });
 
   it('avance puis recule d’une page avec les flèches de pagination', async () => {
-    mocks.getReservations.mockResolvedValue(makeMany(25));
+    serverDataset(makeMany(25));
     const user = userEvent.setup();
 
     render(<AdminReservationsPage />);
@@ -393,7 +487,7 @@ describe('AdminReservationsPage', () => {
   });
 
   it('revient à la première page quand la recherche change', async () => {
-    mocks.getReservations.mockResolvedValue(makeMany(25));
+    serverDataset(makeMany(25));
     const user = userEvent.setup();
 
     render(<AdminReservationsPage />);
@@ -407,12 +501,18 @@ describe('AdminReservationsPage', () => {
     );
 
     expect(await screen.findByText('Client 1')).toBeInTheDocument();
-    expect(screen.queryByText('Client 11')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText('Client 11')).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: '←' })).toBeDisabled();
+    expect(mocks.getReservations).toHaveBeenCalledWith({
+      statut: 'all',
+      search: 'chambre',
+      page: 1,
+      limit: 10,
+    });
   });
 
   it('n’affiche pas les boutons de pagination avec dix réservations ou moins', async () => {
-    mocks.getReservations.mockResolvedValue(makeMany(10));
+    serverDataset(makeMany(10));
 
     render(<AdminReservationsPage />);
 

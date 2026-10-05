@@ -21,14 +21,17 @@ test.describe('navigation', () => {
     expect(page.url()).toContain('/ci');
   });
 
-  test('affiche la landing blanche à la racine', async ({ page }) => {
+  test('affiche la landing CoinAfrique à la racine', async ({ page }) => {
     await mockApi(page);
 
     await page.goto('/');
 
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.locator('header, footer')).toHaveCount(0);
-    await expect(page.locator('div[style*="min-height: 100vh"]')).toHaveCount(1);
+    await expect(page.locator('header.site-header')).toBeVisible();
+    await expect(page.locator('footer.site-footer')).toBeVisible();
+    await expect(page.locator('h1')).toContainText('La location directe en Afrique');
+    await expect(page.locator('#pays .landing-countries__card')).toHaveCount(12);
+    await expect(page.locator('.landing-search')).toBeVisible();
   });
 
   test('redirige une route hors marché vers la racine', async ({ page }) => {
@@ -37,7 +40,8 @@ test.describe('navigation', () => {
     await page.goto('/togo/quelque-part');
 
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.locator('header, footer')).toHaveCount(0);
+    await expect(page.locator('header.site-header')).toBeVisible();
+    await expect(page.locator('footer.site-footer')).toBeVisible();
   });
 
   test('redirige un marché invalide vers la racine', async ({ page }) => {
@@ -46,6 +50,7 @@ test.describe('navigation', () => {
     await page.goto('/xx/chambre/1');
 
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.locator('header, footer')).toHaveCount(0);
+    await expect(page.locator('header.site-header')).toBeVisible();
+    await expect(page.locator('footer.site-footer')).toBeVisible();
   });
 });

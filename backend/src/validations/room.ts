@@ -46,3 +46,26 @@ export const roomAvailableQuerySchema = z
     message: "La date de départ doit être ultérieure à la date d'arrivée",
     path: ['depart'],
   });
+
+/**
+ * Filtres serveur de GET /api/rooms : la liste n'est plus téléchargée en
+ * entier pour être filtrée côté client. Sans `page`/`limit`, la route garde
+ * l'ancien comportement (tableau complet, filtres éventuels appliqués).
+ */
+export const roomListQuerySchema = z
+  .object({
+    market: marketSchema.optional(),
+    ville: z.string().trim().min(1).max(150).optional(),
+    quartier: z.string().trim().min(1).max(200).optional(),
+    category: z.string().trim().min(1).max(200).optional(),
+    prix_min: z.coerce.number().min(0).max(1000000000).optional(),
+    prix_max: z.coerce.number().min(0).max(1000000000).optional(),
+    chambres: z.coerce.number().int().min(1).max(100).optional(),
+    disponible: z.enum(['true', 'false']).optional(),
+    page: z.coerce.number().int().min(1).max(100000).optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+  })
+  .refine((data) => data.prix_min === undefined || data.prix_max === undefined || data.prix_min <= data.prix_max, {
+    message: 'prix_min doit être inférieur ou égal à prix_max',
+    path: ['prix_min'],
+  });

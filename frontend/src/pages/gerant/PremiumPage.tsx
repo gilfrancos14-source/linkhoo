@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useMarket } from '../../contexts/MarketContext';
 import { apiPremium, apiGerants, type GerantData } from '../../lib/api';
+import { isPremiumActive } from '../../lib/premium';
 
 export default function PremiumPage() {
   const { market } = useMarket();
@@ -29,7 +30,7 @@ export default function PremiumPage() {
     }
   };
 
-  const isActive = gerant?.is_premium && gerant.premium_expires_at && new Date(gerant.premium_expires_at) > new Date();
+  const isActive = isPremiumActive(gerant);
   const expiresAt = gerant?.premium_expires_at ? new Date(gerant.premium_expires_at) : null;
 
   if (loading) {
@@ -60,7 +61,9 @@ export default function PremiumPage() {
           <div className="verify-cta__text">
             <h3>Compte Premium actif</h3>
             <p>
-              Votre abonnement expire le {expiresAt?.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}.
+              {expiresAt
+                ? `Votre abonnement expire le ${expiresAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}.`
+                : 'Votre abonnement est actif.'}
             </p>
           </div>
         </section>
@@ -87,11 +90,11 @@ export default function PremiumPage() {
             </div>
             <div style={{ padding: '16px 24px' }}>
               <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '2', color: '#334155', fontSize: '14px' }}>
-                <li>Badge <strong>Premium</strong> sur votre profil</li>
-                <li>Mise en avant de vos annonces dans les résultats de recherche</li>
-                <li>Visibilité prioritaire sur la page d'accueil</li>
-                <li>Statistiques avancées sur vos vues et réservations</li>
-                <li>Support prioritaire</li>
+                <li>Une annonce sur 3 en tête des recherches et des catégories</li>
+                <li>Badge <strong>Premium</strong> sur vos cartes de résultats</li>
+                <li>Badge <strong>Premium</strong> sur la fiche publique de vos biens</li>
+                <li>Gestion des réservations de vos biens</li>
+                <li>Badge <strong>PRO</strong> et statut Premium dans votre espace gérant</li>
               </ul>
             </div>
           </section>

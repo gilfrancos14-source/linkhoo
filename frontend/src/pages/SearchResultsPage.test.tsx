@@ -472,4 +472,18 @@ describe('SearchResultsPage — requête libre et pagination', () => {
     expect(await screen.findByText('0 biens trouvés')).toBeInTheDocument();
     expect(screen.getByText('Aucune disponibilité pour ces dates')).toBeInTheDocument();
   });
+
+  it("affiche le badge « Premium » sur les biens d’un gérant premium", async () => {
+    mocks.fetchAvailableRooms.mockResolvedValue([
+      makeRoom({ gerantPremium: true }),
+      makeRoom({ id: 'r2', title: 'Chambre classique', gerantPremium: false }),
+    ]);
+
+    renderPage(DATED);
+
+    await screen.findByText('2 biens trouvés');
+    expect(screen.getByText('Premium')).toBeInTheDocument();
+    expect(document.querySelector('.stay-card__badge--premium')).toBeInTheDocument();
+    expect(document.querySelectorAll('.stay-card__badge')).toHaveLength(1);
+  });
 });

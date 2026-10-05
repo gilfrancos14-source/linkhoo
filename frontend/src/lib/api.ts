@@ -92,6 +92,22 @@ export interface RequestOptions extends RequestInit {
   public?: boolean;
 }
 
+/**
+ * Erreur HTTP porteuse du statut : `instanceof Error` reste vrai pour tous
+ * les appelants, et la file offline s'en sert pour distinguer un échec
+ * définitif (4xx hors 408/429 → l'élément est retiré de la file) d'une
+ * erreur transitoire (réseau, timeout, 5xx → nouvelle tentative).
+ */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 export async function request<T>(path: string, options?: RequestOptions): Promise<T> {
   const { public: isPublic, headers: extraHeaders, ...rest } = options ?? {};
   const headers: Record<string, string> = {
@@ -118,7 +134,7 @@ export async function request<T>(path: string, options?: RequestOptions): Promis
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `API error ${res.status}`);
+    throw new ApiError(body.error || `API error ${res.status}`, res.status);
   }
   // Toute mutation invalide le cache public : une création/édition ne doit
   // jamais être masquée par une réponse mise en cache 60 s plus tôt.
@@ -133,6 +149,9 @@ export interface GerantInfo {
   phone: string | null;
   is_verified: boolean;
   is_premium: boolean;
+  /** Date d'expiration de l'abonnement : requise pour calculer l'activité
+      du badge (`isPremiumActive`) — sans elle, un premium expiré reste « actif ». */
+  premium_expires_at?: string | null;
 }
 
 export interface RoomData {
@@ -160,10 +179,32 @@ export interface RoomData {
   conditions: string;
   gerant_id?: string;
   gerant?: GerantInfo;
+  /** Position boostée par l'abonnement du gérant (quota 1 sur 3 en recherche). */
+  gerant_premium?: boolean;
   is_popular?: boolean;
   promo_group?: string | null;
   promo_start?: string | null;
   promo_end?: string | null;
+}
+
+export interface RoomListParams {
+  market?: string;
+  ville?: string;
+  quartier?: string;
+  category?: string;
+  prixMin?: number;
+  prixMax?: number;
+  chambres?: number;
+  disponible?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export interface RoomListPage {
+  items: RoomData[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export const apiRooms = {
@@ -173,6 +214,23 @@ export const apiRooms = {
     const path = market ? `/rooms?market=${market}` : '/rooms';
     if (opts?.fresh) return request<RoomData[]>(path, { cache: 'no-cache' });
     return cachedGet<RoomData[]>(path);
+  },
+  // Liste filtrée et paginée côté serveur : la page ne télécharge plus
+  // tout le catalogue pour filtrer en mémoire.
+  listPaged: (params: RoomListParams) => {
+    const search = new URLSearchParams();
+    if (params.market) search.set('market', params.market);
+    if (params.ville) search.set('ville', params.ville);
+    if (params.quartier) search.set('quartier', params.quartier);
+    if (params.category) search.set('category', params.category);
+    if (params.prixMin !== undefined) search.set('prix_min', String(params.prixMin));
+    if (params.prixMax !== undefined) search.set('prix_max', String(params.prixMax));
+    if (params.chambres !== undefined) search.set('chambres', String(params.chambres));
+    if (params.disponible !== undefined) search.set('disponible', String(params.disponible));
+    if (params.page !== undefined) search.set('page', String(params.page));
+    if (params.limit !== undefined) search.set('limit', String(params.limit));
+    const qs = search.toString();
+    return cachedGet<RoomListPage>(`/rooms${qs ? `?${qs}` : ''}`);
   },
   listMine: () => request<RoomData[]>('/rooms/mine'),
   getPopular: (market: string) => cachedGet<RoomData[]>(`/rooms/popular?market=${market}`),
@@ -184,6 +242,8 @@ export const apiRooms = {
   get: (id: string) => request<RoomData>(`/rooms/${id}`, { public: true }),
   villes: (market?: string) =>
     request<string[]>(market ? `/rooms/villes?market=${market}` : '/rooms/villes', { public: true }),
+  quartiers: (market?: string) =>
+    request<string[]>(market ? `/rooms/quartiers?market=${market}` : '/rooms/quartiers', { public: true }),
   create: (data: Omit<RoomData, 'id'>) => request<RoomData>('/rooms', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: Partial<RoomData>) => request<RoomData>(`/rooms/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => request<void>(`/rooms/${id}`, { method: 'DELETE' }),
@@ -272,6 +332,8 @@ export interface ReservationData {
   gerant_prenom?: string | null;
   gerant_is_verified?: boolean;
   gerant_is_premium?: boolean;
+  /** Clé d'idempotence générée côté client (anti doublon des rejeux). */
+  client_key?: string | null;
 }
 
 export interface ClientReservationData {
@@ -320,6 +382,28 @@ interface NewsletterSubscribeData {
 export const apiNewsletter = {
   subscribe: (data: NewsletterSubscribeData) =>
     request<{ id?: string; email?: string; message?: string }>('/newsletter', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+};
+
+// ── Contact (formulaire « Contactez-nous ») ──
+export interface ContactPayload {
+  nom: string;
+  prenom?: string;
+  email: string;
+  telephone?: string;
+  pays: string;
+  sujet: 'reservation' | 'compte-gerant' | 'partenariat' | 'presse' | 'autre';
+  message: string;
+  market?: 'CI' | 'BJ';
+  /** Pot de miel : doit rester vide (vide côté client, rempli par les robots). */
+  website?: string;
+}
+
+export const apiContact = {
+  send: (data: ContactPayload) =>
+    request<{ message: string; id?: string }>('/contact', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -423,16 +507,11 @@ export const apiGerants = {
   deleteDocument: (id: string, docId: string) =>
     request<void>(`/gerants/${id}/documents/${docId}`, { method: 'DELETE' }),
   submitVerification: (id: string) =>
-    request<{ transaction_id: number; payment_url: string }>(`/gerants/${id}/submit-verification`, { method: 'POST' }),
+    request<{ success: boolean; gerant: GerantData }>(`/gerants/${id}/submit-verification`, { method: 'POST' }),
   setPropertyAddress: (id: string, mapsUrl: string, lat?: number, lng?: number) =>
     request<PropertyAddress & { verification_status: string }>(`/gerants/${id}/property-address`, {
       method: 'PATCH',
       body: JSON.stringify(lat !== undefined && lng !== undefined ? { maps_url: mapsUrl, lat, lng } : { maps_url: mapsUrl }),
-    }),
-  confirmVerification: (id: string, transactionId: number) =>
-    request<{ success: boolean; gerant: GerantData }>(`/gerants/${id}/confirm-verification`, {
-      method: 'POST',
-      body: JSON.stringify({ transaction_id: transactionId }),
     }),
   getVerificationStatus: (id: string) =>
     request<VerificationStatusResponse>(`/gerants/${id}/verification-status`),

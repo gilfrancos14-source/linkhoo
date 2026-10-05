@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import adminRouter from './admin';
 import { supabaseAdmin } from '../config/supabase';
+import { publishNotificationChanged } from '../utils/realtime';
 import {
   adminToken,
   buildTestApp,
@@ -20,6 +21,11 @@ vi.mock('../config/supabase', async () => {
   const helper = await import('../testHelpers/supertestApp');
   return helper.createSupabaseMock();
 });
+
+// P1 #8 : les publications Realtime sont neutralisées, assertions via le spy.
+vi.mock('../utils/realtime', () => ({
+  publishNotificationChanged: vi.fn(async () => {}),
+}));
 
 const app = buildTestApp('/api/admin', adminRouter);
 
@@ -206,66 +212,39 @@ describe('POST /api/admin/change-password', () => {
 });
 
 describe('GET /api/admin/stats', () => {
-  it('200 : agrège gerants, chambres et réservations', async () => {
-    gerants = fakeChain({
-      data: [
-        {
-          id: 'g1',
-          is_verified: true,
-          verification_status: 'pending',
-          is_premium: true,
-          premium_expires_at: FUTURE,
-          market: 'CI',
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: 'g2',
-          is_verified: false,
-          verification_status: 'none',
-          is_premium: false,
-          premium_expires_at: null,
-          market: 'BJ',
-          created_at: '2020-01-01T00:00:00Z',
-        },
-      ],
-      error: null,
-    });
-    rooms = fakeChain({
-      data: [
-        { id: 'r1', disponible: true, market: 'CI' },
-        { id: 'r2', disponible: false, market: 'CI' },
-      ],
-      error: null,
-    });
-    reservations = fakeChain({
-      data: [
-        { id: 'res1', statut: 'confirmee', montant: 50000, created_at: FUTURE },
-        { id: 'res2', statut: 'en_attente', montant: 10000, created_at: FUTURE },
-        { id: 'res3', statut: 'annulee', montant: 0, created_at: FUTURE },
-      ],
-      error: null,
-    });
-    stubTables();
+  it('200 : renvoie les agrégats calculés par la RPC admin_stats', async () => {
+    const stats = {
+      gerants: {
+        total: 2,
+        verified: 1,
+        pendingVerifications: 1,
+        premium: 1,
+        byMarket: { CI: 1, BJ: 1 },
+        newThisMonth: 1,
+      },
+      rooms: { total: 2, available: 1, unavailable: 1 },
+      reservations: { total: 3, pending: 1, confirmed: 1, cancelled: 1, totalRevenue: 50000 },
+    };
+    vi.mocked(supabaseAdmin.rpc).mockResolvedValue({ data: stats, error: null } as never);
 
     const res = await request(app).get('/api/admin/stats').set(auth(adminToken()));
 
     expect(res.status).toBe(200);
-    expect(res.body.gerants).toEqual({
-      total: 2,
-      verified: 1,
-      pendingVerifications: 1,
-      premium: 1,
-      byMarket: { CI: 1, BJ: 1 },
-      newThisMonth: 1,
-    });
-    expect(res.body.rooms).toEqual({ total: 2, available: 1, unavailable: 1 });
-    expect(res.body.reservations).toEqual({
-      total: 3,
-      pending: 1,
-      confirmed: 1,
-      cancelled: 1,
-      totalRevenue: 50000,
-    });
+    expect(res.body).toEqual(stats);
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith('admin_stats');
+    // Plus aucun chargement de table entière pour les statistiques.
+    expect(supabaseAdmin.from).not.toHaveBeenCalled();
+  });
+
+  it('500 si la RPC remonte une erreur', async () => {
+    vi.mocked(supabaseAdmin.rpc).mockResolvedValue({
+      data: null,
+      error: { message: 'ERREUR_BDD' },
+    } as never);
+
+    const res = await request(app).get('/api/admin/stats').set(auth(adminToken()));
+
+    expect(res.status).toBe(500);
   });
 });
 
@@ -476,6 +455,7 @@ describe('PATCH /api/admin/gerants/:id/approve-verification', () => {
     expect(notifications.insert).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'verification_approved', gerant_id: 'user_1' }),
     );
+    expect(publishNotificationChanged).toHaveBeenCalledWith('admin', 'gerant');
   });
 });
 
@@ -528,6 +508,7 @@ describe('PATCH /api/admin/gerants/:id/reject-verification', () => {
     expect(notifications.insert).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'verification_rejected' }),
     );
+    expect(publishNotificationChanged).toHaveBeenCalledWith('admin', 'gerant');
   });
 });
 
@@ -550,63 +531,103 @@ describe('GET /api/admin/verification/pending', () => {
 });
 
 describe('GET /api/admin/reservations', () => {
-  it('200 : n’expose que les réservations des gérants non qualifiés', async () => {
-    reservations = fakeChain({
-      data: [
+  it('200 : délègue filtrage et pagination à la RPC admin_reservations', async () => {
+    const payload = {
+      items: [
         {
           id: 'r1',
           client_name: 'Jean',
           room_title: 'Studio',
-          rooms: { gerant_id: 'user_1' },
-        },
-        {
-          id: 'r2',
-          client_name: 'Paul',
-          room_title: 'Villa',
-          rooms: { gerant_id: 'user_qualified' },
+          statut: 'en_attente',
+          gerant_id: 'user_1',
         },
       ],
-      error: null,
-    });
-    gerants = fakeChain({
-      data: [
-        { clerk_user_id: 'user_1', is_verified: true, is_premium: false, premium_expires_at: null },
-        {
-          clerk_user_id: 'user_qualified',
-          is_verified: true,
-          is_premium: true,
-          premium_expires_at: FUTURE,
-        },
-      ],
-      error: null,
-    });
-    stubTables();
+      total: 1,
+      page: 1,
+      limit: 20,
+      counts: { total: 1, pending: 1, confirmed: 0, cancelled: 0 },
+    };
+    vi.mocked(supabaseAdmin.rpc).mockResolvedValue({ data: payload, error: null } as never);
 
     const res = await request(app).get('/api/admin/reservations').set(auth(adminToken()));
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0].gerant_id).toBe('user_1');
+    expect(res.body).toEqual(payload);
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith('admin_reservations', {
+      p_statut: null,
+      p_search: null,
+      p_page: 1,
+      p_limit: 20,
+    });
+    // La qualification des gérants et la pagination sont désormais en SQL :
+    // aucune table n'est chargée en mémoire.
+    expect(supabaseAdmin.from).not.toHaveBeenCalled();
   });
 
-  it('200 : filtre par recherche', async () => {
-    reservations = fakeChain({
-      data: [
-        { id: 'r1', client_name: 'Jean', room_title: 'Studio', rooms: { gerant_id: 'user_1' } },
-        { id: 'r2', client_name: 'Paul', room_title: 'Villa', rooms: { gerant_id: 'user_1' } },
-      ],
+  it('200 : transmet statut, recherche et pagination à la RPC', async () => {
+    vi.mocked(supabaseAdmin.rpc).mockResolvedValue({
+      data: { items: [], total: 0, page: 2, limit: 50 },
       error: null,
-    });
-    gerants = fakeChain({ data: [], error: null });
-    stubTables();
+    } as never);
 
     const res = await request(app)
-      .get('/api/admin/reservations?search=paul')
+      .get('/api/admin/reservations?statut=confirmee&search=paul&page=2&limit=50')
       .set(auth(adminToken()));
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0].client_name).toBe('Paul');
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith('admin_reservations', {
+      p_statut: 'confirmee',
+      p_search: 'paul',
+      p_page: 2,
+      p_limit: 50,
+    });
+  });
+
+  it('200 : accepte statut=all sans filtre côté SQL', async () => {
+    vi.mocked(supabaseAdmin.rpc).mockResolvedValue({
+      data: { items: [], total: 0, page: 1, limit: 20 },
+      error: null,
+    } as never);
+
+    const res = await request(app)
+      .get('/api/admin/reservations?statut=all')
+      .set(auth(adminToken()));
+
+    expect(res.status).toBe(200);
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith(
+      'admin_reservations',
+      expect.objectContaining({ p_statut: 'all' }),
+    );
+  });
+
+  it('400 sur une page ou une limite hors bornes', async () => {
+    const tropPetite = await request(app)
+      .get('/api/admin/reservations?page=0')
+      .set(auth(adminToken()));
+    expect(tropPetite.status).toBe(400);
+
+    const tropGrande = await request(app)
+      .get('/api/admin/reservations?limit=500')
+      .set(auth(adminToken()));
+    expect(tropGrande.status).toBe(400);
+
+    const statutInconnu = await request(app)
+      .get('/api/admin/reservations?statut=virgule')
+      .set(auth(adminToken()));
+    expect(statutInconnu.status).toBe(400);
+
+    expect(supabaseAdmin.rpc).not.toHaveBeenCalled();
+  });
+
+  it('500 si la RPC remonte une erreur', async () => {
+    vi.mocked(supabaseAdmin.rpc).mockResolvedValue({
+      data: null,
+      error: { message: 'ERREUR_BDD' },
+    } as never);
+
+    const res = await request(app).get('/api/admin/reservations').set(auth(adminToken()));
+
+    expect(res.status).toBe(500);
   });
 });
 
@@ -654,6 +675,7 @@ describe('POST /api/admin/reservations/:id/check-availability', () => {
     expect(clientNotifications.insert).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'reservation_rejected' }),
     );
+    expect(publishNotificationChanged).toHaveBeenCalledWith('client');
   });
 
   it('200 : confirme quand le RPC ne détecte aucun conflit', async () => {
@@ -673,6 +695,7 @@ describe('POST /api/admin/reservations/:id/check-availability', () => {
     expect(clientNotifications.insert).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'reservation_confirmed' }),
     );
+    expect(publishNotificationChanged).toHaveBeenCalledWith('client');
   });
 
   it('200 : annule sur conflit de dates signalement par le RPC', async () => {
@@ -694,6 +717,7 @@ describe('POST /api/admin/reservations/:id/check-availability', () => {
     expect(clientNotifications.insert).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'reservation_rejected' }),
     );
+    expect(publishNotificationChanged).toHaveBeenCalledWith('client');
   });
 
   it('404 : le RPC renvoie NOT_FOUND', async () => {

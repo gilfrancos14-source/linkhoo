@@ -180,9 +180,12 @@ export async function mockApi(page: Page, options: MockApiOptions = {}): Promise
       return respond(route, {});
     }
 
-    // /rooms/villes doit être testé avant le préfixe /rooms/:id.
+    // /rooms/villes et /rooms/quartiers doivent être testés avant le préfixe /rooms/:id.
     if (path === '/rooms/villes') {
       return respond(route, [...new Set(rooms.map((r) => String(r.ville)))].sort());
+    }
+    if (path === '/rooms/quartiers') {
+      return respond(route, [...new Set(rooms.map((r) => String(r.quartier)))].sort());
     }
     if (path === '/reviews') return respond(route, reviewsResponse);
     if (path === '/reviews/featured') return respond(route, []);
@@ -190,7 +193,43 @@ export async function mockApi(page: Page, options: MockApiOptions = {}): Promise
     if (path === '/rooms/popular') return respond(route, rooms);
     if (path === '/rooms/available') return respond(route, rooms);
     if (path === '/rooms/mine') return respond(route, []);
-    if (path === '/rooms') return respond(route, rooms);
+    if (path === '/rooms') {
+      // Même périmètre que le backend : filtres appliqués ici, puis
+      // pagination ({items,total,page,limit}) si page/limit sont demandés.
+      let filtered = rooms;
+      const category = url.searchParams.get('category');
+      const ville = url.searchParams.get('ville');
+      const quartier = url.searchParams.get('quartier');
+      const chambres = url.searchParams.get('chambres');
+      const disponible = url.searchParams.get('disponible');
+      if (category) filtered = filtered.filter((r) => r.category === category);
+      if (ville) filtered = filtered.filter((r) => r.ville === ville);
+      if (quartier) filtered = filtered.filter((r) => r.quartier === quartier);
+      if (chambres) {
+        const wanted = Number(chambres);
+        filtered = filtered.filter((r) =>
+          wanted >= 3 ? Number(r.chambres) >= 3 : Number(r.chambres) === wanted,
+        );
+      }
+      if (disponible !== null) {
+        filtered = filtered.filter((r) => String(r.disponible) === disponible);
+      }
+
+      const pageParam = url.searchParams.get('page');
+      const limitParam = url.searchParams.get('limit');
+      if (pageParam || limitParam) {
+        const page = Number(pageParam ?? '1');
+        const limit = Number(limitParam ?? '10');
+        const start = (page - 1) * limit;
+        return respond(route, {
+          items: filtered.slice(start, start + limit),
+          total: filtered.length,
+          page,
+          limit,
+        });
+      }
+      return respond(route, filtered);
+    }
     if (path.startsWith('/rooms/')) {
       const id = decodeURIComponent(path.slice('/rooms/'.length));
       const room = rooms.find((r) => r.id === id);
@@ -225,8 +264,20 @@ export async function mockApi(page: Page, options: MockApiOptions = {}): Promise
     if (path === '/admin/notifications') {
       return respond(route, { notifications: [], unread_count: 0 });
     }
-    if (path === '/admin/gerants' || path === '/admin/reservations') {
+    if (path === '/admin/gerants') {
       return respond(route, []);
+    }
+    // Réponse paginée de GET /admin/reservations (items + total + counts).
+    if (path === '/admin/reservations') {
+      const page = Number(url.searchParams.get('page') ?? '1');
+      const limit = Number(url.searchParams.get('limit') ?? '20');
+      return respond(route, {
+        items: [],
+        total: 0,
+        page,
+        limit,
+        counts: { total: 0, pending: 0, confirmed: 0, cancelled: 0 },
+      });
     }
 
     return respond(route, {});

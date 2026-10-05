@@ -1,10 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
 import { supabaseAdmin } from '../config/supabase';
+import { publishNotificationChanged } from '../utils/realtime';
 import { requireClerkAuth } from '../middleware/clerkAuth';
 import { idParamsSchema } from '../validations/common';
 import { createClientLimiter } from '../utils/rateLimiters';
 import { isQualifiedGerant } from '../utils/gerantQualification';
+import { isPremiumActive } from '../utils/premium';
 import { fetchAllRows } from '../utils/fetchAll';
 import { calculateMontant, unitFromPriceUnit } from '../utils/duration';
 import {
@@ -135,6 +137,20 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       return res.status(400).json({ error: 'Données de réservation invalides' });
     }
 
+    // Idempotence : la même clé client ne doit créer qu'une seule réservation.
+    // Un rejeu (file offline, timeout, retry) renvoie la ligne existante au
+    // lieu d'échouer sur DATE_CONFLICT ou d'insérer un doublon.
+    const clientKey = parsedBody.data.client_key;
+    if (clientKey) {
+      const { data: replayed, error: replayError } = await supabaseAdmin
+        .from('reservations')
+        .select('*')
+        .eq('client_key', clientKey)
+        .maybeSingle();
+      if (replayError) throw replayError;
+      if (replayed) return res.status(200).json(replayed);
+    }
+
     const { data: room, error: roomError } = await supabaseAdmin
       .from('rooms')
       .select('id, disponible, title, price_num, price_unit, gerant_id')
@@ -167,6 +183,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       p_message: parsedBody.data.message,
       p_duree_nombre: parsedBody.data.duree_nombre,
       p_duree_unite: parsedBody.data.duree_unite,
+      p_client_key: clientKey ?? null,
     });
     if (rpcError) {
       const msg = rpcError.message || '';
@@ -176,26 +193,43 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       if (msg.includes('ROOM_NOT_FOUND')) {
         return res.status(404).json({ error: 'Chambre introuvable' });
       }
+      // Course entre deux rejeux simultanés : l'index unique sur client_key a
+      // tranché, on renvoie la réservation déjà créée par l'autre requête.
+      if (clientKey && msg.includes('duplicate key') && msg.includes('client_key')) {
+        const { data: winner } = await supabaseAdmin
+          .from('reservations')
+          .select('*')
+          .eq('client_key', clientKey)
+          .maybeSingle();
+        if (winner) return res.status(200).json(winner);
+      }
       throw rpcError;
     }
     const data = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
     if (!data) throw new Error('Création de réservation échouée');
 
-    const { error: notifError } = await supabaseAdmin.from('notifications').insert({
-      id: randomUUID(),
-      type: 'reservation',
-      room_title: room.title,
-      room_id: room.id,
-      client_name: parsedBody.data.client_name,
-      client_email: parsedBody.data.client_email,
-      client_phone: parsedBody.data.client_phone,
-      message: parsedBody.data.message || '',
-      reservation_id: data.id,
-      gerant_id: room.gerant_id || null,
-    });
-    if (notifError) console.error('[reservations] insert notification échoué:', notifError.message);
+    // La RPC a renvoyé une ligne créée par une requête concurrente portant la
+    // même clé : c'est un rejeu, pas une création — pas de notification 2e fois.
+    const isReplay = Boolean(clientKey) && data.id !== reservationId;
 
-    res.status(201).json(data);
+    if (!isReplay) {
+      const { error: notifError } = await supabaseAdmin.from('notifications').insert({
+        id: randomUUID(),
+        type: 'reservation',
+        room_title: room.title,
+        room_id: room.id,
+        client_name: parsedBody.data.client_name,
+        client_email: parsedBody.data.client_email,
+        client_phone: parsedBody.data.client_phone,
+        message: parsedBody.data.message || '',
+        reservation_id: data.id,
+        gerant_id: room.gerant_id || null,
+      });
+      if (notifError) console.error('[reservations] insert notification échoué:', notifError.message);
+      else void publishNotificationChanged('admin', 'gerant');
+    }
+
+    res.status(isReplay ? 200 : 201).json(data);
   } catch (err) {
     next(err);
   }
@@ -265,11 +299,13 @@ router.patch('/:id', requireClerkAuth, async (req: Request, res: Response, next:
 
     const { data: gerantData } = await supabaseAdmin
       .from('gerants')
-      .select('phone, nom, prenom, is_verified, is_premium')
+      .select('phone, nom, prenom, is_verified, is_premium, premium_expires_at')
       .eq('clerk_user_id', room.gerant_id)
       .maybeSingle();
 
-    res.json({ ...data, gerant_phone: gerantData?.phone || null, gerant_nom: gerantData?.nom || null, gerant_prenom: gerantData?.prenom || null, gerant_is_verified: gerantData?.is_verified || false, gerant_is_premium: gerantData?.is_premium || false });
+    // is_premium est calculé ici (et non brut) : le badge ne doit jamais
+    // montrer un abonnement expiré comme actif.
+    res.json({ ...data, gerant_phone: gerantData?.phone || null, gerant_nom: gerantData?.nom || null, gerant_prenom: gerantData?.prenom || null, gerant_is_verified: gerantData?.is_verified || false, gerant_is_premium: isPremiumActive(gerantData) });
   } catch (err) {
     next(err);
   }
@@ -334,6 +370,7 @@ router.post('/:id/cancel', requireClerkAuth, async (req: Request, res: Response,
       reservation_id: data.id,
       gerant_id: room?.gerant_id || null,
     });
+    void publishNotificationChanged('admin', 'gerant');
 
     res.json(data);
   } catch (err) {
@@ -348,17 +385,42 @@ router.get('/check', async (req: Request, res: Response, next: NextFunction) => 
       return res.status(400).json({ error: 'Paramètres de disponibilité invalides' });
     }
 
+    // Test SQL exact : la version précédente tirait TOUTES les réservations de
+    // la chambre et PostgREST tronquait à 1000 lignes → faux « aucun conflit ».
+    const { data: conflict, error: rpcError } = await supabaseAdmin.rpc('has_date_conflict', {
+      p_room_id: parsedQuery.data.room_id,
+      p_date_debut: parsedQuery.data.date_debut,
+      p_date_fin: parsedQuery.data.date_fin,
+      p_exclude_id: parsedQuery.data.exclude_id ?? null,
+    });
+    if (!rpcError) {
+      return res.json({ hasConflict: Boolean(conflict) });
+    }
+
+    // Repli : RPC absente (integrity_migration.sql pas encore exécutée).
+    const missingFunction =
+      (rpcError as { code?: string }).code === 'PGRST202' ||
+      (rpcError.message || '').includes('Could not find the function');
+    if (!missingFunction) throw rpcError;
+    console.warn(
+      "[reservations] RPC has_date_conflict introuvable : exécuter backend/supabase/integrity_migration.sql (repli tronqué à 1000 lignes)",
+    );
+
     let query = supabaseAdmin
       .from('reservations')
       .select('id, room_id, date_debut, date_fin, statut')
       .eq('room_id', parsedQuery.data.room_id)
-      .neq('statut', 'annulee');
+      .neq('statut', 'annulee')
+      .limit(1000);
     if (parsedQuery.data.exclude_id) {
       query = query.neq('id', parsedQuery.data.exclude_id);
     }
 
     const { data: reservations, error } = await query;
     if (error) throw error;
+    if ((reservations || []).length === 1000) {
+      console.warn('[reservations] /check : 1000 lignes atteintes, résultat potentiellement incomplet');
+    }
 
     const newStart = new Date(parsedQuery.data.date_debut).getTime();
     const newEnd = new Date(parsedQuery.data.date_fin).getTime();

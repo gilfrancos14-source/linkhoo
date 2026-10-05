@@ -1,40 +1,47 @@
 import { useState, useRef, useEffect } from 'react';
-import { useMarket, type MarketCode } from '../contexts/MarketContext';
 import type { ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
+import { isRootPath, useMarket, type MarketCode } from '../contexts/MarketContext';
+import { FlagBJ, FlagCI } from './flags';
 
 type MarketOption = { code: MarketCode; label: string; flag: ReactNode };
-
-function FlagCI() {
-  return (
-    <svg viewBox="0 0 30 20" width="24" height="16" aria-hidden="true">
-      <rect width="10" height="20" fill="#F77F00" />
-      <rect x="10" width="10" height="20" fill="#FFFFFF" />
-      <rect x="20" width="10" height="20" fill="#009E60" />
-    </svg>
-  );
-}
-
-function FlagBJ() {
-  return (
-    <svg viewBox="0 0 30 20" width="24" height="16" aria-hidden="true">
-      <rect width="12" height="20" fill="#008751" />
-      <rect x="12" width="18" height="10" fill="#FCD116" />
-      <rect x="12" y="10" width="18" height="10" fill="#E8112D" />
-    </svg>
-  );
-}
 
 const MARKETS: MarketOption[] = [
   { code: 'CI', label: 'Côte d\'Ivoire', flag: <FlagCI /> },
   { code: 'BJ', label: 'Bénin', flag: <FlagBJ /> },
 ];
 
+// État par défaut à l'accueil : aucun marché encore choisi.
+function FlagNone() {
+  return (
+    <svg
+      viewBox="0 0 30 20"
+      width={24}
+      height={16}
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+    >
+      <rect x="1" y="1" width="28" height="18" rx="3" strokeDasharray="3 2.5" />
+      <circle cx="15" cy="10" r="5.2" />
+      <path d="M15 4.8v10.4M9.9 10h10.2" />
+    </svg>
+  );
+}
+
 export default function MarketSelector() {
   const { market, setMarket } = useMarket();
+  const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const selected = MARKETS.find((m) => m.code === market) ?? MARKETS[0];
+
+  // Pages racine (accueil, /a-propos, /contact) : on peut changer de marché.
+  // Sur les pages de marché (/ci, /bj, …) on affiche uniquement le drapeau,
+  // non cliquable.
+  const isLanding = isRootPath(pathname);
 
   useEffect(() => {
     if (!open) return;
@@ -53,15 +60,26 @@ export default function MarketSelector() {
   }, [open]);
 
   const switchMarket = (code: MarketCode) => {
-    if (code === market) {
-      setOpen(false);
-      return;
-    }
-    // setMarket navigue : le contexte dérive du marché de l'URL,
-    // il n'y a donc rien d'autre à synchroniser.
+    // setMarket navigue : le contexte dérive du marché de l'URL.
+    // À l'accueil aucun marché n'est encore choisi (même CI) : on navigue
+    // toujours, le choix n'est jamais déjà « actif ».
     setMarket(code);
     setOpen(false);
   };
+
+  if (!isLanding) {
+    return (
+      <div className="market-selector market-selector--static">
+        <span
+          className="header-btn header-btn--market"
+          role="img"
+          aria-label={`Marché ${selected.label}`}
+        >
+          <span className="market-selector__flag">{selected.flag}</span>
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="market-selector" ref={ref}>
@@ -73,17 +91,19 @@ export default function MarketSelector() {
         aria-haspopup="listbox"
         onClick={() => setOpen(!open)}
       >
-        <span className="market-selector__flag">{selected.flag}</span>
-        <span className="header-btn__label">{selected.code}</span>
+        <span className="market-selector__flag market-selector__flag--none">
+          <FlagNone />
+        </span>
+        <span className="header-btn__label">Marché</span>
       </button>
 
       {open && (
         <ul className="market-selector__dropdown" role="listbox" aria-label="Choisir le marché">
           {MARKETS.map((m) => (
-            <li key={m.code} role="option" aria-selected={m.code === selected.code}>
+            <li key={m.code} role="option" aria-selected={false}>
               <button
                 type="button"
-                className={`market-selector__option${m.code === selected.code ? ' is-active' : ''}`}
+                className="market-selector__option"
                 onClick={() => switchMarket(m.code)}
               >
                 <span className="market-selector__flag">{m.flag}</span>

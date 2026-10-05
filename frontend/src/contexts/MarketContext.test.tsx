@@ -2,7 +2,7 @@ import { Component, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { MarketProvider, marketSlugFromPath, useMarket } from './MarketContext';
 
 // Capture l'erreur levée par useMarket() hors provider : React ne la propage
@@ -26,6 +26,7 @@ class Catcher extends Component<{ children: ReactNode }, { message: string | nul
 function Probe() {
   const { market, setMarket } = useMarket();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   return (
     <>
       <span data-testid="market">{market}</span>
@@ -35,6 +36,9 @@ function Probe() {
       </button>
       <button type="button" onClick={() => setMarket('CI')}>
         Passer en CI
+      </button>
+      <button type="button" onClick={() => navigate(-1)}>
+        Retour historique
       </button>
     </>
   );
@@ -130,19 +134,28 @@ describe('MarketProvider', () => {
     expect(screen.getByTestId('market')).toHaveTextContent('BJ');
   });
 
-  it('setMarket navigue vers /{marché} avec remplacement de l’historique', async () => {
+  it('setMarket navigue vers /{marché} en conservant l’entrée précédente', async () => {
     renderProvider('/ci');
     expect(screen.getByTestId('pathname')).toHaveTextContent('/ci');
 
     await userEvent.click(screen.getByRole('button', { name: 'Passer en BJ' }));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/bj');
-    // Un aller-retour ne doit pas se retrouver bloqué sur l’ancienne URL.
-    expect(screen.getByTestId('pathname')).not.toHaveTextContent('/ci');
 
     await userEvent.click(screen.getByRole('button', { name: 'Passer en CI' }));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/ci');
+  });
+
+  it('le retour du navigateur revient à la page précédente après un changement de marché', async () => {
+    renderProvider('/');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Passer en CI' }));
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/ci');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Retour historique' }));
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/');
   });
 });
 

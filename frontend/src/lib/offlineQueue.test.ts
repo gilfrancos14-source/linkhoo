@@ -3,6 +3,7 @@ import {
   clearQueue,
   enqueue,
   flushQueue,
+  newClientKey,
   readQueue,
   removeQueueItem,
   type OfflineQueueItem,
@@ -151,5 +152,95 @@ describe('offlineQueue', () => {
     expect(result).toEqual({ sent: 2, failed: 0, remaining: 0 });
     expect(vi.mocked(addReservation)).toHaveBeenCalledWith(reservationPayload);
     expect(vi.mocked(apiNewsletter.subscribe)).toHaveBeenCalledWith({ email: 'awa@example.com' });
+  });
+
+  describe('clés d’idempotence', () => {
+    it('génère des clés uniques et conformes au format attendu par l’API', () => {
+      const first = newClientKey();
+      const second = newClientKey();
+
+      expect(first).toBeTruthy();
+      expect(first).not.toBe(second);
+      expect(first.length).toBeGreaterThanOrEqual(8);
+      expect(first).toMatch(/^[A-Za-z0-9_-]+$/);
+    });
+  });
+
+  describe('purge de la file au flush', () => {
+    function rawQueue(items: unknown[]): void {
+      window.localStorage.setItem('linkhoo:offline-queue', JSON.stringify(items));
+    }
+
+    it('retire un élément rejeté définitivement par le serveur (4xx)', async () => {
+      const reservation = vi
+        .fn()
+        .mockRejectedValue(Object.assign(new Error('dates déjà prises'), { status: 409 }));
+      enqueue({ type: 'reservation', payload: reservationPayload });
+
+      const result = await flushQueue({ reservation });
+
+      expect(result).toEqual({ sent: 0, failed: 1, remaining: 0 });
+      expect(reservation).toHaveBeenCalledTimes(1);
+      expect(readQueue()).toEqual([]);
+    });
+
+    it('conserve un échec transitoire (réseau) et compte la tentative', async () => {
+      const reservation = vi.fn().mockRejectedValue(new Error('réseau'));
+      enqueue({ type: 'reservation', payload: reservationPayload });
+
+      const result = await flushQueue({ reservation });
+
+      expect(result).toEqual({ sent: 0, failed: 1, remaining: 1 });
+      expect(readQueue()[0]?.attempts).toBe(1);
+    });
+
+    it('traite 408 et 429 comme transitoires malgré le statut 4xx', async () => {
+      const reservation = vi
+        .fn()
+        .mockRejectedValue(Object.assign(new Error('rate limited'), { status: 429 }));
+      enqueue({ type: 'reservation', payload: reservationPayload });
+
+      const result = await flushQueue({ reservation });
+
+      expect(result).toEqual({ sent: 0, failed: 1, remaining: 1 });
+      expect(readQueue()).toHaveLength(1);
+    });
+
+    it('abandonne un élément après 5 tentatives transitoires', async () => {
+      rawQueue([
+        {
+          id: 'usé',
+          type: 'reservation',
+          createdAt: new Date().toISOString(),
+          payload: reservationPayload,
+          attempts: 4,
+        },
+      ]);
+      const reservation = vi.fn().mockRejectedValue(new Error('réseau'));
+
+      const result = await flushQueue({ reservation });
+
+      expect(reservation).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ sent: 0, failed: 1, remaining: 0 });
+      expect(readQueue()).toEqual([]);
+    });
+
+    it('purge les éléments plus vieux que 7 jours sans les rejouer', async () => {
+      rawQueue([
+        {
+          id: 'vieux',
+          type: 'reservation',
+          createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+          payload: reservationPayload,
+        },
+      ]);
+      const reservation = vi.fn();
+
+      const result = await flushQueue({ reservation });
+
+      expect(reservation).not.toHaveBeenCalled();
+      expect(result).toEqual({ sent: 0, failed: 1, remaining: 0 });
+      expect(readQueue()).toEqual([]);
+    });
   });
 });

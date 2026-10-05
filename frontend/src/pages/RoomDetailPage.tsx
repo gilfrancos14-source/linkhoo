@@ -1,15 +1,16 @@
 import { useParams, useSearchParams, Link } from 'react-router-dom';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useOfflineQueueSync } from '../hooks/useOfflineQueueSync';
-import { fetchRoomsByMarket, fetchRoomById, type Room } from '../data/rooms';
+import { fetchRoomById, type Room } from '../data/rooms';
 import { fetchCategoriesByMarket } from '../data/categories';
 import { isValidEmail } from '../utils/validators';
 import { addReservation } from '../lib/reservations';
-import { enqueue } from '../lib/offlineQueue';
+import { enqueue, newClientKey } from '../lib/offlineQueue';
+import { isPremiumActive } from '../lib/premium';
 import {
   DUREE_MAX_MOIS,
   DUREE_MAX_NUIT,
@@ -79,7 +80,9 @@ export default function RoomDetailPage() {
   const [searchParams] = useSearchParams();
   const { user, isLoaded: userLoaded } = useUser();
   const { isSignedIn } = useAuth();
-  const [rooms, setRooms] = useState<Room[]>([]);
+  // La fiche est chargée directement par son identifiant : la page ne
+  // télécharge plus tout le catalogue du marché pour retrouver une ligne.
+  const [room, setRoom] = useState<Room | null>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
@@ -101,6 +104,11 @@ export default function RoomDetailPage() {
   useOfflineQueueSync();
   const [shareFeedback, setShareFeedback] = useState(false);
   const [reviewsData, setReviewsData] = useState<RoomReviewsResponse | null>(null);
+  // Clé d'idempotence de la soumission en cours : la même clé accompagne
+  // l'envoi en ligne et sa copie en file offline, donc un retry (timeout,
+  // retour de connexion) renvoie la réservation existante au lieu d'en
+  // créer une seconde. Réinitialisée après succès (nouvelle soumission = nouvelle clé).
+  const clientKeyRef = useRef<string | null>(null);
 
   const clerkSignedIn = clerkConfigured && userLoaded && Boolean(isSignedIn);
 
@@ -116,26 +124,37 @@ export default function RoomDetailPage() {
   }, [clerkSignedIn, user]);
 
   useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      fetchRoomsByMarket(market),
-      fetchCategoriesByMarket(market),
-    ]).then(([r, c]) => {
-      setRooms(r);
-      setCategories(c);
-    }).catch(() => {
-      setRooms([]);
-      setCategories([]);
-    }).finally(() => {
-      setLoading(false);
-    });
+    let cancelled = false;
+    fetchCategoriesByMarket(market)
+      .then((loaded) => {
+        if (!cancelled) setCategories(loaded);
+      })
+      .catch(() => {
+        if (!cancelled) setCategories([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [market]);
 
   useEffect(() => {
     if (!id) return;
-    fetchRoomById(id).then((fullRoom) => {
-      setRooms((prev) => prev.map((r) => r.id === id ? { ...r, gerant: fullRoom.gerant, gerantId: fullRoom.gerantId } : r));
-    }).catch(() => {});
+    let cancelled = false;
+    setLoading(true);
+    setRoom(null);
+    fetchRoomById(id)
+      .then((fullRoom) => {
+        if (!cancelled) setRoom(fullRoom);
+      })
+      .catch(() => {
+        if (!cancelled) setRoom(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   useEffect(() => {
@@ -143,7 +162,6 @@ export default function RoomDetailPage() {
     apiReviews.listByRoom(id).then(setReviewsData).catch(() => setReviewsData(null));
   }, [id, submitted]);
 
-  const room = rooms.find((r) => r.id === id);
   const category = room ? categories.find((c: any) => c.id === room.category) : null;
   const isMonthly = room?.priceUnit === '/ mois';
   const unite: DureeUnite = isMonthly ? 'mois' : 'nuit';
@@ -192,6 +210,8 @@ export default function RoomDetailPage() {
     setSubmitting(true);
     setSubmitError('');
 
+    if (!clientKeyRef.current) clientKeyRef.current = newClientKey();
+
     const payload = {
       clientName: formData.name,
       clientEmail: formData.email,
@@ -204,12 +224,14 @@ export default function RoomDetailPage() {
       dureeUnite: unite,
       montant: estimatedMontant ?? room.priceNum,
       message: formData.message,
+      clientKey: clientKeyRef.current,
     };
 
     // Hors-ligne : la demande est mise en file d'attente et partira
     // automatiquement au retour de la connexion.
     if (!online) {
       enqueue({ type: 'reservation', payload });
+      clientKeyRef.current = null;
       setQueued(true);
       setSubmitted(true);
       setSubmitting(false);
@@ -218,6 +240,7 @@ export default function RoomDetailPage() {
 
     try {
       await addReservation(payload);
+      clientKeyRef.current = null;
       setSubmitted(true);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Une erreur est survenue. Veuillez réessayer.');
@@ -358,7 +381,7 @@ export default function RoomDetailPage() {
               </ul>
             </div>
 
-            {room.gerant?.is_verified && room.gerant?.is_premium && (
+            {room.gerant?.is_verified && isPremiumActive(room.gerant) && (
               <div className="host-card">
                 <h2 className="host-card__title">Votre hôte</h2>
                 <div className="host-card__card">

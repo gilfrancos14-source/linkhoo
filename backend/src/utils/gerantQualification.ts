@@ -1,17 +1,16 @@
-interface GerantQualificationFields {
+import { isPremiumActive, type PremiumFlags } from './premium';
+
+interface GerantQualificationFields extends PremiumFlags {
   is_verified: boolean | null;
-  is_premium: boolean | null;
-  premium_expires_at?: string | null;
 }
 
+/**
+ * Un gérant peut gérer ses réservations s'il est vérifié ET premium.
+ * La partie premium est déléguée à `isPremiumActive` : la même règle doit
+ * piloter l'accès, les badges et les statistiques (sinon un abonnement expiré
+ * reste affiché « actif » quelque part).
+ */
 export function isQualifiedGerant(gerant: GerantQualificationFields | null | undefined): boolean {
-  if (!gerant || !gerant.is_verified || !gerant.is_premium) return false;
-  if (gerant.premium_expires_at !== null && gerant.premium_expires_at !== undefined) {
-    const expiresAt = new Date(gerant.premium_expires_at);
-    // Date illisible (corruption, format fantaisiste) : on refuse plutôt que
-    // de laisser l'accès premium ouvert, NaN <= now étant toujours faux.
-    if (!Number.isFinite(expiresAt.getTime())) return false;
-    if (expiresAt <= new Date()) return false;
-  }
-  return true;
+  if (!gerant || !gerant.is_verified) return false;
+  return isPremiumActive(gerant);
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
-import { useMarket } from '../contexts/MarketContext';
+import { isRootPath, useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
 import { useEspace } from '../hooks/useEspace';
 import MarketSelector from './MarketSelector';
@@ -13,6 +13,32 @@ function scrollToSection(sectionId: string) {
   const el = document.getElementById(sectionId);
   if (el) el.scrollIntoView({ behavior: 'smooth' });
 }
+
+// Navigation principale : mêmes cibles que le menu mobile.
+// Pages racine (accueil, /a-propos, /contact) : même barre que l'accueil —
+// liste réduite « Accueil » + liens de pages (« À propos », « Contact »).
+// Pages de marché (/ci, /bj, …) : sections seules, sans ces liens.
+// Une entrée porteuse de `route` ouvre une page servie à la racine
+// (/a-propos, /contact) au lieu de défiler vers une section.
+interface NavItem {
+  id: string;
+  label: string;
+  route?: string;
+}
+
+const NAV_ITEMS: readonly NavItem[] = [
+  { id: 'accueil', label: 'Accueil' },
+  { id: 'categories', label: 'Appartements' },
+  { id: 'evenements', label: 'Événements' },
+  { id: 'tourisme', label: 'Tourisme' },
+  { id: 'avis', label: 'Avis' },
+];
+
+const LANDING_NAV_ITEMS: readonly NavItem[] = [
+  { id: 'accueil', label: 'Accueil' },
+  { id: 'a-propos', label: 'À propos', route: '/a-propos' },
+  { id: 'contact', label: 'Contact', route: '/contact' },
+];
 
 function LoginButton({ market }: { market: string }) {
   return (
@@ -48,91 +74,6 @@ function HeaderAuthActions({ market }: { market: string }) {
   );
 }
 
-function MobileAuthLinks({
-  market,
-  onNavigate,
-}: {
-  market: string;
-  onNavigate: () => void;
-}) {
-  const { isLoaded, isSignedIn } = useAuth();
-  const { resolve, loading } = useEspace();
-
-  if (!isLoaded) return null;
-
-  if (isSignedIn) {
-    return (
-      <li>
-        <button
-          type="button"
-          className="mobile-menu__link mobile-menu__link--auth"
-          disabled={loading}
-          onClick={() => {
-            onNavigate();
-            void resolve();
-          }}
-        >
-          Mon espace
-        </button>
-      </li>
-    );
-  }
-
-  return (
-    <>
-      <li>
-        <Link
-          to={`/${market.toLowerCase()}/login`}
-          className="mobile-menu__link mobile-menu__link--auth"
-          onClick={onNavigate}
-        >
-          Se connecter
-        </Link>
-      </li>
-      <li>
-        <Link
-          to={`/${market.toLowerCase()}/inscription`}
-          className="mobile-menu__link mobile-menu__link--auth mobile-menu__link--auth-alt"
-          onClick={onNavigate}
-        >
-          S'inscrire
-        </Link>
-      </li>
-    </>
-  );
-}
-
-function StaticAuthLinks({
-  market,
-  onNavigate,
-}: {
-  market: string;
-  onNavigate: () => void;
-}) {
-  return (
-    <>
-      <li>
-        <Link
-          to={`/${market.toLowerCase()}/login`}
-          className="mobile-menu__link mobile-menu__link--auth"
-          onClick={onNavigate}
-        >
-          Se connecter
-        </Link>
-      </li>
-      <li>
-        <Link
-          to={`/${market.toLowerCase()}/inscription`}
-          className="mobile-menu__link mobile-menu__link--auth mobile-menu__link--auth-alt"
-          onClick={onNavigate}
-        >
-          S'inscrire
-        </Link>
-      </li>
-    </>
-  );
-}
-
 export default function Header() {
   const { market } = useMarket();
   const homePath = useHomePath();
@@ -140,6 +81,11 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Pages racine : navigation réduite, pas de bouton de connexion.
+  // Pages de marché : navigation complète + « Se connecter » dans la barre.
+  const isLanding = isRootPath(location.pathname);
+  const navItems = isLanding ? LANDING_NAV_ITEMS : NAV_ITEMS;
 
   useEffect(() => {
     document.body.classList.toggle('nav-open', menuOpen);
@@ -200,6 +146,22 @@ export default function Header() {
 
   const handleNav = useCallback((sectionId: string) => {
     closeMenu();
+    // /a-propos et /contact partagent la barre de l'accueil mais n'ont pas ses
+    // sections : « Accueil » y ramène d'abord.
+    if (location.pathname !== '/' && isRootPath(location.pathname)) {
+      void navigate('/');
+      return;
+    }
+    // Page d'accueil racine (structure CoinAfrique) : les sections
+    // présentes (hero, avis) défilent sur place, les autres ouvrent le
+    // marché.
+    if (location.pathname === '/') {
+      const el = document.getElementById(sectionId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+    }
     if (location.pathname === `/${market.toLowerCase()}`) {
       scrollToSection(sectionId);
     } else {
@@ -208,20 +170,58 @@ export default function Header() {
     }
   }, [closeMenu, location.pathname, navigate, homePath, market]);
 
+  // Une entrée « route » devient un lien vers une page racine (/a-propos,
+  // /contact), les autres restent des boutons qui défilent vers une section de
+  // l'accueil.
+  const renderNavItem = (item: NavItem, className: string) =>
+    item.route ? (
+      <Link
+        to={item.route}
+        className={className}
+        onClick={closeMenu}
+        aria-current={
+          location.pathname === item.route ? 'page' : undefined
+        }
+      >
+        {item.label}
+      </Link>
+    ) : (
+      <button
+        type="button"
+        className={className}
+        onClick={() => handleNav(item.id)}
+      >
+        {item.label}
+      </button>
+    );
+
   return (
     <header className="site-header" id="site-header">
       <div className="container header-inner">
-        <Link to={homePath} className="logo" aria-label="Linkhoo — retour à l'accueil">
+        <Link
+          to={isLanding ? '/' : homePath}
+          className="logo"
+          aria-label="Linkhoo — retour à l'accueil"
+        >
           <img className="logo__mark logo__img" src="/logo.jpg" alt="Logo Linkhoo" width="64" height="64" loading="eager" fetchPriority="high" />
         </Link>
 
+        <nav className="header-nav" aria-label="Navigation principale">
+          <ul className="header-nav__list">
+            {navItems.map((item) => (
+              <li key={item.id}>{renderNavItem(item, 'header-nav__link')}</li>
+            ))}
+          </ul>
+        </nav>
+
         <div className="header-actions">
           <MarketSelector />
-          {clerkConfigured ? (
-            <HeaderAuthActions market={market} />
-          ) : (
-            <LoginButton market={market} />
-          )}
+          {!isLanding &&
+            (clerkConfigured ? (
+              <HeaderAuthActions market={market} />
+            ) : (
+              <LoginButton market={market} />
+            ))}
           <button
             type="button"
             className="header-btn header-btn--burger"
@@ -251,17 +251,9 @@ export default function Header() {
       >
         <nav className="mobile-menu__nav" aria-label="Menu mobile">
           <ul className="mobile-menu__list">
-            <li><button className="mobile-menu__link" onClick={() => handleNav('accueil')}>Accueil</button></li>
-            <li><button className="mobile-menu__link" onClick={() => handleNav('categories')}>Appartements</button></li>
-            <li><button className="mobile-menu__link" onClick={() => handleNav('evenements')}>Événements</button></li>
-            <li><button className="mobile-menu__link" onClick={() => handleNav('tourisme')}>Tourisme</button></li>
-            <li><button className="mobile-menu__link" onClick={() => handleNav('avis')}>Avis</button></li>
-            <li className="mobile-menu__divider" aria-hidden="true"></li>
-            {clerkConfigured ? (
-              <MobileAuthLinks market={market} onNavigate={closeMenu} />
-            ) : (
-              <StaticAuthLinks market={market} onNavigate={closeMenu} />
-            )}
+            {navItems.map((item) => (
+              <li key={item.id}>{renderNavItem(item, 'mobile-menu__link')}</li>
+            ))}
           </ul>
         </nav>
       </div>

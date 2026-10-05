@@ -135,6 +135,7 @@ vi.mock('./lib/api', () => ({
   apiAuth: { bootstrap: mocks.bootstrap, me: mocks.me },
   apiClients: mocks.autoApi(),
   apiReviews: { featured: mocks.featured },
+  apiContact: { send: mocks.autoFn },
 }));
 
 vi.mock('./lib/adminApi', () => ({
@@ -255,10 +256,6 @@ function renderApp(entry: string) {
   );
 }
 
-function landingPane(): Element | null {
-  return document.body.querySelector('div[style*="min-height: 100vh"]');
-}
-
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.clerkLoaded = true;
@@ -288,12 +285,15 @@ afterEach(() => {
 });
 
 describe('App — racine et marché', () => {
-  it("rend la LandingPage blanche à la racine, sans chrome", () => {
+  it('rend la landing CoinAfrique à la racine, avec header et footer', async () => {
     renderApp('/');
 
-    expect(landingPane()).not.toBeNull();
-    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
-    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /La location directe en Afrique/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('banner')).toBeInTheDocument();
+    expect(screen.getByRole('contentinfo')).toBeInTheDocument();
+    expect(document.documentElement.hasAttribute('data-market')).toBe(false);
     expect(screen.getByTestId('pathname')).toHaveTextContent('/');
   });
 
@@ -301,14 +301,18 @@ describe('App — racine et marché', () => {
     renderApp('/ch');
 
     await waitFor(() => expect(screen.getByTestId('pathname')).toHaveTextContent('/'));
-    expect(landingPane()).not.toBeNull();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /La location directe en Afrique/ }),
+    ).toBeInTheDocument();
   });
 
   it("redirige une URL inconnue hors marché vers la racine", async () => {
     renderApp('/togo/quelque-part');
 
     await waitFor(() => expect(screen.getByTestId('pathname')).toHaveTextContent('/'));
-    expect(landingPane()).not.toBeNull();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /La location directe en Afrique/ }),
+    ).toBeInTheDocument();
   });
 
   it("rend la page d'accueil complète du marché CI", async () => {
@@ -366,6 +370,51 @@ describe('App — pages de contenu (intégration)', () => {
     ).toBeInTheDocument();
     expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(11);
     expect(screen.getByRole('link', { name: "← Retour à l'accueil" })).toHaveAttribute('href', '/bj');
+  });
+
+  it("rend la page À propos depuis /a-propos", async () => {
+    renderApp('/a-propos');
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'À propos de Linkhoo' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('banner')).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(6);
+    expect(screen.getByRole('link', { name: "← Retour à l'accueil" })).toHaveAttribute('href', '/');
+  });
+
+  it("rend la page Contact depuis /contact", async () => {
+    renderApp('/contact');
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Contactez-nous' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('banner')).toBeInTheDocument();
+    expect(screen.getByRole('contentinfo')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: "← Retour à l'accueil" })).toHaveAttribute(
+      'href',
+      '/',
+    );
+    expect(screen.getByRole('button', { name: 'Envoyer' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Pays *')).toBeInTheDocument();
+  });
+
+  it("redirige /ci/contact vers /contact", async () => {
+    renderApp('/ci/contact');
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Contactez-nous' }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/contact');
+  });
+
+  it("redirige /bj/a-propos vers /a-propos", async () => {
+    renderApp('/bj/a-propos');
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'À propos de Linkhoo' }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/a-propos');
   });
 
   it("rend la connexion client sur /ci/login sans chrome de marché", async () => {

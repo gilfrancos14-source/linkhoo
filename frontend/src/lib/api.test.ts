@@ -466,6 +466,44 @@ describe('apiNewsletter', () => {
   });
 });
 
+describe('apiContact', () => {
+  const payload: Parameters<typeof api.apiContact.send>[0] = {
+    nom: 'Diop',
+    prenom: 'Awa',
+    email: 'awa@exemple.ci',
+    telephone: '+221 77 123 45 67',
+    pays: 'Sénégal',
+    sujet: 'reservation',
+    message: 'Bonjour, je souhaite réserver une chambre.',
+    market: 'CI',
+  };
+
+  it('send POST /contact avec le formulaire complet', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ message: 'Envoyé.', id: 'c-1' }, 201));
+
+    const result = await api.apiContact.send(payload);
+
+    expect(lastCall().url).toBe('/api/contact');
+    expect(lastCall().init.method).toBe('POST');
+    expect(lastBody()).toEqual(payload);
+    expect(result).toEqual({ message: 'Envoyé.', id: 'c-1' });
+  });
+
+  it('send conserve la saisie du visiteur (pot de miel vide par défaut)', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ message: 'Envoyé.' }, 201));
+
+    await api.apiContact.send({ nom: 'Awa', email: 'awa@exemple.ci', pays: 'Togo', sujet: 'autre', message: 'Message de test.' });
+
+    expect(lastBody()).toEqual({
+      nom: 'Awa',
+      email: 'awa@exemple.ci',
+      pays: 'Togo',
+      sujet: 'autre',
+      message: 'Message de test.',
+    });
+  });
+});
+
 describe('apiNotifications', () => {
   it('listAdmin GET /notifications', async () => {
     await api.apiNotifications.listAdmin();
@@ -591,13 +629,13 @@ describe('apiGerants', () => {
   });
 
   it('submitVerification POST /gerants/:id/submit-verification', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ transaction_id: 9, payment_url: '/pay' }));
+    fetchMock.mockResolvedValueOnce(jsonResponse({ success: true, gerant: { id: 'g-1' } }));
 
     const result = await api.apiGerants.submitVerification('g-1');
 
     expect(lastCall().url).toBe('/api/gerants/g-1/submit-verification');
     expect(lastCall().init.method).toBe('POST');
-    expect(result).toEqual({ transaction_id: 9, payment_url: '/pay' });
+    expect(result).toEqual({ success: true, gerant: { id: 'g-1' } });
   });
 
   it('setPropertyAddress envoie maps_url, lat et lng quand ils sont fournis', async () => {
@@ -612,13 +650,6 @@ describe('apiGerants', () => {
     await api.apiGerants.setPropertyAddress('g-1', 'https://maps/x');
 
     expect(lastBody()).toEqual({ maps_url: 'https://maps/x' });
-  });
-
-  it('confirmVerification POST avec transaction_id', async () => {
-    await api.apiGerants.confirmVerification('g-1', 42);
-
-    expect(lastCall().url).toBe('/api/gerants/g-1/confirm-verification');
-    expect(lastBody()).toEqual({ transaction_id: 42 });
   });
 
   it('getVerificationStatus GET /gerants/:id/verification-status', async () => {
@@ -761,6 +792,17 @@ describe("propagation d'erreurs par namespace", () => {
     ['apiReservations.list', () => api.apiReservations.list()],
     ['apiReservations.create', () => api.apiReservations.create(reservationInput())],
     ['apiNewsletter.subscribe', () => api.apiNewsletter.subscribe({ email: 'a@b.ci' })],
+    [
+      'apiContact.send',
+      () =>
+        api.apiContact.send({
+          nom: 'Awa',
+          email: 'a@b.ci',
+          pays: 'Togo',
+          sujet: 'autre',
+          message: 'Message de test.',
+        }),
+    ],
     ['apiNotifications.listAdmin', () => api.apiNotifications.listAdmin()],
     ['apiGerants.getMe', () => api.apiGerants.getMe()],
     ['apiPremium.initiate', () => api.apiPremium.initiate('CI')],

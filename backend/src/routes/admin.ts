@@ -2,8 +2,9 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
 import bcrypt from 'bcrypt';
 import { supabaseAdmin } from '../config/supabase';
+import { publishNotificationChanged } from '../utils/realtime';
 import { requireAdminAuth, signAdminToken } from '../middleware/requireAdminAuth';
-import { adminLoginSchema, adminChangePasswordSchema } from '../validations/admin';
+import { adminLoginSchema, adminChangePasswordSchema, adminReservationsQuerySchema } from '../validations/admin';
 import { idParamsSchema } from '../validations/common';
 import { verificationReviewSchema, verificationRejectSchema } from '../validations/gerant';
 import { isQualifiedGerant } from '../utils/gerantQualification';
@@ -46,57 +47,11 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
 
 router.get('/stats', requireAdminAuth, async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    const [gerants, rooms, reservations] = await Promise.all([
-      fetchAllRows<any>((from, to) =>
-        supabaseAdmin.from('gerants').select('id, email, nom, prenom, is_verified, verification_status, is_premium, premium_expires_at, market, created_at')
-          .order('id', { ascending: true }).range(from, to)),
-      fetchAllRows<any>((from, to) =>
-        supabaseAdmin.from('rooms').select('id, disponible, market, created_at')
-          .order('id', { ascending: true }).range(from, to)),
-      fetchAllRows<any>((from, to) =>
-        supabaseAdmin.from('reservations').select('id, statut, montant, created_at')
-          .order('id', { ascending: true }).range(from, to)),
-    ]);
-
-    const now = new Date();
-    const thisMonth = gerants.filter((g) => {
-      const created = new Date(g.created_at);
-      return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
-    });
-
-    const activePremium = gerants.filter((g) =>
-      g.is_premium &&
-      g.premium_expires_at &&
-      new Date(g.premium_expires_at) > now,
-    ).length;
-
-    res.json({
-      gerants: {
-        total: gerants.length,
-        verified: gerants.filter((g) => g.is_verified).length,
-        pendingVerifications: gerants.filter((g) => g.verification_status === 'pending' || g.verification_status === 'under_review').length,
-        premium: activePremium,
-        byMarket: {
-          CI: gerants.filter((g) => g.market === 'CI').length,
-          BJ: gerants.filter((g) => g.market === 'BJ').length,
-        },
-        newThisMonth: thisMonth.length,
-      },
-      rooms: {
-        total: rooms.length,
-        available: rooms.filter((r) => r.disponible).length,
-        unavailable: rooms.filter((r) => !r.disponible).length,
-      },
-      reservations: {
-        total: reservations.length,
-        pending: reservations.filter((r) => r.statut === 'en_attente').length,
-        confirmed: reservations.filter((r) => r.statut === 'confirmee').length,
-        cancelled: reservations.filter((r) => r.statut === 'annulee').length,
-        totalRevenue: reservations
-          .filter((r) => r.statut === 'confirmee')
-          .reduce((sum, r) => sum + (r.montant || 0), 0),
-      },
-    });
+    // Agrégats calculés en SQL par la RPC (P1 #7) : plus de chargement des
+    // tables gerants/rooms/reservations entières en mémoire.
+    const { data, error } = await supabaseAdmin.rpc('admin_stats');
+    if (error) throw error;
+    res.json(data);
   } catch (err) {
     next(err);
   }
@@ -403,6 +358,7 @@ router.patch('/gerants/:id/approve-verification', requireAdminAuth, async (req: 
       message: 'Votre compte a été vérifié avec succès',
       gerant_id: gerant.clerk_user_id,
     });
+    void publishNotificationChanged('admin', 'gerant');
 
     res.json(data);
   } catch (err) {
@@ -459,6 +415,7 @@ router.patch('/gerants/:id/reject-verification', requireAdminAuth, async (req: R
       message: `Votre demande de vérification a été rejetée : ${parsedBody.data.rejection_reason}`,
       gerant_id: gerant.clerk_user_id,
     });
+    void publishNotificationChanged('admin', 'gerant');
 
     res.json(data);
   } catch (err) {
@@ -486,69 +443,23 @@ router.get('/verification/pending', requireAdminAuth, async (_req: Request, res:
 
 router.get('/reservations', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { statut, search } = req.query;
-
-    const allReservations = await fetchAllRows<any>((from, to) => {
-      let query = supabaseAdmin
-        .from('reservations')
-        .select('*, rooms!inner(gerant_id, title)')
-        .order('created_at', { ascending: false })
-        .order('id', { ascending: true });
-
-      if (statut && statut !== 'all') {
-        query = query.eq('statut', statut);
-      }
-
-      return query.range(from, to);
-    });
-
-    const gerants = await fetchAllRows<any>((from, to) =>
-      supabaseAdmin
-        .from('gerants')
-        .select('clerk_user_id, is_verified, is_premium, premium_expires_at')
-        .order('clerk_user_id', { ascending: true })
-        .range(from, to));
-
-    const qualifiedGerants = new Set(
-      (gerants || [])
-        .filter((g) => isQualifiedGerant(g))
-        .map((g) => g.clerk_user_id)
-    );
-
-    let filtered = (allReservations || []).filter((r: any) => {
-      const gerantId = r.rooms?.gerant_id;
-      return gerantId && !qualifiedGerants.has(gerantId);
-    });
-
-    if (search && typeof search === 'string') {
-      const term = search.toLowerCase();
-      filtered = filtered.filter((r: any) =>
-        r.client_name?.toLowerCase().includes(term) ||
-        r.room_title?.toLowerCase().includes(term) ||
-        r.client_email?.toLowerCase().includes(term)
-      );
+    const parsed = adminReservationsQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Paramètres invalides' });
     }
 
-    const result = filtered.map((r: any) => ({
-      id: r.id,
-      client_name: r.client_name,
-      client_email: r.client_email,
-      client_phone: r.client_phone,
-      room_id: r.room_id,
-      room_title: r.room_title,
-      date_debut: r.date_debut,
-      date_fin: r.date_fin,
-      montant: r.montant,
-      duree_nombre: r.duree_nombre,
-      duree_unite: r.duree_unite,
-      message: r.message,
-      statut: r.statut,
-      created_at: r.created_at,
-      responded_at: r.responded_at,
-      gerant_id: r.rooms?.gerant_id || null,
-    }));
+    // Filtrage (qualification des gérants, statut, recherche) et pagination
+    // délégués à la RPC admin_reservations en SQL (P1 #7) : plus de table
+    // entière chargée puis filtrée en mémoire.
+    const { data, error } = await supabaseAdmin.rpc('admin_reservations', {
+      p_statut: parsed.data.statut ?? null,
+      p_search: parsed.data.search ?? null,
+      p_page: parsed.data.page,
+      p_limit: parsed.data.limit,
+    });
+    if (error) throw error;
 
-    res.json(result);
+    res.json(data);
   } catch (err) {
     next(err);
   }
@@ -587,6 +498,7 @@ router.post('/reservations/:id/check-availability', requireAdminAuth, async (req
         client_email: reservation.client_email,
         message: `Désolé, "${reservation.room_title}" n'est pas disponible.`,
       });
+      void publishNotificationChanged('client');
 
       return res.json({ statut: 'annulee', reason: 'chambre_non_disponible' });
     }
@@ -627,6 +539,7 @@ router.post('/reservations/:id/check-availability', requireAdminAuth, async (req
       client_email: reservation.client_email,
       message: notifMessage,
     });
+    void publishNotificationChanged('client');
 
     res.json({ statut: newStatut, reason: hasConflict ? 'conflit_dates' : null });
   } catch (err) {

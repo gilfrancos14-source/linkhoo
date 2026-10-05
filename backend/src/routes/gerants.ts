@@ -1,23 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
-import { Transaction } from 'fedapay';
 import { supabaseAdmin } from '../config/supabase';
-import '../config/fedapay';
+import { publishNotificationChanged } from '../utils/realtime';
 import { gerantCreateSchema, gerantUpdateSchema, verificationDocumentTypeSchema, propertyAddressSchema } from '../validations/gerant';
 import { idParamsSchema } from '../validations/common';
-import { withFedapayTimeout } from '../config/fedapayHttp';
-import { mapFedaPayStatus, isNotFoundError } from '../smoke/fedapayRiskTests.helpers';
 import { parseGoogleMapsUrl } from '../utils/googleMaps';
 import { requireProfile } from '../middleware/requireProfile';
-
-const VERIFICATION_AMOUNT = 2000;
-const VERIFICATION_CURRENCY = 'XOF';
-
-function getOrigin(req: Request): string {
-  const origin = req.headers.origin;
-  if (typeof origin === 'string' && origin) return origin;
-  return process.env.APP_PUBLIC_URL || 'http://localhost:5173';
-}
 
 const router = Router();
 
@@ -354,7 +342,7 @@ router.patch('/:id/property-address', async (req: Request, res: Response, next: 
   }
 });
 
-// ── Vérification : Soumission + Paiement ──
+// ── Vérification : Soumission gratuite (revue admin) ──
 
 router.post('/:id/submit-verification', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -370,7 +358,7 @@ router.post('/:id/submit-verification', async (req: Request, res: Response, next
 
     const { data: gerant, error: fetchError } = await supabaseAdmin
       .from('gerants')
-      .select('clerk_user_id, email, verification_status, market, property_lat, property_lng, property_maps_url')
+      .select('clerk_user_id, verification_status, market, property_lat, property_lng, property_maps_url')
       .eq('id', parsedParams.data.id)
       .maybeSingle();
     if (fetchError) throw fetchError;
@@ -400,160 +388,6 @@ router.post('/:id/submit-verification', async (req: Request, res: Response, next
       return res.status(400).json({ error: 'Vous devez indiquer l\'adresse Google Maps de l\'appartement' });
     }
 
-    const customerEmail = gerant.email;
-    if (!customerEmail) {
-      return res.status(400).json({ error: 'Email gérant manquant. Mettez à jour votre profil.' });
-    }
-
-    const callbackUrl = `${getOrigin(req)}/${gerant.market.toLowerCase()}/gerant/verification/success`;
-
-    const transaction = await withFedapayTimeout(
-      Transaction.create({
-        description: `Frais de vérification - ${gerant.market}`,
-        amount: VERIFICATION_AMOUNT,
-        currency: { iso: VERIFICATION_CURRENCY },
-        callback_url: callbackUrl,
-        customer: { email: customerEmail },
-        metadata: {
-          clerk_user_id: authUserId,
-          market: gerant.market,
-          type: 'verification',
-          gerant_id: parsedParams.data.id,
-        },
-      })
-    );
-
-    const token = await withFedapayTimeout(transaction.generateToken());
-    const paymentUrl = (token as any).url || `https://process.fedapay.com/${(token as any).token}`;
-
-    await supabaseAdmin
-      .from('premium_transactions')
-      .upsert(
-        {
-          fedapay_transaction_id: transaction.id,
-          clerk_user_id: authUserId,
-          market: gerant.market,
-          amount: VERIFICATION_AMOUNT,
-          currency: VERIFICATION_CURRENCY,
-          status: 'pending',
-          customer_email: customerEmail,
-          type: 'verification',
-          raw_event: { source: 'submit-verification' },
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'fedapay_transaction_id' }
-      );
-
-    res.json({
-      transaction_id: transaction.id,
-      payment_url: paymentUrl,
-    });
-  } catch (err: any) {
-    if (isNotFoundError(err)) {
-      return res.status(404).json({ error: 'Ressource FedaPay introuvable' });
-    }
-    console.error('[verification] submit error:', err?.message || err);
-    next(err);
-  }
-});
-
-router.post('/:id/confirm-verification', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const parsedParams = idParamsSchema.safeParse(req.params);
-    if (!parsedParams.success) {
-      return res.status(400).json({ error: 'Identifiant invalide' });
-    }
-
-    const authUserId = req.auth?.userId;
-    if (!authUserId) {
-      return res.status(401).json({ error: 'Non autorisé' });
-    }
-
-    const transactionId = Number(req.body.transaction_id);
-    if (!transactionId || transactionId <= 0) {
-      return res.status(400).json({ error: 'Transaction ID invalide' });
-    }
-
-    const { data: gerant, error: fetchError } = await supabaseAdmin
-      .from('gerants')
-      .select('clerk_user_id, market')
-      .eq('id', parsedParams.data.id)
-      .maybeSingle();
-    if (fetchError) throw fetchError;
-    if (!gerant) return res.status(404).json({ error: 'Gérant introuvable' });
-    if (gerant.clerk_user_id !== authUserId) {
-      return res.status(403).json({ error: 'Non autorisé' });
-    }
-
-    let transaction: any;
-    try {
-      transaction = await withFedapayTimeout(Transaction.retrieve(transactionId));
-    } catch (err) {
-      if (isNotFoundError(err)) {
-        return res.status(404).json({ error: 'Transaction introuvable' });
-      }
-      throw err;
-    }
-
-    const meta: any = (transaction as any).metadata || {};
-    if (meta.clerk_user_id !== authUserId) {
-      return res.status(403).json({ error: 'Cette transaction ne vous appartient pas' });
-    }
-
-    const rawType = (meta.type as string | undefined) ?? '';
-    const metaType = rawType === 'premium_subscription' ? 'premium' : rawType;
-    if (metaType !== 'verification') {
-      return res.status(400).json({ error: 'Transaction non éligible à la vérification' });
-    }
-
-    const amountFromTx = Number((transaction as any).amount);
-    if (!Number.isFinite(amountFromTx) || amountFromTx < VERIFICATION_AMOUNT) {
-      return res.status(400).json({ error: 'Montant de transaction insuffisant' });
-    }
-
-    const rawStatus = (transaction as any).status;
-    const status = mapFedaPayStatus(rawStatus);
-
-    await supabaseAdmin
-      .from('premium_transactions')
-      .upsert(
-        {
-          fedapay_transaction_id: transaction.id,
-          clerk_user_id: authUserId,
-          market: gerant.market,
-          amount: amountFromTx,
-          currency: VERIFICATION_CURRENCY,
-          status,
-          customer_email: (transaction as any).customer?.email ?? null,
-          type: 'verification',
-          raw_event: { source: 'confirm-verification', transaction_status: rawStatus },
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'fedapay_transaction_id' }
-      );
-
-    if (status !== 'approved') {
-      return res.status(400).json({
-        error: status === 'pending' ? 'Paiement en attente de confirmation' : `Paiement ${status}`,
-        status,
-      });
-    }
-
-    const { data: currentGerant } = await supabaseAdmin
-      .from('gerants')
-      .select('verification_status')
-      .eq('id', parsedParams.data.id)
-      .maybeSingle();
-
-    if (currentGerant?.verification_status === 'pending' || currentGerant?.verification_status === 'under_review') {
-      const { data: updatedGerant } = await supabaseAdmin
-        .from('gerants')
-        .select('*')
-        .eq('id', parsedParams.data.id)
-        .single();
-      return res.json({ success: true, gerant: updatedGerant });
-    }
-
     const { error: updateError } = await supabaseAdmin
       .from('gerants')
       .update({
@@ -576,6 +410,7 @@ router.post('/:id/confirm-verification', async (req: Request, res: Response, nex
       message: `Nouvelle demande de vérification de ${gerant.market}`,
       gerant_id: authUserId,
     });
+    void publishNotificationChanged('admin', 'gerant');
 
     const { data: updatedGerant } = await supabaseAdmin
       .from('gerants')
@@ -584,11 +419,7 @@ router.post('/:id/confirm-verification', async (req: Request, res: Response, nex
       .single();
 
     res.json({ success: true, gerant: updatedGerant });
-  } catch (err: any) {
-    if (isNotFoundError(err)) {
-      return res.status(404).json({ error: 'Transaction introuvable' });
-    }
-    console.error('[verification] confirm error:', err?.message || err);
+  } catch (err) {
     next(err);
   }
 });

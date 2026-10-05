@@ -107,6 +107,14 @@ describe('StayCard', () => {
     expect(badge.className).toContain('stay-card__badge--unavailable');
   });
 
+  it('affiche le badge Premium avec sa variante dédiée', () => {
+    renderCard({ badge: 'Premium', badgeVariant: 'premium' });
+
+    const badge = screen.getByText('Premium');
+    expect(badge.className).toContain('stay-card__badge--premium');
+    expect(badge.className).not.toContain('stay-card__badge--unavailable');
+  });
+
   it("n'affiche ni tag ni badge s'ils sont absents", () => {
     renderCard();
 

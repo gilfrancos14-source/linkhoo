@@ -31,6 +31,8 @@ export interface Room {
   promoEnd?: string | null;
   gerantId?: string;
   gerant?: GerantInfo;
+  /** Gérant premium : la carte affiche le badge « Premium ». */
+  gerantPremium?: boolean;
 }
 
 function mapRoom(d: RoomData): Room {
@@ -63,12 +65,59 @@ function mapRoom(d: RoomData): Room {
     promoEnd: d.promo_end ?? null,
     gerantId: d.gerant_id,
     gerant: d.gerant,
+    gerantPremium: d.gerant_premium,
   };
 }
 
 export async function fetchRoomsByMarket(market: MarketCode): Promise<Room[]> {
   const data = await apiRooms.list(market);
   return data.map(mapRoom);
+}
+
+export interface RoomListFilters {
+  market?: MarketCode;
+  ville?: string;
+  quartier?: string;
+  category?: string;
+  chambres?: number;
+  disponible?: boolean;
+  page?: number;
+  limit?: number;
+}
+
+export interface RoomListPage {
+  items: Room[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+/** Page de chambres filtrée côté serveur (ville, prix, catégorie… inclus). */
+export async function fetchRoomsPage(filters: RoomListFilters): Promise<RoomListPage> {
+  const data = await apiRooms.listPaged({
+    market: filters.market,
+    ville: filters.ville,
+    quartier: filters.quartier,
+    category: filters.category,
+    chambres: filters.chambres,
+    disponible: filters.disponible,
+    page: filters.page,
+    limit: filters.limit,
+  });
+  return {
+    items: data.items.map(mapRoom),
+    total: data.total,
+    page: data.page,
+    limit: data.limit,
+  };
+}
+
+export async function fetchQuartiers(market?: MarketCode): Promise<string[]> {
+  return apiRooms.quartiers(market);
+}
+
+export async function fetchVilles(market?: MarketCode): Promise<string[]> {
+  return apiRooms.villes(market);
 }
 
 export async function fetchMyRooms(): Promise<Room[]> {

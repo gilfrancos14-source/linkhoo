@@ -1,8 +1,8 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
-import { fetchRoomsByMarket, getVillesFromRooms, getQuartiersFromRooms, type Room } from '../data/rooms';
+import { fetchRoomsPage, fetchVilles, fetchQuartiers, type Room } from '../data/rooms';
 import { fetchCategoriesByMarket } from '../data/categories';
 import { roomMeta, roomSubtitle } from '../lib/roomDisplay';
 import StayCard from '../components/StayCard';
@@ -15,32 +15,14 @@ export default function CategoryPage() {
   const { id } = useParams<{ id: string }>();
   const homePath = useHomePath();
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [total, setTotal] = useState(0);
   const [categories, setCategories] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [villes, setVilles] = useState<string[]>([]);
+  const [quartiers, setQuartiers] = useState<string[]>([]);
+  const [optionsReady, setOptionsReady] = useState(false);
+  const [resultsReady, setResultsReady] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const category = categories.find((c: any) => c.id === id);
-
-  useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      fetchRoomsByMarket(market),
-      fetchCategoriesByMarket(market),
-    ]).then(([r, c]) => {
-      setRooms(r);
-      setCategories(c);
-    }).catch(() => {
-      setRooms([]);
-      setCategories([]);
-    }).finally(() => {
-      setLoading(false);
-    });
-  }, [market]);
-
-  const categoryRooms = useMemo(() => {
-    return rooms.filter((r) => r.category === id);
-  }, [rooms, id]);
-
-  const villes = useMemo(() => getVillesFromRooms(rooms), [rooms]);
-  const quartiers = useMemo(() => getQuartiersFromRooms(rooms), [rooms]);
 
   const [ville, setVille] = useState('');
   const [quartier, setQuartier] = useState('');
@@ -48,31 +30,84 @@ export default function CategoryPage() {
   const [dateDispo, setDateDispo] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
+  // L'écran de chargement n'apparaît qu'au premier chargement (ou au
+  // changement de catégorie/marché) : un changement de filtre met simplement
+  // à jour les résultats en place, sans clignoter.
+  const loading = pageLoading || !optionsReady || !resultsReady;
+
+  // Référentiels : catégorie, villes et quartiers du marché (indépendants
+  // des filtres de la page).
+  useEffect(() => {
+    let cancelled = false;
+    setOptionsReady(false);
+    Promise.all([
+      fetchCategoriesByMarket(market),
+      fetchVilles(market),
+      fetchQuartiers(market),
+    ])
+      .then(([loadedCategories, loadedVilles, loadedQuartiers]) => {
+        if (cancelled) return;
+        setCategories(loadedCategories);
+        setVilles(loadedVilles);
+        setQuartiers(loadedQuartiers);
+        setOptionsReady(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setCategories([]);
+        setVilles([]);
+        setQuartiers([]);
+        setOptionsReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [market]);
+
+  // Nouvelle catégorie : on repart d'une page et de filtres vierges.
   useEffect(() => {
     setVille('');
     setQuartier('');
     setChambres('');
     setDateDispo('');
     setCurrentPage(1);
-  }, [id]);
+    setPageLoading(true);
+  }, [id, market]);
 
-  const filteredRooms = useMemo(() => {
-    return categoryRooms.filter((room) => {
-      if (ville && room.ville !== ville) return false;
-      if (quartier && room.quartier !== quartier) return false;
-      if (chambres !== '') {
-        if (chambres === 3 ? room.chambres < 3 : room.chambres !== chambres) return false;
-      }
-      if (dateDispo && !room.disponible) return false;
-      return true;
-    });
-  }, [categoryRooms, ville, quartier, chambres, dateDispo]);
+  // Résultats : filtrés et paginés côté serveur, refetch à chaque filtre.
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    fetchRoomsPage({
+      market,
+      category: id,
+      ville: ville || undefined,
+      quartier: quartier || undefined,
+      chambres: chambres === '' ? undefined : chambres,
+      disponible: dateDispo === 'yes' ? true : undefined,
+      page: currentPage,
+      limit: ITEMS_PER_PAGE,
+    })
+      .then((page) => {
+        if (cancelled) return;
+        setRooms(page.items);
+        setTotal(page.total);
+        setResultsReady(true);
+        setPageLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setRooms([]);
+        setTotal(0);
+        setResultsReady(true);
+        setPageLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [market, id, ville, quartier, chambres, dateDispo, currentPage]);
 
-  const totalPages = Math.ceil(filteredRooms.length / ITEMS_PER_PAGE);
-  const paginatedRooms = filteredRooms.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
   const resetFilters = () => {
     setVille('');
@@ -119,7 +154,7 @@ export default function CategoryPage() {
 
         <div className="cat-page__header">
           <h1 className="cat-page__title">{category.title}</h1>
-          <p className="cat-page__count">{filteredRooms.length} résultat{filteredRooms.length > 1 ? 's' : ''}</p>
+          <p className="cat-page__count">{total} résultat{total > 1 ? 's' : ''}</p>
         </div>
 
         <div className="cat-page__layout">
@@ -170,14 +205,14 @@ export default function CategoryPage() {
           </aside>
 
           <div className="cat-page__content">
-            {paginatedRooms.length === 0 ? (
+            {rooms.length === 0 ? (
               <div className="cat-page__empty-state">
                 <p>Aucun résultat ne correspond à vos filtres.</p>
                 <button type="button" onClick={resetFilters}>Réinitialiser les filtres</button>
               </div>
             ) : (
               <div className="cat-page__grid">
-                {paginatedRooms.map((room) => (
+                {rooms.map((room) => (
                   <StayCard
                     key={room.id}
                     image={room.img}
@@ -189,8 +224,10 @@ export default function CategoryPage() {
                     price={room.price}
                     priceUnit={room.priceUnit}
                     href={`${homePath}/chambre/${room.id}`}
-                    badge={room.disponible ? undefined : 'Indisponible'}
-                    badgeVariant={room.disponible ? 'default' : 'unavailable'}
+                    badge={!room.disponible ? 'Indisponible' : room.gerantPremium ? 'Premium' : undefined}
+                    badgeVariant={
+                      !room.disponible ? 'unavailable' : room.gerantPremium ? 'premium' : 'default'
+                    }
                     meta={roomMeta(room)}
                   />
                 ))}

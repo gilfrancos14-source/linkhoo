@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useMarket } from '../../contexts/MarketContext';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
@@ -69,8 +69,6 @@ export default function VerificationPage() {
   const [dragging, setDragging] = useState<DocType | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const online = useOnlineStatus();
-  const [confirming, setConfirming] = useState(false);
-  const confirmRanRef = useRef(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [address, setAddress] = useState<AddressState>({
@@ -316,51 +314,24 @@ export default function VerificationPage() {
 
   const handleSubmit = async () => {
     if (!gerant) return;
-    // Le paiement FedaPay exige le réseau : jamais de redirection offline.
+    // L'envoi de la demande exige le réseau.
     if (!online) {
-      setError('Connexion requise pour effectuer le paiement.');
+      setError('Connexion requise pour envoyer votre demande.');
       return;
     }
     setSubmitting(true);
     setError('');
     try {
-      const result = await apiGerants.submitVerification(gerant.id);
-      window.location.href = result.payment_url;
+      await apiGerants.submitVerification(gerant.id);
+      setSuccess('Demande soumise. Un administrateur va examiner vos documents.');
+      setStep(1);
+      setSubmitting(false);
+      await loadData();
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la soumission');
       setSubmitting(false);
     }
   };
-
-  const handleConfirmPayment = async () => {
-    if (!gerant) return;
-    const urlParams = new URLSearchParams(window.location.search);
-    const transactionId = urlParams.get('id');
-    if (!transactionId) return;
-
-    setConfirming(true);
-    try {
-      await apiGerants.confirmVerification(gerant.id, Number(transactionId));
-      setSuccess('Paiement confirmé. Votre dossier passe en examen.');
-      loadData();
-    } catch (err: any) {
-      setError(err.message || 'Erreur lors de la confirmation du paiement');
-    } finally {
-      setConfirming(false);
-    }
-  };
-
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const transactionId = urlParams.get('id');
-    if (!transactionId || !gerant) return;
-    // Verrou : loadData() rappelé après la confirmation crée un nouvel objet
-    // gerant, ce qui relancerait l’effet et reconfirmerait en boucle tant que
-    // ?id= reste dans l’URL.
-    if (confirmRanRef.current) return;
-    confirmRanRef.current = true;
-    handleConfirmPayment();
-  }, [gerant]);
 
   const hasBothDocs = Boolean(uploads.id_card_front.uploaded && uploads.id_card_back.uploaded);
   const hasAddress = Boolean(
@@ -392,7 +363,6 @@ export default function VerificationPage() {
 
       {error && <div className="verif-alert verif-alert--danger">{error}</div>}
       {success && <div className="verif-alert verif-alert--success">{success}</div>}
-      {confirming && <div className="verif-alert verif-alert--info">Confirmation du paiement...</div>}
 
       {status === 'approved' ? (
         <section className="verify-cta verify-cta--done">
@@ -458,7 +428,7 @@ export default function VerificationPage() {
           </div>
           <div className={`step ${step === 3 ? 'step--active' : ''}`}>
             <span className="step__num">3</span>
-            <span className="step__label">Paiement</span>
+            <span className="step__label">Envoi</span>
           </div>
         </div>
       )}
@@ -550,7 +520,7 @@ export default function VerificationPage() {
           <div className="panel__head">
             <div className="verif-head">
               <h2>Documents requis</h2>
-              <span className="verif-fee">2 000 XOF</span>
+              <span className="verif-fee">Gratuit</span>
             </div>
           </div>
 
@@ -566,8 +536,8 @@ export default function VerificationPage() {
               <line x1="12" y1="8" x2="12.01" y2="8"/>
             </svg>
             <span>
-              Frais de vérification : <strong>2 000 XOF</strong>. Le paiement se fait
-              à l&apos;étape suivante, une fois les documents et l&apos;adresse envoyés.
+              La vérification est <strong>gratuite</strong>. Elle est envoyée à
+              l&apos;étape suivante, une fois les documents et l&apos;adresse déposés.
             </span>
           </div>
 
@@ -785,7 +755,7 @@ export default function VerificationPage() {
             </button>
             <p className={`verif-foot__hint${isReady ? ' verif-foot__hint--ready' : ''}`}>
               {isReady
-                ? 'Documents et adresse prêts. Passons au paiement.'
+                ? 'Documents et adresse prêts. Passons à l\'envoi.'
                 : !hasBothDocs
                   ? 'Les 2 faces de la carte sont requises.'
                   : 'L\'adresse Google Maps est requise.'}
@@ -795,7 +765,7 @@ export default function VerificationPage() {
               onClick={() => setStep(3)}
               disabled={!isReady}
             >
-              Continuer vers le paiement →
+              Continuer vers l&apos;envoi →
             </button>
           </div>
         </section>
@@ -805,14 +775,14 @@ export default function VerificationPage() {
         <section className="panel verif-panel">
           <div className="panel__head">
             <div className="verif-head">
-              <h2>Récapitulatif et paiement</h2>
-              <span className="verif-fee">2 000 XOF</span>
+              <h2>Récapitulatif et envoi</h2>
+              <span className="verif-fee">Gratuit</span>
             </div>
           </div>
 
           <p className="verif-intro">
-            Vérifiez le récapitulatif ci-dessous avant de régler les{' '}
-            <strong>frais de vérification de 2 000 XOF</strong>.
+            Vérifiez le récapitulatif ci-dessous avant d&apos;envoyer votre demande.
+            Un administrateur examinera vos documents.
           </p>
 
           <div className="verif-recap">
@@ -891,8 +861,8 @@ export default function VerificationPage() {
               <line x1="12" y1="8" x2="12.01" y2="8"/>
             </svg>
             <span>
-              Frais de vérification : <strong>2 000 XOF</strong>. Le paiement ouvre une page
-              sécurisée, puis votre dossier passe en examen.
+              La vérification est <strong>gratuite</strong>. Une fois la demande envoyée,
+              votre dossier passe en examen.
             </span>
           </div>
 
@@ -902,9 +872,9 @@ export default function VerificationPage() {
             </button>
             <p className={`verif-foot__hint${isReady && online ? ' verif-foot__hint--ready' : ''}`}>
               {!online
-                ? 'Connexion requise pour payer.'
+                ? 'Connexion requise pour envoyer votre demande.'
                 : isReady
-                  ? 'Dossier complet. Vous pouvez payer.'
+                  ? 'Dossier complet. Vous pouvez envoyer votre demande.'
                   : !hasBothDocs
                     ? 'Les 2 faces de la carte sont requises.'
                     : 'L\'adresse Google Maps est requise.'}
@@ -915,7 +885,7 @@ export default function VerificationPage() {
               disabled={!isReady || submitting || !online}
             >
               {submitting && <span className="verif-spinner" />}
-              {submitting ? 'Redirection...' : 'Soumettre et payer 2 000 XOF'}
+              {submitting ? 'Envoi en cours...' : 'Soumettre ma demande'}
             </button>
           </div>
         </section>

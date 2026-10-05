@@ -19,6 +19,20 @@ if (!window.scrollTo) {
   window.scrollTo = (() => {}) as typeof window.scrollTo;
 }
 
+// jsdom n'implémente pas matchMedia (LandingSlider lit prefers-reduced-motion).
+if (typeof window.matchMedia !== 'function') {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+}
+
 // Les suites ne doivent pas dépendre du .env local : un clone vierge et la CI
 // n'ont pas de frontend/.env, Clerk serait alors déclaré non configuré et une
 // vingtaine de tests tomberaient. Valeur de clé de développement (publique)

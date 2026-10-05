@@ -160,6 +160,15 @@ describe('fetchRoomsByMarket', () => {
     });
   });
 
+  it('transmet gerant_premium vers gerantPremium', async () => {
+    mocks.list.mockResolvedValue([apiRoom({ gerant_premium: true }), apiRoom({ id: 'room-2' })]);
+
+    const rooms = await fetchRoomsByMarket('CI');
+
+    expect(rooms[0].gerantPremium).toBe(true);
+    expect(rooms[1].gerantPremium).toBeUndefined();
+  });
+
   it("applique les valeurs par défaut (images, promo, populaire)", async () => {
     mocks.list.mockResolvedValue([
       apiRoom({

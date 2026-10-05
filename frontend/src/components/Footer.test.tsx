@@ -89,37 +89,40 @@ describe('Footer', () => {
     expect(
       screen.getByText(/Des chambres d'hôtel pour vos escales/),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 4, name: 'Explorer' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 4, name: 'Informations' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 4, name: 'Mon compte' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 4, name: 'Restons en contact' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 4, name: 'On parle de nous' })).toBeInTheDocument();
     expect(
-      screen.getByText('© 2026 Linkhoo — Tous droits réservés.'),
+      screen.getByRole('heading', { level: 4, name: 'Télécharger l’application' }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 4, name: 'Inscription newsletter' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Copyright © Linkhoo 2026')).toBeInTheDocument();
     expect(screen.getByAltText('Logo Linkhoo')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Linkhoo sur Facebook' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Linkhoo sur LinkedIn' })).toBeInTheDocument();
   });
 
-  it("propose les ancres de navigation vers les sections de l'accueil", () => {
+  it("affiche les parutions de presse et l'application à venir", () => {
     renderFooter();
 
-    expect(screen.getByRole('link', { name: 'Accueil' })).toHaveAttribute('href', '/ci/#accueil');
-    expect(screen.getByRole('link', { name: 'Appartements' })).toHaveAttribute(
-      'href',
-      '/ci/#categories',
-    );
-    expect(screen.getByRole('link', { name: 'Événements' })).toHaveAttribute(
-      'href',
-      '/ci/#evenements',
-    );
-    expect(screen.getByRole('link', { name: 'Tourisme' })).toHaveAttribute(
-      'href',
-      '/ci/#tourisme',
-    );
+    expect(
+      screen.getByText('Linkhoo accélère la location directe en Côte d’Ivoire'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('12 mars 2026 / actu-abidjan.ci')).toBeInTheDocument();
+    expect(screen.getByText('Bientôt disponible sur Google Play')).toBeInTheDocument();
   });
 
   it("affiche les liens légaux", () => {
     renderFooter();
 
+    expect(screen.getByRole('link', { name: 'À propos' })).toHaveAttribute(
+      'href',
+      '/a-propos',
+    );
+    expect(screen.getByRole('link', { name: 'Contact' })).toHaveAttribute(
+      'href',
+      '/contact',
+    );
     expect(screen.getByRole('link', { name: 'Mentions légales' })).toHaveAttribute(
       'href',
       '/ci/mentions-legales',
@@ -175,7 +178,22 @@ describe('Footer', () => {
       'href',
       '/bj/login',
     );
-    expect(screen.getByRole('link', { name: 'Accueil' })).toHaveAttribute('href', '/bj/#accueil');
+    expect(screen.getByRole('link', { name: 'Suivre ma réservation' })).toHaveAttribute(
+      'href',
+      '/bj/suivi-reservation',
+    );
+    expect(screen.getByRole('link', { name: 'Mentions légales' })).toHaveAttribute(
+      'href',
+      '/bj/mentions-legales',
+    );
+    expect(screen.getByRole('link', { name: 'À propos' })).toHaveAttribute(
+      'href',
+      '/a-propos',
+    );
+    expect(screen.getByRole('link', { name: 'Contact' })).toHaveAttribute(
+      'href',
+      '/contact',
+    );
   });
 
   it("demande une adresse email à la souscription", async () => {

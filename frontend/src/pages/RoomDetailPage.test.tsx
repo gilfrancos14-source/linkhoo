@@ -194,11 +194,10 @@ beforeEach(() => {
   mocks.clerk = { isLoaded: true, isSignedIn: false, user: null };
   mocks.request.mockRejectedValue(new Error('réseau interdit dans les tests'));
   mocks.cachedGet.mockRejectedValue(new Error('réseau interdit dans les tests'));
-  mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom()]);
+  mocks.fetchRoomById.mockResolvedValue(makeRoom());
   mocks.fetchCategoriesByMarket.mockResolvedValue(CATEGORIES);
-  // Le détail ne sert qu'à enrichir la liste : rejeté par défaut, il ne peut
-  // pas écraser le gérant posé sur la liste.
-  mocks.fetchRoomById.mockRejectedValue(new Error('détail indisponible'));
+  // La fiche est désormais la source unique d'affichage de la chambre.
+  mocks.fetchRoomById.mockResolvedValue(makeRoom());
   mocks.listByRoom.mockResolvedValue(REVIEWS);
   mocks.addReservation.mockResolvedValue({ id: 'res-1' });
 });
@@ -210,8 +209,8 @@ afterEach(() => {
 });
 
 describe('RoomDetailPage — états', () => {
-  it('affiche « Chargement... » tant que les biens ne sont pas revenus', () => {
-    mocks.fetchRoomsByMarket.mockReturnValue(new Promise<Room[]>(() => {}));
+  it('affiche « Chargement... » tant que la chambre n’est pas revenue', () => {
+    mocks.fetchRoomById.mockReturnValue(new Promise<Room>(() => {}));
 
     renderPage();
 
@@ -220,6 +219,8 @@ describe('RoomDetailPage — états', () => {
   });
 
   it("affiche « Chambre introuvable. » quand l'identifiant n'existe pas", async () => {
+    mocks.fetchRoomById.mockRejectedValue(new Error('404'));
+
     renderPage('/ci/chambre/inconnu');
 
     expect(await screen.findByText('Chambre introuvable.')).toBeInTheDocument();
@@ -227,14 +228,16 @@ describe('RoomDetailPage — états', () => {
   });
 
   it("affiche un lien de retour à l'accueil sur la page d'erreur", async () => {
+    mocks.fetchRoomById.mockRejectedValue(new Error('404'));
+
     renderPage('/ci/chambre/inconnu');
 
     const back = await screen.findByRole('link', { name: "← Retour à l'accueil" });
     expect(back).toHaveAttribute('href', '/ci');
   });
 
-  it("affiche « Chambre introuvable. » si le chargement des biens échoue", async () => {
-    mocks.fetchRoomsByMarket.mockRejectedValue(new Error('panne api'));
+  it("affiche « Chambre introuvable. » si le chargement de la chambre échoue", async () => {
+    mocks.fetchRoomById.mockRejectedValue(new Error('panne api'));
 
     renderPage();
 
@@ -263,7 +266,7 @@ describe("RoomDetailPage — fil d'Ariane et marché", () => {
   });
 
   it("construit les liens d'authentification depuis le marché de l'URL", async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom({ market: 'BJ' })]);
+    mocks.fetchRoomById.mockResolvedValue(makeRoom({ market: 'BJ' }));
 
     await renderLoaded('/bj/chambre/r1');
 
@@ -306,7 +309,7 @@ describe('RoomDetailPage — galerie', () => {
   });
 
   it('signale l’absence de photo sans flèches ni vignettes', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom({ images: [] })]);
+    mocks.fetchRoomById.mockResolvedValue(makeRoom({ images: [] }));
 
     await renderLoaded();
 
@@ -335,12 +338,12 @@ describe('RoomDetailPage — contenu', () => {
   });
 
   it("complète le sous-titre quand le bien est saisi sans lui", async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([
+    mocks.fetchRoomById.mockResolvedValue(
       makeRoom({
         subtitle: '',
         description: 'Vue sur mer, calme absolu. Proche des commerces.',
       }),
-    ]);
+    );
 
     await renderLoaded();
 
@@ -359,7 +362,7 @@ describe('RoomDetailPage — contenu', () => {
   });
 
   it("affiche la carte de l'hôte vérifié et premium", async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom({ gerant: GERANT_VERIFIED })]);
+    mocks.fetchRoomById.mockResolvedValue(makeRoom({ gerant: GERANT_VERIFIED }));
 
     await renderLoaded();
 
@@ -370,7 +373,7 @@ describe('RoomDetailPage — contenu', () => {
   });
 
   it("n'affiche pas la carte de l'hôte pour un gérant non vérifié", async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom({ gerant: GERANT_PLAIN })]);
+    mocks.fetchRoomById.mockResolvedValue(makeRoom({ gerant: GERANT_PLAIN }));
 
     await renderLoaded();
 
@@ -379,7 +382,7 @@ describe('RoomDetailPage — contenu', () => {
   });
 
   it("affiche le lien téléphonique de l'hôte", async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom({ gerant: GERANT_VERIFIED })]);
+    mocks.fetchRoomById.mockResolvedValue(makeRoom({ gerant: GERANT_VERIFIED }));
 
     await renderLoaded();
 
@@ -387,7 +390,7 @@ describe('RoomDetailPage — contenu', () => {
   });
 
   it("n'affiche pas de lien téléphonique quand le gérant n'a pas de numéro", async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom({ gerant: { ...GERANT_VERIFIED, phone: null } })]);
+    mocks.fetchRoomById.mockResolvedValue(makeRoom({ gerant: { ...GERANT_VERIFIED, phone: null } }));
 
     await renderLoaded();
 
@@ -395,7 +398,7 @@ describe('RoomDetailPage — contenu', () => {
     expect(document.querySelector('.host-card__phone')).toBeNull();
   });
 
-  it("enrichit la chambre avec le gérant renvoyé par fetchRoomById", async () => {
+  it("charge la chambre via fetchRoomById et affiche son gérant", async () => {
     let resolveDetail: (value: unknown) => void = () => {};
     mocks.fetchRoomById.mockReturnValue(
       new Promise((resolve) => {
@@ -404,15 +407,18 @@ describe('RoomDetailPage — contenu', () => {
     );
 
     renderPage();
-    await screen.findByRole('heading', { level: 1, name: 'Suite vue mer' });
+    expect(screen.getByText('Chargement...')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { level: 2, name: "Votre hôte" })).not.toBeInTheDocument();
 
     await act(async () => {
       resolveDetail(makeRoom({ gerant: GERANT_VERIFIED, gerantId: 'g9' }));
     });
 
+    expect(await screen.findByRole('heading', { level: 1, name: 'Suite vue mer' })).toBeInTheDocument();
     expect(await screen.findByRole('heading', { level: 2, name: "Votre hôte" })).toBeInTheDocument();
     expect(mocks.fetchRoomById).toHaveBeenCalledWith('r1');
+    // La page ne télécharge plus le catalogue du marché.
+    expect(mocks.fetchRoomsByMarket).not.toHaveBeenCalled();
   });
 });
 
@@ -637,7 +643,7 @@ describe('RoomDetailPage — estimation et date de fin', () => {
   });
 
   it("utilise l'unité mois et borne la durée pour un bien mensuel", async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom({ priceUnit: '/ mois' })]);
+    mocks.fetchRoomById.mockResolvedValue(makeRoom({ priceUnit: '/ mois' }));
 
     await renderLoaded('/ci/chambre/r1?arrivee=2026-03-01');
 
@@ -656,7 +662,7 @@ describe('RoomDetailPage — estimation et date de fin', () => {
   });
 
   it('borne la durée à 24 mois sur un bien mensuel', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom({ priceUnit: '/ mois' })]);
+    mocks.fetchRoomById.mockResolvedValue(makeRoom({ priceUnit: '/ mois' }));
 
     await renderLoaded('/ci/chambre/r1?arrivee=2026-03-01');
 
@@ -687,11 +693,12 @@ describe('RoomDetailPage — soumission', () => {
       dureeUnite: 'nuit',
       montant: 75000,
       message: 'Disponible ce week-end ?',
+      clientKey: expect.any(String),
     });
   });
 
   it('envoie la durée en mois pour un bien mensuel', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom({ priceUnit: '/ mois' })]);
+    mocks.fetchRoomById.mockResolvedValue(makeRoom({ priceUnit: '/ mois' }));
     const { container } = await renderLoaded('/ci/chambre/r1?arrivee=2026-03-01');
 
     fillForm();
@@ -823,22 +830,20 @@ describe('RoomDetailPage — partage', () => {
 });
 
 describe('RoomDetailPage — appels réseau', () => {
-  it('interroge biens, catégories, détail et avis pour le marché de l’URL', async () => {
+  it('interroge catégories, détail et avis pour le marché de l’URL, sans catalogue complet', async () => {
     await renderLoaded('/ci/chambre/r1?arrivee=2026-03-01&depart=2026-03-04');
 
-    expect(mocks.fetchRoomsByMarket).toHaveBeenCalledWith('CI');
+    expect(mocks.fetchRoomsByMarket).not.toHaveBeenCalled();
     expect(mocks.fetchCategoriesByMarket).toHaveBeenCalledWith('CI');
     expect(mocks.fetchRoomById).toHaveBeenCalledWith('r1');
     expect(mocks.listByRoom).toHaveBeenCalledWith('r1');
   });
 
   it('utilise le marché indiqué dans l’URL pour les données', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom({ market: 'BJ' })]);
-
     await renderLoaded('/bj/chambre/r1');
 
-    expect(mocks.fetchRoomsByMarket).toHaveBeenCalledWith('BJ');
     expect(mocks.fetchCategoriesByMarket).toHaveBeenCalledWith('BJ');
+    expect(mocks.fetchRoomsByMarket).not.toHaveBeenCalled();
   });
 
   it('recharge les avis après une réservation envoyée', async () => {
@@ -848,7 +853,9 @@ describe('RoomDetailPage — appels réseau', () => {
     fireEvent.submit(getForm(container));
     await screen.findByRole('status');
 
-    expect(mocks.listByRoom).toHaveBeenCalledTimes(2);
+    // Le message de confirmation s'affiche avant la recharge des avis :
+    // on attend explicitement le second appel.
+    await waitFor(() => expect(mocks.listByRoom).toHaveBeenCalledTimes(2));
   });
 
   it('ne laisse partir aucune requête réseau non mockée', async () => {

@@ -3,6 +3,7 @@ import { verifyToken } from '@clerk/backend';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import reservationsRouter from './reservations';
 import { supabaseAdmin } from '../config/supabase';
+import { publishNotificationChanged } from '../utils/realtime';
 import {
   buildTestApp,
   clerkBearer,
@@ -20,6 +21,12 @@ vi.mock('../config/supabase', async () => {
 vi.mock('@clerk/backend', () => ({
   verifyToken: vi.fn(),
   createClerkClient: vi.fn(),
+}));
+
+// Les routes publient un « réveil » Realtime après chaque notification :
+// neutralisé ici, les assertions le vérifient via ce spy.
+vi.mock('../utils/realtime', () => ({
+  publishNotificationChanged: vi.fn(async () => {}),
 }));
 
 const app = buildTestApp('/api/reservations', reservationsRouter);
@@ -72,12 +79,17 @@ function stubTables(tables: Partial<Record<TableName, FakeChain | FakeChain[]>>)
   });
 }
 
-function mockRpc(results: unknown[]): void {
-  const queue = [...results];
+function mockRpc(
+  results: unknown[] | ((args: Record<string, unknown>) => unknown),
+): void {
+  const queue = Array.isArray(results) ? [...results] : null;
+  const impl = Array.isArray(results) ? null : results;
   const rpcMock = vi.mocked(supabaseAdmin.rpc) as unknown as {
-    mockImplementation(impl: () => Promise<unknown>): unknown;
+    mockImplementation(impl: (_name: string, args: Record<string, unknown>) => Promise<unknown>): unknown;
   };
-  rpcMock.mockImplementation(async () => queue.shift() as never);
+  rpcMock.mockImplementation(async (_name, args) =>
+    (queue ? queue.shift() : impl?.(args)) as never,
+  );
 }
 
 beforeEach(() => {
@@ -163,6 +175,8 @@ describe('POST /api/reservations', () => {
     expect(notifications.insert).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'reservation', reservation_id: 'resa-1' }),
     );
+    // P1 #8 : le front admin/gérant est réveillé en Realtime après l'insert.
+    expect(publishNotificationChanged).toHaveBeenCalledWith('admin', 'gerant');
   });
 
   it('201 : chambre tarifée au mois → montant = prix × nombre de mois', async () => {
@@ -193,6 +207,74 @@ describe('POST /api/reservations', () => {
 
     const res = await request(app).post('/api/reservations').send(validReservation);
     expect(res.status).toBe(409);
+  });
+
+  it('201 : transmet la clé d’idempotence à la RPC et notifie', async () => {
+    rooms = fakeChain({ data: availableRoom, error: null });
+    stubTables({});
+    mockRpc((args) => ({ data: [{ id: args.p_id, statut: 'en_attente' }], error: null }));
+
+    const res = await request(app)
+      .post('/api/reservations')
+      .send({ ...validReservation, client_key: 'ck-idem-12345678' });
+
+    expect(res.status).toBe(201);
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith(
+      'create_reservation_checked',
+      expect.objectContaining({ p_client_key: 'ck-idem-12345678' }),
+    );
+    expect(notifications.insert).toHaveBeenCalledTimes(1);
+  });
+
+  it('200 : rejeu d’une soumission déjà acceptée (pas de doublon, pas de 2e notification)', async () => {
+    const existing = { id: 'resa-1', client_key: 'ck-idem-12345678', statut: 'en_attente' };
+    reservations = fakeChain({ data: existing, error: null });
+    stubTables({});
+
+    const res = await request(app)
+      .post('/api/reservations')
+      .send({ ...validReservation, client_key: 'ck-idem-12345678' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(existing);
+    expect(supabaseAdmin.rpc).not.toHaveBeenCalled();
+    expect(notifications.insert).not.toHaveBeenCalled();
+    expect(publishNotificationChanged).not.toHaveBeenCalled();
+  });
+
+  it('200 : course entre deux rejeux → la RPC renvoie la ligne gagnante, sans notification', async () => {
+    rooms = fakeChain({ data: availableRoom, error: null });
+    stubTables({});
+    // La RPC détecte (dans la fonction SQL) qu'une requête concurrente a
+    // déjà créé la réservation avec la même clé et renvoie cette ligne-là.
+    mockRpc([{ data: [{ id: 'resa-concurrente', statut: 'en_attente' }], error: null }]);
+
+    const res = await request(app)
+      .post('/api/reservations')
+      .send({ ...validReservation, client_key: 'ck-idem-12345678' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ id: 'resa-concurrente', statut: 'en_attente' });
+    expect(notifications.insert).not.toHaveBeenCalled();
+  });
+
+  it('200 : le cas unique sur client_key renvoie la ligne gagnante, sans notification', async () => {
+    rooms = fakeChain({ data: availableRoom, error: null });
+    const winner = { id: 'resa-gagnante', client_key: 'ck-idem-12345678', statut: 'en_attente' };
+    // 1er appel : pré-vérification (rien encore) ; 2e : récupération du gagnant.
+    reservations = fakeChain({ data: null, error: null });
+    stubTables({ reservations: [reservations, fakeChain({ data: winner, error: null })] });
+    mockRpc([
+      { data: null, error: { message: 'duplicate key value violates unique constraint "reservations_client_key_unique"' } },
+    ]);
+
+    const res = await request(app)
+      .post('/api/reservations')
+      .send({ ...validReservation, client_key: 'ck-idem-12345678' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(winner);
+    expect(notifications.insert).not.toHaveBeenCalled();
   });
 });
 
@@ -516,6 +598,7 @@ describe('POST /api/reservations/:id/cancel', () => {
     expect(notifications.insert).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'reservation_cancelled', gerant_id: 'user_1' }),
     );
+    expect(publishNotificationChanged).toHaveBeenCalledWith('admin', 'gerant');
   });
 });
 
@@ -525,28 +608,50 @@ describe('GET /api/reservations/check', () => {
     expect(res.status).toBe(400);
   });
 
-  it('200 sans conflit', async () => {
-    reservations = fakeChain({ data: [], error: null });
-    stubTables({});
+  it('200 sans conflit via la RPC has_date_conflict', async () => {
+    mockRpc([{ data: false, error: null }]);
 
     const res = await request(app).get(
       '/api/reservations/check?room_id=room-1&date_debut=2026-05-01&date_fin=2026-05-04',
     );
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ hasConflict: false });
+    // Le test de chevauchement est délégué au SQL : PostgREST tronque les
+    // réponses brutes à 1000 lignes, ce qui produisait de faux « aucun conflit ».
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith('has_date_conflict', {
+      p_room_id: 'room-1',
+      p_date_debut: '2026-05-01',
+      p_date_fin: '2026-05-04',
+      p_exclude_id: null,
+    });
+    expect(reservations.select).not.toHaveBeenCalled();
   });
 
-  it('200 avec conflit sur des dates chevauchantes', async () => {
-    reservations = fakeChain({
-      data: [{ id: 'x', room_id: 'room-1', date_debut: '2026-05-03', date_fin: '2026-05-06', statut: 'confirmee' }],
-      error: null,
-    });
-    stubTables({});
+  it('200 avec conflit sur des dates chevauchantes (RPC renvoie true)', async () => {
+    mockRpc([{ data: true, error: null }]);
 
     const res = await request(app).get(
       '/api/reservations/check?room_id=room-1&date_debut=2026-05-01&date_fin=2026-05-04',
     );
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ hasConflict: true });
+  });
+
+  it('200 : repli sur la table si la RPC absente (integrity_migration.sql non exécutée)', async () => {
+    reservations = fakeChain({
+      data: [{ id: 'x', room_id: 'room-1', date_debut: '2026-05-03', date_fin: '2026-05-06', statut: 'confirmee' }],
+      error: null,
+    });
+    stubTables({});
+    mockRpc([
+      { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.has_date_conflict(t, t, t, t)' } },
+    ]);
+
+    const res = await request(app).get(
+      '/api/reservations/check?room_id=room-1&date_debut=2026-05-01&date_fin=2026-05-04',
+    );
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ hasConflict: true });
+    expect(reservations.limit).toHaveBeenCalledWith(1000);
   });
 });

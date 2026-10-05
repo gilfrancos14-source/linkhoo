@@ -23,6 +23,15 @@ export const reservationCreateSchema = z
     duree_unite: z.enum(['nuit', 'mois']),
     montant: z.number().int().positive().max(1000000000),
     message: optionalText(2000),
+    // Clé d'idempotence générée côté client : un rejeu de la même soumission
+    // (file offline, timeout, retry) renvoie la réservation existante.
+    client_key: z
+      .string()
+      .trim()
+      .min(8)
+      .max(64)
+      .regex(/^[A-Za-z0-9_-]+$/, 'Clé d\'idempotence invalide')
+      .optional(),
   })
   .strict()
   .superRefine((data, context) => {

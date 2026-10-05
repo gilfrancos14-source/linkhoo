@@ -35,7 +35,7 @@ export interface FakeChain {
  * et attendre la chaîne entière résout aussi `result` (les appels sans
  * terminal, type `await supabase.from('x').insert(...)`).
  */
-export function fakeChain(result: { data?: unknown; error?: unknown }): FakeChain {
+export function fakeChain(result: { data?: unknown; error?: unknown; count?: number }): FakeChain {
   const chain = {} as FakeChain;
   const chainable = (): FakeChain => chain;
 

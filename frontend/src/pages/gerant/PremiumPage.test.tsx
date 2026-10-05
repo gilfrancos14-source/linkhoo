@@ -127,17 +127,11 @@ describe('PremiumPage', () => {
       .getAllByRole('listitem')
       .map((item) => item.textContent);
     expect(avantages).toHaveLength(5);
-    expect(avantages).toContain('Badge Premium sur votre profil');
-    expect(avantages).toContain(
-      'Mise en avant de vos annonces dans les résultats de recherche',
-    );
-    expect(avantages).toContain(
-      "Visibilité prioritaire sur la page d'accueil",
-    );
-    expect(avantages).toContain(
-      'Statistiques avancées sur vos vues et réservations',
-    );
-    expect(avantages).toContain('Support prioritaire');
+    expect(avantages).toContain('Une annonce sur 3 en tête des recherches et des catégories');
+    expect(avantages).toContain('Badge Premium sur vos cartes de résultats');
+    expect(avantages).toContain('Badge Premium sur la fiche publique de vos biens');
+    expect(avantages).toContain('Gestion des réservations de vos biens');
+    expect(avantages).toContain('Badge PRO et statut Premium dans votre espace gérant');
   });
 
   it('initie le paiement pour le marché CI puis reste bloqué sur la redirection', async () => {
@@ -270,14 +264,17 @@ describe('PremiumPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('reste sur le CTA quand premium_expires_at est absent même si le drapeau est vrai', async () => {
+  it('affiche le compte actif quand premium_expires_at est absent même si le drapeau est vrai', async () => {
+    // Sémantique unifiée (isPremiumActive / isQualifiedGerant) : un compte sans
+    // date d'expiration n'est pas considéré périmé — pas de lockout par défaut.
     mocks.getMe.mockResolvedValue(
       makeGerant({ is_premium: true, premium_expires_at: null }),
     );
 
     renderPremium();
 
-    expect(await screen.findByText('Devenez Premium')).toBeInTheDocument();
-    expect(screen.queryByText('Compte Premium actif')).not.toBeInTheDocument();
+    expect(await screen.findByText('Compte Premium actif')).toBeInTheDocument();
+    expect(screen.getByText('Votre abonnement est actif.')).toBeInTheDocument();
+    expect(screen.queryByText('Devenez Premium')).not.toBeInTheDocument();
   });
 });

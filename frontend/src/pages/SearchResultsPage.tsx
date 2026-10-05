@@ -35,6 +35,7 @@ export default function SearchResultsPage() {
   const query = searchParams.get('q') ?? '';
   const dateArrivee = searchParams.get('arrivee') ?? '';
   const dateDepart = searchParams.get('depart') ?? '';
+  const categorieParam = searchParams.get('categorie') ?? '';
 
   useEffect(() => {
     setLoading(true);
@@ -64,7 +65,7 @@ export default function SearchResultsPage() {
   // Filtres
   const [selectedVille, setSelectedVille] = useState('');
   const [selectedQuartier, setSelectedQuartier] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(categorieParam);
   const [maxPrice, setMaxPrice] = useState(500);
   const [priceMax, setPriceMax] = useState(500);
   const [currentPage, setCurrentPage] = useState(1);
@@ -92,7 +93,12 @@ export default function SearchResultsPage() {
       return;
     }
     setPanelError('');
-    setSearchParams({ q: query, arrivee: panelArrivee, depart: panelDepart });
+    setSearchParams({
+      q: query,
+      arrivee: panelArrivee,
+      depart: panelDepart,
+      ...(categorieParam ? { categorie: categorieParam } : {}),
+    });
   };
 
   // Filtrage
@@ -276,8 +282,12 @@ export default function SearchResultsPage() {
                         price={room.price}
                         priceUnit={room.priceUnit}
                         href={`/${market.toLowerCase()}/chambre/${room.id}?arrivee=${encodeURIComponent(dateArrivee)}&depart=${encodeURIComponent(dateDepart)}`}
-                        badge={room.disponible ? undefined : 'Indisponible'}
-                        badgeVariant={room.disponible ? 'default' : 'unavailable'}
+                        badge={
+                          !room.disponible ? 'Indisponible' : room.gerantPremium ? 'Premium' : undefined
+                        }
+                        badgeVariant={
+                          !room.disponible ? 'unavailable' : room.gerantPremium ? 'premium' : 'default'
+                        }
                         meta={roomMeta(room)}
                       />
                     ))}

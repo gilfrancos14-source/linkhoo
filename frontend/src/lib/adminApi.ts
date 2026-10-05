@@ -159,6 +159,27 @@ export interface AdminReservation {
   gerant_id: string | null;
 }
 
+/**
+ * Compteurs des cartes du tableau de bord : calculés en SQL sur TOUTES les
+ * réservations des gérants non qualifiés (indépendants du filtre statut et
+ * de la recherche), comme l'ancien calcul JS sur la liste complète.
+ */
+export interface AdminReservationCounts {
+  total: number;
+  pending: number;
+  confirmed: number;
+  cancelled: number;
+}
+
+/** Réponse paginée de GET /api/admin/reservations (filtres en SQL). */
+export interface AdminReservationsResponse {
+  items: AdminReservation[];
+  total: number;
+  page: number;
+  limit: number;
+  counts: AdminReservationCounts;
+}
+
 export interface AdminNotification {
   id: string;
   type: string;
@@ -227,12 +248,14 @@ export const apiAdmin = {
       body: JSON.stringify({ rejection_reason: rejectionReason }),
     }),
 
-  getReservations: (params?: { statut?: string; search?: string }) => {
+  getReservations: (params?: { statut?: string; search?: string; page?: number; limit?: number }) => {
     const searchParams = new URLSearchParams();
     if (params?.statut) searchParams.set('statut', params.statut);
     if (params?.search) searchParams.set('search', params.search);
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
     const qs = searchParams.toString();
-    return adminRequest<AdminReservation[]>(`/admin/reservations${qs ? `?${qs}` : ''}`);
+    return adminRequest<AdminReservationsResponse>(`/admin/reservations${qs ? `?${qs}` : ''}`);
   },
 
   checkAvailability: (reservationId: string) =>

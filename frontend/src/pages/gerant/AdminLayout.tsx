@@ -8,6 +8,7 @@ import { fetchMyRooms } from '../../data/rooms';
 import { updateReservationStatut, getReservations, checkDateConflict } from '../../lib/reservations';
 import { addClientNotification } from '../../lib/notifications';
 import { apiGerants, type GerantData } from '../../lib/api';
+import { isPremiumActive } from '../../lib/premium';
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkConfigured = clerkKey && clerkKey.startsWith('pk_');
@@ -62,9 +63,7 @@ export default function AdminLayout() {
     { to: `${gerantPath}/chambres`, label: 'Chambres', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 21V7a2 2 0 012-2h6a2 2 0 012 2v14"/><path d="M13 21V11a2 2 0 012-2h4a2 2 0 012 2v10"/><path d="M3 21h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, pill: String(roomCount) },
   ];
 
-  const isQualified = !!gerant?.is_verified
-    && !!gerant?.is_premium
-    && (!gerant?.premium_expires_at || new Date(gerant.premium_expires_at) > new Date());
+  const isQualified = !!gerant?.is_verified && isPremiumActive(gerant);
 
   const navGestion = [
     ...(isQualified ? [{ to: `${gerantPath}/reservations`, label: 'Réservations', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> }] : []),
@@ -229,7 +228,7 @@ export default function AdminLayout() {
                 className={({ isActive }) => `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`}>
                 {item.icon}
                 <span>{item.label}</span>
-                {gerant?.is_premium && (
+                {isPremiumActive(gerant) && (
                   <span className="sidebar__pill" style={{ background: '#F59E0B', color: '#fff', fontSize: '10px' }}>
                     PRO
                   </span>
@@ -252,7 +251,7 @@ export default function AdminLayout() {
                     </svg>
                   </span>
                 )}
-                {gerant?.is_premium && (
+                {isPremiumActive(gerant) && (
                   <span className="verified-badge" title="Gérant Premium" style={{ color: '#F59E0B' }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>

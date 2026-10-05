@@ -12,13 +12,10 @@ const mocks = vi.hoisted(() => ({
   updateMe: vi.fn<(data: Partial<GerantData>) => Promise<GerantData>>(),
   getStatus: vi.fn<(id: string) => Promise<VerificationStatusResponse>>(),
   deleteDocument: vi.fn<(id: string, docId: string) => Promise<void>>(),
-  submitVerification: vi.fn<
-    (id: string) => Promise<{ transaction_id: number; payment_url: string }>
-  >(),
+  submitVerification: vi.fn<(id: string) => Promise<{ success: boolean; gerant: GerantData }>>(),
   setPropertyAddress: vi.fn<
     (id: string, url: string, lat?: number, lng?: number) => Promise<unknown>
   >(),
-  confirmVerification: vi.fn<(id: string, transactionId: number) => Promise<unknown>>(),
   upload: vi.fn<(file: File, bucket?: string) => Promise<{ url: string; path: string }>>(),
   request: vi.fn<(path: string, options?: { method?: string; body?: string }) => Promise<VerificationDocument>>(),
 }));
@@ -61,7 +58,6 @@ vi.mock('../../lib/api', () => ({
     deleteDocument: mocks.deleteDocument,
     submitVerification: mocks.submitVerification,
     setPropertyAddress: mocks.setPropertyAddress,
-    confirmVerification: mocks.confirmVerification,
   },
   apiUpload: { upload: mocks.upload },
   request: mocks.request,
@@ -190,10 +186,10 @@ async function openDocuments() {
 }
 
 /** Traverse les deux premières étapes jusqu'au récapitulatif (dossier complet). */
-async function openPayment() {
+async function openRecap() {
   await openDocuments();
-  await userEvent.click(screen.getByRole('button', { name: /Continuer vers le paiement/ }));
-  await screen.findByRole('heading', { level: 2, name: 'Récapitulatif et paiement' });
+  await userEvent.click(screen.getByRole('button', { name: /Continuer vers l'envoi/ }));
+  await screen.findByRole('heading', { level: 2, name: 'Récapitulatif et envoi' });
 }
 
 function fileInputs(): HTMLInputElement[] {
@@ -230,8 +226,8 @@ beforeEach(() => {
   mocks.getStatus.mockResolvedValue(makeStatus());
   mocks.deleteDocument.mockResolvedValue(undefined);
   mocks.submitVerification.mockResolvedValue({
-    transaction_id: 42,
-    payment_url: 'https://pay.test/checkout/42',
+    success: true,
+    gerant: makeGerant({ verification_status: 'pending' }),
   });
   mocks.setPropertyAddress.mockResolvedValue({
     property_maps_url: 'https://www.google.com/maps/place/Ilehya',
@@ -239,7 +235,6 @@ beforeEach(() => {
     property_lng: -4.008,
     verification_status: 'none',
   });
-  mocks.confirmVerification.mockResolvedValue({ success: true });
   mocks.upload.mockResolvedValue({ url: 'https://cdn.test/uploaded.jpg', path: 'verification-docs/uploaded.jpg' });
   mocks.request.mockResolvedValue(makeDoc({ id: 'doc-new', document_type: 'id_card_front' }));
 });
@@ -294,13 +289,13 @@ describe('VerificationPage — chargement', () => {
     expect(screen.getByText(/sur le marché BJ/)).toBeInTheDocument();
   });
 
-  it('présente le panneau Documents requis avec ses frais', async () => {
+  it('présente le panneau Documents requis comme gratuit', async () => {
     const { container } = await renderLoaded();
     await openDocuments();
 
     expect(screen.getByRole('heading', { level: 2, name: 'Documents requis' })).toBeInTheDocument();
-    expect(container.querySelector('.verif-fee')).toHaveTextContent('2 000 XOF');
-    expect(screen.getByText(/Frais de vérification/)).toBeInTheDocument();
+    expect(container.querySelector('.verif-fee')).toHaveTextContent('Gratuit');
+    expect(container.querySelector('.verif-fee-note')).toHaveTextContent('gratuite');
     expect(container.querySelector('.verif-intro')).toHaveTextContent('recto');
   });
 });
@@ -314,7 +309,7 @@ describe('VerificationPage — états de vérification', () => {
     expect(screen.getByRole('heading', { level: 3, name: 'Compte vérifié' })).toBeInTheDocument();
     expect(screen.getByText('Vous pouvez désormais créer et gérer vos annonces.')).toBeInTheDocument();
     expect(screen.queryByText('Documents requis')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Soumettre et payer/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Soumettre ma demande/ })).not.toBeInTheDocument();
   });
 
   it('affiche l’état « Demande en cours » pour un dossier pending', async () => {
@@ -420,7 +415,7 @@ describe('VerificationPage — documents et étapes', () => {
     expect(second).not.toHaveClass('step--active');
     expect(second).toHaveTextContent('Documents + adresse');
     expect(third).not.toHaveClass('step--active');
-    expect(third).toHaveTextContent('Paiement');
+    expect(third).toHaveTextContent('Envoi');
   });
 
   it('passe l’étape Coordonnées pour terminée une fois les documents ouverts', async () => {
@@ -786,13 +781,13 @@ describe('VerificationPage — adresse Google Maps', () => {
   });
 });
 
-describe('VerificationPage — soumission et paiement', () => {
+describe('VerificationPage — soumission', () => {
   it('indique que les deux faces de la carte manquent', async () => {
     await renderLoaded();
     await openDocuments();
 
     expect(screen.getByText('Les 2 faces de la carte sont requises.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Continuer vers le paiement/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Continuer vers l'envoi/ })).toBeDisabled();
   });
 
   it('indique que l’adresse manque quand les documents sont présents', async () => {
@@ -806,7 +801,7 @@ describe('VerificationPage — soumission et paiement', () => {
     await openDocuments();
 
     expect(screen.getByText("L'adresse Google Maps est requise.")).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Continuer vers le paiement/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Continuer vers l'envoi/ })).toBeDisabled();
   });
 
   it('autorise la soumission quand le dossier est complet', async () => {
@@ -815,94 +810,62 @@ describe('VerificationPage — soumission et paiement', () => {
     await renderLoaded();
     await openDocuments();
 
-    expect(screen.getByText('Documents et adresse prêts. Passons au paiement.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Continuer vers le paiement/ })).toBeEnabled();
+    expect(screen.getByText("Documents et adresse prêts. Passons à l'envoi.")).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Continuer vers l'envoi/ })).toBeEnabled();
 
-    await userEvent.click(screen.getByRole('button', { name: /Continuer vers le paiement/ }));
-    await screen.findByRole('heading', { level: 2, name: 'Récapitulatif et paiement' });
+    await userEvent.click(screen.getByRole('button', { name: /Continuer vers l'envoi/ }));
+    await screen.findByRole('heading', { level: 2, name: 'Récapitulatif et envoi' });
 
-    expect(screen.getByText('Dossier complet. Vous pouvez payer.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Soumettre et payer/ })).toBeEnabled();
+    expect(screen.getByText('Dossier complet. Vous pouvez envoyer votre demande.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Soumettre ma demande/ })).toBeEnabled();
   });
 
-  it('soumet le dossier et verrouille le bouton sur la redirection', async () => {
+  it('verrouille le bouton pendant l’envoi de la demande', async () => {
     mocks.getStatus.mockResolvedValue(readyStatus);
+    mocks.submitVerification.mockImplementation(() => new Promise(() => {}));
     await renderLoaded();
-    await openPayment();
+    await openRecap();
 
-    await userEvent.click(screen.getByRole('button', { name: /Soumettre et payer/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Soumettre ma demande/ }));
+
+    expect(await screen.findByRole('button', { name: 'Envoi en cours...' })).toBeDisabled();
+    await waitFor(() => expect(mocks.submitVerification).toHaveBeenCalledWith('gerant-1'));
+    expect(screen.queryByText(/Erreur/)).not.toBeInTheDocument();
+  });
+
+  it('soumet la demande sans paiement puis affiche l’état en attente', async () => {
+    mocks.getStatus
+      .mockResolvedValueOnce(readyStatus)
+      .mockResolvedValue(
+        makeStatus({
+          verification_status: 'pending',
+          verification_submitted_at: '2026-02-15T10:30:00.000Z',
+        }),
+      );
+    await renderLoaded();
+    await openRecap();
+
+    await userEvent.click(screen.getByRole('button', { name: /Soumettre ma demande/ }));
 
     await waitFor(() => expect(mocks.submitVerification).toHaveBeenCalledWith('gerant-1'));
-    expect(await screen.findByRole('button', { name: 'Redirection...' })).toBeDisabled();
-    expect(screen.queryByText(/Erreur/)).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('Demande soumise. Un administrateur va examiner vos documents.'),
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 3, name: 'Demande en cours' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 2, name: 'Récapitulatif et envoi' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/2 000 XOF/)).not.toBeInTheDocument();
   });
 
   it('affiche l’erreur de soumission et réactive le bouton', async () => {
     mocks.getStatus.mockResolvedValue(readyStatus);
-    mocks.submitVerification.mockRejectedValue(new Error('Paiement indisponible'));
+    mocks.submitVerification.mockRejectedValue(new Error('Service indisponible'));
     await renderLoaded();
-    await openPayment();
+    await openRecap();
 
-    await userEvent.click(screen.getByRole('button', { name: /Soumettre et payer/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Soumettre ma demande/ }));
 
-    expect(await screen.findByText('Paiement indisponible')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Soumettre et payer/ })).toBeEnabled();
-  });
-
-  it('ne confirme aucun paiement sans identifiant dans l’URL', async () => {
-    await renderLoaded();
-
-    expect(mocks.confirmVerification).not.toHaveBeenCalled();
-    expect(screen.queryByText(/Paiement confirmé/)).not.toBeInTheDocument();
-  });
-
-  it('confirme automatiquement le paiement quand ?id= est présent', async () => {
-    window.history.replaceState({}, '', '?id=42');
-
-    await renderLoaded();
-
-    await waitFor(() => expect(mocks.confirmVerification).toHaveBeenCalledWith('gerant-1', 42));
-    expect(
-      await screen.findByText('Paiement confirmé. Votre dossier passe en examen.'),
-    ).toBeInTheDocument();
-    expect(mocks.getMe).toHaveBeenCalledTimes(2);
-  });
-
-  it('ne confirme qu’une seule fois quand getMe renvoie un objet neuf à chaque appel', async () => {
-    // En production getMe crée un nouvel objet : l’effet [gerant] se relance
-    // à chaque rechargement et reconfirme indéfiniment tant que ?id= reste.
-    window.history.replaceState({}, '', '?id=42');
-    mocks.getMe.mockImplementation(async () => ({ ...makeGerant() }));
-
-    await renderLoaded();
-
-    await waitFor(() => expect(mocks.getMe).toHaveBeenCalledTimes(2));
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    expect(mocks.confirmVerification).toHaveBeenCalledTimes(1);
-    expect(mocks.getMe).toHaveBeenCalledTimes(2);
-    expect(
-      await screen.findByText('Paiement confirmé. Votre dossier passe en examen.'),
-    ).toBeInTheDocument();
-  });
-
-  it('affiche l’état de confirmation pendant l’appel', async () => {
-    mocks.confirmVerification.mockImplementation(() => new Promise(() => {}));
-    window.history.replaceState({}, '', '?id=7');
-
-    await renderLoaded();
-
-    expect(await screen.findByText('Confirmation du paiement...')).toBeInTheDocument();
-    expect(mocks.confirmVerification).toHaveBeenCalledWith('gerant-1', 7);
-  });
-
-  it('affiche l’erreur quand la confirmation du paiement échoue', async () => {
-    mocks.confirmVerification.mockRejectedValue(new Error('Transaction introuvable'));
-    window.history.replaceState({}, '', '?id=99');
-
-    await renderLoaded();
-
-    expect(await screen.findByText('Transaction introuvable')).toBeInTheDocument();
-    expect(screen.queryByText(/Paiement confirmé/)).not.toBeInTheDocument();
+    expect(await screen.findByText('Service indisponible')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Soumettre ma demande/ })).toBeEnabled();
   });
 });
 
@@ -971,11 +934,11 @@ describe('VerificationPage — étape Coordonnées', () => {
 });
 
 describe('VerificationPage — récapitulatif', () => {
-  it('récapitule les coordonnées, les documents et l’adresse avant paiement', async () => {
+  it('récapitule les coordonnées, les documents et l’adresse avant envoi', async () => {
     mocks.getStatus.mockResolvedValue(readyStatus);
 
-    await renderLoaded();
-    await openPayment();
+    const { container } = await renderLoaded();
+    await openRecap();
 
     expect(screen.getByText('+225 07 00 00 00')).toBeInTheDocument();
     expect(screen.getByText('Cocody Angré, 7e tranche, Abidjan')).toBeInTheDocument();
@@ -984,14 +947,15 @@ describe('VerificationPage — récapitulatif', () => {
       'href',
       'https://www.google.com/maps/place/Ilehya',
     );
-    expect(screen.getAllByText(/2 000 XOF/).length).toBeGreaterThan(0);
+    expect(container.querySelector('.verif-fee')).toHaveTextContent('Gratuit');
+    expect(screen.queryByText(/2 000 XOF/)).not.toBeInTheDocument();
   });
 
   it('revient aux documents depuis le récapitulatif', async () => {
     mocks.getStatus.mockResolvedValue(readyStatus);
 
     await renderLoaded();
-    await openPayment();
+    await openRecap();
 
     await userEvent.click(screen.getByRole('button', { name: /Retour/ }));
 
@@ -1012,34 +976,34 @@ describe('VerificationPage — mode hors-ligne', () => {
     setOnline(true);
   });
 
-  it('explique et bloque le paiement hors-ligne', async () => {
+  it('explique et bloque l’envoi hors-ligne', async () => {
     mocks.getStatus.mockResolvedValue(readyStatus);
     setOnline(false);
 
     await renderLoaded();
-    await openPayment();
+    await openRecap();
 
-    expect(screen.getByText('Connexion requise pour payer.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Soumettre et payer/ })).toBeDisabled();
+    expect(screen.getByText('Connexion requise pour envoyer votre demande.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Soumettre ma demande/ })).toBeDisabled();
     expect(mocks.submitVerification).not.toHaveBeenCalled();
   });
 
-  it('réactive le paiement quand la connexion revient', async () => {
+  it('réactive l’envoi quand la connexion revient', async () => {
     mocks.getStatus.mockResolvedValue(readyStatus);
     setOnline(false);
 
     await renderLoaded();
-    await openPayment();
+    await openRecap();
 
-    expect(screen.getByRole('button', { name: /Soumettre et payer/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Soumettre ma demande/ })).toBeDisabled();
 
     act(() => {
       setOnline(true);
       window.dispatchEvent(new Event('online'));
     });
 
-    expect(screen.getByText('Dossier complet. Vous pouvez payer.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Soumettre et payer/ })).toBeEnabled();
+    expect(screen.getByText('Dossier complet. Vous pouvez envoyer votre demande.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Soumettre ma demande/ })).toBeEnabled();
     expect(mocks.submitVerification).not.toHaveBeenCalled();
   });
 });

@@ -22,6 +22,8 @@ export interface Reservation {
   gerantPrenom?: string | null;
   gerantIsVerified?: boolean;
   gerantIsPremium?: boolean;
+  /** Clé d'idempotence (anti doublon des rejeux hors-ligne/timeout). */
+  clientKey?: string;
 }
 
 export const statutLabels: Record<Reservation['statut'], string> = {
@@ -79,6 +81,9 @@ export async function addReservation(data: Omit<Reservation, 'id' | 'createdAt' 
     duree_unite: data.dureeUnite,
     montant: data.montant,
     message: data.message,
+    // Absent si undefined : JSON.stringify n'envoie rien au serveur, qui
+    // traite alors la demande sans déduplication (comportement historique).
+    client_key: data.clientKey,
   };
   const created = await apiReservations.create(payload);
   return mapReservation(created);

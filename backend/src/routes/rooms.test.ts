@@ -54,6 +54,16 @@ function stubPublic(chain: FakeChain): void {
   vi.mocked(supabasePublic.from).mockReturnValue(chain as never);
 }
 
+/** Deux requêtes simultanées (count puis lignes) reçoivent chacune leur chaîne. */
+function stubPublicQueue(chains: FakeChain[]): void {
+  let cursor = 0;
+  vi.mocked(supabasePublic.from).mockImplementation(() => {
+    const chain = chains[Math.min(cursor, chains.length - 1)];
+    cursor += 1;
+    return chain as never;
+  });
+}
+
 function stubTables(tables: Partial<Record<TableName, FakeChain | FakeChain[]>>): void {
   useSupabaseTables(supabaseAdmin.from, {
     rooms,
@@ -61,6 +71,21 @@ function stubTables(tables: Partial<Record<TableName, FakeChain | FakeChain[]>>)
     reservations,
     ...tables,
   });
+}
+
+/** Routage de la table `rooms` sur le client public (le gérant premium est lu côté admin). */
+function stubPublicRooms(chains: FakeChain | FakeChain[]): void {
+  useSupabaseTables(supabasePublic.from, { rooms: chains });
+}
+
+/** Chambres à created_at décroissant (l'ordre organique attendu). */
+function roomRows(count: number, premiumFrom: number): any[] {
+  const base = Date.parse('2026-01-01T00:00:00.000Z');
+  return Array.from({ length: count }, (_, index) => ({
+    id: `r${String(index).padStart(2, '0')}`,
+    gerant_id: index < premiumFrom ? 'gOrganic' : `gPremium${index}`,
+    created_at: new Date(base - index * 60_000).toISOString(),
+  }));
 }
 
 beforeEach(() => {
@@ -86,9 +111,200 @@ describe('GET /api/rooms', () => {
 
     const res = await request(app).get('/api/rooms?market=CI');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([{ id: 'r1' }]);
+    expect(res.body).toEqual([{ id: 'r1', gerant_premium: false }]);
     expect(publicRooms.eq).toHaveBeenCalledWith('market', 'CI');
     expect(publicRooms.range).toHaveBeenCalledWith(0, 999);
+  });
+
+  it('400 si prix_min dépasse prix_max', async () => {
+    const res = await request(app).get('/api/rooms?prix_min=50000&prix_max=10000');
+    expect(res.status).toBe(400);
+  });
+
+  it('400 sur des filtres hors bornes (chambres=0, limit=500)', async () => {
+    expect((await request(app).get('/api/rooms?chambres=0')).status).toBe(400);
+    expect((await request(app).get('/api/rooms?limit=500')).status).toBe(400);
+    expect((await request(app).get('/api/rooms?disponible=peut-être')).status).toBe(400);
+  });
+
+  it('200 : applique tous les filtres côté serveur sans pagination', async () => {
+    publicRooms = fakeChain({ data: [{ id: 'r1' }], error: null });
+    stubPublic(publicRooms);
+
+    const res = await request(app).get(
+      '/api/rooms?market=CI&ville=Abidjan&quartier=Cocody&category=Studio' +
+        '&prix_min=10000&prix_max=50000&chambres=2&disponible=true',
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([{ id: 'r1', gerant_premium: false }]);
+    expect(publicRooms.eq).toHaveBeenCalledWith('market', 'CI');
+    expect(publicRooms.eq).toHaveBeenCalledWith('ville', 'Abidjan');
+    expect(publicRooms.eq).toHaveBeenCalledWith('quartier', 'Cocody');
+    expect(publicRooms.eq).toHaveBeenCalledWith('category', 'Studio');
+    expect(publicRooms.gte).toHaveBeenCalledWith('price_num', 10000);
+    expect(publicRooms.lte).toHaveBeenCalledWith('price_num', 50000);
+    expect(publicRooms.eq).toHaveBeenCalledWith('chambres', 2);
+    expect(publicRooms.eq).toHaveBeenCalledWith('disponible', true);
+  });
+
+  it('200 : chambres=3 filtre « 3 et plus » (gte, pas eq)', async () => {
+    publicRooms = fakeChain({ data: [], error: null });
+    stubPublic(publicRooms);
+
+    const res = await request(app).get('/api/rooms?chambres=3');
+
+    expect(res.status).toBe(200);
+    expect(publicRooms.gte).toHaveBeenCalledWith('chambres', 3);
+    expect(publicRooms.eq).not.toHaveBeenCalledWith('chambres', 3);
+  });
+
+  it('200 paginé : renvoie items/total/page/limit et lit la fenêtre de classement', async () => {
+    const countChain = fakeChain({ count: 42, error: null, data: null });
+    const rows = roomRows(60, 60);
+    const dataChain = fakeChain({ data: rows, error: null });
+    stubPublicQueue([countChain, dataChain]);
+
+    const res = await request(app).get('/api/rooms?page=2&limit=10');
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(42);
+    expect(res.body.page).toBe(2);
+    expect(res.body.limit).toBe(10);
+    // Fenêtre bornée : 3 × la page demandée (20 lignes lues, 10 renvoyées).
+    expect(dataChain.range).toHaveBeenCalledWith(0, 59);
+    expect(res.body.items).toEqual(rows.slice(10, 20).map((row) => ({ ...row, gerant_premium: false })));
+    expect(countChain.select).toHaveBeenCalledWith('id', { count: 'exact', head: true });
+  });
+
+  it('200 paginé : les filtres portent aussi sur le compte', async () => {
+    const countChain = fakeChain({ count: 3, error: null, data: null });
+    const dataChain = fakeChain({ data: [], error: null });
+    stubPublicQueue([countChain, dataChain]);
+
+    const res = await request(app).get('/api/rooms?market=CI&ville=Lom%C3%A9&page=1&limit=6');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ items: [], total: 3, page: 1, limit: 6 });
+    expect(countChain.eq).toHaveBeenCalledWith('market', 'CI');
+    expect(countChain.eq).toHaveBeenCalledWith('ville', 'Lomé');
+    expect(dataChain.range).toHaveBeenCalledWith(0, 17);
+  });
+
+  it('200 paginé : limit seul démarre à la page 1', async () => {
+    const countChain = fakeChain({ count: 7, error: null, data: null });
+    const dataChain = fakeChain({ data: [], error: null });
+    stubPublicQueue([countChain, dataChain]);
+
+    const res = await request(app).get('/api/rooms?limit=6');
+
+    expect(res.status).toBe(200);
+    expect(res.body.page).toBe(1);
+    expect(dataChain.range).toHaveBeenCalledWith(0, 17);
+  });
+
+  it('200 : marque gerant_premium pour un gérant premium actif', async () => {
+    const rows = roomRows(3, 3).map((row, index) => ({ ...row, gerant_id: `g${index}` }));
+    const gerantsChain = fakeChain({
+      data: [{ clerk_user_id: 'g1', is_premium: true, premium_expires_at: null }],
+      error: null,
+    });
+    stubPublicRooms(fakeChain({ data: rows, error: null }));
+    stubTables({ gerants: gerantsChain });
+
+    const res = await request(app).get('/api/rooms?market=CI');
+
+    expect(res.status).toBe(200);
+    expect(gerantsChain.eq).toHaveBeenCalledWith('is_premium', true);
+    // r01 (premium) est tirée vers l'avant sur le premier rang premium.
+    expect(res.body.map((row: any) => ({ id: row.id, premium: row.gerant_premium }))).toEqual([
+      { id: 'r01', premium: true },
+      { id: 'r00', premium: false },
+      { id: 'r02', premium: false },
+    ]);
+  });
+
+  it('200 : ne booste pas un gérant premium expiré', async () => {
+    const rows = roomRows(3, 3).map((row, index) => ({ ...row, gerant_id: `g${index}` }));
+    stubPublicRooms(fakeChain({ data: rows, error: null }));
+    stubTables({
+      gerants: fakeChain({
+        data: [{ clerk_user_id: 'g1', is_premium: true, premium_expires_at: '2020-01-01T00:00:00.000Z' }],
+        error: null,
+      }),
+    });
+
+    const res = await request(app).get('/api/rooms?market=CI');
+
+    expect(res.status).toBe(200);
+    expect(res.body.map((row: any) => row.gerant_premium)).toEqual([false, false, false]);
+    expect(res.body.map((row: any) => row.id)).toEqual(['r00', 'r01', 'r02']);
+  });
+
+  it('200 paginé : intercale les chambres premium (1 place sur 3)', async () => {
+    const rows = roomRows(18, 12);
+    const countChain = fakeChain({ count: 18, error: null, data: null });
+    const dataChain = fakeChain({ data: rows, error: null });
+    stubPublicRooms([countChain, dataChain]);
+    stubTables({
+      gerants: fakeChain({
+        data: rows
+          .slice(12)
+          .map((row) => ({ clerk_user_id: row.gerant_id, is_premium: true, premium_expires_at: null })),
+        error: null,
+      }),
+    });
+
+    const res = await request(app).get('/api/rooms?market=CI&page=1&limit=6');
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(18);
+    // Fenêtre de 3 × 6 lignes, puis découpe de la page demandée.
+    expect(dataChain.range).toHaveBeenCalledWith(0, 17);
+    expect(res.body.items.map((row: any) => row.id)).toEqual(['r12', 'r00', 'r01', 'r13', 'r02', 'r03']);
+    expect(res.body.items.filter((row: any) => row.gerant_premium)).toHaveLength(2);
+  });
+
+  it('200 paginé : sert la page 2 depuis la fenêtre intercalée', async () => {
+    const rows = roomRows(18, 12);
+    const countChain = fakeChain({ count: 18, error: null, data: null });
+    const dataChain = fakeChain({ data: rows, error: null });
+    stubPublicRooms([countChain, dataChain]);
+    stubTables({
+      gerants: fakeChain({
+        data: rows
+          .slice(12)
+          .map((row) => ({ clerk_user_id: row.gerant_id, is_premium: true, premium_expires_at: null })),
+        error: null,
+      }),
+    });
+
+    const res = await request(app).get('/api/rooms?market=CI&page=2&limit=6');
+
+    expect(res.status).toBe(200);
+    // Fenêtre lue depuis le début (3 × 12 lignes), puis découpe [6, 12[.
+    expect(dataChain.range).toHaveBeenCalledWith(0, 35);
+    expect(res.body.items.map((row: any) => row.id)).toEqual(['r14', 'r04', 'r05', 'r15', 'r06', 'r07']);
+    expect(res.body.items.filter((row: any) => row.gerant_premium)).toHaveLength(2);
+    // La page ne contient aucune ligne déjà servie en page 1.
+    const page1 = ['r12', 'r00', 'r01', 'r13', 'r02', 'r03'];
+    expect(res.body.items.map((row: any) => row.id).some((id: string) => page1.includes(id))).toBe(false);
+  });
+
+  it('200 paginé : au-delà de la borne, repli sur l\'ordre organique', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const countChain = fakeChain({ count: 900, error: null, data: null });
+    const rows = roomRows(2, 2);
+    const dataChain = fakeChain({ data: rows, error: null });
+    stubPublicQueue([countChain, dataChain]);
+
+    const res = await request(app).get('/api/rooms?page=7&limit=100');
+
+    expect(res.status).toBe(200);
+    expect(dataChain.range).toHaveBeenCalledWith(600, 699);
+    expect(res.body.items).toEqual(rows.map((row) => ({ ...row, gerant_premium: false })));
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
   });
 });
 
@@ -153,6 +369,41 @@ describe('GET /api/rooms/available', () => {
     expect(res.body.map((r: { id: string }) => r.id)).toEqual(['r2']);
     expect(reservations.neq).toHaveBeenCalledWith('statut', 'annulee');
   });
+
+  it('200 : classe les chambres disponibles selon le quota premium', async () => {
+    const at = (minute: number) => `2026-01-01T00:${String(minute).padStart(2, '0')}:00.000Z`;
+    publicRooms = fakeChain({
+      data: [
+        { id: 'r0', ville: 'Abidjan', gerant_id: 'gA', created_at: at(5) },
+        { id: 'r1', ville: 'Abidjan', gerant_id: 'gA', created_at: at(4) },
+        { id: 'r2', ville: 'Abidjan', gerant_id: 'gP1', created_at: at(3) },
+        { id: 'r3', ville: 'Abidjan', gerant_id: 'gA', created_at: at(2) },
+        { id: 'r4', ville: 'Abidjan', gerant_id: 'gA', created_at: at(1) },
+        { id: 'r5', ville: 'Abidjan', gerant_id: 'gP2', created_at: at(0) },
+      ],
+      error: null,
+    });
+    stubPublic(publicRooms);
+    stubTables({
+      gerants: fakeChain({
+        data: [
+          { clerk_user_id: 'gP1', is_premium: true, premium_expires_at: null },
+          { clerk_user_id: 'gP2', is_premium: true, premium_expires_at: null },
+        ],
+        error: null,
+      }),
+    });
+
+    const res = await request(app).get(
+      '/api/rooms/available?market=CI&arrivee=2026-05-01&depart=2026-05-05',
+    );
+
+    expect(res.status).toBe(200);
+    // Deux boosts tirés vers l'avant (rangs 0 et 3), le reste garde l'ordre organique.
+    expect(res.body.map((row: { id: string }) => row.id)).toEqual(['r2', 'r0', 'r1', 'r5', 'r3', 'r4']);
+    expect(res.body.filter((row: { gerant_premium: boolean }) => row.gerant_premium)).toHaveLength(2);
+    expect(res.body[5]).toMatchObject({ id: 'r4', gerant_premium: false });
+  });
 });
 
 describe('GET /api/rooms/villes', () => {
@@ -166,6 +417,26 @@ describe('GET /api/rooms/villes', () => {
     const res = await request(app).get('/api/rooms/villes?market=CI');
     expect(res.status).toBe(200);
     expect(res.body).toEqual(['Bouaké', 'San-Pédro']);
+  });
+});
+
+describe('GET /api/rooms/quartiers', () => {
+  it('200 : liste distincte et triée, insensible à la casse', async () => {
+    publicRooms = fakeChain({
+      data: [{ quartier: 'Cocody' }, { quartier: 'cocody' }, { quartier: 'Plateau' }, { quartier: '  ' }],
+      error: null,
+    });
+    stubPublic(publicRooms);
+
+    const res = await request(app).get('/api/rooms/quartiers?market=CI');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(['Cocody', 'Plateau']);
+    expect(publicRooms.eq).toHaveBeenCalledWith('market', 'CI');
+  });
+
+  it('400 sur un marché inconnu', async () => {
+    const res = await request(app).get('/api/rooms/quartiers?market=TG');
+    expect(res.status).toBe(400);
   });
 });
 

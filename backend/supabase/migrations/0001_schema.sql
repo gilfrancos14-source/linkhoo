@@ -58,6 +58,12 @@ CREATE TABLE IF NOT EXISTS banners (
 );
 
 -- Reservations table
+-- Les dates sont stockées en TEXT ISO AAAA-MM-JJ : les contraintes CHECK
+-- ci-dessous garantissent ce format (les comparaisons lexicographiques
+-- restent alors chronologiques) et l'ordre début < fin.
+-- client_key : clé d'idempotence générée côté client — un rejeu de la même
+-- soumission (file offline, timeout, retry) renvoie la réservation existante
+-- au lieu d'en créer une seconde.
 CREATE TABLE IF NOT EXISTS reservations (
   id TEXT PRIMARY KEY,
   client_name TEXT NOT NULL,
@@ -65,16 +71,24 @@ CREATE TABLE IF NOT EXISTS reservations (
   client_phone TEXT,
   room_id TEXT REFERENCES rooms(id) ON DELETE SET NULL,
   room_title TEXT,
-  date_debut TEXT,
-  date_fin TEXT,
+  date_debut TEXT CHECK (date_debut IS NULL OR date_debut ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),
+  date_fin TEXT CHECK (date_fin IS NULL OR date_fin ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),
   montant INTEGER,
   duree_nombre INTEGER,
   duree_unite TEXT CHECK (duree_unite IN ('nuit', 'mois')),
   message TEXT,
   statut TEXT CHECK (statut IN ('en_attente', 'confirmee', 'annulee')) DEFAULT 'en_attente',
   created_at TIMESTAMPTZ DEFAULT now(),
-  responded_at TIMESTAMPTZ
+  responded_at TIMESTAMPTZ,
+  client_key TEXT,
+  CHECK (date_debut IS NULL OR date_fin IS NULL OR date_fin > date_debut)
 );
+
+-- Idempotence : une même clé client ne peut désigner qu'une seule réservation.
+-- Index partiel : les lignes sans client_key (écrites avant cette migration)
+-- n'y prennent pas part et ne bloquent rien.
+CREATE UNIQUE INDEX IF NOT EXISTS reservations_client_key_unique
+  ON reservations (client_key) WHERE client_key IS NOT NULL;
 
 -- Notifications table (admin)
 CREATE TABLE IF NOT EXISTS notifications (
@@ -361,7 +375,8 @@ CREATE OR REPLACE FUNCTION public.create_reservation_checked(
   p_montant INTEGER,
   p_message TEXT,
   p_duree_nombre INTEGER DEFAULT NULL,
-  p_duree_unite TEXT DEFAULT NULL
+  p_duree_unite TEXT DEFAULT NULL,
+  p_client_key TEXT DEFAULT NULL
 ) RETURNS SETOF public.reservations
 LANGUAGE plpgsql
 AS $$
@@ -369,6 +384,14 @@ BEGIN
   PERFORM 1 FROM public.rooms WHERE id = p_room_id FOR UPDATE;
   IF NOT FOUND THEN
     RAISE EXCEPTION 'ROOM_NOT_FOUND';
+  END IF;
+  -- Rejeu d'une soumission déjà acceptée (clé d'idempotence) : on renvoie la
+  -- réservation existante au lieu de lever DATE_CONFLICT ni d'en créer une 2e.
+  IF p_client_key IS NOT NULL AND EXISTS (
+    SELECT 1 FROM public.reservations r WHERE r.client_key = p_client_key
+  ) THEN
+    RETURN QUERY SELECT * FROM public.reservations r WHERE r.client_key = p_client_key;
+    RETURN;
   END IF;
   IF EXISTS (
     SELECT 1 FROM public.reservations r
@@ -384,13 +407,39 @@ BEGIN
   RETURN QUERY
   INSERT INTO public.reservations (
     id, client_name, client_email, client_phone, room_id, room_title,
-    date_debut, date_fin, montant, duree_nombre, duree_unite, message, statut
+    date_debut, date_fin, montant, duree_nombre, duree_unite, message, statut, client_key
   ) VALUES (
     p_id, p_client_name, p_client_email, p_client_phone, p_room_id, p_room_title,
-    p_date_debut, p_date_fin, p_montant, p_duree_nombre, p_duree_unite, p_message, 'en_attente'
+    p_date_debut, p_date_fin, p_montant, p_duree_nombre, p_duree_unite, p_message, 'en_attente', p_client_key
   )
   RETURNING *;
 END;
+$$;
+
+-- ============================================================
+-- Test de conflit de dates côté SQL : identique au test de
+-- create_reservation_checked, mais sans limite de lignes (PostgREST
+-- tronque à 1000 lignes, ce qui produisait de faux « aucun conflit »).
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.has_date_conflict(
+  p_room_id TEXT,
+  p_date_debut TEXT,
+  p_date_fin TEXT,
+  p_exclude_id TEXT DEFAULT NULL
+) RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.reservations r
+    WHERE r.room_id = p_room_id
+      AND r.statut IS DISTINCT FROM 'annulee'
+      AND r.date_debut IS NOT NULL
+      AND r.date_fin IS NOT NULL
+      AND r.date_debut < p_date_fin
+      AND r.date_fin > p_date_debut
+      AND (p_exclude_id IS NULL OR r.id <> p_exclude_id)
+  );
 $$;
 
 -- Confirmation atomique : anti course entre vérification et mise à jour

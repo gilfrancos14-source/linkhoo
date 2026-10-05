@@ -20,6 +20,12 @@ export function marketSlugFromPath(pathname: string): 'ci' | 'bj' | null {
   return segment === 'ci' || segment === 'bj' ? segment : null;
 }
 
+// Page servie à la racine (accueil, /a-propos, /contact) : aucun segment de
+// marché dans l'URL. Ces pages partagent la barre de navigation de l'accueil.
+export function isRootPath(pathname: string): boolean {
+  return marketSlugFromPath(pathname) === null;
+}
+
 // Le marché est DÉRIVÉ de l'URL à chaque render : aucun état miroir, donc
 // aucun décalage entre la route et le marché affiché (pas de render avec
 // l'ancien marché, pas de double fetch, pas de flash de thème).
@@ -35,17 +41,26 @@ export function MarketProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   const market = marketFromPath(pathname);
+  const slug = marketSlugFromPath(pathname);
 
   // data-market pilote le thème (index.css). useLayoutEffect s'exécute avant
   // le paint : sans ça, l'ancien thème s'affiche un frame à chaque changement.
+  // Hors /ci|/bj (racine, /admin racine) l'attribut est retiré : la page
+  // reprend le thème bleu plateforme de :root au lieu du thème marché CI.
   useLayoutEffect(() => {
-    document.documentElement.setAttribute('data-market', market);
-  }, [market]);
+    if (slug) {
+      document.documentElement.setAttribute('data-market', market);
+    } else {
+      document.documentElement.removeAttribute('data-market');
+    }
+  }, [market, slug]);
 
   const value = useMemo<MarketContextValue>(
     () => ({
       market,
-      setMarket: (m: MarketCode) => navigate(`/${m.toLowerCase()}`, { replace: true }),
+      // Navigation « push » : le retour du navigateur doit revenir à la
+      // page précédente (l'accueil par exemple), pas sauter dessus.
+      setMarket: (m: MarketCode) => navigate(`/${m.toLowerCase()}`),
     }),
     [market, navigate],
   );

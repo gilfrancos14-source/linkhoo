@@ -4,6 +4,7 @@ import { useHomePath } from '../../hooks/useHomePath';
 import { getReservations, updateReservationStatut, checkDateConflict, statutLabels, type Reservation } from '../../lib/reservations';
 import { addClientNotification } from '../../lib/notifications';
 import { apiGerants, type GerantData } from '../../lib/api';
+import { isPremiumActive } from '../../lib/premium';
 
 interface VerifyState {
   reservation: Reservation;
@@ -25,15 +26,13 @@ export default function ReservationsPage() {
   const [loadError, setLoadError] = useState('');
   const itemsPerPage = 8;
 
-  const isQualified = !!gerant?.is_verified
-    && !!gerant?.is_premium
-    && (!gerant?.premium_expires_at || new Date(gerant.premium_expires_at) > new Date());
+  const isQualified = !!gerant?.is_verified && isPremiumActive(gerant);
 
   const loadData = async () => {
     try {
       const me = await apiGerants.getMe();
       setGerant(me);
-      if (!me?.is_verified || !me?.is_premium || (me.premium_expires_at && new Date(me.premium_expires_at) <= new Date())) {
+      if (!me?.is_verified || !isPremiumActive(me)) {
         setAccessDenied(true);
         setLoading(false);
         return;

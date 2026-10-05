@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import notificationsRouter from './notifications';
 import { requireClerkAuth } from '../middleware/clerkAuth';
 import { supabaseAdmin } from '../config/supabase';
+import { publishNotificationChanged } from '../utils/realtime';
 import {
   buildTestApp,
   clerkBearer,
@@ -21,6 +22,11 @@ vi.mock('../config/supabase', async () => {
 vi.mock('@clerk/backend', () => ({
   verifyToken: vi.fn(),
   createClerkClient: vi.fn(),
+}));
+
+// P1 #8 : publication Realtime neutralisée, assertion via le spy.
+vi.mock('../utils/realtime', () => ({
+  publishNotificationChanged: vi.fn(async () => {}),
 }));
 
 const app = buildTestApp('/api/notifications', notificationsRouter, {
@@ -284,6 +290,7 @@ describe('POST /api/notifications/client', () => {
       }),
     );
     expect(reservations.eq).toHaveBeenCalledWith('client_email', 'jean@example.ci');
+    expect(publishNotificationChanged).toHaveBeenCalledWith('client');
   });
 });
 

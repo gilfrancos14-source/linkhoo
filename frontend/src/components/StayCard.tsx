@@ -14,7 +14,7 @@ interface StayCardProps {
   ariaLabel?: string;
   tag?: string;
   badge?: string;
-  badgeVariant?: 'default' | 'unavailable';
+  badgeVariant?: 'default' | 'unavailable' | 'premium';
   meta?: string[];
 }
 
@@ -64,7 +64,9 @@ export default function StayCard({
           />
           {tag && <span className="stay-card__tag">{tag}</span>}
           {badge && (
-            <span className={`stay-card__badge${badgeVariant === 'unavailable' ? ' stay-card__badge--unavailable' : ''}`}>
+            <span
+              className={`stay-card__badge${badgeVariant === 'default' ? '' : ` stay-card__badge--${badgeVariant}`}`}
+            >
               {badge}
             </span>
           )}

@@ -7,6 +7,7 @@ import { fetchMyRooms, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import { apiGerants, type GerantData } from '../../lib/api';
 import { priceWithCurrency } from '../../lib/roomDisplay';
+import { isPremiumActive } from '../../lib/premium';
 
 const PAGE_SIZE = 5;
 
@@ -166,7 +167,7 @@ export default function DashboardPage() {
             </div>
             Ajouter chambre
           </Link>
-          {gerant?.is_verified && gerant?.is_premium && (!gerant?.premium_expires_at || new Date(gerant.premium_expires_at) > new Date()) && (
+          {gerant?.is_verified && isPremiumActive(gerant) && (
             <Link to={`${gerantPath}/reservations`} className="quick-action">
               <div className="quick-action__icon quick-action__icon--amber">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>

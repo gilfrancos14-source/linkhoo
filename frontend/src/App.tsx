@@ -1,5 +1,5 @@
 import { Routes, Route, useLocation, useParams, Navigate } from 'react-router-dom';
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import { MarketProvider } from './contexts/MarketContext';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -25,6 +25,8 @@ import { useRevealOnScroll } from './hooks/useRevealOnScroll';
 // le back-office et l'espace gérant dans le premier chunk de la home.
 const MentionsLegales = lazy(() => import('./pages/MentionsLegales'));
 const PolitiqueConfidentialite = lazy(() => import('./pages/PolitiqueConfidentialite'));
+const AProposPage = lazy(() => import('./pages/AProposPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
 const RoomDetailPage = lazy(() => import('./pages/RoomDetailPage'));
 const CategoryPage = lazy(() => import('./pages/CategoryPage'));
 const SearchResultsPage = lazy(() => import('./pages/SearchResultsPage'));
@@ -139,6 +141,8 @@ function MarketContent() {
           <Route path="/" element={<HomePage />} />
         <Route path="/mentions-legales" element={<MentionsLegales />} />
         <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialite />} />
+        <Route path="/a-propos" element={<Navigate to="/a-propos" replace />} />
+        <Route path="/contact" element={<Navigate to="/contact" replace />} />
         <Route path="/chambre/:id" element={<RoomDetailPage />} />
         <Route path="/categorie/:id" element={<CategoryPage />} />
         <Route path="/recherche" element={<SearchResultsPage />} />
@@ -170,7 +174,6 @@ function MarketContent() {
           <Route path="premium" element={<PremiumPage />} />
           <Route path="premium/success" element={<PremiumSuccessPage />} />
           <Route path="verification" element={<VerificationPage />} />
-          <Route path="verification/success" element={<VerificationPage />} />
           <Route path="profil" element={<ProfilPage />} />
         </Route>
 
@@ -184,8 +187,25 @@ function MarketContent() {
   );
 }
 
+// Chrome du site (bandeau, en-tête, notifications, pied de page, retour haut)
+// partagé par l'accueil racine et les pages de contenu servies hors marché.
+function SiteChrome({ children }: { children: ReactNode }) {
+  return (
+    <>
+      <OfflineBanner />
+      <Header />
+      {children}
+      <ClientNotificationBanner />
+      <Footer />
+      <BackToTop />
+    </>
+  );
+}
+
+// Page d'accueil racine : squelette CoinAfrique (hero + recherche, choix du
+// pays, carrousel, témoignages) enveloppé du chrome du site.
 function RootRedirect() {
-  return <LandingPage />;
+  return <SiteChrome><LandingPage /></SiteChrome>;
 }
 
 function CatchAllRedirect() {
@@ -201,6 +221,8 @@ function AppRoutes() {
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/" element={<RootRedirect />} />
+            <Route path="/a-propos" element={<SiteChrome><AProposPage /></SiteChrome>} />
+            <Route path="/contact" element={<SiteChrome><ContactPage /></SiteChrome>} />
             {adminSectionRoutes}
             <Route path="/:market/*" element={<MarketRoute />} />
             <Route path="*" element={<CatchAllRedirect />} />

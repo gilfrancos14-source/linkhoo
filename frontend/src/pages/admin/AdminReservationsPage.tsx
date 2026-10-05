@@ -1,42 +1,71 @@
-import { useState, useEffect, useMemo } from 'react';
-import { apiAdmin, type AdminReservation } from '../../lib/adminApi';
+import { useState, useEffect } from 'react';
+import {
+  apiAdmin,
+  type AdminReservation,
+  type AdminReservationCounts,
+} from '../../lib/adminApi';
+
+const ITEMS_PER_PAGE = 10;
+
+const ZERO_COUNTS: AdminReservationCounts = {
+  total: 0,
+  pending: 0,
+  confirmed: 0,
+  cancelled: 0,
+};
+
+function countKeyOf(statut: string): keyof AdminReservationCounts | null {
+  if (statut === 'en_attente') return 'pending';
+  if (statut === 'confirmee') return 'confirmed';
+  if (statut === 'annulee') return 'cancelled';
+  return null;
+}
 
 export default function AdminReservationsPage() {
   const [reservations, setReservations] = useState<AdminReservation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [counts, setCounts] = useState<AdminReservationCounts>(ZERO_COUNTS);
+  const [total, setTotal] = useState(0);
+  const [ready, setReady] = useState(false);
   const [filterStatut, setFilterStatut] = useState<string>('all');
   const [search, setSearch] = useState('');
-  const [checkingId, setCheckingId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [checkingId, setCheckingId] = useState<string | null>(null);
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const data = await apiAdmin.getReservations();
-      setReservations(data);
-    } catch {
-      setReservations([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Filtrage (statut, recherche) et pagination sont délégués au serveur
+  // (RPC admin_reservations en SQL) : chaque changement reinterroge la page
+  // courante. Les anciens résultats restent affichés pendant le refetch
+  // pour ne pas faire clignoter le tableau ni perdre le focus du champ de
+  // recherche.
+  useEffect(() => {
+    let cancelled = false;
+    apiAdmin
+      .getReservations({
+        statut: filterStatut,
+        search,
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setReservations(data.items);
+        setTotal(data.total);
+        setCounts(data.counts);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setReservations([]);
+        setTotal(0);
+        setCounts(ZERO_COUNTS);
+      })
+      .finally(() => {
+        if (!cancelled) setReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [filterStatut, search, currentPage]);
 
-  useEffect(() => { loadData(); }, []);
-
-  const filtered = useMemo(() => {
-    return reservations.filter((r) => {
-      const matchStatut = filterStatut === 'all' || r.statut === filterStatut;
-      const matchSearch = !search ||
-        r.client_name?.toLowerCase().includes(search.toLowerCase()) ||
-        r.room_title?.toLowerCase().includes(search.toLowerCase()) ||
-        r.client_email?.toLowerCase().includes(search.toLowerCase());
-      return matchStatut && matchSearch;
-    });
-  }, [reservations, filterStatut, search]);
-
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
-  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
   const handleCheckAvailability = async (reservation: AdminReservation) => {
     setCheckingId(reservation.id);
@@ -45,6 +74,17 @@ export default function AdminReservationsPage() {
       setReservations((prev) =>
         prev.map((r) => r.id === reservation.id ? { ...r, statut: result.statut as AdminReservation['statut'] } : r)
       );
+      // Mise à jour optimiste des compteurs du haut (le service vient de
+      // changer le statut) — un refetch complète le reste si besoin.
+      const from = countKeyOf(reservation.statut);
+      const to = countKeyOf(result.statut);
+      if (from && to && from !== to) {
+        setCounts((prev) => ({
+          ...prev,
+          [from]: Math.max(0, prev[from] - 1),
+          [to]: prev[to] + 1,
+        }));
+      }
     } catch {
       // keep current state
     } finally {
@@ -57,14 +97,7 @@ export default function AdminReservationsPage() {
     return new Date(dateStr).toLocaleDateString('fr-FR');
   };
 
-  const stats = useMemo(() => ({
-    total: reservations.length,
-    pending: reservations.filter((r) => r.statut === 'en_attente').length,
-    confirmed: reservations.filter((r) => r.statut === 'confirmee').length,
-    cancelled: reservations.filter((r) => r.statut === 'annulee').length,
-  }), [reservations]);
-
-  if (loading) {
+  if (!ready) {
     return (
       <div className="admin-page">
         <div className="admin-page__header">
@@ -80,16 +113,16 @@ export default function AdminReservationsPage() {
       <div className="admin-page__header">
         <h2>Réservations</h2>
         <span className="admin-page__subtitle">
-          Gérants non qualifiés — {stats.pending} en attente
+          Gérants non qualifiés — {counts.pending} en attente
         </span>
       </div>
 
       <div className="admin-stats" style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
         {[
-          { label: 'Total', value: stats.total, color: 'var(--admin-ink)' },
-          { label: 'En attente', value: stats.pending, color: '#F59E0B' },
-          { label: 'Confirmées', value: stats.confirmed, color: '#22c55e' },
-          { label: 'Annulées', value: stats.cancelled, color: '#EF4444' },
+          { label: 'Total', value: counts.total, color: 'var(--admin-ink)' },
+          { label: 'En attente', value: counts.pending, color: '#F59E0B' },
+          { label: 'Confirmées', value: counts.confirmed, color: '#22c55e' },
+          { label: 'Annulées', value: counts.cancelled, color: '#EF4444' },
         ].map((s) => (
           <div key={s.label} style={{
             padding: '12px 20px', borderRadius: '8px',
@@ -110,7 +143,11 @@ export default function AdminReservationsPage() {
           onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
           className="admin-input"
         />
-        <select value={filterStatut} onChange={(e) => { setFilterStatut(e.target.value); setCurrentPage(1); }} className="admin-select">
+        <select
+          value={filterStatut}
+          onChange={(e) => { setFilterStatut(e.target.value); setCurrentPage(1); }}
+          className="admin-select"
+        >
           <option value="all">Tous statuts</option>
           <option value="en_attente">En attente</option>
           <option value="confirmee">Confirmée</option>
@@ -131,7 +168,7 @@ export default function AdminReservationsPage() {
             </tr>
           </thead>
           <tbody>
-            {paginated.map((res) => (
+            {reservations.map((res) => (
               <tr key={res.id}>
                 <td>
                   <div style={{ fontWeight: 500 }}>{res.client_name}</div>
@@ -167,7 +204,7 @@ export default function AdminReservationsPage() {
                 </td>
               </tr>
             ))}
-            {paginated.length === 0 && (
+            {reservations.length === 0 && (
               <tr>
                 <td colSpan={6} className="admin-table__empty">Aucune réservation trouvée</td>
               </tr>
