@@ -471,3 +471,44 @@ describe('apiAdmin.uploadFile', () => {
     await expect(apiAdmin.uploadFile(file)).rejects.toThrow('Upload failed: réponse vide');
   });
 });
+
+describe('apiAdmin supervision des boosts', () => {
+  it('getBoosts GET /admin/boosts sans paramètre', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ items: [] }));
+
+    await apiAdmin.getBoosts();
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/admin/boosts');
+    expect(init.method).toBeUndefined();
+  });
+
+  it('getBoosts transmet les filtres status et market', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ items: [] }));
+
+    await apiAdmin.getBoosts({ status: 'active', market: 'CI' });
+
+    expect(firstCall().url).toBe('/api/admin/boosts?status=active&market=CI');
+  });
+
+  it('setBoostStatus PATCH le nouveau statut', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ id: 'b-1', status: 'paused', display_status: 'paused', spent: 0, remaining: 1000 })
+    );
+
+    const result = await apiAdmin.setBoostStatus('b-1', 'paused');
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/admin/boosts/b-1/status');
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(String(init.body))).toEqual({ status: 'paused' });
+    expect(result.status).toBe('paused');
+    expect(clearCacheMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("setBoostStatus propage l'erreur 409 (budget épuisé)", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: 'Budget épuisé : reprise impossible.' }, 409));
+
+    await expect(apiAdmin.setBoostStatus('b-1', 'active')).rejects.toThrow('Budget épuisé');
+  });
+});

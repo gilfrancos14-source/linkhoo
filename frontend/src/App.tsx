@@ -43,6 +43,9 @@ const ReservationsPage = lazy(() => import('./pages/gerant/ReservationsPage'));
 const AjouterChambre = lazy(() => import('./pages/gerant/AjouterChambre'));
 const PremiumPage = lazy(() => import('./pages/gerant/PremiumPage'));
 const PremiumSuccessPage = lazy(() => import('./pages/gerant/PremiumSuccessPage'));
+const BoostsPage = lazy(() => import('./pages/gerant/BoostsPage'));
+const BoostCreatePage = lazy(() => import('./pages/gerant/BoostCreatePage'));
+const BoostSuccessPage = lazy(() => import('./pages/gerant/BoostSuccessPage'));
 const ProfilPage = lazy(() => import('./pages/gerant/ProfilPage'));
 const VerificationPage = lazy(() => import('./pages/gerant/VerificationPage'));
 const GerantLogin = lazy(() => import('./pages/gerant/GerantLogin'));
@@ -58,6 +61,7 @@ const AdminEventsPage = lazy(() => import('./pages/admin/AdminEventsPage'));
 const AdminDestinationsPage = lazy(() => import('./pages/admin/AdminDestinationsPage'));
 const AdminReservationsPage = lazy(() => import('./pages/admin/AdminReservationsPage'));
 const AdminPromotionsPage = lazy(() => import('./pages/admin/AdminPromotionsPage'));
+const AdminBoostsPage = lazy(() => import('./pages/admin/AdminBoostsPage'));
 
 function RouteFallback() {
   return (
@@ -95,6 +99,7 @@ const adminSectionRoutes = (
       <Route path="evenements" element={<AdminEventsPage />} />
       <Route path="destinations" element={<AdminDestinationsPage />} />
       <Route path="promotions" element={<AdminPromotionsPage />} />
+      <Route path="boosts" element={<AdminBoostsPage />} />
     </Route>
   </>
 );
@@ -174,6 +179,9 @@ function MarketContent() {
           <Route path="reservations" element={<ReservationsPage />} />
           <Route path="premium" element={<PremiumPage />} />
           <Route path="premium/success" element={<PremiumSuccessPage />} />
+          <Route path="boosts" element={<BoostsPage />} />
+          <Route path="boosts/new" element={<BoostCreatePage />} />
+          <Route path="boosts/success" element={<BoostSuccessPage />} />
           <Route path="verification" element={<VerificationPage />} />
           <Route path="profil" element={<ProfilPage />} />
         </Route>

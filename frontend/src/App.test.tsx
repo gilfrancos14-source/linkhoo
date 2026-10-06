@@ -134,6 +134,7 @@ vi.mock('./lib/api', () => ({
   apiUpload: mocks.autoApi(),
   apiGerants: mocks.autoApi(),
   apiPremium: mocks.autoApi(),
+  apiBoosts: mocks.autoApi(),
   apiAuth: { bootstrap: mocks.bootstrap, me: mocks.me },
   apiClients: mocks.autoApi(),
   apiReviews: { featured: mocks.featured },

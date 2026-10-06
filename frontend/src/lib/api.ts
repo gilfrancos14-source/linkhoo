@@ -542,6 +542,122 @@ export const apiPremium = {
     }),
 };
 
+// ── Boost (sponsorisation de chambres) ──
+export type BoostMode = 'cpc' | 'cpi';
+
+export type BoostDisplayStatus =
+  | 'pending'
+  | 'scheduled'
+  | 'live'
+  | 'paused'
+  | 'ended'
+  | 'exhausted'
+  | 'canceled';
+
+export interface BoostRoomRef {
+  id: string;
+  title: string;
+  price: string | null;
+  price_num: number | null;
+  img: string | null;
+  ville: string | null;
+  quartier: string | null;
+  market: string;
+  disponible: boolean;
+}
+
+export interface BoostData {
+  id: string;
+  market: string;
+  room_id: string;
+  mode: BoostMode;
+  status: string;
+  display_status: BoostDisplayStatus;
+  budget_total: number;
+  spent: number;
+  remaining: number;
+  starts_at: string;
+  ends_at: string;
+  activated_at: string | null;
+  created_at: string | null;
+  room: BoostRoomRef | null;
+}
+
+export interface BoostFeaturedItem {
+  id: string;
+  room_id: string;
+  market: string;
+  mode: BoostMode;
+  title: string;
+  price: string | null;
+  price_num: number | null;
+  img: string | null;
+  ville: string | null;
+  quartier: string | null;
+  category: string | null;
+}
+
+export interface BoostConfig {
+  currency: string;
+  price_cpc: number;
+  price_cpi: number;
+  budgets: number[];
+  max_duration_days: number;
+}
+
+export interface BoostFeaturedResponse {
+  items: BoostFeaturedItem[];
+  config: { currency: string; price_cpc: number; price_cpi: number };
+}
+
+export interface BoostChargeResponse {
+  counted: boolean;
+  billed: boolean;
+  exhausted: boolean;
+  remaining: number | null;
+}
+
+export const apiBoosts = {
+  config: () => cachedGet<BoostConfig>('/boosts/config'),
+  // Cache mémoire 300 s : la rotation aléatoire serveur reste vivante sans
+  // re-faire un tour complet de la base à chaque navigation.
+  featured: () => cachedGet<BoostFeaturedResponse>('/boosts/featured', 300_000),
+  impression: (boostId: string, visitorId: string) =>
+    request<BoostChargeResponse>('/boosts/impression', {
+      method: 'POST',
+      body: JSON.stringify({ boost_id: boostId, visitor_id: visitorId }),
+      public: true,
+    }),
+  click: (boostId: string, visitorId: string) =>
+    request<BoostChargeResponse>('/boosts/click', {
+      method: 'POST',
+      body: JSON.stringify({ boost_id: boostId, visitor_id: visitorId }),
+      public: true,
+    }),
+  initiate: (data: {
+    room_id: string;
+    mode: BoostMode;
+    budget_total: number;
+    starts_at: string;
+    ends_at: string;
+  }) =>
+    request<{ transaction_id: number; payment_url: string; boost_id: string }>('/boosts/initiate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  confirm: (transactionId: number) =>
+    request<{ success: boolean; already_activated: boolean; boost: BoostData }>(
+      '/boosts/confirm',
+      { method: 'POST', body: JSON.stringify({ transaction_id: transactionId }) }
+    ),
+  mine: () => request<{ items: BoostData[] }>('/boosts/mine'),
+  updateSchedule: (id: string, data: { starts_at: string; ends_at: string }) =>
+    request<{ boost: BoostData }>(`/boosts/${id}/schedule`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+};
+
 // ── Auth (rôles) ──
 export type AuthRole = 'client' | 'gerant';
 

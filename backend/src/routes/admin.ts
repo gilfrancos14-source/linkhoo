@@ -5,9 +5,10 @@ import { supabaseAdmin } from '../config/supabase';
 import { publishNotificationChanged } from '../utils/realtime';
 import { requireAdminAuth, signAdminToken } from '../middleware/requireAdminAuth';
 import { adminLoginSchema, adminChangePasswordSchema, adminReservationsQuerySchema } from '../validations/admin';
-import { idParamsSchema } from '../validations/common';
+import { idParamsSchema, marketSchema } from '../validations/common';
 import { verificationReviewSchema, verificationRejectSchema } from '../validations/gerant';
 import { isQualifiedGerant } from '../utils/gerantQualification';
+import { BOOST_ROOM_EMBED, mapBoostRow } from '../utils/boostDisplay';
 import { fetchAllRows } from '../utils/fetchAll';
 import { isMarketCode } from '../config/markets';
 import { z } from 'zod';
@@ -670,6 +671,112 @@ router.patch('/rooms/:id/promo-group', requireAdminAuth, async (req: Request, re
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Chambre introuvable' });
     res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Supervision des campagnes Boost ──
+
+const adminBoostsQuerySchema = z
+  .object({
+    status: z.enum(['pending', 'active', 'paused', 'exhausted', 'canceled']).optional(),
+    market: marketSchema.optional(),
+  })
+  .strict();
+
+const adminBoostStatusSchema = z
+  .object({
+    status: z.enum(['active', 'paused']),
+  })
+  .strict();
+
+router.get('/boosts', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsedQuery = adminBoostsQuerySchema.safeParse(req.query);
+    if (!parsedQuery.success) {
+      return res.status(400).json({ error: 'Paramètres invalides' });
+    }
+
+    let query = supabaseAdmin
+      .from('boosts')
+      .select(`*, ${BOOST_ROOM_EMBED}, gerant:gerants(nom, prenom, email, phone)`);
+    if (parsedQuery.data.status) query = query.eq('status', parsedQuery.data.status);
+    if (parsedQuery.data.market) query = query.eq('market', parsedQuery.data.market);
+
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (error) throw error;
+
+    const rows: any[] = Array.isArray(data) ? data : [];
+    res.json({
+      items: rows.map((row) => ({
+        ...mapBoostRow(row),
+        gerant: row.gerant ?? null,
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch('/boosts/:id/status', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsedParams = idParamsSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      return res.status(400).json({ error: 'Identifiant invalide' });
+    }
+    const parsedBody = adminBoostStatusSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      return res.status(400).json({ error: 'Données invalides', details: parsedBody.error.flatten() });
+    }
+
+    const { data: boost, error } = await supabaseAdmin
+      .from('boosts')
+      .select('id, status, spent, budget_total')
+      .eq('id', parsedParams.data.id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!boost) return res.status(404).json({ error: 'Campagne introuvable' });
+
+    // Uniquement pause/reprise d'une campagne payée : on n'active pas un
+    // paiement en attente, on ne ressuscite pas un budget épuisé.
+    if (boost.status === 'pending') {
+      return res.status(409).json({ error: 'Campagne non encore payée : activation impossible manuellement.' });
+    }
+    if (boost.status === 'canceled') {
+      return res.status(409).json({ error: 'Campagne annulée.' });
+    }
+    if (boost.status === 'exhausted' || boost.spent >= boost.budget_total) {
+      return res.status(409).json({ error: 'Budget épuisé : reprise impossible.' });
+    }
+
+    const { data: updated, error: updateError } = await supabaseAdmin
+      .from('boosts')
+      .update({
+        status: parsedBody.data.status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', boost.id)
+      .select('id, status, spent, budget_total, starts_at, ends_at')
+      .single();
+    if (updateError) throw updateError;
+
+    res.json({
+      id: updated.id,
+      status: updated.status,
+      display_status:
+        updated.status === 'paused'
+          ? 'paused'
+          : new Date() < new Date(updated.starts_at)
+            ? 'scheduled'
+            : new Date() > new Date(updated.ends_at)
+              ? 'ended'
+              : 'live',
+      spent: updated.spent,
+      remaining: Math.max(updated.budget_total - updated.spent, 0),
+    });
   } catch (err) {
     next(err);
   }

@@ -14,7 +14,7 @@ interface StayCardProps {
   ariaLabel?: string;
   tag?: string;
   badge?: string;
-  badgeVariant?: 'default' | 'unavailable' | 'premium';
+  badgeVariant?: 'default' | 'unavailable' | 'premium' | 'sponsored';
   meta?: string[];
 }
 

@@ -676,6 +676,101 @@ describe('apiPremium', () => {
   });
 });
 
+describe('apiBoosts', () => {
+  it('config GET /boosts/config', async () => {
+    await api.apiBoosts.config();
+
+    expect(lastCall().url).toBe('/api/boosts/config');
+    expect(lastCall().init.method ?? 'GET').toBe('GET');
+  });
+
+  it('featured GET /boosts/featured sans Authorization (public)', async () => {
+    await api.apiBoosts.featured();
+
+    expect(lastCall().url).toBe('/api/boosts/featured');
+    expect(lastHeaders().Authorization).toBeUndefined();
+  });
+
+  it('featured ne déclenche qu’un seul appel pendant le TTL (cache mémoire)', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ items: [], config: {} }));
+
+    await api.apiBoosts.featured();
+    await api.apiBoosts.featured();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('impression POST public avec boost_id et visitor_id', async () => {
+    fetchMock.mockResolvedValue(
+      jsonResponse({ counted: true, billed: true, exhausted: false, remaining: 950 })
+    );
+
+    const res = await api.apiBoosts.impression('a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d', 'visiteur-01');
+
+    expect(lastCall().url).toBe('/api/boosts/impression');
+    expect(lastCall().init.method).toBe('POST');
+    expect(lastHeaders().Authorization).toBeUndefined();
+    expect(lastBody()).toEqual({
+      boost_id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      visitor_id: 'visiteur-01',
+    });
+    expect(res.billed).toBe(true);
+    expect(res.remaining).toBe(950);
+  });
+
+  it('click POST /boosts/click', async () => {
+    await api.apiBoosts.click('a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d', 'visiteur-01');
+
+    expect(lastCall().url).toBe('/api/boosts/click');
+    expect(lastBody()).toEqual({
+      boost_id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+      visitor_id: 'visiteur-01',
+    });
+  });
+
+  it('initiate POST /boosts/initiate avec la fenêtre de dates', async () => {
+    const payload = {
+      room_id: 'room-1',
+      mode: 'cpi' as const,
+      budget_total: 3000,
+      starts_at: '2026-10-06T00:00:00.000Z',
+      ends_at: '2026-11-05T00:00:00.000Z',
+    };
+
+    await api.apiBoosts.initiate(payload);
+
+    expect(lastCall().url).toBe('/api/boosts/initiate');
+    expect(lastCall().init.method).toBe('POST');
+    expect(lastBody()).toEqual(payload);
+  });
+
+  it('confirm POST /boosts/confirm avec transaction_id', async () => {
+    await api.apiBoosts.confirm(777);
+
+    expect(lastCall().url).toBe('/api/boosts/confirm');
+    expect(lastBody()).toEqual({ transaction_id: 777 });
+  });
+
+  it('mine GET /boosts/mine', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ items: [] }));
+
+    await api.apiBoosts.mine();
+
+    expect(lastCall().url).toBe('/api/boosts/mine');
+    expect(lastCall().init.method ?? 'GET').toBe('GET');
+  });
+
+  it('updateSchedule PATCH /boosts/:id/schedule', async () => {
+    const dates = { starts_at: '2026-10-10T00:00:00.000Z', ends_at: '2026-11-10T00:00:00.000Z' };
+
+    await api.apiBoosts.updateSchedule('b-1', dates);
+
+    expect(lastCall().url).toBe('/api/boosts/b-1/schedule');
+    expect(lastCall().init.method).toBe('PATCH');
+    expect(lastBody()).toEqual(dates);
+  });
+});
+
 describe('apiAuth', () => {
   it('me GET /auth/me', async () => {
     await api.apiAuth.me();

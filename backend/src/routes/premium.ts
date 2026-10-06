@@ -8,27 +8,15 @@ import { isValidEmail, withFedapayTimeout } from '../config/fedapayHttp';
 import { isPremiumActive, isPremiumExpired } from '../utils/premium';
 import { isMarketCode } from '../config/markets';
 import { mapFedaPayStatus, isNotFoundError, type PremiumTxStatus } from '../smoke/fedapayRiskTests.helpers';
+import {
+  normalizeTxType,
+  upsertPremiumTransaction,
+  activateBoostForTransaction,
+} from '../utils/premiumTx';
 
 const PREMIUM_AMOUNT = 5000;
 const PREMIUM_DURATION_DAYS = 30;
 const PREMIUM_CURRENCY = 'XOF';
-
-const TX_TYPES = ['premium', 'verification'] as const;
-type TxType = (typeof TX_TYPES)[number];
-
-/**
- * Ramène le type de transaction à une valeur autorisée par le CHECK
- * (premium_transactions.type) ou renvoie null si la valeur est inconnue.
- * 'premium_subscription' est l'ancien libellé utilisé par les transactions
- * créées avant l'ajout de la colonne `type`.
- */
-function normalizeTxType(value: unknown): TxType | null {
-  if (value === 'premium_subscription') return 'premium';
-  if (typeof value === 'string' && (TX_TYPES as readonly string[]).includes(value)) {
-    return value as TxType;
-  }
-  return null;
-}
 
 const router = Router();
 
@@ -40,51 +28,6 @@ function getOrigin(req: Request): string {
 
 function getCallbackUrl(req: Request, market: string): string {
   return `${getOrigin(req)}/${market.toLowerCase()}/gerant/premium/success`;
-}
-
-async function upsertPremiumTransaction(input: {
-  fedapayTransactionId: number | string;
-  clerkUserId: string;
-  market: string;
-  amount: number;
-  status: PremiumTxStatus;
-  customerEmail?: string | null;
-  rawEvent?: unknown;
-  type?: 'premium' | 'verification';
-}): Promise<{ id: string; status: PremiumTxStatus; activated: boolean }> {
-  const txId = Number(input.fedapayTransactionId);
-  if (!Number.isFinite(txId) || txId <= 0) {
-    throw new Error('fedapay_transaction_id invalide');
-  }
-
-  const { data, error } = await supabaseAdmin
-    .from('premium_transactions')
-    .upsert(
-      {
-        fedapay_transaction_id: txId,
-        clerk_user_id: input.clerkUserId,
-        market: input.market,
-        amount: input.amount,
-        currency: PREMIUM_CURRENCY,
-        status: input.status,
-        customer_email: input.customerEmail ?? null,
-        raw_event: input.rawEvent ?? null,
-        type: input.type ?? 'premium',
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'fedapay_transaction_id' }
-    )
-    .select('id, status, activated_at')
-    .single();
-
-  if (error) throw error;
-  if (!data) throw new Error('Insertion premium_transactions échouée');
-
-  return {
-    id: data.id,
-    status: data.status as PremiumTxStatus,
-    activated: !!data.activated_at,
-  };
 }
 
 async function hasActivePremiumOnOtherMarket(clerkUserId: string, currentMarket: string): Promise<boolean> {
@@ -380,6 +323,21 @@ router.post('/webhook', async (req: Request, res: Response, _next: NextFunction)
         } else {
           console.warn(`[premium] webhook: activation refusée, montant insuffisant (${amount}) pour tx ${entity.id}`);
         }
+      } else if (status === 'approved' && !persisted.activated && txType === 'boost') {
+        // Chemin prioritaire du boost : le webhook crédite la campagne avant
+        // même que le gérant ne voie sa page de succès. BOOST_NOT_FOUND =
+        // campagne remplacée/annulée entre-temps → claim déjà annulé par la
+        // RPC, on ne crédite rien et on trace pour le support.
+        const activation = await activateBoostForTransaction(persisted.id);
+        if (activation.boostId) {
+          console.log(
+            activation.alreadyActivated
+              ? `[premium] webhook: boost tx ${entity.id} déjà consommée, aucun double crédit`
+              : `[premium] webhook: boost activé pour ${clerkUserId} (tx ${entity.id}, boost ${activation.boostId})`
+          );
+        } else {
+          console.warn(`[premium] webhook: boost tx ${entity.id} sans campagne correspondante (remplacée ou annulée)`);
+        }
       } else {
         console.log(`[premium] webhook: tx ${entity.id} status=${status} type=${txType} (déjà activée=${persisted.activated})`);
       }
@@ -396,7 +354,7 @@ router.post('/webhook', async (req: Request, res: Response, _next: NextFunction)
         if (clerkUserId && market && txType) {
           const newStatus: PremiumTxStatus =
             eventName === 'transaction.declined' ? 'declined' : 'canceled';
-          await upsertPremiumTransaction({
+          const persisted = await upsertPremiumTransaction({
             fedapayTransactionId: entity.id,
             clerkUserId,
             market,
@@ -408,6 +366,16 @@ router.post('/webhook', async (req: Request, res: Response, _next: NextFunction)
             rawEvent: event,
             type: txType,
           });
+          if (txType === 'boost') {
+            // Paiement refusé : la campagne ne doit jamais passer active.
+            const { data: canceled } = await supabaseAdmin
+              .from('boosts')
+              .update({ status: 'canceled', updated_at: new Date().toISOString() })
+              .eq('transaction_id', persisted.id)
+              .eq('status', 'pending')
+              .select('id');
+            console.log(`[premium] webhook ${eventName}: boost ${canceled?.[0]?.id ?? 'introuvable'} annulée (tx ${entity.id})`);
+          }
         }
       }
       console.log(`[premium] webhook ${eventName} reçu (id=${entity?.id})`);

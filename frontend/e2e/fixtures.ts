@@ -91,6 +91,26 @@ export const bjCategories: Record<string, unknown>[] = [
   { id: 'hotel', title: 'Hôtels', market: 'BJ' },
 ];
 
+/** Campagne mise en avant sur la landing (GET /boosts/featured). */
+export function makeBoostFeatured(
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return {
+    id: 'boost-1',
+    room_id: 'rm-1',
+    market: 'CI',
+    mode: 'cpc',
+    title: 'Studio Cocody Riviera',
+    price: '25 000',
+    price_num: 25000,
+    img: '/images/pexels-artbovich-6283961.jpg',
+    ville: 'Abidjan',
+    quartier: 'Cocody',
+    category: 'ci-chambres-moins-cheres',
+    ...overrides,
+  };
+}
+
 const reviewsResponse = {
   reviews: [],
   room_avg: 4.5,
@@ -130,6 +150,10 @@ export interface MockApiOptions {
   adminLoginFails?: boolean;
   /** GET /admin/me répond 401 (jeton expiré). */
   adminMeUnauthorized?: boolean;
+  /** Campagnes servies par GET /boosts/featured (vide = section masquée). */
+  boosts?: Record<string, unknown>[];
+  /** Tarifs servis par GET /boosts/config. */
+  boostConfig?: Record<string, unknown>;
 }
 
 async function respond(route: Route, body: unknown, status = 200): Promise<void> {
@@ -253,6 +277,26 @@ export async function mockApi(page: Page, options: MockApiOptions = {}): Promise
     }
     if (path === '/gerants/verification-status') {
       return respond(route, { status: 'none' });
+    }
+
+    // Campagnes sponsorisées de la landing + tarifs gérant.
+    if (path === '/boosts/featured') {
+      return respond(route, {
+        items: options.boosts ?? [],
+        config: { currency: 'XOF', price_cpc: 50, price_cpi: 5 },
+      });
+    }
+    if (path === '/boosts/config') {
+      return respond(
+        route,
+        options.boostConfig ?? {
+          currency: 'XOF',
+          price_cpc: 50,
+          price_cpi: 5,
+          budgets: [1000, 3000, 5000],
+          max_duration_days: 90,
+        },
+      );
     }
 
     // Back-office admin (aucun Clerk : jeton localStorage + Bearer).

@@ -17,6 +17,7 @@
     "lint": "oxlint --deny-warnings",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
     "test:smoke": "tsx src/smoke/fedapayRiskTests.ts",
+    "test:boosts": "node scripts/testBoostRpcs.mjs",
     "optimize:images": "node scripts/optimize-images.mjs"
   },
   "dependencies": {

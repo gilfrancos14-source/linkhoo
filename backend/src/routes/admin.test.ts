@@ -39,6 +39,7 @@ let admins: FakeChain;
 let documents: FakeChain;
 let notifications: FakeChain;
 let clientNotifications: FakeChain;
+let boosts: FakeChain;
 
 type TableName =
   | 'gerants'
@@ -47,7 +48,8 @@ type TableName =
   | 'admins'
   | 'verification_documents'
   | 'notifications'
-  | 'client_notifications';
+  | 'client_notifications'
+  | 'boosts';
 
 function stubTables(tables: Partial<Record<TableName, FakeChain | FakeChain[]>> = {}): void {
   useSupabaseTables(supabaseAdmin.from, {
@@ -58,6 +60,7 @@ function stubTables(tables: Partial<Record<TableName, FakeChain | FakeChain[]>> 
     verification_documents: documents,
     notifications,
     client_notifications: clientNotifications,
+    boosts,
     ...tables,
   });
 }
@@ -78,6 +81,7 @@ beforeEach(() => {
   documents = fakeChain({ data: null, error: null });
   notifications = fakeChain({ data: null, error: null });
   clientNotifications = fakeChain({ data: null, error: null });
+  boosts = fakeChain({ data: null, error: null });
   stubTables();
 });
 
@@ -861,5 +865,152 @@ describe('PATCH /api/admin/rooms/:id/promo-group', () => {
     expect(updated.update).toHaveBeenCalledWith(
       expect.objectContaining({ promo_group: null, promo_start: null, promo_end: null }),
     );
+  });
+});
+
+describe('Supervision des campagnes Boost', () => {
+  const liveBoost = {
+    id: 'b-1',
+    market: 'CI',
+    room_id: 'room-1',
+    gerant_id: 'user_1',
+    mode: 'cpi',
+    status: 'active',
+    budget_total: 3000,
+    spent: 500,
+    starts_at: new Date(Date.now() - 3600_000).toISOString(),
+    ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    activated_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    transaction_id: 'tx-uuid-1',
+    room: { id: 'room-1', title: 'Studio Plateau', ville: 'Abidjan', market: 'CI', disponible: true },
+    gerant: { nom: 'Koffi', prenom: 'Aya', email: 'g@example.ci', phone: '0707070707' },
+  };
+
+  it('GET /boosts : 401 sans token', async () => {
+    const res = await request(app).get('/api/admin/boosts');
+    expect(res.status).toBe(401);
+  });
+
+  it('GET /boosts : liste mappée avec chambre et gérant', async () => {
+    stubTables({ boosts: fakeChain({ data: [liveBoost], error: null }) });
+
+    const res = await request(app).get('/api/admin/boosts').set(auth(adminToken()));
+
+    expect(res.status).toBe(200);
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0]).toMatchObject({
+      id: 'b-1',
+      display_status: 'live',
+      remaining: 2500,
+      gerant: { nom: 'Koffi' },
+      room: { title: 'Studio Plateau' },
+    });
+  });
+
+  it('GET /boosts : 400 sur un statut de filtre invalide', async () => {
+    const res = await request(app)
+      .get('/api/admin/boosts?status=inconnu')
+      .set(auth(adminToken()));
+    expect(res.status).toBe(400);
+  });
+
+  it('PATCH /boosts/:id/status : 409 si budget épuisé', async () => {
+    stubTables({
+      boosts: fakeChain({
+        data: { id: 'b-1', status: 'exhausted', spent: 3000, budget_total: 3000 },
+        error: null,
+      }),
+    });
+
+    const res = await request(app)
+      .patch('/api/admin/boosts/b-1/status')
+      .set(auth(adminToken()))
+      .send({ status: 'active' });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toContain('épuisé');
+  });
+
+  it('PATCH /boosts/:id/status : 409 si la campagne n\'est pas encore payée', async () => {
+    stubTables({
+      boosts: fakeChain({
+        data: { id: 'b-1', status: 'pending', spent: 0, budget_total: 1000 },
+        error: null,
+      }),
+    });
+
+    const res = await request(app)
+      .patch('/api/admin/boosts/b-1/status')
+      .set(auth(adminToken()))
+      .send({ status: 'active' });
+
+    expect(res.status).toBe(409);
+  });
+
+  it('PATCH /boosts/:id/status : met en pause une campagne en ligne', async () => {
+    const fetched = fakeChain({
+      data: { id: 'b-1', status: 'active', spent: 500, budget_total: 3000 },
+      error: null,
+    });
+    const updated = fakeChain({
+      data: {
+        id: 'b-1',
+        status: 'paused',
+        spent: 500,
+        budget_total: 3000,
+        starts_at: new Date(Date.now() - 3600_000).toISOString(),
+        ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      error: null,
+    });
+    stubTables({ boosts: [fetched, updated] });
+
+    const res = await request(app)
+      .patch('/api/admin/boosts/b-1/status')
+      .set(auth(adminToken()))
+      .send({ status: 'paused' });
+
+    expect(res.status).toBe(200);
+    expect(updated.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'paused' }),
+    );
+    expect(res.body).toMatchObject({ id: 'b-1', status: 'paused', display_status: 'paused', remaining: 2500 });
+  });
+
+  it('PATCH /boosts/:id/status : reprise d\'une campagne programmée', async () => {
+    const fetched = fakeChain({
+      data: { id: 'b-1', status: 'paused', spent: 0, budget_total: 1000 },
+      error: null,
+    });
+    const updated = fakeChain({
+      data: {
+        id: 'b-1',
+        status: 'active',
+        spent: 0,
+        budget_total: 1000,
+        starts_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        ends_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+      error: null,
+    });
+    stubTables({ boosts: [fetched, updated] });
+
+    const res = await request(app)
+      .patch('/api/admin/boosts/b-1/status')
+      .set(auth(adminToken()))
+      .send({ status: 'active' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ status: 'active', display_status: 'scheduled' });
+  });
+
+  it('PATCH /boosts/:id/status : 400 sur un statut hors supervision', async () => {
+    const res = await request(app)
+      .patch('/api/admin/boosts/b-1/status')
+      .set(auth(adminToken()))
+      .send({ status: 'exhausted' });
+    expect(res.status).toBe(400);
   });
 });

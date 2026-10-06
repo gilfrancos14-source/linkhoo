@@ -6,11 +6,19 @@ import LandingPage from './LandingPage';
 
 const mocks = vi.hoisted(() => ({
   featured: vi.fn<() => Promise<unknown[]>>(),
+  boostFeatured: vi.fn<() => Promise<unknown>>(),
+  boostImpression: vi.fn<() => Promise<unknown>>(),
+  boostClick: vi.fn<() => Promise<unknown>>(),
   fetchCategoriesByMarket: vi.fn<(market: string) => Promise<unknown[]>>(),
 }));
 
 vi.mock('../lib/api', () => ({
   apiReviews: { featured: mocks.featured },
+  apiBoosts: {
+    featured: mocks.boostFeatured,
+    impression: mocks.boostImpression,
+    click: mocks.boostClick,
+  },
   cachedGet: vi.fn(() => Promise.resolve([])),
 }));
 
@@ -48,6 +56,7 @@ function categorySelect(): HTMLSelectElement {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.featured.mockResolvedValue([]);
+  mocks.boostFeatured.mockResolvedValue({ items: [], config: {} });
   mocks.fetchCategoriesByMarket.mockResolvedValue([]);
 });
 
@@ -141,5 +150,47 @@ describe('LandingPage', () => {
     // L'API ne renvoie rien : repli sur les six témoignages statiques.
     expect(await screen.findByText('Awa Kouassi')).toBeInTheDocument();
     expect(document.querySelectorAll('.landing-testimonials__card')).toHaveLength(6);
+  });
+
+  it('place les annonces sponsorisées entre les pays et le carrousel', async () => {
+    mocks.boostFeatured.mockResolvedValue({
+      items: [
+        {
+          id: 'boost-1',
+          room_id: 'room-9',
+          market: 'CI',
+          mode: 'cpi',
+          title: 'Suite Plateau',
+          price: '45 000 FCFA',
+          price_num: 45000,
+          img: '/images/suite.jpg',
+          ville: 'Abidjan',
+          quartier: 'Plateau',
+          category: 'chambres',
+        },
+      ],
+      config: { currency: 'XOF', price_cpc: 50, price_cpi: 5 },
+    });
+
+    renderLanding();
+
+    expect(
+      await screen.findByRole('heading', { level: 3, name: 'Suite Plateau' }),
+    ).toBeInTheDocument();
+    // Surtitre de section + pastille de carte.
+    expect(screen.getAllByText('Sponsorisé')).toHaveLength(2);
+
+    const children = Array.from(document.querySelector('main.landing')?.children ?? []);
+    const order = children.map((el) => el.className.split(' ')[0]);
+    expect(order.indexOf('landing-countries')).toBeGreaterThanOrEqual(0);
+    expect(order.indexOf('landing-countries')).toBeLessThan(order.indexOf('landing-boosts'));
+    expect(order.indexOf('landing-boosts')).toBeLessThan(order.indexOf('landing-slider'));
+  });
+
+  it('masque la bande sponsorisée sans campagne en ligne', async () => {
+    renderLanding();
+
+    await screen.findByRole('heading', { level: 2, name: 'Choisissez un Pays' });
+    expect(document.querySelector('.landing-boosts')).not.toBeInTheDocument();
   });
 });

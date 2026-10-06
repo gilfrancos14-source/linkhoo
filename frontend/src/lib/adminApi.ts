@@ -1,7 +1,7 @@
 import type { MarketCode } from '../config/markets';
 
 import { API_BASE, REQUEST_TIMEOUT_MS, parseJsonBody, clearApiCache } from './api';
-import type { VerificationDocument } from './api';
+import type { BoostData, VerificationDocument } from './api';
 
 let adminToken: string | null = localStorage.getItem('admin_token');
 
@@ -200,6 +200,10 @@ interface AdminNotificationsResponse {
   unread_count: number;
 }
 
+export interface AdminBoostItem extends BoostData {
+  gerant: { nom: string | null; prenom: string | null; email: string | null; phone: string | null } | null;
+}
+
 export const apiAdmin = {
   login: (email: string, password: string) =>
     adminRequest<{ token: string; admin: AdminData }>('/admin/login', {
@@ -268,6 +272,26 @@ export const apiAdmin = {
 
   markNotificationRead: (id: string) =>
     adminRequest<void>(`/admin/notifications/${id}/read`, { method: 'PATCH' }),
+
+  getBoosts: (params?: { status?: string; market?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.market) searchParams.set('market', params.market);
+    const qs = searchParams.toString();
+    return adminRequest<{ items: AdminBoostItem[] }>(`/admin/boosts${qs ? `?${qs}` : ''}`);
+  },
+
+  setBoostStatus: (id: string, status: 'active' | 'paused') =>
+    adminRequest<{
+      id: string;
+      status: string;
+      display_status: string;
+      spent: number;
+      remaining: number;
+    }>(`/admin/boosts/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
 
   getBanners: (market?: string, section?: string) => {
     const searchParams = new URLSearchParams();

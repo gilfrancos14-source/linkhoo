@@ -22,6 +22,7 @@ import gerantsRouter from './routes/gerants';
 import clientsRouter from './routes/clients';
 import reviewsRouter from './routes/reviews';
 import premiumRouter from './routes/premium';
+import boostsRouter from './routes/boosts';
 import adminRouter from './routes/admin';
 import authRouter from './routes/auth';
 import { startNotificationPurge } from './utils/notificationPurge';
@@ -146,6 +147,7 @@ const PUBLIC_CACHE_PATHS = [
   '/api/tourism',
   '/api/reviews/featured',
   '/api/rooms/popular',
+  '/api/boosts/featured',
 ];
 app.use((req, res, next) => {
   if (req.method === 'GET' && PUBLIC_CACHE_PATHS.includes(req.path)) {
@@ -178,6 +180,7 @@ app.use('/api/gerants', requireClerkAuth, gerantsRouter);
 app.use('/api/clients', requireClerkAuth, clientsRouter);
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/premium', premiumRouter);
+app.use('/api/boosts', boostsRouter);
 app.use('/api/admin/login', adminLoginLimiter, adminRouter);
 app.use('/api/admin', adminRouter);
 
