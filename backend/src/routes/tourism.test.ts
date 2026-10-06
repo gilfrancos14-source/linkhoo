@@ -145,7 +145,7 @@ describe('POST /api/tourism', () => {
     const res = await request(app)
       .post('/api/tourism')
       .set('Authorization', `Bearer ${adminToken()}`)
-      .send({ ...validDestination, market: 'TG' });
+      .send({ ...validDestination, market: 'XX' });
     expect(res.status).toBe(400);
   });
 

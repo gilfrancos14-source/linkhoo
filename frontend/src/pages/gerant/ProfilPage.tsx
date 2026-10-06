@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMarket } from '../../contexts/MarketContext';
+import { marketByCode } from '../../config/markets';
 import { apiGerants, type GerantData } from '../../lib/api';
 import { isPremiumActive } from '../../lib/premium';
 
@@ -57,7 +58,7 @@ export default function ProfilPage() {
   };
 
   const initials = (gerant?.prenom?.[0] || '') + (gerant?.nom?.[0] || '');
-  const marketLabel = market === 'CI' ? "Côte d'Ivoire" : 'Bénin';
+  const marketLabel = marketByCode(market).label;
 
   if (loading) {
     return (

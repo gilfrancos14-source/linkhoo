@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useMarket } from '../../contexts/MarketContext';
+import { marketByCode } from '../../config/markets';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { apiGerants, apiUpload, request, type GerantData, type VerificationDocument, type VerificationStatusResponse } from '../../lib/api';
 import PropertyMap from '../../components/PropertyMap';
@@ -281,8 +282,7 @@ export default function VerificationPage() {
     }
   };
 
-  const manualFallbackCenter: ManualCoords =
-    market === 'BJ' ? { lat: 6.3703, lng: 2.3912 } : { lat: 5.36, lng: -4.008 };
+  const manualFallbackCenter: ManualCoords = marketByCode(market).center;
 
   const handleContinueContact = async () => {
     const trimmed = {

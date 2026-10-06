@@ -1,6 +1,7 @@
 import { z } from 'zod';
+import { MARKET_CODES } from '../config/markets';
 
-export const marketSchema = z.enum(['CI', 'BJ']);
+export const marketSchema = z.enum(MARKET_CODES);
 
 export const idSchema = z.string().trim().min(1).max(200);
 

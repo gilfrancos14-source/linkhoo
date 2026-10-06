@@ -101,7 +101,7 @@ beforeEach(() => {
 
 describe('GET /api/rooms', () => {
   it('400 sur un marché inconnu', async () => {
-    const res = await request(app).get('/api/rooms?market=TG');
+    const res = await request(app).get('/api/rooms?market=XX');
     expect(res.status).toBe(400);
   });
 
@@ -310,7 +310,7 @@ describe('GET /api/rooms', () => {
 
 describe('GET /api/rooms/popular', () => {
   it('400 sur un marché inconnu', async () => {
-    const res = await request(app).get('/api/rooms/popular?market=TG');
+    const res = await request(app).get('/api/rooms/popular?market=XX');
     expect(res.status).toBe(400);
   });
 
@@ -435,7 +435,7 @@ describe('GET /api/rooms/quartiers', () => {
   });
 
   it('400 sur un marché inconnu', async () => {
-    const res = await request(app).get('/api/rooms/quartiers?market=TG');
+    const res = await request(app).get('/api/rooms/quartiers?market=XX');
     expect(res.status).toBe(400);
   });
 });

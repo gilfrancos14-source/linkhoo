@@ -15,6 +15,11 @@ test.describe('console admin', () => {
     await expect(page.locator('.sidebar__user-role')).toHaveText('Administrateur');
     await expect(page.locator('.sidebar__user-name')).toHaveText('Awa');
     await expect(page.locator('.hero-kpi__value')).toHaveText('4');
+    // Un mini-KPI par marché du registre (12), même sans gérant.
+    await expect(page.locator('.hero-side--markets .hero-mini')).toHaveCount(12);
+    await expect(
+      page.locator('.hero-side--markets .hero-mini__label').filter({ hasText: 'SN' }),
+    ).toHaveCount(1);
     await expect(
       page.locator('nav.sidebar__nav').getByRole('link', { name: 'Tableau de bord' }),
     ).toHaveClass(/sidebar__link--active/);

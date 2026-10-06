@@ -13,7 +13,6 @@ export interface Reservation {
   dureeNombre: number;
   dureeUnite: DureeUnite;
   montant: number;
-  message: string;
   statut: 'en_attente' | 'confirmee' | 'annulee';
   createdAt: string;
   respondedAt?: string;
@@ -51,7 +50,6 @@ function mapReservation(d: ReservationData): Reservation {
     dureeNombre: d.duree_nombre ?? 1,
     dureeUnite: d.duree_unite ?? 'nuit',
     montant: d.montant,
-    message: d.message,
     statut: d.statut,
     createdAt: d.created_at,
     respondedAt: d.responded_at ?? undefined,
@@ -80,7 +78,6 @@ export async function addReservation(data: Omit<Reservation, 'id' | 'createdAt' 
     duree_nombre: data.dureeNombre,
     duree_unite: data.dureeUnite,
     montant: data.montant,
-    message: data.message,
     // Absent si undefined : JSON.stringify n'envoie rien au serveur, qui
     // traite alors la demande sans déduplication (comportement historique).
     client_key: data.clientKey,

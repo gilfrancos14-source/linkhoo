@@ -17,7 +17,6 @@ const validReservation = {
   duree_nombre: 3,
   duree_unite: 'nuit',
   montant: 750000,
-  message: 'Arrivée prévue le soir.',
 };
 
 describe('reservationCreateSchema', () => {
@@ -26,15 +25,21 @@ describe('reservationCreateSchema', () => {
     expect(parsed.success).toBe(true);
   });
 
-  it('accepte une réservation sans téléphone ni message', () => {
+  it('accepte une réservation sans téléphone', () => {
     const sansOptionnels: Record<string, unknown> = { ...validReservation };
     delete sansOptionnels.client_phone;
-    delete sansOptionnels.message;
     const parsed = reservationCreateSchema.safeParse(sansOptionnels);
     expect(parsed.success).toBe(true);
     if (!parsed.success) return;
     expect(parsed.data.client_phone).toBe('');
-    expect(parsed.data.message).toBe('');
+  });
+
+  it('refuse le champ message (retiré du produit : strict rejette l\'inconnu)', () => {
+    const parsed = reservationCreateSchema.safeParse({
+      ...validReservation,
+      message: 'Arrivée prévue le soir.',
+    });
+    expect(parsed.success).toBe(false);
   });
 
   it('normalise lemail en minuscules', () => {

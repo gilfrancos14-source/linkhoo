@@ -1,13 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchCategoriesByMarket, type Category } from '../data/categories';
+import { LANDING_COUNTRIES } from '../data/landing';
+import { marketBySlug, type MarketSlug } from '../config/markets';
 
 // Hero de la page d'accueil racine — structure CoinAfrique :
 // titre H1/H2 puis formulaire « mot-clé + Catégories + Pays + loupe ».
 export default function LandingHero() {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState('');
-  const [country, setCountry] = useState<'ci' | 'bj' | ''>('');
+  const [country, setCountry] = useState<MarketSlug | ''>('');
   const [categoryId, setCategoryId] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState('');
@@ -21,7 +23,7 @@ export default function LandingHero() {
       setCategoryId('');
       return;
     }
-    const market = country === 'bj' ? 'BJ' : 'CI';
+    const market = marketBySlug(country)?.code ?? 'CI';
     fetchCategoriesByMarket(market)
       .then((data) => {
         if (!alive) return;
@@ -97,12 +99,15 @@ export default function LandingHero() {
               id="landing-country"
               className="landing-search__select"
               value={country}
-              onChange={(e) => setCountry(e.target.value as 'ci' | 'bj' | '')}
+              onChange={(e) => setCountry(e.target.value as MarketSlug | '')}
               required
             >
               <option value="" disabled>Pays</option>
-              <option value="ci">Côte d’Ivoire</option>
-              <option value="bj">Bénin</option>
+              {LANDING_COUNTRIES.map((c) =>
+                c.slug ? (
+                  <option key={c.id} value={c.slug}>{c.label}</option>
+                ) : null,
+              )}
             </select>
           </div>
 

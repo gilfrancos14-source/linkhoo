@@ -1,3 +1,5 @@
+import type { MarketCode } from '../config/markets';
+
 import { API_BASE, REQUEST_TIMEOUT_MS, parseJsonBody, clearApiCache } from './api';
 import type { VerificationDocument } from './api';
 
@@ -59,7 +61,7 @@ export interface AdminStats {
     verified: number;
     pendingVerifications: number;
     premium: number;
-    byMarket: { CI: number; BJ: number };
+    byMarket: Partial<Record<MarketCode, number>>;
     newThisMonth: number;
   };
   rooms: {
@@ -82,7 +84,7 @@ export interface AdminGerant {
   nom: string;
   prenom: string;
   phone: string | null;
-  market: 'CI' | 'BJ';
+  market: MarketCode;
   is_verified: boolean;
   verified_at: string | null;
   verification_requested_at: string | null;
@@ -104,14 +106,14 @@ export interface AdminBanner {
   img: string;
   alt: string;
   link: string;
-  market: 'CI' | 'BJ';
+  market: MarketCode;
   order: number;
   created_at?: string;
 }
 
 export interface AdminEvent {
   id: string;
-  market: 'CI' | 'BJ';
+  market: MarketCode;
   city: string;
   title: string;
   description: string;
@@ -123,7 +125,7 @@ export interface AdminEvent {
 
 export interface AdminDestination {
   id: string;
-  market: 'CI' | 'BJ';
+  market: MarketCode;
   city: string;
   title: string;
   description: string;
@@ -152,7 +154,6 @@ export interface AdminReservation {
   date_debut: string;
   date_fin: string;
   montant: number;
-  message: string;
   statut: 'en_attente' | 'confirmee' | 'annulee';
   created_at: string;
   responded_at: string | null;

@@ -90,7 +90,6 @@ export default function RoomDetailPage() {
     name: '',
     email: '',
     phone: '',
-    message: '',
     dateDebut: searchParams.get('arrivee') ?? '',
   });
   const [duree, setDuree] = useState(() => initialDuree(searchParams));
@@ -223,7 +222,6 @@ export default function RoomDetailPage() {
       dureeNombre,
       dureeUnite: unite,
       montant: estimatedMontant ?? room.priceNum,
-      message: formData.message,
       clientKey: clientKeyRef.current,
     };
 
@@ -612,10 +610,6 @@ export default function RoomDetailPage() {
                     <strong>{estimatedMontant.toLocaleString('fr-FR')} FCFA</strong>
                   </p>
                 )}
-                <div className="room-detail__field">
-                  <label htmlFor="rd-msg">Message</label>
-                  <textarea id="rd-msg" rows={4} placeholder="Questions supplémentaires..." value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })} />
-                </div>
                 {submitError && (
                   <p className="room-detail__field-error" role="alert">{submitError}</p>
                 )}

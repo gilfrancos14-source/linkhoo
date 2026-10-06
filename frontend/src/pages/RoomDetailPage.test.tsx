@@ -1,3 +1,5 @@
+import type { MarketCode } from '../config/markets';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -8,9 +10,9 @@ import { clearQueue, readQueue } from '../lib/offlineQueue';
 import RoomDetailPage from './RoomDetailPage';
 
 const mocks = vi.hoisted(() => ({
-  fetchRoomsByMarket: vi.fn<(market: 'CI' | 'BJ') => Promise<unknown[]>>(),
+  fetchRoomsByMarket: vi.fn<(market: MarketCode) => Promise<unknown[]>>(),
   fetchRoomById: vi.fn<(id: string) => Promise<unknown>>(),
-  fetchCategoriesByMarket: vi.fn<(market: 'CI' | 'BJ') => Promise<unknown[]>>(),
+  fetchCategoriesByMarket: vi.fn<(market: MarketCode) => Promise<unknown[]>>(),
   listByRoom: vi.fn<(id: string) => Promise<unknown>>(),
   addReservation: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   request: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
@@ -167,7 +169,7 @@ function mustFind<T extends Element>(selector: string): T {
   return el;
 }
 
-type FormValues = Partial<Record<'name' | 'email' | 'phone' | 'dateDebut' | 'duree' | 'message', string>>;
+type FormValues = Partial<Record<'name' | 'email' | 'phone' | 'dateDebut' | 'duree', string>>;
 
 function fillForm(values: FormValues = {}) {
   const v = {
@@ -176,7 +178,6 @@ function fillForm(values: FormValues = {}) {
     phone: '0707070707',
     dateDebut: '2026-03-01',
     duree: '3',
-    message: '',
     ...values,
   };
   fireEvent.change(screen.getByLabelText(/Nom complet/), { target: { value: v.name } });
@@ -184,9 +185,6 @@ function fillForm(values: FormValues = {}) {
   fireEvent.change(screen.getByLabelText(/Téléphone/), { target: { value: v.phone } });
   fireEvent.change(screen.getByLabelText(/Date de début/), { target: { value: v.dateDebut } });
   fireEvent.change(screen.getByLabelText(/Durée/), { target: { value: v.duree } });
-  if (v.message) {
-    fireEvent.change(screen.getByLabelText('Message'), { target: { value: v.message } });
-  }
 }
 
 beforeEach(() => {
@@ -677,7 +675,7 @@ describe('RoomDetailPage — soumission', () => {
   it('envoie la réservation et affiche le succès', async () => {
     const { container } = await renderLoaded();
 
-    fillForm({ message: 'Disponible ce week-end ?' });
+    fillForm();
     fireEvent.submit(getForm(container));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Votre demande a bien été envoyée !');
@@ -692,7 +690,6 @@ describe('RoomDetailPage — soumission', () => {
       dureeNombre: 3,
       dureeUnite: 'nuit',
       montant: 75000,
-      message: 'Disponible ce week-end ?',
       clientKey: expect.any(String),
     });
   });

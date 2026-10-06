@@ -88,7 +88,7 @@ describe('POST /api/gerants', () => {
     const res = await request(app)
       .post('/api/gerants')
       .set('Authorization', clerkBearer('user_1'))
-      .send({ ...validGerant, market: 'TG' });
+      .send({ ...validGerant, market: 'XX' });
     expect(res.status).toBe(400);
   });
 

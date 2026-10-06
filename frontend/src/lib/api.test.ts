@@ -67,7 +67,6 @@ function reservationInput(): Parameters<typeof api.apiReservations.create>[0] {
     duree_nombre: 4,
     duree_unite: 'nuit',
     montant: 200000,
-    message: 'Arrivée tardive',
   };
 }
 

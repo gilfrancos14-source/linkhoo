@@ -1,3 +1,5 @@
+import { MARKETS } from '../../config/markets';
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiAdmin } from '../../lib/adminApi';
 import { apiRooms, type RoomData } from '../../lib/api';
@@ -138,8 +140,9 @@ export default function AdminPromotionsPage() {
             value={marketFilter}
             onChange={(e) => setMarketFilter(e.target.value)}
           >
-            <option value="CI">Côte d'Ivoire</option>
-            <option value="BJ">Bénin</option>
+            {MARKETS.map((m) => (
+              <option key={m.code} value={m.code}>{m.label}</option>
+            ))}
           </select>
         </div>
         <div className="gerants-filter-card__tabs">

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { apiAdmin, setAdminToken } from '../../lib/adminApi';
 import { marketSlugFromPath } from '../../contexts/MarketContext';
+import { marketBySlug } from '../../config/markets';
 
 export default function AdminLogin() {
   const { pathname } = useLocation();
@@ -13,7 +14,8 @@ export default function AdminLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const marketLabel = marketSlug === 'bj' ? 'Bénin' : "Côte d'Ivoire";
+  // Racine /admin (sans segment de marché) : libellé historique par défaut.
+  const marketLabel = marketSlug ? marketBySlug(marketSlug)?.label ?? "Côte d'Ivoire" : "Côte d'Ivoire";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { SignUp, useAuth } from '@clerk/clerk-react';
 import { apiAuth, setAuthTokenGetter, type AuthRole } from '../lib/api';
+import { marketBySlug } from '../config/markets';
 
 type Role = AuthRole;
 
@@ -39,7 +40,7 @@ export default function RegisterRolePage() {
       try {
         await apiAuth.bootstrap({
           role,
-          market: currentMarket === 'bj' ? 'BJ' : 'CI',
+          market: marketBySlug(currentMarket)?.code ?? 'CI',
         });
       } catch {
         // le guard de destination retentera / affichera l'erreur

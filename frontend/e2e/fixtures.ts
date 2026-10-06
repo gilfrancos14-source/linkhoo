@@ -112,7 +112,7 @@ const adminStatsResponse = {
     verified: 2,
     pendingVerifications: 1,
     premium: 1,
-    byMarket: { CI: 3, BJ: 1 },
+    byMarket: { CI: 2, BJ: 1, SN: 1, TG: 0, CM: 0, BF: 0, CG: 0, GA: 0, GN: 0, ML: 0, NE: 0, CD: 0 },
     newThisMonth: 1,
   },
   rooms: { total: 3, available: 2, unavailable: 1 },

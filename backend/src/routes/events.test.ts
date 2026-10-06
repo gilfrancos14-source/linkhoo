@@ -85,7 +85,7 @@ describe('POST /api/events', () => {
     const res = await request(app)
       .post('/api/events')
       .set('Authorization', `Bearer ${adminToken()}`)
-      .send({ ...validEvent, market: 'TG' });
+      .send({ ...validEvent, market: 'XX' });
     expect(res.status).toBe(400);
   });
 

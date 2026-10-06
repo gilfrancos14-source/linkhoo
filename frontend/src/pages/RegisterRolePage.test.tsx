@@ -1,3 +1,5 @@
+import type { MarketCode } from '../config/markets';
+
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -54,7 +56,7 @@ const mocks = vi.hoisted(() => {
     isLoaded: true,
     isSignedIn: false,
     getToken: vi.fn<() => Promise<string | null>>(),
-    bootstrap: vi.fn<(args: { role: AuthRole; market?: 'CI' | 'BJ' }) => Promise<BootstrapResult>>(),
+    bootstrap: vi.fn<(args: { role: AuthRole; market?: MarketCode }) => Promise<BootstrapResult>>(),
     setAuthTokenGetter: vi.fn<(getter: () => Promise<string | null>) => void>(),
     request: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
     cachedGet: vi.fn<(...args: unknown[]) => Promise<unknown>>(),

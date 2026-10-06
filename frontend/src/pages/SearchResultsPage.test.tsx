@@ -1,4 +1,6 @@
-﻿import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { MarketCode } from '../config/markets';
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
@@ -8,9 +10,9 @@ import type { Category } from '../data/categories';
 import SearchResultsPage from './SearchResultsPage';
 
 const mocks = vi.hoisted(() => ({
-  fetchRoomsByMarket: vi.fn<(market: 'CI' | 'BJ') => Promise<unknown[]>>(),
+  fetchRoomsByMarket: vi.fn<(market: MarketCode) => Promise<unknown[]>>(),
   fetchAvailableRooms: vi.fn<(...args: unknown[]) => Promise<unknown[]>>(),
-  fetchCategoriesByMarket: vi.fn<(market: 'CI' | 'BJ') => Promise<unknown[]>>(),
+  fetchCategoriesByMarket: vi.fn<(market: MarketCode) => Promise<unknown[]>>(),
   request: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   cachedGet: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
 }));

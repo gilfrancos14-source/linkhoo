@@ -25,7 +25,7 @@ describe('destinationQuerySchema', () => {
   });
 
   it('refuse un marché inconnu', () => {
-    expect(destinationQuerySchema.safeParse({ market: 'TG' }).success).toBe(false);
+    expect(destinationQuerySchema.safeParse({ market: 'XX' }).success).toBe(false);
   });
 
   it('refuse tout paramètre inconnu (strict)', () => {
@@ -87,7 +87,7 @@ describe('destinationUpdateSchema', () => {
 
   it('valide les champs présents avec les mêmes règles que la création', () => {
     expect(destinationUpdateSchema.safeParse({ img: '' }).success).toBe(false);
-    expect(destinationUpdateSchema.safeParse({ market: 'TG' }).success).toBe(false);
+    expect(destinationUpdateSchema.safeParse({ market: 'XX' }).success).toBe(false);
     expect(destinationUpdateSchema.safeParse({ description: '' }).success).toBe(false);
     expect(destinationUpdateSchema.safeParse({ featured: 'oui' }).success).toBe(false);
   });

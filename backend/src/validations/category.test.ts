@@ -48,7 +48,7 @@ describe('categoryCreateSchema', () => {
   });
 
   it('refuse un marché inconnu', () => {
-    expect(categoryCreateSchema.safeParse({ ...validCategory, market: 'TG' }).success).toBe(false);
+    expect(categoryCreateSchema.safeParse({ ...validCategory, market: 'XX' }).success).toBe(false);
   });
 
   it('limite alt à 300 caractères', () => {
@@ -86,7 +86,7 @@ describe('categoryUpdateSchema', () => {
   it('valide les champs présents avec les mêmes règles que la création', () => {
     expect(categoryUpdateSchema.safeParse({ title: '' }).success).toBe(false);
     expect(categoryUpdateSchema.safeParse({ title: 'x'.repeat(201) }).success).toBe(false);
-    expect(categoryUpdateSchema.safeParse({ market: 'TG' }).success).toBe(false);
+    expect(categoryUpdateSchema.safeParse({ market: 'XX' }).success).toBe(false);
     expect(categoryUpdateSchema.safeParse({ img: '' }).success).toBe(false);
     expect(categoryUpdateSchema.safeParse({ alt: 'x'.repeat(301) }).success).toBe(false);
   });

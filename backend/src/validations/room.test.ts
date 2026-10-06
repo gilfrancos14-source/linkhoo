@@ -64,7 +64,7 @@ describe('roomCreateSchema', () => {
   });
 
   it('refuse un marché inconnu', () => {
-    const parsed = roomCreateSchema.safeParse({ ...validRoom, market: 'TG' });
+    const parsed = roomCreateSchema.safeParse({ ...validRoom, market: 'XX' });
     expect(parsed.success).toBe(false);
   });
 
@@ -156,7 +156,7 @@ describe('roomAvailableQuerySchema', () => {
   });
 
   it('refuse un marché inconnu', () => {
-    const parsed = roomAvailableQuerySchema.safeParse({ ...validQuery, market: 'TG' });
+    const parsed = roomAvailableQuerySchema.safeParse({ ...validQuery, market: 'XX' });
     expect(parsed.success).toBe(false);
   });
 });

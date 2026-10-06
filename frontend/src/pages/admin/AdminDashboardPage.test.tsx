@@ -26,7 +26,7 @@ function fullStats(): AdminStats {
       verified: 30,
       pendingVerifications: 7,
       premium: 5,
-      byMarket: { CI: 27, BJ: 15 },
+      byMarket: { CI: 27, BJ: 15, SN: 4, TG: 0, CM: 0, BF: 0, CG: 0, GA: 0, GN: 0, ML: 0, NE: 0, CD: 0 },
       newThisMonth: 4,
     },
     rooms: { total: 88, available: 61, unavailable: 27 },
@@ -90,10 +90,25 @@ describe('AdminDashboardPage', () => {
     expect(screen.getByText('BJ')).toBeInTheDocument();
     expect(screen.getByText('27')).toBeInTheDocument();
     expect(screen.getByText('15')).toBeInTheDocument();
+    expect(screen.getByText('SN')).toBeInTheDocument();
+    expect(screen.getByText('4')).toBeInTheDocument();
 
     expect(screen.getByText('Vérifications en attente')).toBeInTheDocument();
     expect(screen.getByText('7')).toBeInTheDocument();
     expect(screen.getByText('Demandes à traiter')).toBeInTheDocument();
+  });
+
+  it("affiche les 12 marchés du registre, un mini-KPI par code", async () => {
+    render(<AdminDashboardPage />);
+
+    await screen.findByText('Gérants');
+
+    const labels = Array.from(document.querySelectorAll('.hero-mini__label')).map(
+      (el) => el.textContent,
+    );
+    expect(labels).toEqual(['CI', 'BJ', 'SN', 'TG', 'CM', 'BF', 'CG', 'GA', 'GN', 'ML', 'NE', 'CD']);
+    // Les marchés sans gérant affichent 0 plutôt que rien.
+    expect(document.querySelectorAll('.hero-side--markets .hero-mini')).toHaveLength(12);
   });
 
   it('formate le revenu total en FCFA avec la locale fr-FR', async () => {

@@ -76,6 +76,6 @@ describe('contactMessageSchema', () => {
   });
 
   it('rejette un marché hors CI/BJ', () => {
-    expect(contactMessageSchema.safeParse({ ...valide, market: 'TG' }).success).toBe(false);
+    expect(contactMessageSchema.safeParse({ ...valide, market: 'XX' }).success).toBe(false);
   });
 });

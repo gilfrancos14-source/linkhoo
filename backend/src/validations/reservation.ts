@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { dateStringSchema, emailSchema, idSchema, optionalText } from './common';
+import { dateStringSchema, emailSchema, idSchema } from './common';
 import { computeDateFin, DUREE_MAX_MOIS, DUREE_MAX_NUIT, type DureeUnite } from '../utils/duration';
 
 const phoneSchema = z
@@ -22,7 +22,6 @@ export const reservationCreateSchema = z
     duree_nombre: z.number().int().min(1).max(1000000),
     duree_unite: z.enum(['nuit', 'mois']),
     montant: z.number().int().positive().max(1000000000),
-    message: optionalText(2000),
     // Clé d'idempotence générée côté client : un rejeu de la même soumission
     // (file offline, timeout, retry) renvoie la réservation existante.
     client_key: z

@@ -83,7 +83,7 @@ describe('POST /api/premium/initiate', () => {
     const res = await request(app)
       .post('/api/premium/initiate')
       .set('Authorization', clerkBearer('user_1'))
-      .send({ market: 'TG' });
+      .send({ market: 'XX' });
     expect(res.status).toBe(400);
   });
 

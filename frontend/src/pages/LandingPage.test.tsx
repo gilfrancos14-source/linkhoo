@@ -111,7 +111,7 @@ describe('LandingPage', () => {
     );
   });
 
-  it('propose les deux marchés ouverts et les pays à venir', () => {
+  it('ouvre les 12 marchés : plus aucun pays « Bientôt »', () => {
     renderLanding();
 
     expect(
@@ -119,11 +119,13 @@ describe('LandingPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Côte d’Ivoire/ })).toHaveAttribute('href', '/ci');
     expect(screen.getByRole('link', { name: /Bénin/ })).toHaveAttribute('href', '/bj');
+    expect(screen.getByRole('link', { name: /Sénégal/ })).toHaveAttribute('href', '/sn');
+    expect(screen.getByRole('link', { name: /RDC/ })).toHaveAttribute('href', '/cd');
 
-    // Sénégal, Togo, Cameroun, Burkina Faso, Congo, Gabon, Guinée, Mali,
-    // Niger, RDC : annoncés.
-    expect(document.querySelectorAll('.landing-countries__card.is-disabled')).toHaveLength(10);
-    expect(screen.getAllByText('Bientôt')).toHaveLength(10);
+    // Les 12 pays du registre sont des liens actifs, aucun « Bientôt ».
+    expect(document.querySelectorAll('.landing-countries__item')).toHaveLength(12);
+    expect(document.querySelectorAll('.landing-countries__card.is-disabled')).toHaveLength(0);
+    expect(screen.queryAllByText('Bientôt')).toHaveLength(0);
   });
 
   it('affiche le carrousel et les témoignages', async () => {

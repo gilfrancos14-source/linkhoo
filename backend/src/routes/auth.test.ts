@@ -218,7 +218,7 @@ describe('POST /api/auth/bootstrap', () => {
     const res = await request(app)
       .post('/api/auth/bootstrap')
       .set('Authorization', clerkBearer('user_1'))
-      .send({ role: 'gerant', market: 'TG' });
+      .send({ role: 'gerant', market: 'XX' });
     expect(res.status).toBe(400);
   });
 

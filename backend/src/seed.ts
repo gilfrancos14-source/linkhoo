@@ -1,6 +1,14 @@
 import 'dotenv/config';
 import bcrypt from 'bcrypt';
 import { supabaseAdmin } from './config/supabase';
+import {
+  newMarketCategories,
+  newMarketEvents,
+  newMarketRooms,
+  newMarketTourism,
+  type EventSeed,
+  type TourismSeed,
+} from './seedMarkets';
 
 const defaultCategories = [
   { id: 'appartements-moins-chers', title: 'Appartements moins chers', img: '/images/pexels-fotoaibe-1571460.jpg', alt: 'Appartement lumineux au meilleur prix', market: 'BJ' },
@@ -11,6 +19,8 @@ const defaultCategories = [
   { id: 'ci-chambres-premium', title: 'Chambres premium', img: '/images/pexels-artbovich-6782567.jpg', alt: 'Chambre premium bien équipée', market: 'CI' },
   { id: 'ci-appartements', title: 'Appartements', img: '/images/pexels-artbovich-7214173.jpg', alt: 'Appartement spacieux', market: 'CI' },
   { id: 'ci-hotel', title: 'Hôtel', img: '/images/pexels-artbovich-7045712.jpg', alt: 'Suite hôtelière', market: 'CI' },
+  // 10 marchés ouverts : exactement le modèle CI (seedMarkets.ts).
+  ...newMarketCategories,
 ];
 
 const defaultRooms = [
@@ -214,23 +224,15 @@ const defaultRooms = [
     chambres: 1, douches: 1, disponible: true, date_dispo: '2026-09-01',
     conditions: 'Caution : 1 mois, Durée minimale : 3 mois',
   },
+  // 10 marchés ouverts : ~7 chambres par pays sur les vraies villes.
+  ...newMarketRooms,
 ];
 
 // Événements de démonstration : les IDs sont fixes pour rester idempotents,
 // mais les dates sont recalculées à chaque exécution (aujourd'hui + n jours)
 // — des dates écrites en dur deviendraient des dates passées au bout de
 // quelques mois et la section afficherait « l'événement le plus récent ».
-type EventSeed = {
-  id: string;
-  market: 'CI' | 'BJ';
-  city: string;
-  title: string;
-  description: string;
-  inDays: number;
-  img: string;
-  alt: string;
-};
-
+// Le type EventSeed (market: MarketCode) vient de seedMarkets.ts.
 const defaultEvents: EventSeed[] = [
   { id: 'ev-bj-cotonou-festival', market: 'BJ', city: 'Cotonou', title: 'Festival du film de Cotonou', description: 'Cinq soirées de cinéma africain en plein air sur la Marina, suivies de rencontres avec les réalisateurs.', inDays: 12, img: '/images/1.jpg', alt: 'Vue de Cotonou' },
   { id: 'ev-bj-cotonou-artisanat', market: 'BJ', city: 'Cotonou', title: "Marché artisanal de la Marina", description: "Deux jours d'artisanat, de musique et de cuisine locale au bord de la lagune.", inDays: 45, img: '/images/1.jpg', alt: 'Marché artisanal à Cotonou' },
@@ -242,6 +244,7 @@ const defaultEvents: EventSeed[] = [
   { id: 'ev-ci-abidjan-musees', market: 'CI', city: 'Abidjan', title: 'Nuit des musées', description: 'Entrée libre dans les musées et galeries d’Abidjan, avec visites guidées en soirée.', inDays: 35, img: '/images/pexels-donaldtong94-189333.jpg', alt: 'Nuit des musées à Abidjan' },
   { id: 'ev-ci-bouake-artisanat', market: 'CI', city: 'Bouaké', title: 'Salon artisanal de Bouaké', description: 'Trois jours d’exposition et de démonstrations au grand marché, entrée gratuite.', inDays: 25, img: '/images/pexels-artbovich-6782567.jpg', alt: 'Salon artisanal à Bouaké' },
   { id: 'ev-ci-bouake-masques', market: 'CI', city: 'Bouaké', title: 'Carnaval des masques', description: 'Compagnies de masques de tout le pays se succèdent sur l’avenue Kenyatta.', inDays: 55, img: '/images/pexels-fotoaibe-1571460.jpg', alt: 'Carnaval des masques à Bouaké' },
+  ...newMarketEvents,
 ];
 
 // Date locale AAAA-MM-JJ (toISOString() donnerait la date UTC, ce qui peut
@@ -292,16 +295,7 @@ async function seedEvents() {
 // (ville avec événement dans les 30 jours) place Tori Bossito + Ouidah en
 // grosses cartes côté BJ et Abidjan + Bouaké côté CI. L'admin reste libre de
 // forcer une autre destination via « mettre en avant ».
-type TourismSeed = {
-  id: string;
-  market: 'CI' | 'BJ';
-  city: string;
-  title: string;
-  description: string;
-  img: string;
-  alt: string;
-};
-
+// Le type TourismSeed (market: MarketCode) vient de seedMarkets.ts.
 const defaultTourismDestinations: TourismSeed[] = [
   { id: 'des-bj-ouidah', market: 'BJ', city: 'Ouidah', title: 'Ouidah', description: "Plages de sable fin, cœur touristique et berceau de la mémoire de l'esclavage.", img: '/images/ouidah.jpg', alt: "Plage d'Ouidah" },
   { id: 'des-bj-tori-bossito', market: 'BJ', city: 'Tori Bossito', title: 'Tori Bossito', description: 'Vallées, rivières et villages : randonnées encadrées et artisanat local.', img: '/images/tori.jpg', alt: 'Vallées de Tori Bossito' },
@@ -317,6 +311,7 @@ const defaultTourismDestinations: TourismSeed[] = [
   { id: 'des-ci-yamoussoukro', market: 'CI', city: 'Yamoussoukro', title: 'Yamoussoukro', description: 'Basilique de la Paix et jardins de la capitale politique.', img: '/images/pexels-artbovich-6283961.jpg', alt: 'Basilique de Yamoussoukro' },
   { id: 'des-ci-korhogo', market: 'CI', city: 'Korhogo', title: 'Korhogo', description: 'Capitale du nord : tissages, masques et savanes.', img: '/images/ouidah.jpg', alt: 'Tissages de Korhogo' },
   { id: 'des-ci-san-pedro', market: 'CI', city: 'San-Pédro', title: 'San-Pédro', description: 'Premier port du pays, plages et faune marine.', img: '/images/tori.jpg', alt: 'Plage de San-Pédro' },
+  ...newMarketTourism,
 ];
 
 // Comme les événements : l'admin est la source de vérité, on n'insère que les

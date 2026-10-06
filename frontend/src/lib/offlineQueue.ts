@@ -1,3 +1,5 @@
+import type { MarketCode } from '../config/markets';
+
 import { addReservation } from './reservations';
 import { apiNewsletter } from './api';
 
@@ -5,7 +7,7 @@ export type ReservationPayload = Parameters<typeof addReservation>[0];
 
 export interface NewsletterPayload {
   email: string;
-  market?: 'CI' | 'BJ';
+  market?: MarketCode;
 }
 
 export type OfflineQueueItem =

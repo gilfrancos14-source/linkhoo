@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { MarketProvider } from '../contexts/MarketContext';
+import { MARKET_CODES } from '../config/markets';
 import MarketSelector from './MarketSelector';
 
 function PathProbe() {
@@ -100,12 +101,21 @@ describe('MarketSelector — page d’accueil', () => {
     expect(listbox).toBeInTheDocument();
 
     const options = screen.getAllByRole('option');
-    expect(options).toHaveLength(2);
+    expect(options).toHaveLength(MARKET_CODES.length);
+    expect(MARKET_CODES.length).toBe(12);
     expect(screen.getByRole('option', { name: "Côte d'Ivoire" })).toHaveAttribute(
       'aria-selected',
       'false',
     );
     expect(screen.getByRole('option', { name: 'Bénin' })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
+    expect(screen.getByRole('option', { name: 'Sénégal' })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    );
+    expect(screen.getByRole('option', { name: 'RDC' })).toHaveAttribute(
       'aria-selected',
       'false',
     );

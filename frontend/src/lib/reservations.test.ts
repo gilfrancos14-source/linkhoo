@@ -44,7 +44,6 @@ function apiReservation(overrides: Partial<ReservationData> = {}): ReservationDa
     duree_nombre: 4,
     duree_unite: 'nuit',
     montant: 120000,
-    message: 'Arrivée tardive',
     statut: 'confirmee',
     created_at: '2030-05-01T10:00:00Z',
     responded_at: '2030-05-02T10:00:00Z',
@@ -103,7 +102,6 @@ describe('getReservations', () => {
       dureeNombre: 4,
       dureeUnite: 'nuit',
       montant: 120000,
-      message: 'Arrivée tardive',
       statut: 'confirmee',
       createdAt: '2030-05-01T10:00:00Z',
       respondedAt: '2030-05-02T10:00:00Z',
@@ -175,7 +173,6 @@ describe('addReservation', () => {
       dureeNombre: 4,
       dureeUnite: 'nuit',
       montant: 120000,
-      message: 'Arrivée tardive',
     });
 
     expect(mocks.create).toHaveBeenCalledWith({
@@ -189,7 +186,6 @@ describe('addReservation', () => {
       duree_nombre: 4,
       duree_unite: 'nuit',
       montant: 120000,
-      message: 'Arrivée tardive',
     });
     expect(created.id).toBe('res-new');
     expect(created.clientName).toBe('Aya Koffi');

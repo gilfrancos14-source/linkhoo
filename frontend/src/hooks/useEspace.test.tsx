@@ -1,3 +1,5 @@
+import type { MarketCode } from '../config/markets';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -13,7 +15,7 @@ const mocks = vi.hoisted(() => ({
   isSignedIn: true,
   user: null as { unsafeMetadata?: unknown; publicMetadata?: unknown } | null,
   me: vi.fn<() => Promise<{ role: AuthRoleLike | null }>>(),
-  bootstrap: vi.fn<(args: { role: AuthRoleLike; market?: 'CI' | 'BJ' }) => Promise<unknown>>(),
+  bootstrap: vi.fn<(args: { role: AuthRoleLike; market?: MarketCode }) => Promise<unknown>>(),
   setAuthTokenGetter: vi.fn<(getter: () => Promise<string | null>) => void>(),
 }));
 

@@ -34,16 +34,18 @@ const app = buildTestApp('/api/notifications', notificationsRouter, {
 });
 
 let rooms: FakeChain;
+let gerants: FakeChain;
 let notifications: FakeChain;
 let clients: FakeChain;
 let reservations: FakeChain;
 let clientNotifications: FakeChain;
 
-type TableName = 'rooms' | 'notifications' | 'clients' | 'reservations' | 'client_notifications';
+type TableName = 'rooms' | 'gerants' | 'notifications' | 'clients' | 'reservations' | 'client_notifications';
 
 function stubTables(tables: Partial<Record<TableName, FakeChain | FakeChain[]>> = {}): void {
   useSupabaseTables(supabaseAdmin.from, {
     rooms,
+    gerants,
     notifications,
     clients,
     reservations,
@@ -66,6 +68,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(verifyToken).mockImplementation(defaultVerifyToken);
   rooms = fakeChain({ data: null, error: null });
+  gerants = fakeChain({ data: null, error: null });
   notifications = fakeChain({ data: null, error: null });
   clients = fakeChain({ data: null, error: null });
   reservations = fakeChain({ data: null, error: null });
@@ -120,6 +123,93 @@ describe('GET /api/notifications', () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
     expect(notifications.in).not.toHaveBeenCalled();
+  });
+
+  const reservationNotification = {
+    id: 'n1',
+    type: 'reservation',
+    room_title: 'Studio Cocody',
+    room_id: 'room-1',
+    client_name: 'Jean Koffi',
+    client_email: 'jean@example.ci',
+    client_phone: '+225 07 00 00 00 00',
+    message: 'Arrivée vers 18h',
+    reservation_id: 'resa-1',
+    date: '2026-01-05T00:00:00Z',
+  };
+
+  it("200 : masque l'identité du client pour un gérant non qualifié", async () => {
+    rooms = fakeChain({ data: [{ id: 'room-1' }], error: null });
+    notifications = fakeChain({ data: [reservationNotification], error: null });
+    stubTables();
+
+    const res = await request(app)
+      .get('/api/notifications')
+      .set('Authorization', clerkBearer('user_1'));
+
+    expect(res.status).toBe(200);
+    expect(res.body[0]).toMatchObject({
+      id: 'n1',
+      type: 'reservation',
+      client_name: null,
+      client_email: null,
+      client_phone: null,
+      message: null,
+    });
+  });
+
+  it('200 : révèle lidentité à un gérant vérifié + premium actif', async () => {
+    rooms = fakeChain({ data: [{ id: 'room-1' }], error: null });
+    gerants = fakeChain(
+      {
+        data: {
+          is_verified: true,
+          is_premium: true,
+          premium_expires_at: '2099-01-01T00:00:00.000Z',
+        },
+        error: null,
+      },
+    );
+    notifications = fakeChain({ data: [reservationNotification], error: null });
+    stubTables();
+
+    const res = await request(app)
+      .get('/api/notifications')
+      .set('Authorization', clerkBearer('user_1'));
+
+    expect(res.status).toBe(200);
+    expect(res.body[0]).toMatchObject({
+      client_name: 'Jean Koffi',
+      client_email: 'jean@example.ci',
+      client_phone: '+225 07 00 00 00 00',
+      message: 'Arrivée vers 18h',
+    });
+  });
+
+  it("200 : non qualifié → le texte des notifications de vérification reste lisible", async () => {
+    rooms = fakeChain({ data: [], error: null });
+    notifications = fakeChain({
+      data: [
+        {
+          id: 'n2',
+          type: 'verification_rejected',
+          client_name: null,
+          client_email: null,
+          message: 'Votre demande a été rejetée : document illisible.',
+          date: '2026-01-04T00:00:00Z',
+        },
+      ],
+      error: null,
+    });
+    stubTables();
+
+    const res = await request(app)
+      .get('/api/notifications')
+      .set('Authorization', clerkBearer('user_1'));
+
+    expect(res.status).toBe(200);
+    expect(res.body[0].message).toBe('Votre demande a été rejetée : document illisible.');
+    expect(res.body[0].client_name).toBeNull();
   });
 });
 

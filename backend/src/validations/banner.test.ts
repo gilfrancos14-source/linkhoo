@@ -51,7 +51,7 @@ describe('bannerCreateSchema', () => {
   });
 
   it('refuse un marché inconnu', () => {
-    expect(bannerCreateSchema.safeParse({ ...validBanner, market: 'TG' }).success).toBe(false);
+    expect(bannerCreateSchema.safeParse({ ...validBanner, market: 'XX' }).success).toBe(false);
   });
 
   it('limite order à un entier entre 0 et 10000', () => {
@@ -75,7 +75,7 @@ describe('bannerCreateSchema', () => {
   });
 
   it('détaille l’erreur de validation', () => {
-    const parsed = bannerCreateSchema.safeParse({ ...validBanner, market: 'TG' });
+    const parsed = bannerCreateSchema.safeParse({ ...validBanner, market: 'XX' });
     expect(parsed.success).toBe(false);
     if (parsed.success) return;
     expect(parsed.error.issues.some((issue) => issue.path.includes('market'))).toBe(true);
@@ -99,7 +99,7 @@ describe('bannerUpdateSchema', () => {
   it('valide les champs présents avec les mêmes règles que la création', () => {
     expect(bannerUpdateSchema.safeParse({ order: -1 }).success).toBe(false);
     expect(bannerUpdateSchema.safeParse({ order: 1.5 }).success).toBe(false);
-    expect(bannerUpdateSchema.safeParse({ market: 'TG' }).success).toBe(false);
+    expect(bannerUpdateSchema.safeParse({ market: 'XX' }).success).toBe(false);
     expect(bannerUpdateSchema.safeParse({ section: 'accueil' }).success).toBe(false);
     expect(bannerUpdateSchema.safeParse({ img: '' }).success).toBe(false);
     expect(bannerUpdateSchema.safeParse({ alt: 'x'.repeat(301) }).success).toBe(false);

@@ -22,7 +22,7 @@ describe('eventQuerySchema', () => {
   });
 
   it('refuse un marché inconnu', () => {
-    expect(eventQuerySchema.safeParse({ market: 'TG' }).success).toBe(false);
+    expect(eventQuerySchema.safeParse({ market: 'XX' }).success).toBe(false);
   });
 
   it('accepte include_past=0|1 uniquement', () => {
@@ -81,7 +81,7 @@ describe('eventUpdateSchema', () => {
 
   it('valide les champs présents avec les mêmes règles que la création', () => {
     expect(eventUpdateSchema.safeParse({ event_date: '12/10/2026' }).success).toBe(false);
-    expect(eventUpdateSchema.safeParse({ market: 'TG' }).success).toBe(false);
+    expect(eventUpdateSchema.safeParse({ market: 'XX' }).success).toBe(false);
   });
 
   it('accepte un objet vide (le routeur refuse de son côté)', () => {

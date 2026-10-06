@@ -5,7 +5,7 @@ import { publishNotificationChanged } from '../utils/realtime';
 import { requireClerkAuth } from '../middleware/clerkAuth';
 import { idParamsSchema } from '../validations/common';
 import { createClientLimiter } from '../utils/rateLimiters';
-import { isQualifiedGerant } from '../utils/gerantQualification';
+import { isQualifiedGerantUser } from '../utils/gerantAccess';
 import { isPremiumActive } from '../utils/premium';
 import { fetchAllRows } from '../utils/fetchAll';
 import { calculateMontant, unitFromPriceUnit } from '../utils/duration';
@@ -19,15 +19,6 @@ import {
 const router = Router();
 const clientLimiter = createClientLimiter();
 
-async function requireQualifiedGerant(authUserId: string): Promise<boolean> {
-  const { data: gerant } = await supabaseAdmin
-    .from('gerants')
-    .select('is_verified, is_premium, premium_expires_at')
-    .eq('clerk_user_id', authUserId)
-    .maybeSingle();
-  return isQualifiedGerant(gerant);
-}
-
 router.get('/', requireClerkAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authUserId = req.auth?.userId;
@@ -35,7 +26,7 @@ router.get('/', requireClerkAuth, async (req: Request, res: Response, next: Next
       return res.status(401).json({ error: 'Non autorisé' });
     }
 
-    if (!(await requireQualifiedGerant(authUserId))) {
+    if (!(await isQualifiedGerantUser(authUserId))) {
       return res.status(403).json({ error: "Réservations gérées par l'administrateur" });
     }
 
@@ -180,7 +171,6 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       p_date_debut: parsedBody.data.date_debut,
       p_date_fin: parsedBody.data.date_fin,
       p_montant: montant,
-      p_message: parsedBody.data.message,
       p_duree_nombre: parsedBody.data.duree_nombre,
       p_duree_unite: parsedBody.data.duree_unite,
       p_client_key: clientKey ?? null,
@@ -221,7 +211,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
         client_name: parsedBody.data.client_name,
         client_email: parsedBody.data.client_email,
         client_phone: parsedBody.data.client_phone,
-        message: parsedBody.data.message || '',
+        message: `Nouvelle demande de réservation du ${parsedBody.data.date_debut} au ${parsedBody.data.date_fin}.`,
         reservation_id: data.id,
         gerant_id: room.gerant_id || null,
       });
@@ -248,7 +238,7 @@ router.patch('/:id', requireClerkAuth, async (req: Request, res: Response, next:
       return res.status(401).json({ error: 'Non autorisé' });
     }
 
-    if (!(await requireQualifiedGerant(authUserId))) {
+    if (!(await isQualifiedGerantUser(authUserId))) {
       return res.status(403).json({ error: "Réservations gérées par l'administrateur" });
     }
 

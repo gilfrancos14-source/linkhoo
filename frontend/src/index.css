@@ -88,6 +88,191 @@
   --admin-border: #f5ecb8;
 }
 
+/* Chaque marché ouvert a son thème : teinte dominante de son drapeau,
+   assombrie pour que le texte blanc des boutons atteigne le contraste AA
+   (ratio ≥ 4.5:1). Ajouter un marché = un bloc ici (et rien d'autre :
+   la barre d'accent et les composants lisent [data-market] générique). */
+
+/* Sénégal — Vert / Jaune / Rouge */
+[data-market="SN"] {
+  --sky: #15803d;
+  --sky-dark: #166534;
+  --sky-pale: #f0fdf4;
+  --sun: #eab308;
+  --gradient-primary: linear-gradient(135deg, #15803d 0%, #166534 100%);
+  --sky-50:  #f0fdf4;
+  --sky-100: #dcfce7;
+  --sky-200: #bbf7d0;
+  --sky-400: #4ade80;
+  --sky-500: #22c55e;
+  --sky-600: #16a34a;
+  --sky-900: #14532d;
+  --admin-surface-alt: #f7fdf9;
+  --admin-border: #d7f0df;
+}
+
+/* Togo — Jaune / Vert / Rouge */
+[data-market="TG"] {
+  --sky: #a16207;
+  --sky-dark: #854d0e;
+  --sky-pale: #fefce8;
+  --sun: #16a34a;
+  --gradient-primary: linear-gradient(135deg, #ca8a04 0%, #a16207 100%);
+  --sky-50:  #fefce8;
+  --sky-100: #fef9c3;
+  --sky-200: #fef08a;
+  --sky-400: #facc15;
+  --sky-500: #eab308;
+  --sky-600: #ca8a04;
+  --sky-900: #4d3c06;
+  --admin-surface-alt: #fffef5;
+  --admin-border: #f3ecc4;
+}
+
+/* Cameroun — Vert / Rouge / Jaune */
+[data-market="CM"] {
+  --sky: #047857;
+  --sky-dark: #065f46;
+  --sky-pale: #ecfdf5;
+  --sun: #dc2626;
+  --gradient-primary: linear-gradient(135deg, #059669 0%, #047857 100%);
+  --sky-50:  #ecfdf5;
+  --sky-100: #d1fae5;
+  --sky-200: #a7f3d0;
+  --sky-400: #34d399;
+  --sky-500: #10b981;
+  --sky-600: #059669;
+  --sky-900: #064e3b;
+  --admin-surface-alt: #f6fdfa;
+  --admin-border: #cdeee0;
+}
+
+/* Burkina Faso — Rouge / Vert / Jaune */
+[data-market="BF"] {
+  --sky: #b91c1c;
+  --sky-dark: #991b1b;
+  --sky-pale: #fef2f2;
+  --sun: #eab308;
+  --gradient-primary: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  --sky-50:  #fef2f2;
+  --sky-100: #fee2e2;
+  --sky-200: #fecaca;
+  --sky-400: #f87171;
+  --sky-500: #ef4444;
+  --sky-600: #dc2626;
+  --sky-900: #7f1d1d;
+  --admin-surface-alt: #fff8f8;
+  --admin-border: #f6d5d5;
+}
+
+/* Congo — Vert / Jaune / Rouge */
+[data-market="CG"] {
+  --sky: #166534;
+  --sky-dark: #14532d;
+  --sky-pale: #f0fdf4;
+  --sun: #ca8a04;
+  --gradient-primary: linear-gradient(135deg, #15803d 0%, #166534 100%);
+  --sky-50:  #f0fdf4;
+  --sky-100: #dcfce7;
+  --sky-200: #bbf7d0;
+  --sky-400: #4ade80;
+  --sky-500: #22c55e;
+  --sky-600: #16a34a;
+  --sky-900: #052e16;
+  --admin-surface-alt: #f6fdf8;
+  --admin-border: #d3ecd9;
+}
+
+/* Gabon — Vert / Jaune / Bleu */
+[data-market="GA"] {
+  --sky: #0e7490;
+  --sky-dark: #155e75;
+  --sky-pale: #ecfeff;
+  --sun: #eab308;
+  --gradient-primary: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+  --sky-50:  #ecfeff;
+  --sky-100: #cffafe;
+  --sky-200: #a5f3fc;
+  --sky-400: #22d3ee;
+  --sky-500: #06b6d4;
+  --sky-600: #0891b2;
+  --sky-900: #164e63;
+  --admin-surface-alt: #f5fdfe;
+  --admin-border: #cfeef3;
+}
+
+/* Guinée — Vert / Rouge / Jaune */
+[data-market="GN"] {
+  --sky: #0f766e;
+  --sky-dark: #115e59;
+  --sky-pale: #f0fdfa;
+  --sun: #eab308;
+  --gradient-primary: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  --sky-50:  #f0fdfa;
+  --sky-100: #ccfbf1;
+  --sky-200: #99f6e4;
+  --sky-400: #2dd4bf;
+  --sky-500: #14b8a6;
+  --sky-600: #0d9488;
+  --sky-900: #134e4a;
+  --admin-surface-alt: #f6fdfc;
+  --admin-border: #cfeee9;
+}
+
+/* Mali — Vert / Jaune / Rouge */
+[data-market="ML"] {
+  --sky: #be123c;
+  --sky-dark: #9f1239;
+  --sky-pale: #fff1f2;
+  --sun: #f59e0b;
+  --gradient-primary: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+  --sky-50:  #fff1f2;
+  --sky-100: #ffe4e6;
+  --sky-200: #fecdd3;
+  --sky-400: #fb7185;
+  --sky-500: #f43f5e;
+  --sky-600: #e11d48;
+  --sky-900: #881337;
+  --admin-surface-alt: #fff8f9;
+  --admin-border: #f8d7dd;
+}
+
+/* Niger — Orange / Blanc / Vert */
+[data-market="NE"] {
+  --sky: #c2410c;
+  --sky-dark: #9a3412;
+  --sky-pale: #fff7ed;
+  --sun: #16a34a;
+  --gradient-primary: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+  --sky-50:  #fff7ed;
+  --sky-100: #ffedd5;
+  --sky-200: #fed7aa;
+  --sky-400: #fb923c;
+  --sky-500: #f97316;
+  --sky-600: #ea580c;
+  --sky-900: #7c2d12;
+  --admin-surface-alt: #fffaf6;
+  --admin-border: #fbdcc3;
+}
+
+/* RDC — Bleu ciel / Jaune / Rouge */
+[data-market="CD"] {
+  --sky: #4338ca;
+  --sky-dark: #3730a3;
+  --sky-pale: #eef2ff;
+  --sun: #eab308;
+  --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+  --sky-50:  #eef2ff;
+  --sky-100: #e0e7ff;
+  --sky-200: #c7d2fe;
+  --sky-400: #818cf8;
+  --sky-500: #6366f1;
+  --sky-600: #4f46e5;
+  --sky-900: #312e81;
+  --admin-surface-alt: #f8f9ff;
+  --admin-border: #dcdff5;
+}
+
 /* ---------- Reset & base ---------- */
 *,
 *::before,
@@ -101,9 +286,9 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Market accent bar */
-[data-market="CI"]::before,
-[data-market="BJ"]::before {
+/* Market accent bar — générique : tout marché défini (CI, BJ, SN, …) affiche
+   la barre, un nouveau marché n'a rien à ajouter ici. */
+[data-market]::before {
   content: '';
   display: block;
   height: 4px;
@@ -6092,6 +6277,13 @@ body.nav-open {
   gap: 4px;
 }
 
+/* 12 mini-KPI (un par marché du registre) dans la bande héro du back-office. */
+.hero-side--markets {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px 20px;
+}
+
 .hero-mini__label {
   font-size: 12px;
   color: #DCF1FE;
@@ -7108,6 +7300,10 @@ body.nav-open {
     width: 100%;
     justify-content: space-between;
   }
+
+  .hero-side--markets {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 480px) {
@@ -7131,6 +7327,11 @@ body.nav-open {
   .hero-side {
     padding: 10px;
     gap: 12px;
+  }
+
+  .hero-side--markets {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding: 12px 10px;
   }
 
   .hero-mini__label {

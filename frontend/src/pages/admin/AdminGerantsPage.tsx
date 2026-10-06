@@ -1,3 +1,5 @@
+import { MARKETS } from '../../config/markets';
+
 import { useState, useEffect, useMemo } from 'react';
 import { apiAdmin, type AdminGerant } from '../../lib/adminApi';
 import AdminGerantDrawer from '../../components/AdminGerantDrawer';
@@ -146,8 +148,9 @@ export default function AdminGerantsPage() {
             onChange={(e) => setMarketFilter(e.target.value)}
           >
             <option value="all">Tous les marchés</option>
-            <option value="CI">Côte d'Ivoire</option>
-            <option value="BJ">Bénin</option>
+            {MARKETS.map((m) => (
+              <option key={m.code} value={m.code}>{m.label}</option>
+            ))}
           </select>
         </div>
         <div className="gerants-filter-card__tabs">

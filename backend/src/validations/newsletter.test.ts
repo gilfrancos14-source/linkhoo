@@ -48,7 +48,7 @@ describe('newsletterSubscribeSchema', () => {
   it('n’accepte que CI et BJ comme marché', () => {
     expect(newsletterSubscribeSchema.safeParse({ email: 'a@b.ci', market: 'CI' }).success).toBe(true);
     expect(newsletterSubscribeSchema.safeParse({ email: 'a@b.ci', market: 'BJ' }).success).toBe(true);
-    expect(newsletterSubscribeSchema.safeParse({ email: 'a@b.ci', market: 'TG' }).success).toBe(false);
+    expect(newsletterSubscribeSchema.safeParse({ email: 'a@b.ci', market: 'XX' }).success).toBe(false);
     expect(newsletterSubscribeSchema.safeParse({ email: 'a@b.ci', market: 'ci' }).success).toBe(false);
     expect(newsletterSubscribeSchema.safeParse({ email: 'a@b.ci', market: 42 }).success).toBe(false);
   });

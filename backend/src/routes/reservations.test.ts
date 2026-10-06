@@ -42,7 +42,6 @@ const validReservation = {
   duree_nombre: 3,
   duree_unite: 'nuit',
   montant: 150000,
-  message: 'Arrivée vers 18h',
 };
 
 const qualifiedGerant = {
@@ -172,8 +171,19 @@ describe('POST /api/reservations', () => {
         p_duree_unite: 'nuit',
       }),
     );
+    // Le message libre du client a été retiré : plus aucun p_message envoyé.
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith(
+      'create_reservation_checked',
+      expect.not.objectContaining({ p_message: expect.anything() }),
+    );
     expect(notifications.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'reservation', reservation_id: 'resa-1' }),
+      expect.objectContaining({
+        type: 'reservation',
+        reservation_id: 'resa-1',
+        // Texte de la cloche gérant : généré par le serveur, jamais tapé par
+        // le client.
+        message: 'Nouvelle demande de réservation du 2026-05-01 au 2026-05-04.',
+      }),
     );
     // P1 #8 : le front admin/gérant est réveillé en Realtime après l'insert.
     expect(publishNotificationChanged).toHaveBeenCalledWith('admin', 'gerant');

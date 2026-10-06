@@ -1,3 +1,5 @@
+import type { MarketCode } from './config/markets';
+
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -67,7 +69,7 @@ const mocks = vi.hoisted(() => {
     // --- lib/api ---
     setAuthTokenGetter: vi.fn<(getter: () => Promise<string | null>) => void>(),
     bootstrap: vi.fn<
-      (args: { role: 'client' | 'gerant'; market?: 'CI' | 'BJ' }) => Promise<{
+      (args: { role: 'client' | 'gerant'; market?: MarketCode }) => Promise<{
         role: 'client' | 'gerant' | null;
         profile_role: 'client' | 'gerant' | null;
         clerk_role: 'client' | 'gerant' | null;

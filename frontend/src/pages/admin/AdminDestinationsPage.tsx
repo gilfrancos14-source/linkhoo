@@ -1,9 +1,11 @@
+import { MARKETS, type MarketCode } from '../../config/markets';
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { apiAdmin, type AdminDestination } from '../../lib/adminApi';
 import { apiRooms } from '../../lib/api';
 
 interface FormData {
-  market: 'CI' | 'BJ';
+  market: MarketCode;
   city: string;
   title: string;
   description: string;
@@ -237,8 +239,9 @@ export default function AdminDestinationsPage() {
             onChange={(e) => setMarketFilter(e.target.value)}
           >
             <option value="all">Tous les marchés</option>
-            <option value="CI">Côte d'Ivoire</option>
-            <option value="BJ">Bénin</option>
+            {MARKETS.map((m) => (
+              <option key={m.code} value={m.code}>{m.label}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -393,9 +396,10 @@ export default function AdminDestinationsPage() {
 
             <label className="banner-field">
               <span>Marché</span>
-              <select value={form.market} onChange={(e) => setForm({ ...form, market: e.target.value as 'CI' | 'BJ' })}>
-                <option value="CI">Côte d'Ivoire</option>
-                <option value="BJ">Bénin</option>
+              <select value={form.market} onChange={(e) => setForm({ ...form, market: e.target.value as MarketCode })}>
+                {MARKETS.map((m) => (
+                  <option key={m.code} value={m.code}>{m.label}</option>
+                ))}
               </select>
             </label>
 

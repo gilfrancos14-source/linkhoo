@@ -8,7 +8,7 @@ describe('premiumInitiateSchema', () => {
   });
 
   it('refuse un marché inconnu', () => {
-    const parsed = premiumInitiateSchema.safeParse({ market: 'TG' });
+    const parsed = premiumInitiateSchema.safeParse({ market: 'XX' });
     expect(parsed.success).toBe(false);
   });
 

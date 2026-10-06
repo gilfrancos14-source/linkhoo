@@ -1,3 +1,5 @@
+import type { MarketCode } from '../config/markets';
+
 import type { DureeUnite } from './duration';
 
 export const API_BASE = '/api';
@@ -168,7 +170,7 @@ export interface RoomData {
   description: string;
   capacity?: string;
   category: string;
-  market: 'CI' | 'BJ';
+  market: MarketCode;
   pays: string;
   ville: string;
   quartier: string;
@@ -257,7 +259,7 @@ export interface BannerData {
   img: string;
   alt: string;
   link: string;
-  market: 'CI' | 'BJ';
+  market: MarketCode;
   order: number;
 }
 
@@ -270,7 +272,7 @@ export const apiBanners = {
 // BJ se mélangeraient et le marqueur de la carte serait faux.
 export interface EventData {
   id: string;
-  market: 'CI' | 'BJ';
+  market: MarketCode;
   city: string;
   title: string;
   description: string;
@@ -291,7 +293,7 @@ export const apiEvents = {
 // admin), `small` = le reste — jamais de carte inventée pour compléter.
 export interface DestinationData {
   id: string;
-  market: 'CI' | 'BJ';
+  market: MarketCode;
   city: string;
   title: string;
   description: string;
@@ -323,7 +325,6 @@ export interface ReservationData {
   duree_nombre: number | null;
   duree_unite: DureeUnite | null;
   montant: number;
-  message: string;
   statut: 'en_attente' | 'confirmee' | 'annulee';
   created_at: string;
   responded_at: string | null;
@@ -376,7 +377,7 @@ export const apiReservations = {
 // ── Newsletter ──
 interface NewsletterSubscribeData {
   email: string;
-  market?: 'CI' | 'BJ';
+  market?: MarketCode;
 }
 
 export const apiNewsletter = {
@@ -396,7 +397,7 @@ export interface ContactPayload {
   pays: string;
   sujet: 'reservation' | 'compte-gerant' | 'partenariat' | 'presse' | 'autre';
   message: string;
-  market?: 'CI' | 'BJ';
+  market?: MarketCode;
   /** Pot de miel : doit rester vide (vide côté client, rempli par les robots). */
   website?: string;
 }
@@ -450,7 +451,7 @@ export interface GerantData {
   phone: string | null;
   /** Adresse de domicile saisie à l'étape 1 de la vérification. */
   address?: string | null;
-  market: 'CI' | 'BJ';
+  market: MarketCode;
   is_verified: boolean;
   verified_at: string | null;
   verification_requested_at: string | null;
@@ -552,7 +553,7 @@ export interface AuthBootstrapResponse {
 
 export const apiAuth = {
   me: () => request<AuthBootstrapResponse>('/auth/me'),
-  bootstrap: (data: { role: AuthRole; market?: 'CI' | 'BJ' }) =>
+  bootstrap: (data: { role: AuthRole; market?: MarketCode }) =>
     request<AuthBootstrapResponse>('/auth/bootstrap', {
       method: 'POST',
       body: JSON.stringify(data),

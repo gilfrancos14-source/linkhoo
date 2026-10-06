@@ -55,7 +55,7 @@ export function useEspace() {
           try {
             await apiAuth.bootstrap({
               role,
-              market: market === 'BJ' ? 'BJ' : 'CI',
+              market,
             });
           } catch {
             // le guard de destination retentera le bootstrap

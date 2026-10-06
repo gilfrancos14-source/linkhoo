@@ -1,3 +1,5 @@
+import type { MarketCode } from '../config/markets';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -10,7 +12,7 @@ import CategoryPage from './CategoryPage';
 type RoomsPage = { items: Room[]; total: number; page: number; limit: number };
 
 type RoomsPageParams = {
-  market: 'CI' | 'BJ';
+  market: MarketCode;
   category?: string;
   ville?: string;
   quartier?: string;
@@ -22,9 +24,9 @@ type RoomsPageParams = {
 
 const mocks = vi.hoisted(() => ({
   fetchRoomsPage: vi.fn<(params: RoomsPageParams) => Promise<RoomsPage>>(),
-  fetchVilles: vi.fn<(market?: 'CI' | 'BJ') => Promise<string[]>>(),
-  fetchQuartiers: vi.fn<(market?: 'CI' | 'BJ') => Promise<string[]>>(),
-  fetchCategoriesByMarket: vi.fn<(market: 'CI' | 'BJ') => Promise<unknown[]>>(),
+  fetchVilles: vi.fn<(market?: MarketCode) => Promise<string[]>>(),
+  fetchQuartiers: vi.fn<(market?: MarketCode) => Promise<string[]>>(),
+  fetchCategoriesByMarket: vi.fn<(market: MarketCode) => Promise<unknown[]>>(),
   request: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   cachedGet: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
 }));

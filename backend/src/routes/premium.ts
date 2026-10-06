@@ -6,6 +6,7 @@ import { requireClerkAuth } from '../middleware/clerkAuth';
 import { premiumInitiateSchema, premiumConfirmSchema } from '../validations/premium';
 import { isValidEmail, withFedapayTimeout } from '../config/fedapayHttp';
 import { isPremiumActive, isPremiumExpired } from '../utils/premium';
+import { isMarketCode } from '../config/markets';
 import { mapFedaPayStatus, isNotFoundError, type PremiumTxStatus } from '../smoke/fedapayRiskTests.helpers';
 
 const PREMIUM_AMOUNT = 5000;
@@ -335,7 +336,7 @@ router.post('/webhook', async (req: Request, res: Response, _next: NextFunction)
       const clerkUserId = typeof meta.clerk_user_id === 'string' ? meta.clerk_user_id : undefined;
       // market n'a plus de valeur par défaut : un marché manquant ne doit pas
       // être rattaché artificiellement à CI.
-      const market = meta.market === 'CI' || meta.market === 'BJ' ? meta.market : undefined;
+      const market = isMarketCode(meta.market) ? meta.market : undefined;
       const txType =
         meta.type === undefined || meta.type === null || meta.type === ''
           ? 'premium'
@@ -386,7 +387,7 @@ router.post('/webhook', async (req: Request, res: Response, _next: NextFunction)
       if (entity?.id) {
         const meta: any = entity.metadata && typeof entity.metadata === 'object' ? entity.metadata : {};
         const clerkUserId = typeof meta.clerk_user_id === 'string' ? meta.clerk_user_id : undefined;
-        const market = meta.market === 'CI' || meta.market === 'BJ' ? meta.market : undefined;
+        const market = isMarketCode(meta.market) ? meta.market : undefined;
         const txType =
           meta.type === undefined || meta.type === null || meta.type === ''
             ? 'premium'

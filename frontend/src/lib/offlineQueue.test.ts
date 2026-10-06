@@ -24,7 +24,6 @@ const reservationPayload: ReservationPayload = {
   dureeNombre: 2,
   dureeUnite: 'nuit',
   montant: 50000,
-  message: '',
 };
 
 describe('offlineQueue', () => {

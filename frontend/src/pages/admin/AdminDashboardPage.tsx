@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiAdmin, type AdminStats } from '../../lib/adminApi';
+import { MARKETS } from '../../config/markets';
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -59,16 +60,15 @@ export default function AdminDashboardPage() {
           <span className="hero-kpi__value">{stats?.gerants?.total || 0}</span>
           <span className="hero-kpi__change">{stats?.gerants?.verified || 0} vérifiés</span>
         </div>
-        <div className="hero-side">
-          <div className="hero-mini">
-            <span className="hero-mini__label">CI</span>
-            <span className="hero-mini__value">{stats?.gerants?.byMarket?.CI || 0}</span>
-          </div>
-          <div className="hero-divider"></div>
-          <div className="hero-mini">
-            <span className="hero-mini__label">BJ</span>
-            <span className="hero-mini__value">{stats?.gerants?.byMarket?.BJ || 0}</span>
-          </div>
+        <div className="hero-side hero-side--markets">
+          {MARKETS.map(({ code, label }) => (
+            <div className="hero-mini" key={code}>
+              <span className="hero-mini__label" title={label}>
+                {code}
+              </span>
+              <span className="hero-mini__value">{stats?.gerants?.byMarket?.[code] || 0}</span>
+            </div>
+          ))}
         </div>
       </section>
 

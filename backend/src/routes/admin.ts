@@ -9,6 +9,7 @@ import { idParamsSchema } from '../validations/common';
 import { verificationReviewSchema, verificationRejectSchema } from '../validations/gerant';
 import { isQualifiedGerant } from '../utils/gerantQualification';
 import { fetchAllRows } from '../utils/fetchAll';
+import { isMarketCode } from '../config/markets';
 import { z } from 'zod';
 
 const promoGroupSchema = z.object({
@@ -118,7 +119,7 @@ router.get('/gerants', requireAdminAuth, async (req: Request, res: Response, nex
         // peuvent se chevaucher ou se sauter des lignes.
         .order('id', { ascending: true });
 
-      if (market && (market === 'CI' || market === 'BJ')) {
+      if (typeof market === 'string' && isMarketCode(market)) {
         query = query.eq('market', market);
       }
       // Un seul axe de filtrage sur l'état de vérification : `verification_status`.

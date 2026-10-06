@@ -62,7 +62,6 @@ function makeReservation(overrides: Partial<Reservation> = {}): Reservation {
     dureeNombre: 3,
     dureeUnite: 'nuit',
     montant: 75000,
-    message: 'Arrivée tardive',
     statut: 'en_attente',
     createdAt: '2026-09-20T10:00:00.000Z',
     gerantIsVerified: false,

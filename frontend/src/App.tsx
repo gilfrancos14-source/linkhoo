@@ -1,6 +1,7 @@
 import { Routes, Route, useLocation, useParams, Navigate } from 'react-router-dom';
 import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import { MarketProvider } from './contexts/MarketContext';
+import { isMarketSlug } from './config/markets';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import PopularSection from './components/PopularSection';
@@ -117,7 +118,7 @@ function HomePage() {
 function MarketRoute() {
   const { market } = useParams<{ market: string }>();
 
-  if (market !== 'ci' && market !== 'bj') {
+  if (!isMarketSlug(market)) {
     return <Navigate to="/" replace />;
   }
 

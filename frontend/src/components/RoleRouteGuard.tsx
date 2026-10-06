@@ -1,3 +1,5 @@
+import { isMarketCode } from '../config/markets';
+
 import { useEffect, useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { useAuth, useClerk } from '@clerk/clerk-react';
@@ -59,9 +61,10 @@ function AuthenticatedGuard({
 
     const ensure = async (retryCount = 0) => {
       try {
+        const marketCode = market?.toUpperCase();
         const result = await apiAuth.bootstrap({
           role: expectedRole,
-          market: (market?.toUpperCase() === 'BJ' ? 'BJ' : 'CI') as 'CI' | 'BJ',
+          market: isMarketCode(marketCode) ? marketCode : 'CI',
         });
         if (cancelled) return;
 

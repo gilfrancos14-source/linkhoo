@@ -20,7 +20,7 @@ interface TourismContent {
   benefits: Benefit[];
 }
 
-const CONTENT: Record<MarketCode, TourismContent> = {
+const LEGACY_CONTENT = {
   BJ: {
     article: 'le',
     country: 'Bénin',
@@ -45,10 +45,66 @@ const CONTENT: Record<MarketCode, TourismContent> = {
       { icon: '♡', title: 'Une expérience authentique', text: 'Au cœur des traditions ivoiriennes' },
     ],
   },
-};
+} satisfies Record<'BJ' | 'CI', TourismContent>;
 
 // Le serveur ne stocke pas d'icône : on cyle la même série que le design.
 const SMALL_ICONS = ['🛏', '⌂', '♜', '▦'];
+
+// Contenu des 10 marchés ouverts : chapô générique structuré (le pays vient
+// du registre), bénéfices communs à toute la plateforme.
+function marketContent(
+  article: 'le' | 'la',
+  country: string,
+  intro: string,
+  tradition: string,
+): TourismContent {
+  return {
+    article,
+    country,
+    intro,
+    signature: `${article === 'le' ? 'Le' : 'La'} ${country}`,
+    benefits: [
+      { icon: '◇', title: 'Découvertes uniques', text: 'Culture, nature, histoire' },
+      { icon: '✓', title: 'Voyage en toute sécurité', text: 'Des partenaires de confiance' },
+      { icon: '♡', title: 'Une expérience authentique', text: `Au cœur des traditions ${tradition}` },
+    ],
+  };
+}
+
+const NEW_CONTENT: Record<Exclude<MarketCode, 'CI' | 'BJ'>, TourismContent> = {
+  SN: marketContent('le', 'Sénégal',
+    'Des plages de Dakar à la baie de Saint-Louis, en passant par les réserves du Sine-Saloum — le Sénégal vous attend pour un séjour inoubliable.',
+    'sénégalaises'),
+  TG: marketContent('le', 'Togo',
+    'Des plages de Kpalimé aux forêts de l’ouest, en passant par les marchés de Lomé — le Togo vous attend pour un séjour inoubliable.',
+    'togolaises'),
+  CM: marketContent('le', 'Cameroun',
+    'Du bouillant Mont Cameroun aux plages de Kribi, en passant par les quartiers vivants de Douala — le Cameroun vous attend pour un séjour inoubliable.',
+    'camerounaises'),
+  BF: marketContent('le', 'Burkina Faso',
+    'Des paysages de la savane aux terres du Sahel, en passant par les marchés d’artisans de Ouagadougou — le Burkina Faso vous attend pour un séjour inoubliable.',
+    'burkinabè'),
+  CG: marketContent('le', 'Congo',
+    'Des chutes de Loufoulakari aux plages de Pointe-Noire, en passant par les rives du fleuve — le Congo vous attend pour un séjour inoubliable.',
+    'congolaises'),
+  GA: marketContent('le', 'Gabon',
+    'Des forêts équatoriales aux plages de l’Atlantique, en passant par les baies de Libreville — le Gabon vous attend pour un séjour inoubliable.',
+    'gabonaises'),
+  GN: marketContent('la', 'Guinée',
+    'Des Îles de Los aux hauts plateaux du Fouta-Djallon, en passant par les rives du Konkouré — la Guinée vous attend pour un séjour inoubliable.',
+    'guinéennes'),
+  ML: marketContent('le', 'Mali',
+    'Des falaises de Bandiagara au delta intérieur du Niger, en passant par les rives de Bamako — le Mali vous attend pour un séjour inoubliable.',
+    'maliennes'),
+  NE: marketContent('le', 'Niger',
+    'Du désert de l’Aïr aux rives du fleuve Niger, en passant par les grandes places de Niamey — le Niger vous attend pour un séjour inoubliable.',
+    'nigériennes'),
+  CD: marketContent('la', 'RDC',
+    'Du parc de la Garamba aux rives du fleuve Congo, en passant par les collines de Kinshasa — la RDC vous attend pour un séjour inoubliable.',
+    'de la RDC'),
+};
+
+const CONTENT: Record<MarketCode, TourismContent> = { ...LEGACY_CONTENT, ...NEW_CONTENT };
 
 export default function TourismSection() {
   const { market } = useMarket();

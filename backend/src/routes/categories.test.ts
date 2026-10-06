@@ -75,7 +75,7 @@ describe('GET /api/categories', () => {
   });
 
   it('400 sur un marché inconnu', async () => {
-    const res = await request(app).get('/api/categories?market=TG');
+    const res = await request(app).get('/api/categories?market=XX');
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: 'Paramètres invalides' });

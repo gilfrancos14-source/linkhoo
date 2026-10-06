@@ -1,3 +1,5 @@
+import type { MarketCode } from '../config/markets';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -5,10 +7,10 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import RoleRouteGuard from './RoleRouteGuard';
 import type { AuthRole } from '../lib/api';
 
-type BootstrapArgs = { role: AuthRole; market?: 'CI' | 'BJ' };
+type BootstrapArgs = { role: AuthRole; market?: MarketCode };
 
 const mocks = vi.hoisted(() => ({
-  bootstrap: vi.fn<(args: { role: 'client' | 'gerant'; market?: 'CI' | 'BJ' }) => Promise<{
+  bootstrap: vi.fn<(args: { role: 'client' | 'gerant'; market?: MarketCode }) => Promise<{
     role: 'client' | 'gerant' | null;
     profile_role: 'client' | 'gerant' | null;
     clerk_role: 'client' | 'gerant' | null;

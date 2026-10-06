@@ -38,7 +38,6 @@ function makeReservation(overrides: Partial<AdminReservation> = {}): AdminReserv
     date_debut: '2026-02-10',
     date_fin: '2026-02-14',
     montant: 120000,
-    message: 'Arrivée tardive',
     statut: 'en_attente',
     created_at: '2026-01-05T10:00:00.000Z',
     responded_at: null,

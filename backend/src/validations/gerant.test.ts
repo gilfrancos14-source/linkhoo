@@ -48,7 +48,7 @@ describe('gerantCreateSchema', () => {
 
   it('refuse un email invalide ou un marché inconnu', () => {
     expect(gerantCreateSchema.safeParse({ ...validGerant, email: 'pas-un-mail' }).success).toBe(false);
-    expect(gerantCreateSchema.safeParse({ ...validGerant, market: 'TG' }).success).toBe(false);
+    expect(gerantCreateSchema.safeParse({ ...validGerant, market: 'XX' }).success).toBe(false);
   });
 
   it('refuse un champ inconnu (strict)', () => {
@@ -90,7 +90,7 @@ describe('gerantUpdateSchema', () => {
   });
 
   it('refuse un marché inconnu', () => {
-    const parsed = gerantUpdateSchema.safeParse({ market: 'TG' });
+    const parsed = gerantUpdateSchema.safeParse({ market: 'XX' });
     expect(parsed.success).toBe(false);
   });
 

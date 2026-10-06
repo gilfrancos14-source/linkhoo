@@ -62,3 +62,32 @@ test.describe('marché Bénin', () => {
     await expect(page.locator('.landing-hero')).toBeVisible();
   });
 });
+
+test.describe('nouveaux marchés', () => {
+  test("ouvre laccueil du marché SN avec thème et liens préfixés", async ({ page }) => {
+    await mockApi(page);
+
+    await page.goto('/sn');
+
+    await expect(page.locator('html')).toHaveAttribute('data-market', 'SN');
+    await expect(page.locator('h1.hero__tagline')).toContainText('Trouvez le lieu idéal');
+    await expect(page.locator('.logo').first()).toHaveAttribute('href', '/sn');
+    await expect(page.locator('.stay-card__link').first()).toHaveAttribute(
+      'href',
+      /^\/sn\/chambre\//,
+    );
+  });
+
+  test('le sélecteur de la landing propose les 12 marchés du registre', async ({ page }) => {
+    await mockApi(page);
+
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Choisir le marché' }).click();
+
+    const listbox = page.getByRole('listbox', { name: 'Choisir le marché' });
+    await expect(listbox).toBeVisible();
+    await expect(listbox.getByRole('option')).toHaveCount(12);
+    await expect(listbox.getByRole('option', { name: 'Sénégal' })).toBeVisible();
+    await expect(listbox.getByRole('option', { name: 'RDC' })).toBeVisible();
+  });
+});

@@ -10,12 +10,15 @@ import {
 } from './common';
 
 describe('marketSchema', () => {
-  it('n’accepte que CI et BJ', () => {
-    expect(marketSchema.safeParse('CI').success).toBe(true);
-    expect(marketSchema.safeParse('BJ').success).toBe(true);
-    expect(marketSchema.safeParse('TG').success).toBe(false);
+  it('accepte les 12 marchés du registre et refuse tout autre code', () => {
+    const codes = ['CI', 'BJ', 'SN', 'TG', 'CM', 'BF', 'CG', 'GA', 'GN', 'ML', 'NE', 'CD'];
+    for (const code of codes) {
+      expect(marketSchema.safeParse(code).success).toBe(true);
+    }
+    expect(marketSchema.safeParse('XX').success).toBe(false);
     expect(marketSchema.safeParse('ci').success).toBe(false);
     expect(marketSchema.safeParse('').success).toBe(false);
+    expect(marketSchema.safeParse('BF').success).toBe(true);
   });
 
   it('refuse les valeurs non chaînes', () => {
@@ -25,7 +28,7 @@ describe('marketSchema', () => {
   });
 
   it('détaille le code d’erreur', () => {
-    const parsed = marketSchema.safeParse('TG');
+    const parsed = marketSchema.safeParse('XX');
     expect(parsed.success).toBe(false);
     if (parsed.success) return;
     expect(parsed.error.issues[0]?.code).toBe('invalid_value');
@@ -205,7 +208,7 @@ describe('marketQuerySchema', () => {
   });
 
   it('refuse un marché invalide', () => {
-    const parsed = marketQuerySchema.safeParse({ market: 'TG' });
+    const parsed = marketQuerySchema.safeParse({ market: 'XX' });
     expect(parsed.success).toBe(false);
     if (parsed.success) return;
     expect(parsed.error.issues[0]?.path).toEqual(['market']);

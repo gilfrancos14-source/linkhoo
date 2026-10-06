@@ -75,7 +75,7 @@ describe('bootstrapSchema', () => {
   });
 
   it('refuse un marché hors CI/BJ', () => {
-    const parsed = bootstrapSchema.safeParse({ role: 'gerant', market: 'TG' });
+    const parsed = bootstrapSchema.safeParse({ role: 'gerant', market: 'XX' });
     expect(parsed.success).toBe(false);
     if (parsed.success) return;
     expect(parsed.error.issues[0]?.path).toEqual(['market']);
@@ -111,7 +111,7 @@ describe('bootstrapSchema', () => {
     });
 
     it('place le marché invalide dans fieldErrors.market', () => {
-      const parsed = bootstrapSchema.safeParse({ role: 'gerant', market: 'TG' });
+      const parsed = bootstrapSchema.safeParse({ role: 'gerant', market: 'XX' });
       expect(parsed.success).toBe(false);
       if (parsed.success) return;
       const flat = parsed.error.flatten();

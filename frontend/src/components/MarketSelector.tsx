@@ -2,14 +2,45 @@ import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { isRootPath, useMarket, type MarketCode } from '../contexts/MarketContext';
-import { FlagBJ, FlagCI } from './flags';
+import { MARKETS as MARKET_REGISTRY } from '../config/markets';
+import {
+  FlagBF,
+  FlagBJ,
+  FlagCD,
+  FlagCG,
+  FlagCI,
+  FlagCM,
+  FlagGA,
+  FlagGN,
+  FlagML,
+  FlagNE,
+  FlagSN,
+  FlagTG,
+} from './flags';
 
 type MarketOption = { code: MarketCode; label: string; flag: ReactNode };
 
-const MARKETS: MarketOption[] = [
-  { code: 'CI', label: 'Côte d\'Ivoire', flag: <FlagCI /> },
-  { code: 'BJ', label: 'Bénin', flag: <FlagBJ /> },
-];
+const FLAG_BY_CODE: Record<MarketCode, (props: { width?: number }) => ReactNode> = {
+  CI: FlagCI,
+  BJ: FlagBJ,
+  SN: FlagSN,
+  TG: FlagTG,
+  CM: FlagCM,
+  BF: FlagBF,
+  CG: FlagCG,
+  GA: FlagGA,
+  GN: FlagGN,
+  ML: FlagML,
+  NE: FlagNE,
+  CD: FlagCD,
+};
+
+// Options du sélecteur, dérivées du registre (config/markets.ts) : ajouter
+// un marché là-bas suffit à l'afficher ici.
+const MARKETS: MarketOption[] = MARKET_REGISTRY.map((m) => {
+  const Flag = FLAG_BY_CODE[m.code];
+  return { code: m.code, label: m.label, flag: <Flag width={24} /> };
+});
 
 // État par défaut à l'accueil : aucun marché encore choisi.
 function FlagNone() {

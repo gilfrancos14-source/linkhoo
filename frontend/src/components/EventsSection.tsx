@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useMarket } from '../contexts/MarketContext';
+import { marketByCode } from '../config/markets';
 import { fetchBannersBySection, type Banner } from '../data/banners';
 import {
   fetchEventsByMarket,
@@ -332,7 +333,7 @@ export default function EventsSection() {
               {cityFallback && (
                 <p className="event-detail__stays-fallback">
                   Aucun bien trouvé à <strong>{activeCity}</strong> pour ces dates — voici les
-                  disponibilités en {market === 'CI' ? "Côte d'Ivoire" : 'Bénin'}.
+                  disponibilités en {marketByCode(market).label}.
                 </p>
               )}
 

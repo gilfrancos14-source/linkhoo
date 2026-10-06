@@ -275,8 +275,8 @@ describe('GET /api/admin/gerants', () => {
     gerants = fakeChain({ data: [], error: null });
     stubTables();
 
-    await request(app).get('/api/admin/gerants?market=TG').set(auth(adminToken()));
-    expect(gerants.eq).not.toHaveBeenCalledWith('market', 'TG');
+    await request(app).get('/api/admin/gerants?market=XX').set(auth(adminToken()));
+    expect(gerants.eq).not.toHaveBeenCalledWith('market', 'XX');
   });
 });
 

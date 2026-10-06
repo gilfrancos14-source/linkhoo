@@ -8,6 +8,8 @@ import { createClientLimiter } from '../utils/rateLimiters';
 import { clientNotificationCreateSchema } from '../validations/notification';
 import { clientReservationQuerySchema } from '../validations/reservation';
 import { fetchAllRows } from '../utils/fetchAll';
+import { isQualifiedGerantUser } from '../utils/gerantAccess';
+import { maskClientIdentity } from '../utils/clientIdentity';
 
 const router = Router();
 const notificationsLimiter = createClientLimiter();
@@ -76,7 +78,12 @@ router.get('/', requireClerkAuth, async (req: Request, res: Response, next: Next
       return a.id < b.id ? -1 : 1;
     });
 
-    res.json(data);
+    // Identité du client : cette route est la seule à renvoyer des données de
+    // réservation à un gérant **non qualifié** (les routes réservations sont en
+    // 403). Masquage sauf gérant vérifié + premium actif — règle identique à
+    // celle des listes de réservation.
+    const qualified = await isQualifiedGerantUser(authUserId);
+    res.json(qualified ? data : data.map((row) => maskClientIdentity(row)));
   } catch (err) {
     next(err);
   }
