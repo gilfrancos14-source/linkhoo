@@ -8,7 +8,7 @@ import { adminLoginSchema, adminChangePasswordSchema, adminReservationsQuerySche
 import { idParamsSchema, marketSchema } from '../validations/common';
 import { verificationReviewSchema, verificationRejectSchema } from '../validations/gerant';
 import { isQualifiedGerant } from '../utils/gerantQualification';
-import { BOOST_ROOM_EMBED, mapBoostRow } from '../utils/boostDisplay';
+import { BOOST_ROOM_EMBED, deriveBoostDisplayStatus, mapBoostRow } from '../utils/boostDisplay';
 import { fetchAllRows } from '../utils/fetchAll';
 import { isMarketCode } from '../config/markets';
 import { z } from 'zod';
@@ -564,46 +564,69 @@ router.get('/notifications', requireAdminAuth, async (req: Request, res: Respons
       .filter((g) => !isQualifiedGerant(g))
       .map((g) => g.clerk_user_id);
 
-    if (nonQualifiedIds.length === 0) {
-      return res.json({ notifications: [], unread_count: 0 });
+    let reservationRows: any[] = [];
+    if (nonQualifiedIds.length > 0) {
+      const rooms = await fetchAllRows<any>((from, to) =>
+        supabaseAdmin
+          .from('rooms')
+          .select('id')
+          .in('gerant_id', nonQualifiedIds)
+          .order('id', { ascending: true })
+          .range(from, to));
+
+      const roomIds = rooms.map((r) => r.id);
+      if (roomIds.length > 0) {
+        reservationRows = await fetchAllRows<any>((from, to) =>
+          supabaseAdmin
+            .from('notifications')
+            .select('*')
+            .in('room_id', roomIds)
+            .in('type', ['reservation', 'reservation_cancelled'])
+            .order('date', { ascending: false })
+            .order('id', { ascending: true })
+            .range(from, to));
+      }
     }
 
-    const rooms = await fetchAllRows<any>((from, to) =>
-      supabaseAdmin
-        .from('rooms')
-        .select('id')
-        .in('gerant_id', nonQualifiedIds)
-        .order('id', { ascending: true })
-        .range(from, to));
-
-    const roomIds = rooms.map((r) => r.id);
-    if (roomIds.length === 0) {
-      return res.json({ notifications: [], unread_count: 0 });
-    }
-
-    const data = await fetchAllRows<any>((from, to) =>
+    // M4 : incidents boost — paiement encaissé sans campagne correspondante.
+    // Ces lignes n'ont ni room_id ni client : elles concernent le support
+    // indépendamment de la qualification du gérant, donc on les relit à part
+    // (le filtre SQL n'est pas seulement par type, il est aussi par chambre).
+    const incidentsRaw = await fetchAllRows<any>((from, to) =>
       supabaseAdmin
         .from('notifications')
         .select('*')
-        .in('room_id', roomIds)
-        .in('type', ['reservation', 'reservation_cancelled'])
+        .eq('type', 'boost_paid_without_campaign')
         .order('date', { ascending: false })
         .order('id', { ascending: true })
         .range(from, to));
 
-    const notifications = (data || []).map((n) => ({
-      id: n.id,
-      type: n.type,
-      room_title: n.room_title,
-      room_id: n.room_id,
-      client_name: n.client_name,
-      client_email: n.client_email,
-      client_phone: n.client_phone,
-      message: n.message,
-      reservation_id: n.reservation_id,
-      read: n.read,
-      date: n.date,
-    }));
+    const incidents = (incidentsRaw || []).filter((n) => n.type === 'boost_paid_without_campaign');
+    const reservations = (reservationRows || []).filter(
+      (n) => n.type === 'reservation' || n.type === 'reservation_cancelled');
+
+    const notifications = [...incidents, ...reservations]
+      .map((n) => ({
+        id: n.id,
+        type: n.type,
+        room_title: n.room_title,
+        room_id: n.room_id,
+        client_name: n.client_name,
+        client_email: n.client_email,
+        client_phone: n.client_phone,
+        message: n.message,
+        reservation_id: n.reservation_id,
+        read: n.read,
+        date: n.date,
+      }))
+      .sort((a, b) => {
+        const dateA = String(a.date ?? '');
+        const dateB = String(b.date ?? '');
+        if (dateA !== dateB) return dateA < dateB ? 1 : -1;
+        const idA = String(a.id ?? '');
+        const idB = String(b.id ?? '');
+        return idA < idB ? -1 : idA > idB ? 1 : 0;
+      });
 
     res.json({
       notifications,
@@ -678,12 +701,15 @@ router.patch('/rooms/:id/promo-group', requireAdminAuth, async (req: Request, re
 
 // ── Supervision des campagnes Boost ──
 
-const adminBoostsQuerySchema = z
-  .object({
-    status: z.enum(['pending', 'active', 'paused', 'exhausted', 'canceled']).optional(),
-    market: marketSchema.optional(),
-  })
-  .strict();
+// m9 : pas de .strict() — un simple `?utm_source=…` (ou tout paramètre de
+// suivi ajouté par le navigateur) renvoyait 400 « Paramètres invalides ».
+// Les clés inconnues sont ignorées, seules celles déclarées sont lues.
+const adminBoostsQuerySchema = z.object({
+  status: z
+    .enum(['pending', 'active', 'paused', 'exhausted', 'canceled', 'ended'])
+    .optional(),
+  market: marketSchema.optional(),
+});
 
 const adminBoostStatusSchema = z
   .object({
@@ -734,7 +760,7 @@ router.patch('/boosts/:id/status', requireAdminAuth, async (req: Request, res: R
 
     const { data: boost, error } = await supabaseAdmin
       .from('boosts')
-      .select('id, status, spent, budget_total')
+      .select('id, status, spent, budget_total, room_id')
       .eq('id', parsedParams.data.id)
       .maybeSingle();
     if (error) throw error;
@@ -748,8 +774,34 @@ router.patch('/boosts/:id/status', requireAdminAuth, async (req: Request, res: R
     if (boost.status === 'canceled') {
       return res.status(409).json({ error: 'Campagne annulée.' });
     }
+    if (boost.status === 'ended') {
+      return res.status(409).json({
+        error: "Campagne terminée : reprogrammez-la depuis l'espace gérant.",
+      });
+    }
     if (boost.status === 'exhausted' || boost.spent >= boost.budget_total) {
       return res.status(409).json({ error: 'Budget épuisé : reprise impossible.' });
+    }
+
+    // M2 : l'index partiel uq_boosts_room_live ne couvre PAS `paused` —
+    // une campagne B a pu être payée pendant que celle-ci était en pause.
+    // Sans ce contrôle, l'UPDATE lèverait 23505 et rendrait un 500 muet.
+    if (parsedBody.data.status === 'active') {
+      const { data: conflictRows, error: conflictError } = await supabaseAdmin
+        .from('boosts')
+        .select('id')
+        .eq('room_id', boost.room_id)
+        .in('status', ['pending', 'active'])
+        .neq('id', boost.id);
+      if (conflictError) throw conflictError;
+      const conflict = Array.isArray(conflictRows) ? conflictRows[0] : null;
+      if (conflict) {
+        return res.status(409).json({
+          error:
+            'Une autre campagne est déjà en cours pour cette chambre : ' +
+            'terminez-la avant de reprendre celle-ci.',
+        });
+      }
     }
 
     const { data: updated, error: updateError } = await supabaseAdmin
@@ -761,19 +813,26 @@ router.patch('/boosts/:id/status', requireAdminAuth, async (req: Request, res: R
       .eq('id', boost.id)
       .select('id, status, spent, budget_total, starts_at, ends_at')
       .single();
-    if (updateError) throw updateError;
+    if (updateError) {
+      // Course check-then-update : entre le contrôle de conflit et cet UPDATE,
+      // le gérant a pu payer une nouvelle campagne sur la même chambre →
+      // l'index partiel unique lève 23505. Même réponse que le contrôle
+      // (et identique à PATCH /:id/schedule) plutôt qu'un 500 muet.
+      if (updateError.code === '23505') {
+        return res.status(409).json({
+          error:
+            'Une autre campagne est déjà en cours pour cette chambre : terminez-la avant de reprendre celle-ci.',
+        });
+      }
+      throw updateError;
+    }
 
     res.json({
       id: updated.id,
       status: updated.status,
-      display_status:
-        updated.status === 'paused'
-          ? 'paused'
-          : new Date() < new Date(updated.starts_at)
-            ? 'scheduled'
-            : new Date() > new Date(updated.ends_at)
-              ? 'ended'
-              : 'live',
+      // Dérivé par le helper partagé : pause / programmée / en ligne / terminée
+      // au même endroit que la liste gérant et la page admin.
+      display_status: deriveBoostDisplayStatus(updated),
       spent: updated.spent,
       remaining: Math.max(updated.budget_total - updated.spent, 0),
     });

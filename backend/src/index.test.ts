@@ -21,6 +21,7 @@ const envGuard = vi.hoisted(() => {
     'NODE_ENV',
     'TRUST_PROXY',
     'ALLOWED_ORIGINS',
+    'APP_PUBLIC_URL',
     'CLERK_SECRET_KEY',
     'ADMIN_JWT_SECRET',
     'FEDAPAY_PUBLIC_KEY',
@@ -47,6 +48,7 @@ const envGuard = vi.hoisted(() => {
   process.env.SUPABASE_SERVICE_KEY ??= 'service-index-test';
   delete process.env.TRUST_PROXY;
   delete process.env.ALLOWED_ORIGINS;
+  delete process.env.APP_PUBLIC_URL;
 
   return { keys, savedEnv };
 });
@@ -295,6 +297,20 @@ describe('montage de src/index.ts', () => {
     expect(blocked.headers['retry-after']).toBeDefined();
   });
 
+  it('plafonne l’émission d’identités de visiteur sur /featured (C1)', async () => {
+    for (let index = 0; index < 10; index++) {
+      const res = await request(app).get('/api/boosts/featured');
+      expect(res.status).toBe(200);
+    }
+
+    const blocked = await request(app).get('/api/boosts/featured');
+
+    expect(blocked.status).toBe(429);
+    expect(blocked.body).toEqual({
+      error: 'Trop de nouvelles sessions de suivi, veuillez réessayer plus tard',
+    });
+  });
+
   it('compresse en gzip les réponses plus lourdes que le seuil', async () => {
     const rooms = Array.from({ length: 20 }, (_, index) => ({
       id: `room-${index}`,
@@ -343,6 +359,7 @@ describe('montage de src/index.ts en production', () => {
   beforeAll(async () => {
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('ALLOWED_ORIGINS', 'https://app.ilehya.com');
+    vi.stubEnv('APP_PUBLIC_URL', 'https://app.ilehya.com');
     // resetModules : sans ça, `import('./index')` est servi depuis le cache et
     // le second montage garderait la configuration CORS du premier.
     vi.resetModules();
@@ -367,6 +384,26 @@ describe('montage de src/index.ts en production', () => {
 
     expect(refused.status).toBe(200);
     expect(refused.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('interrompt le démarrage si APP_PUBLIC_URL manquant en production', async () => {
+    const exitSpy = vi.spyOn(process, 'exit');
+    exitSpy.mockImplementation(() => {
+      throw new Error('process.exit intercepté');
+    });
+    vi.stubEnv('APP_PUBLIC_URL', '');
+    vi.resetModules();
+
+    let importFailed = false;
+    try {
+      await importIndex();
+    } catch {
+      importFailed = true;
+    }
+
+    expect(importFailed).toBe(true);
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockRestore();
   });
 });
 

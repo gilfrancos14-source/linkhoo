@@ -15,6 +15,7 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: 'active', label: 'Actives' },
   { value: 'paused', label: 'En pause' },
   { value: 'pending', label: 'Paiement en attente' },
+  { value: 'ended', label: 'Terminées' },
   { value: 'exhausted', label: 'Budget épuisé' },
   { value: 'canceled', label: 'Annulées' },
 ];

@@ -795,6 +795,38 @@ describe('GET /api/admin/notifications', () => {
     expect(res.body.unread_count).toBe(1);
     expect(res.body.notifications).toHaveLength(2);
   });
+
+  it('200 : inclut les incidents de paiement boost sans chambre (M4)', async () => {
+    gerants = fakeChain({
+      data: [{ clerk_user_id: 'user_1', is_verified: true, is_premium: false, premium_expires_at: null }],
+      error: null,
+    });
+    rooms = fakeChain({ data: [{ id: 'room-1' }], error: null });
+    notifications = fakeChain({
+      data: [
+        { id: 'n1', type: 'reservation', read: false, date: '2026-01-01' },
+        {
+          id: 'boost-paid-4244',
+          type: 'boost_paid_without_campaign',
+          read: false,
+          date: '2026-01-03',
+          message: 'Paiement boost de 3000 XOF reçu sans campagne correspondante.',
+        },
+      ],
+      error: null,
+    });
+    stubTables();
+
+    const res = await request(app).get('/api/admin/notifications').set(auth(adminToken()));
+
+    expect(res.status).toBe(200);
+    expect(res.body.notifications).toHaveLength(2);
+    expect(res.body.notifications[0]).toMatchObject({
+      id: 'boost-paid-4244',
+      type: 'boost_paid_without_campaign',
+    });
+    expect(res.body.unread_count).toBe(2);
+  });
 });
 
 describe('PATCH /api/admin/notifications/:id/read', () => {
@@ -995,7 +1027,8 @@ describe('Supervision des campagnes Boost', () => {
       },
       error: null,
     });
-    stubTables({ boosts: [fetched, updated] });
+    // 1. lecture, 2. contrôle de conflit (M2), 3. UPDATE
+    stubTables({ boosts: [fetched, fakeChain({ data: [], error: null }), updated] });
 
     const res = await request(app)
       .patch('/api/admin/boosts/b-1/status')
@@ -1004,6 +1037,62 @@ describe('Supervision des campagnes Boost', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ status: 'active', display_status: 'scheduled' });
+  });
+
+  it('PATCH /boosts/:id/status : 409 si une autre campagne occupe la chambre (M2)', async () => {
+    const fetched = fakeChain({
+      data: { id: 'b-1', status: 'paused', spent: 0, budget_total: 1000, room_id: 'room-1' },
+      error: null,
+    });
+    const conflict = fakeChain({ data: [{ id: 'b-other' }], error: null });
+    stubTables({ boosts: [fetched, conflict] });
+
+    const res = await request(app)
+      .patch('/api/admin/boosts/b-1/status')
+      .set(auth(adminToken()))
+      .send({ status: 'active' });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toContain('déjà en cours');
+    expect(conflict.update).not.toHaveBeenCalled();
+  });
+
+  it('PATCH /boosts/:id/status : 409 sur course 23505 (l\'UPDATE perd la course)', async () => {
+    const fetched = fakeChain({
+      data: { id: 'b-1', status: 'paused', spent: 0, budget_total: 1000, room_id: 'room-1' },
+      error: null,
+    });
+    const noConflict = fakeChain({ data: [], error: null });
+    const raced = fakeChain({
+      data: null,
+      error: { message: 'duplicate key value violates unique constraint', code: '23505' },
+    });
+    stubTables({ boosts: [fetched, noConflict, raced] });
+
+    const res = await request(app)
+      .patch('/api/admin/boosts/b-1/status')
+      .set(auth(adminToken()))
+      .send({ status: 'active' });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toContain('déjà en cours');
+  });
+
+  it('PATCH /boosts/:id/status : 409 sur une campagne terminée (M1)', async () => {
+    stubTables({
+      boosts: fakeChain({
+        data: { id: 'b-1', status: 'ended', spent: 1000, budget_total: 1000, room_id: 'room-1' },
+        error: null,
+      }),
+    });
+
+    const res = await request(app)
+      .patch('/api/admin/boosts/b-1/status')
+      .set(auth(adminToken()))
+      .send({ status: 'active' });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toContain('terminée');
   });
 
   it('PATCH /boosts/:id/status : 400 sur un statut hors supervision', async () => {

@@ -6,8 +6,10 @@ import { apiBoosts, apiGerants, type BoostData, type GerantData } from '../../li
 import {
   boostAmount,
   boostDateRange,
+  boostEndIso,
   boostModeLabels,
   boostSpentPercent,
+  boostStartIso,
   boostStatusLabels,
   isoDay,
   validateBoostWindow,
@@ -51,8 +53,16 @@ export default function BoostsPage() {
 
   const openSchedule = (boost: BoostData) => {
     setEditingId(boost.id);
-    setStartDay(isoDay(new Date(boost.starts_at)));
-    setEndDay(isoDay(new Date(boost.ends_at)));
+    // m1 : pour une campagne en cours, starts_at est déjà passé — le
+    // pré-remplir tel quel déclenche « La date de début ne peut pas être dans
+    // le passé » et rend impossible de prolonger la fin. On part d'aujourd'hui
+    // (et on ne laisse jamais une fin antérieure à ce nouveau début).
+    const today = isoDay(new Date());
+    const originalStart = isoDay(new Date(boost.starts_at));
+    const nextStart = originalStart > today ? originalStart : today;
+    const originalEnd = isoDay(new Date(boost.ends_at));
+    setStartDay(nextStart);
+    setEndDay(originalEnd > nextStart ? originalEnd : nextStart);
     setScheduleError('');
   };
 
@@ -65,11 +75,9 @@ export default function BoostsPage() {
     setSaving(true);
     setScheduleError('');
     try {
-      const start = new Date(`${startDay}T12:00:00`);
-      const end = new Date(`${endDay}T12:00:00`);
       await apiBoosts.updateSchedule(id, {
-        starts_at: start.toISOString(),
-        ends_at: end.toISOString(),
+        starts_at: boostStartIso(startDay),
+        ends_at: boostEndIso(endDay),
       });
       setEditingId(null);
       await load();

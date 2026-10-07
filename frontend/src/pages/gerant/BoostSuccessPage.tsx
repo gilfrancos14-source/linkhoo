@@ -2,14 +2,26 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
 import { useHomePath } from '../../hooks/useHomePath';
-import { apiBoosts } from '../../lib/api';
+import { apiBoosts, ApiError } from '../../lib/api';
 
 // Le webhook peut arriver après le retour du gérant : on relance quelques
 // fois la confirmation avant d'afficher une erreur, sans jamais bloquer la page.
 const RETRY_DELAY_MS = 3000;
 const MAX_AUTO_RETRIES = 3;
 
-const PENDING_RE = /en attente|pending|non confirm|pas pay|declined|canceled/i;
+/**
+ * M5 : on ne se fie plus à un regex sur le texte (« en attente » matchait
+ * aussi « Paiement declined » → 3 relances puis « réessayez dans quelques
+ * secondes » sur un refus définitif). Le serveur porte une raison structurée :
+ * `ApiError.status` + `ApiError.detail` (`body.status` de /boosts/confirm).
+ */
+function classify(err: unknown): { status?: number; reason?: string } {
+  if (!(err instanceof ApiError)) return {};
+  return {
+    status: err.status,
+    reason: typeof err.detail === 'string' ? err.detail : undefined,
+  };
+}
 
 export default function BoostSuccessPage() {
   const homePath = useHomePath();
@@ -54,18 +66,47 @@ export default function BoostSuccessPage() {
       } catch (err) {
         if (cancelled) return;
         const raw = err instanceof Error && err.message ? err.message : 'Erreur lors de la confirmation du paiement.';
-        if (PENDING_RE.test(raw) && attempt < MAX_AUTO_RETRIES) {
-          // Toujours en attente : nouvelle tentative dans 3 s, page en chargement.
-          retryTimer.current = setTimeout(() => setAttempt((value) => value + 1), RETRY_DELAY_MS);
-          setMessage("Paiement en attente de confirmation — nouvelle tentative...");
+        const { status, reason } = classify(err);
+
+        // M4 : 409 = argent encaissé mais campagne introuvable → jamais de
+        // retry, on oriente vers le support (remboursement).
+        if (status === 409) {
+          setStatus('error');
+          setMessage(
+            'Votre paiement a bien été reçu, mais la campagne n’a pas pu être activée. ' +
+              'Contactez le support : votre remboursement sera traité.',
+          );
           return;
         }
+
+        // M5 : seul un paiement réellement en attente mérite une nouvelle
+        // tentative automatique.
+        if (status === 400 && reason === 'pending') {
+          if (attempt < MAX_AUTO_RETRIES) {
+            retryTimer.current = setTimeout(() => setAttempt((value) => value + 1), RETRY_DELAY_MS);
+            setMessage("Paiement en attente de confirmation — nouvelle tentative...");
+            return;
+          }
+          setStatus('error');
+          setMessage(
+            "Le paiement n'a pas encore été confirmé. Si vous venez de payer, réessayez dans quelques secondes.",
+          );
+          return;
+        }
+
+        // M5 : refus/annulation définitifs — aucun retry, aucun « réessayez ».
+        if (status === 400 && (reason === 'declined' || reason === 'canceled')) {
+          setStatus('error');
+          setMessage(
+            reason === 'declined'
+              ? 'Paiement refusé par votre banque. Aucun montant n’a été débité : vous pouvez relancer un paiement.'
+              : 'Paiement annulé. Vous pouvez relancer un paiement depuis votre espace.',
+          );
+          return;
+        }
+
         setStatus('error');
-        setMessage(
-          PENDING_RE.test(raw)
-            ? "Le paiement n'a pas encore été confirmé. Si vous venez de payer, réessayez dans quelques secondes."
-            : raw,
-        );
+        setMessage(raw);
       }
     })();
 

@@ -232,9 +232,10 @@ describe('BoostCreatePage', () => {
     renderCreate();
     await screen.findByRole('heading', { name: '4. Dates' });
 
-    const start = screen.getByLabelText('Début') as HTMLInputElement;
     const end = screen.getByLabelText('Fin') as HTMLInputElement;
-    fireEvent.change(end, { target: { value: start.value } });
+    // m11 : une fin le même jour que le début est désormais valide (12:00 →
+    // 23:59:59) — l'invalidité se construit avec une fin antérieure.
+    fireEvent.change(end, { target: { value: isoDay(new Date(Date.now() - 24 * 60 * 60 * 1000)) } });
 
     expect(
       screen.getByText('La date de fin doit être postérieure à la date de début'),
@@ -258,8 +259,9 @@ describe('BoostCreatePage', () => {
     expect(payload.mode).toBe('cpc');
     expect(payload.budget_total).toBe(1000);
     expect(payload.starts_at).toBe(new Date(`${isoDay(new Date())}T12:00:00`).toISOString());
+    // m11 : fin de journée, plus de demi-journée non livrée.
     expect(payload.ends_at).toBe(
-      new Date(`${isoDay(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))}T12:00:00`).toISOString(),
+      new Date(`${isoDay(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))}T23:59:59`).toISOString(),
     );
     expect(screen.getByRole('button', { name: 'Redirection...' })).toBeDisabled();
   });

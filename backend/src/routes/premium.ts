@@ -13,6 +13,8 @@ import {
   upsertPremiumTransaction,
   activateBoostForTransaction,
 } from '../utils/premiumTx';
+import { BOOST_BUDGETS } from '../config/boosts';
+import { flagPaidWithoutCampaign } from '../utils/boostAlerts';
 
 const PREMIUM_AMOUNT = 5000;
 const PREMIUM_DURATION_DAYS = 30;
@@ -20,14 +22,12 @@ const PREMIUM_CURRENCY = 'XOF';
 
 const router = Router();
 
-function getOrigin(req: Request): string {
-  const origin = req.headers.origin;
-  if (typeof origin === 'string' && origin) return origin;
-  return process.env.APP_PUBLIC_URL || 'http://localhost:5173';
-}
-
-function getCallbackUrl(req: Request, market: string): string {
-  return `${getOrigin(req)}/${market.toLowerCase()}/gerant/premium/success`;
+function getCallbackUrl(market: string): string {
+  // m3 : uniquement APP_PUBLIC_URL (allow-list serveur). L'entête Origin est
+  // forgeable — un payeur redirigé « après paiement » vers un domaine tiers,
+  // c'est du phishing post-paiement.
+  const base = (process.env.APP_PUBLIC_URL || 'http://localhost:5173').replace(/\/+$/, '');
+  return `${base}/${market.toLowerCase()}/gerant/premium/success`;
 }
 
 async function hasActivePremiumOnOtherMarket(clerkUserId: string, currentMarket: string): Promise<boolean> {
@@ -113,7 +113,7 @@ router.post('/initiate', requireClerkAuth, async (req: Request, res: Response, n
         description: `Abonnement Premium ${market} - ${PREMIUM_DURATION_DAYS} jours`,
         amount: PREMIUM_AMOUNT,
         currency: { iso: PREMIUM_CURRENCY },
-        callback_url: getCallbackUrl(req, market),
+        callback_url: getCallbackUrl(market),
         customer: { email: customerEmail },
         metadata: {
           clerk_user_id,
@@ -327,16 +327,39 @@ router.post('/webhook', async (req: Request, res: Response, _next: NextFunction)
         // Chemin prioritaire du boost : le webhook crédite la campagne avant
         // même que le gérant ne voie sa page de succès. BOOST_NOT_FOUND =
         // campagne remplacée/annulée entre-temps → claim déjà annulé par la
-        // RPC, on ne crédite rien et on trace pour le support.
-        const activation = await activateBoostForTransaction(persisted.id);
-        if (activation.boostId) {
-          console.log(
-            activation.alreadyActivated
-              ? `[premium] webhook: boost tx ${entity.id} déjà consommée, aucun double crédit`
-              : `[premium] webhook: boost activé pour ${clerkUserId} (tx ${entity.id}, boost ${activation.boostId})`
+        // RPC, on ne crédite rien et on alerte le support (M4).
+        if (!BOOST_BUDGETS.some((budget) => budget === amount)) {
+          // m6 : défense en profondeur — un montant hors grille n'active rien,
+          // même en cas de webhook forgeé ou de montant corrompu. L'argent
+          // étant encaissé, on alerte le support comme sur BOOST_NOT_FOUND.
+          console.warn(
+            `[premium] webhook: activation boost refusée, montant inattendu (${amount}) pour tx ${entity.id}`,
           );
+          await flagPaidWithoutCampaign({
+            clerkUserId,
+            market,
+            transactionId: entity.id,
+            amount,
+            source: 'webhook-amount',
+          });
         } else {
-          console.warn(`[premium] webhook: boost tx ${entity.id} sans campagne correspondante (remplacée ou annulée)`);
+          const activation = await activateBoostForTransaction(persisted.id);
+          if (activation.boostId) {
+            console.log(
+              activation.alreadyActivated
+                ? `[premium] webhook: boost tx ${entity.id} déjà consommée, aucun double crédit`
+                : `[premium] webhook: boost activé pour ${clerkUserId} (tx ${entity.id}, boost ${activation.boostId})`
+            );
+          } else {
+            console.warn(`[premium] webhook: boost tx ${entity.id} sans campagne correspondante (remplacée ou annulée)`);
+            await flagPaidWithoutCampaign({
+              clerkUserId,
+              market,
+              transactionId: entity.id,
+              amount,
+              source: 'webhook',
+            });
+          }
         }
       } else {
         console.log(`[premium] webhook: tx ${entity.id} status=${status} type=${txType} (déjà activée=${persisted.activated})`);
@@ -365,6 +388,10 @@ router.post('/webhook', async (req: Request, res: Response, _next: NextFunction)
             customerEmail: entity.customer?.email ?? null,
             rawEvent: event,
             type: txType,
+            // m7 : un rejeu tardif de declined/canceled APRÈS un approved ne
+            // rétrograde jamais le ledger — on ne touche que les lignes
+            // encore 'pending'.
+            onlyIfPending: true,
           });
           if (txType === 'boost') {
             // Paiement refusé : la campagne ne doit jamais passer active.

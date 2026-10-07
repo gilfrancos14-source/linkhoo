@@ -2,7 +2,7 @@ import { apiNotifications } from './api';
 
 export interface Notification {
   id: string;
-  type: 'reservation' | 'reservation_confirmed' | 'reservation_rejected' | 'verification_submitted' | 'verification_approved' | 'verification_rejected' | 'reservation_cancelled';
+  type: 'reservation' | 'reservation_confirmed' | 'reservation_rejected' | 'verification_submitted' | 'verification_approved' | 'verification_rejected' | 'reservation_cancelled' | 'boost_paid_without_campaign';
   roomTitle: string;
   roomId: string;
   clientName: string;

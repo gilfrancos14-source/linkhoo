@@ -6,6 +6,16 @@ import CardSkeleton from './CardSkeleton';
 
 const VISITOR_STORAGE_KEY = 'ilehya_boost_visitor';
 
+function generateVisitorId(): string {
+  return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `v-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/** Fallback mémorisé (m2) : sans localStorage, un identifiant par page — sinon
+    chaque appel en générerait un nouveau et la dédup serveur facturerait deux fois. */
+let memoFallbackId: string | null = null;
+
 /**
  * Identifiant pseudonyme du visiteur, persisté en local : la déduplication
  * des impressions/clics côté serveur s'appuie dessus. Navigation privée
@@ -15,14 +25,12 @@ export function boostVisitorId(): string {
   try {
     const existing = window.localStorage.getItem(VISITOR_STORAGE_KEY);
     if (existing) return existing;
-    const generated =
-      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-        ? crypto.randomUUID()
-        : `v-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    const generated = generateVisitorId();
     window.localStorage.setItem(VISITOR_STORAGE_KEY, generated);
     return generated;
   } catch {
-    return `v-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    if (!memoFallbackId) memoFallbackId = generateVisitorId();
+    return memoFallbackId;
   }
 }
 

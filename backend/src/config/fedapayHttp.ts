@@ -20,8 +20,12 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   }) as Promise<T>;
 }
 
-export function withFedapayTimeout<T>(promise: Promise<T>): Promise<T> {
-  return withTimeout(promise, FEDAPAY_TIMEOUT_MS, 'FedaPay');
+/**
+ * @param ms timeout local, pour les chemins qui ne doivent jamais retarder une
+ * réponse (rattrapage arrière-plan de /boosts/mine : 2 s au lieu de 15 s).
+ */
+export function withFedapayTimeout<T>(promise: Promise<T>, ms: number = FEDAPAY_TIMEOUT_MS): Promise<T> {
+  return withTimeout(promise, ms, 'FedaPay');
 }
 
 let axiosPatched = false;

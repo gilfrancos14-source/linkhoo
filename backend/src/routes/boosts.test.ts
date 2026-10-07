@@ -4,6 +4,7 @@ import { Transaction } from 'fedapay';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import boostsRouter from './boosts';
 import { supabaseAdmin } from '../config/supabase';
+import { buildTrackCookie, TRACK_COOKIE_NAME } from '../utils/trackVisitor';
 import {
   buildTestApp,
   clerkBearer,
@@ -43,6 +44,12 @@ function mockRpc(result: unknown): void {
 const BOOST_UUID = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d';
 const FUTURE = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 const FUTURE_END = new Date(Date.now() + 37 * 24 * 60 * 60 * 1000).toISOString();
+const VISITOR_ID = 'visiteur-01';
+
+/** En-tête Cookie à envoyer (buildTrackCookie renvoie la valeur Set-Cookie complète). */
+function trackCookie(visitorId = VISITOR_ID): string {
+  return buildTrackCookie(visitorId).split(';')[0] as string;
+}
 
 let gerants: FakeChain;
 let rooms: FakeChain;
@@ -55,6 +62,7 @@ function stubTables(
     rooms: FakeChain | FakeChain[];
     boosts: FakeChain | FakeChain[];
     premium_transactions: FakeChain | FakeChain[];
+    notifications: FakeChain | FakeChain[];
   }> = {}
 ): void {
   useSupabaseTables(supabaseAdmin.from, {
@@ -147,6 +155,21 @@ describe('GET /api/boosts/config', () => {
 });
 
 describe('GET /api/boosts/featured', () => {
+  it('pose le cookie visiteur signé quand il est absent (C1)', async () => {
+    stubTables({ boosts: fakeChain({ data: {}, error: null }) });
+    const res = await request(app).get('/api/boosts/featured');
+    const cookie = (res.headers['set-cookie'] as unknown as string[] | undefined)?.[0] ?? '';
+    expect(res.status).toBe(200);
+    expect(cookie).toContain(`${TRACK_COOKIE_NAME}=`);
+    expect(cookie).toContain('HttpOnly');
+  });
+
+  it('ne réécrit pas un cookie visiteur déjà valide (réponse réutilisable)', async () => {
+    stubTables({ boosts: fakeChain({ data: {}, error: null }) });
+    const res = await request(app).get('/api/boosts/featured').set('Cookie', trackCookie());
+    expect(res.headers['set-cookie']).toBeUndefined();
+  });
+
   it('retourne [] si la réponse n\'est pas un tableau (garde anti-crash)', async () => {
     stubTables({ boosts: fakeChain({ data: {}, error: null }) });
     const res = await request(app).get('/api/boosts/featured');
@@ -206,11 +229,43 @@ describe('POST /api/boosts/impression et /click', () => {
     stubTables({ boosts: fakeChain({ data: null, error: null }) });
     const res = await request(app)
       .post('/api/boosts/impression')
+      .set('Cookie', trackCookie())
       .send({ boost_id: BOOST_UUID, visitor_id: 'visiteur-01' });
     expect(res.status).toBe(404);
   });
 
-  it('impression sur cpi : débite 5 F (montant calculé par le serveur)', async () => {
+  it('sans cookie visiteur : émet un cookie signé et ne facture rien (C1)', async () => {
+    const res = await request(app)
+      .post('/api/boosts/impression')
+      .send({ boost_id: BOOST_UUID, visitor_id: 'visiteur-01' });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      counted: false,
+      billed: false,
+      exhausted: false,
+      remaining: null,
+      visitor_issued: true,
+    });
+    const cookie = (res.headers['set-cookie'] as unknown as string[] | undefined)?.[0] ?? '';
+    expect(cookie).toContain(`${TRACK_COOKIE_NAME}=`);
+    expect(cookie).toContain('HttpOnly');
+    expect(cookie).toContain('SameSite=Lax');
+    expect(supabaseAdmin.rpc).not.toHaveBeenCalled();
+  });
+
+  it('cookie falsifié : nouvel identité, aucun débit', async () => {
+    const res = await request(app)
+      .post('/api/boosts/click')
+      .set('Cookie', `${TRACK_COOKIE_NAME}=${VISITOR_ID}.${'a'.repeat(64)}`)
+      .send({ boost_id: BOOST_UUID, visitor_id: 'visiteur-01' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.visitor_issued).toBe(true);
+    expect(supabaseAdmin.rpc).not.toHaveBeenCalled();
+  });
+
+  it('impression sur cpi : débite 5 F avec l\'identité du cookie (montant calculé par le serveur)', async () => {
     mockRpc({
       data: [{ counted: true, billed: true, exhausted: false, remaining: 995 }],
       error: null,
@@ -218,16 +273,37 @@ describe('POST /api/boosts/impression et /click', () => {
 
     const res = await request(app)
       .post('/api/boosts/impression')
+      .set('Cookie', trackCookie())
       .send({ boost_id: BOOST_UUID, visitor_id: 'visiteur-01' });
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ counted: true, billed: true, exhausted: false, remaining: 995 });
+    expect(res.body).toEqual({
+      counted: true,
+      billed: true,
+      exhausted: false,
+      remaining: 995,
+      visitor_issued: false,
+    });
     expect(supabaseAdmin.rpc).toHaveBeenCalledWith('charge_boost', {
       p_boost_id: BOOST_UUID,
       p_kind: 'impression',
-      p_visitor_id: 'visiteur-01',
+      p_visitor_id: VISITOR_ID,
       p_amount: 5,
     });
+  });
+
+  it('le visitor_id du corps est ignoré : la dédup utilise le cookie signé', async () => {
+    mockRpc({ data: [{ counted: true, billed: true, exhausted: false, remaining: 995 }], error: null });
+
+    await request(app)
+      .post('/api/boosts/click')
+      .set('Cookie', trackCookie())
+      .send({ boost_id: BOOST_UUID, visitor_id: 'visiteur-falsifiable' });
+
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith(
+      'charge_boost',
+      expect.objectContaining({ p_visitor_id: VISITOR_ID }),
+    );
   });
 
   it('impression sur cpc : comptée mais gratuite (p_amount 0)', async () => {
@@ -241,6 +317,7 @@ describe('POST /api/boosts/impression et /click', () => {
 
     const res = await request(app)
       .post('/api/boosts/impression')
+      .set('Cookie', trackCookie())
       .send({ boost_id: BOOST_UUID, visitor_id: 'visiteur-01' });
 
     expect(res.status).toBe(200);
@@ -258,6 +335,7 @@ describe('POST /api/boosts/impression et /click', () => {
 
     const res = await request(app)
       .post('/api/boosts/click')
+      .set('Cookie', trackCookie())
       .send({ boost_id: BOOST_UUID, visitor_id: 'visiteur-01' });
 
     expect(res.status).toBe(200);
@@ -271,6 +349,7 @@ describe('POST /api/boosts/impression et /click', () => {
     });
     const res = await request(app)
       .post('/api/boosts/click')
+      .set('Cookie', trackCookie())
       .send({ boost_id: BOOST_UUID, visitor_id: 'visiteur-01' });
     expect(res.body.exhausted).toBe(true);
     expect(res.body.counted).toBe(false);
@@ -460,8 +539,10 @@ describe('POST /api/boosts/confirm', () => {
     expect(res.status).toBe(403);
   });
 
-  it('400 si le montant ne correspond à aucun budget', async () => {
+  it('400 si le montant ne correspond à aucun budget (+ alerte support si approuvé)', async () => {
     vi.mocked(Transaction.retrieve).mockResolvedValue(fedapayBoostTransaction({ amount: 1234 }) as never);
+    const notifications = fakeChain({ data: null, error: null });
+    stubTables({ notifications });
 
     const res = await request(app)
       .post('/api/boosts/confirm')
@@ -470,6 +551,18 @@ describe('POST /api/boosts/confirm', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toContain('Montant');
+    // La transaction est approuvée et le montant hors grille : argent
+    // encaissé, rien de crédité → le support doit être prévenu (m6 + M4).
+    expect(notifications.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'boost_paid_without_campaign',
+        id: 'boost-paid-555',
+      }),
+    );
+    expect(supabaseAdmin.rpc).not.toHaveBeenCalledWith(
+      'activate_boost_checked',
+      expect.anything(),
+    );
   });
 
   it('400 avec status si le paiement est encore en attente', async () => {
@@ -529,12 +622,14 @@ describe('POST /api/boosts/confirm', () => {
     });
   });
 
-  it('409 si la campagne a été remplacée (BOOST_NOT_FOUND)', async () => {
+  it('409 si la campagne a été remplacée (BOOST_NOT_FOUND) — alerte support (M4)', async () => {
     vi.mocked(Transaction.retrieve).mockResolvedValue(fedapayBoostTransaction() as never);
     mockRpc({
       data: null,
       error: { message: 'BOOST_NOT_FOUND' },
     });
+    const notifications = fakeChain({ data: null, error: null });
+    stubTables({ notifications });
 
     const res = await request(app)
       .post('/api/boosts/confirm')
@@ -542,6 +637,14 @@ describe('POST /api/boosts/confirm', () => {
       .send({ transaction_id: 555 });
 
     expect(res.status).toBe(409);
+    expect(res.body.status).toBe('paid_without_campaign');
+    expect(notifications.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'boost_paid_without_campaign',
+        gerant_id: 'user_1',
+        id: expect.stringContaining('boost-paid-'),
+      }),
+    );
   });
 });
 
@@ -549,10 +652,12 @@ describe('GET /api/boosts/mine', () => {
   it('liste les campagnes du gérant avec état dérivé', async () => {
     stubTables({
       boosts: [
-        // 1. rattrapage : aucune campagne en attente
-        fakeChain({ data: [], error: null }),
+        // 1. purge des tentatives > 24 h
+        fakeChain({ data: null, error: null }),
         // 2. liste
         fakeChain({ data: [activeBoostRow], error: null }),
+        // 3. sélection du rattrapage : rien à rattraper
+        fakeChain({ data: [], error: null }),
       ],
     });
 
@@ -584,8 +689,12 @@ describe('GET /api/boosts/mine', () => {
     };
     stubTables({
       boosts: [
-        fakeChain({ data: [pendingRow], error: null }),
+        // 1. purge des tentatives > 24 h (M3/m8) — construite en synchrone
+        fakeChain({ data: null, error: null }),
+        // 2. liste /mine
         fakeChain({ data: [], error: null }),
+        // 3. sélection du rattrapage
+        fakeChain({ data: [pendingRow], error: null }),
       ],
     });
 
@@ -596,6 +705,44 @@ describe('GET /api/boosts/mine', () => {
     expect(supabaseAdmin.rpc).toHaveBeenCalledWith('activate_boost_checked', {
       p_transaction_id: 'pt-1',
     });
+  });
+
+  it('rattrapage : montant hors grille → activation refusée + alerte support (m6/M4)', async () => {
+    vi.mocked(Transaction.retrieve).mockResolvedValue(
+      fedapayBoostTransaction({ status: 'approved', amount: 1234 }) as never,
+    );
+    const notifications = fakeChain({ data: null, error: null });
+
+    const pendingRow = {
+      id: 'b-pending',
+      market: 'CI',
+      transaction_id: 'tx-uuid-1',
+      transaction: { id: 'pt-1', fedapay_transaction_id: 777, status: 'pending' },
+    };
+    stubTables({
+      notifications,
+      boosts: [
+        fakeChain({ data: null, error: null }),
+        fakeChain({ data: [], error: null }),
+        fakeChain({ data: [pendingRow], error: null }),
+      ],
+    });
+
+    const res = await request(app).get('/api/boosts/mine').set('Authorization', clerkBearer('user_1'));
+
+    expect(res.status).toBe(200);
+    expect(Transaction.retrieve).toHaveBeenCalledWith(777);
+    expect(supabaseAdmin.rpc).not.toHaveBeenCalledWith(
+      'activate_boost_checked',
+      expect.anything(),
+    );
+    expect(notifications.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'boost_paid_without_campaign',
+        gerant_id: 'user_1',
+        id: 'boost-paid-777',
+      }),
+    );
   });
 });
 

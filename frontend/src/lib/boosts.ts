@@ -37,20 +37,35 @@ export function isoDay(date: Date): string {
 }
 
 /**
+ * m11 : début de campagne à midi (fuseau marginal, inchangé) et fin en fin de
+ * journée — avant, la fin à `T12:00:00` laissait la demi-journée du dernier
+ * jour non livrée alors que le budget est payé pour la fenêtre entière.
+ */
+export function boostStartIso(day: string): string {
+  return new Date(`${day}T12:00:00`).toISOString();
+}
+
+export function boostEndIso(day: string): string {
+  return new Date(`${day}T23:59:59`).toISOString();
+}
+
+/**
  * Fenêtre de dates de campagne : mêmes règles que le serveur
  * (boostInitiateSchema / boostScheduleSchema) — la validation serveur
  * reste la référence, ceci sert à guider l'utilisateur avant l'envoi.
- * Les jours sont interprétés à midi pour marginaliser les fuseaux.
+ * Début interprété à midi, fin en fin de journée (m11).
  */
 export function validateBoostWindow(startDay: string, endDay: string): string | null {
   const start = new Date(`${startDay}T12:00:00`).getTime();
-  const end = new Date(`${endDay}T12:00:00`).getTime();
+  const end = new Date(`${endDay}T23:59:59`).getTime();
   if (!Number.isFinite(start) || !Number.isFinite(end)) return 'Date invalide';
   if (start < Date.now() - 12 * 60 * 60 * 1000) {
     return 'La date de début ne peut pas être dans le passé';
   }
   if (end <= start) return 'La date de fin doit être postérieure à la date de début';
-  if (end - start > 90 * 24 * 60 * 60 * 1000) {
+  // 90 jours « entre début et fin » : on accorde la demi-journée de fin (m11),
+  // sinon une fenêtre D → D+90 (fin 23:59:59) serait rejetée à 90 j + 11:59:59.
+  if (end - start > (90 + 0.5) * 24 * 60 * 60 * 1000) {
     return 'La campagne ne peut pas durer plus de 90 jours';
   }
   return null;

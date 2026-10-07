@@ -57,6 +57,9 @@ export function clearApiCache(): void {
   publicCache.clear();
 }
 
+/** Mutations qui ne changent aucun contenu public : pas de purge de cache. */
+const NO_CACHE_PURGE_PATHS = new Set(['/boosts/impression', '/boosts/click']);
+
 export async function cachedGet<T>(path: string, ttlMs = PUBLIC_CACHE_TTL_MS): Promise<T> {
   const now = Date.now();
   const hit = publicCache.get(path);
@@ -102,11 +105,15 @@ export interface RequestOptions extends RequestInit {
  */
 export class ApiError extends Error {
   readonly status: number;
+  /** Détail serveur du refus (ex. `status: 'declined' | 'pending'` d'une
+      transaction FedaPay) — seul moyen de distinguer un refus d'un retard. */
+  readonly detail: unknown;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, detail?: unknown) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -136,11 +143,16 @@ export async function request<T>(path: string, options?: RequestOptions): Promis
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new ApiError(body.error || `API error ${res.status}`, res.status);
+    throw new ApiError(body.error || `API error ${res.status}`, res.status, body.status);
   }
   // Toute mutation invalide le cache public : une création/édition ne doit
   // jamais être masquée par une réponse mise en cache 60 s plus tôt.
-  if ((rest.method ?? 'GET').toUpperCase() !== 'GET') clearApiCache();
+  // Exception m5 : les événements de tracking Boost ne changent AUCUN contenu
+  // public — 6 impressions sur la landing ne doivent pas purger bannières,
+  // salles et avis.
+  if ((rest.method ?? 'GET').toUpperCase() !== 'GET' && !NO_CACHE_PURGE_PATHS.has(path)) {
+    clearApiCache();
+  }
   return parseJsonBody<T>(res);
 }
 
@@ -615,6 +627,30 @@ export interface BoostChargeResponse {
   billed: boolean;
   exhausted: boolean;
   remaining: number | null;
+  /** Serveur qui vient de poser le cookie visiteur : l'événement n'a pas été
+      facturé, il faut relancer UNE fois (voir `trackEvent`). */
+  visitor_issued?: boolean;
+}
+
+/**
+ * Envoie un événement de tracking. Si le serveur répond `visitor_issued`
+ * (cookie visiteur absent/forgé, il vient d'en émettre un), on repasse une
+ * seule fois avec le cookie — jamais de boucle.
+ */
+async function trackEvent(
+  path: '/boosts/impression' | '/boosts/click',
+  boostId: string,
+  visitorId: string,
+): Promise<BoostChargeResponse> {
+  const send = () =>
+    request<BoostChargeResponse>(path, {
+      method: 'POST',
+      body: JSON.stringify({ boost_id: boostId, visitor_id: visitorId }),
+      public: true,
+    });
+  const first = await send();
+  if (first?.visitor_issued) return send();
+  return first;
 }
 
 export const apiBoosts = {
@@ -623,17 +659,9 @@ export const apiBoosts = {
   // re-faire un tour complet de la base à chaque navigation.
   featured: () => cachedGet<BoostFeaturedResponse>('/boosts/featured', 300_000),
   impression: (boostId: string, visitorId: string) =>
-    request<BoostChargeResponse>('/boosts/impression', {
-      method: 'POST',
-      body: JSON.stringify({ boost_id: boostId, visitor_id: visitorId }),
-      public: true,
-    }),
+    trackEvent('/boosts/impression', boostId, visitorId),
   click: (boostId: string, visitorId: string) =>
-    request<BoostChargeResponse>('/boosts/click', {
-      method: 'POST',
-      body: JSON.stringify({ boost_id: boostId, visitor_id: visitorId }),
-      public: true,
-    }),
+    trackEvent('/boosts/click', boostId, visitorId),
   initiate: (data: {
     room_id: string;
     mode: BoostMode;

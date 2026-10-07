@@ -35,10 +35,30 @@ export async function upsertPremiumTransaction(input: {
   customerEmail?: string | null;
   rawEvent?: unknown;
   type?: TxType;
+  /** m7 : n'écrit que si la ligne est encore 'pending' (rejeu webhook tardif). */
+  onlyIfPending?: boolean;
 }): Promise<{ id: string; status: PremiumTxStatus; activated: boolean }> {
   const txId = Number(input.fedapayTransactionId);
   if (!Number.isFinite(txId) || txId <= 0) {
     throw new Error('fedapay_transaction_id invalide');
+  }
+
+  if (input.onlyIfPending) {
+    const { data: existing, error: readError } = await supabaseAdmin
+      .from('premium_transactions')
+      .select('id, status, activated_at')
+      .eq('fedapay_transaction_id', txId)
+      .maybeSingle();
+    if (readError) throw readError;
+    if (existing && existing.status !== 'pending') {
+      // Ligne déjà tranchée (approved/declined/canceled) : on la renvoie
+      // telle quelle, sans régression de statut.
+      return {
+        id: existing.id,
+        status: existing.status as PremiumTxStatus,
+        activated: !!existing.activated_at,
+      };
+    }
   }
 
   const { data, error } = await supabaseAdmin

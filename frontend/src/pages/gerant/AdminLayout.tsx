@@ -329,10 +329,17 @@ export default function AdminLayout() {
                                     )
                                   ) : n.type === 'reservation_cancelled' ? (
                                     <>Réservation <strong>annulée</strong> pour <strong>{n.roomTitle}</strong></>
+                                  ) : n.type === 'boost_paid_without_campaign' ? (
+                                    <>Paiement <strong>boost</strong> encaissé — campagne introuvable</>
                                   ) : (
                                     <>Demande de réservation pour <strong>{n.roomTitle}</strong></>
                                   )}
                                 </p>
+                                {n.type === 'boost_paid_without_campaign' && (
+                                  <span className="notif-item__dates">
+                                    {n.message}
+                                  </span>
+                                )}
                                 {n.type === 'reservation' && (
                                   <span className="notif-item__dates">
                                     Réservation en attente

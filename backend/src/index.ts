@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { createRateLimitStore } from './utils/rateLimitStore';
+import { readTrackVisitor } from './utils/trackVisitor';
 import { errorHandler } from './middleware/errorHandler';
 import { requireClerkAuth } from './middleware/clerkAuth';
 import type { RawBodyRequest } from './types/express';
@@ -87,6 +88,16 @@ if (isProduction && allowedOrigins.length === 0) {
   process.exit(1);
 }
 
+// m3 : le callback FedaPay (premium + boost) n'utilise plus l'`Origin` du
+// navigateur mais APP_PUBLIC_URL. Sans cette variable, le gérant serait
+// redirigé après paiement vers http://localhost:5173 : la page de succès ne
+// se charge pas, /confirm ne tourne pas, le paiement reste invisible côté
+// gérant. Fail-fast identique à ALLOWED_ORIGINS plutôt qu'un échec muet.
+if (isProduction && !process.env.APP_PUBLIC_URL?.trim()) {
+  console.error('[FATAL] APP_PUBLIC_URL manquant en production : le callback FedaPay pointerait sur localhost (paiement jamais confirmé côté gérant).');
+  process.exit(1);
+}
+
 const writeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 200,
@@ -122,6 +133,50 @@ const webhookLimiter = rateLimit({
   legacyHeaders: false,
   store: createRateLimitStore('webhook'),
   message: { error: 'Trop de requêtes webhook' },
+});
+
+// C1 (REVUE_BOOST.md) : /boosts/impression et /boosts/click sont publics et
+// débitent un budget prépayé. Trois ceintures :
+//  - émission d'identité : ~10 nouvelles identités / 15 min / IP. C'est LA
+//    ceinture qui ferme C1 : sans elle, 2 requêtes (émission + facturation)
+//    suffisent pour un événement facturé et 40 req/15 min = 20 clics =
+//    un budget d'entrée de 1 000 F vidé par une seule IP. Un visiteur
+//    légitime n'émet qu'une identité par an (cookie 365 j) ;
+//  - par IP : ~40 événements / 15 min → une rafale native ne facture pas
+//    plus de 40 événements ;
+//  - par campagne : 150 / 15 min → une campagne ciblée reste protégée même
+//    répartie sur plusieurs IP (plafond de fait du débit).
+// Chaque clé est un store dédié (express-rate-limit refuse les stores partagés).
+const boostIssueLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  store: createRateLimitStore('boost-track-issue'),
+  // Ne compte QUE les requêtes sans cookie valide : les événements déjà
+  // identifiés ne consomment pas le quota d'émission.
+  skip: (req) => readTrackVisitor(req) !== null,
+  message: { error: 'Trop de nouvelles sessions de suivi, veuillez réessayer plus tard' },
+});
+
+const boostTrackIpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 40,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  store: createRateLimitStore('boost-track-ip'),
+  message: { error: 'Trop de requêtes de suivi, veuillez réessayer plus tard' },
+});
+
+const boostTrackBoostLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 150,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  store: createRateLimitStore('boost-track-boost'),
+  // Volontairement SANS req.ip : la clé est la campagne ciblée.
+  keyGenerator: (req) => `boost:${String((req.body as { boost_id?: unknown } | undefined)?.boost_id ?? 'none')}`,
+  message: { error: 'Trop de requêtes pour cette campagne, veuillez réessayer plus tard' },
 });
 
 app.disable('x-powered-by');
@@ -164,6 +219,16 @@ app.use('/api/premium/webhook', webhookLimiter, express.json({
 app.use(express.json({ limit: '1mb' }));
 app.use('/api', writeLimiter);
 app.use('/api/upload', uploadLimiter);
+// Placés APRÈS express.json() (sinon req.body est encore vide) et AVANT le
+// routeur boosts : une rafale de tracking est refusée avant toute lecture base.
+// L'émission d'identité est aussi bornée sur /featured : c'est là que le
+// serveur pose le cookie, donc la porte d'entrée du minting en masse.
+app.use(
+  ['/api/boosts/impression', '/api/boosts/click'],
+  boostIssueLimiter,
+  boostTrackIpLimiter,
+  boostTrackBoostLimiter,
+);
 
 app.use('/api/rooms', roomsRouter);
 app.use('/api/categories', categoriesRouter);
@@ -180,6 +245,8 @@ app.use('/api/gerants', requireClerkAuth, gerantsRouter);
 app.use('/api/clients', requireClerkAuth, clientsRouter);
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/premium', premiumRouter);
+// /featured pose aussi le cookie de visiteur : même quota d'émission (C1).
+app.use('/api/boosts/featured', boostIssueLimiter);
 app.use('/api/boosts', boostsRouter);
 app.use('/api/admin/login', adminLoginLimiter, adminRouter);
 app.use('/api/admin', adminRouter);

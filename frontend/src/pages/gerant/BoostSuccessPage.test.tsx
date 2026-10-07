@@ -14,9 +14,18 @@ vi.mock('@clerk/clerk-react', () => ({
   useAuth: () => ({ userId: mocks.userId, isLoaded: mocks.isLoaded }),
 }));
 
-vi.mock('../../lib/api', () => ({
-  apiBoosts: { confirm: mocks.confirm },
-}));
+vi.mock('../../lib/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/api')>();
+  return {
+    apiBoosts: { confirm: mocks.confirm },
+    ApiError: actual.ApiError,
+  };
+});
+
+/** Refus structuré du serveur (POST /boosts/confirm → body.status). */
+function confirmError(status: number, detail?: string) {
+  return import('../../lib/api').then(({ ApiError }) => new ApiError('Paiement', status, detail));
+}
 
 function renderSuccess(entry = '/ci/gerant/boosts/success?id=123') {
   return render(
@@ -176,7 +185,7 @@ describe('BoostSuccessPage', () => {
 
   it('réessaie automatiquement quand le paiement est encore en attente', async () => {
     vi.useFakeTimers();
-    mocks.confirm.mockRejectedValueOnce(new Error('Paiement en attente de confirmation'));
+    mocks.confirm.mockRejectedValueOnce(await confirmError(400, 'pending'));
     mocks.confirm.mockResolvedValueOnce({ success: true });
 
     renderSuccess();
@@ -201,7 +210,7 @@ describe('BoostSuccessPage', () => {
 
   it('abandonne après 3 relances automatiques infructueuses', async () => {
     vi.useFakeTimers();
-    mocks.confirm.mockRejectedValue(new Error('Paiement en attente de confirmation'));
+    mocks.confirm.mockRejectedValue(await confirmError(400, 'pending'));
 
     renderSuccess();
     await act(async () => {
@@ -224,5 +233,47 @@ describe('BoostSuccessPage', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Revérifier le paiement' })).toBeInTheDocument();
+  });
+
+  it('ne réessaie pas sur un paiement refusé (M5)', async () => {
+    vi.useFakeTimers();
+    mocks.confirm.mockRejectedValue(await confirmError(400, 'declined'));
+
+    renderSuccess();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(screen.getByText(/Paiement refusé/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Erreur' })).toBeInTheDocument();
+    expect(mocks.confirm).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(15000);
+    });
+
+    expect(mocks.confirm).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/nouvelle tentative/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/réessayez dans quelques secondes/)).not.toBeInTheDocument();
+  });
+
+  it('ne réessaie pas sur un paiement annulé (M5)', async () => {
+    mocks.confirm.mockRejectedValue(await confirmError(400, 'canceled'));
+
+    renderSuccess();
+
+    expect(await screen.findByText('Paiement annulé. Vous pouvez relancer un paiement depuis votre espace.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Erreur' })).toBeInTheDocument();
+    expect(mocks.confirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('oriente vers le support quand la campagne est introuvable (409, M4)', async () => {
+    mocks.confirm.mockRejectedValue(await confirmError(409, 'paid_without_campaign'));
+
+    renderSuccess();
+
+    expect(await screen.findByText(/Contactez le support/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Erreur' })).toBeInTheDocument();
+    expect(mocks.confirm).toHaveBeenCalledTimes(1);
   });
 });

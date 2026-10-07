@@ -3,7 +3,7 @@
 // depuis le statut brut et les dates : pas de job de fond, une campagne
 // « active » dont la fenêtre n'a pas commencé s'affiche « programmée ».
 
-export type BoostRawStatus = 'pending' | 'active' | 'paused' | 'exhausted' | 'canceled';
+export type BoostRawStatus = 'pending' | 'active' | 'paused' | 'exhausted' | 'canceled' | 'ended';
 
 export type BoostDisplayStatus =
   | 'pending'
@@ -54,6 +54,10 @@ export function deriveBoostDisplayStatus(
   if (row.status === 'canceled') return 'canceled';
   if (row.status === 'exhausted') return 'exhausted';
   if (row.status === 'paused') return 'paused';
+  // M1 : `ended` est un état explicite (backfill + expiration paresseuse) —
+  // on ne retombe surtout pas sur les dates, qui ont pu être repoussées par
+  // une reprogrammation.
+  if (row.status === 'ended') return 'ended';
   const t = now.getTime();
   if (t < new Date(row.starts_at).getTime()) return 'scheduled';
   if (t > new Date(row.ends_at).getTime()) return 'ended';

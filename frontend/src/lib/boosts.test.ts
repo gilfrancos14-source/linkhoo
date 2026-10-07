@@ -72,13 +72,14 @@ describe('validateBoostWindow', () => {
     );
   });
 
-  it('refuse une fin antérieure ou égale au début', () => {
-    expect(validateBoostWindow(today, today)).toBe(
+  it('refuse une fin antérieure au début', () => {
+    expect(validateBoostWindow(plusDays(5), plusDays(4))).toBe(
       'La date de fin doit être postérieure à la date de début',
     );
-    expect(validateBoostWindow(plusDays(5), plusDays(5))).toBe(
-      'La date de fin doit être postérieure à la date de début',
-    );
+  });
+
+  it('accepte une campagne d’un seul jour (fin en fin de journée, m11)', () => {
+    expect(validateBoostWindow(today, today)).toBeNull();
   });
 
   it('refuse une durée supérieure à 90 jours', () => {

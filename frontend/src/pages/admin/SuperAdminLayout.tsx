@@ -210,12 +210,19 @@ export default function SuperAdminLayout() {
                             </div>
                             <div className="notif-item__body">
                               <p className="notif-item__text">
-                                {n.type === 'reservation_cancelled' ? (
+                                {n.type === 'boost_paid_without_campaign' ? (
+                                  <>Paiement <strong>boost</strong> encaissé — campagne introuvable</>
+                                ) : n.type === 'reservation_cancelled' ? (
                                   <>Réservation <strong>annulée</strong> pour <strong>{n.room_title}</strong></>
                                 ) : (
                                   <>Demande de réservation pour <strong>{n.room_title}</strong></>
                                 )}
                               </p>
+                              {n.type === 'boost_paid_without_campaign' && n.message && (
+                                <span className="notif-item__dates">
+                                  {n.message}
+                                </span>
+                              )}
                               {n.client_name && (
                                 <span className="notif-item__dates">
                                   {n.client_name}{n.client_email ? ` · ${n.client_email}` : ''}

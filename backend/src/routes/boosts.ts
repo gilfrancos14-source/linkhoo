@@ -34,6 +34,11 @@ import {
   mapBoostRow,
 } from '../utils/boostDisplay';
 import {
+  ensureTrackVisitor,
+  issueTrackCookieIfMissing,
+} from '../utils/trackVisitor';
+import { flagPaidWithoutCampaign } from '../utils/boostAlerts';
+import {
   mapFedaPayStatus,
   isNotFoundError,
 } from '../smoke/fedapayRiskTests.helpers';
@@ -49,14 +54,12 @@ import {
 
 const router = Router();
 
-function getOrigin(req: Request): string {
-  const origin = req.headers.origin;
-  if (typeof origin === 'string' && origin) return origin;
-  return process.env.APP_PUBLIC_URL || 'http://localhost:5173';
-}
-
-function getCallbackUrl(req: Request, market: string): string {
-  return `${getOrigin(req)}/${market.toLowerCase()}/gerant/boosts/success`;
+function getCallbackUrl(market: string): string {
+  // m3 : uniquement APP_PUBLIC_URL (allow-list serveur). L'entête Origin est
+  // forgeable — un payeur redirigé « après paiement » vers un domaine tiers,
+  // c'est du phishing post-paiement.
+  const base = (process.env.APP_PUBLIC_URL || 'http://localhost:5173').replace(/\/+$/, '');
+  return `${base}/${market.toLowerCase()}/gerant/boosts/success`;
 }
 
 /** Paiement refusé/annulé : la campagne ne doit jamais passer active. */
@@ -84,8 +87,30 @@ async function fetchBoostRow(boostId: string) {
  * onglet fermé avant callback…), la visite du gérant repasse par l'API
  * FedaPay directement et crédite la campagne. Best effort : une erreur
  * FedaPay ne doit jamais rendre la liste illisible.
+ *
+ * M3 : borné à 3 tentatives de moins de 24 h, 2 s max par appel FedaPay, et
+ * appelé EN ARRIÈRE-PLAN — il ne doit jamais retarder GET /boosts/mine.
+ * m8 : les plus anciennes d'abord, et les tentatives > 24 h passent en
+ * canceled (elles resteraient « Paiement en attente » indéfiniment).
  */
+const RECONCILE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const RECONCILE_LIMIT = 3;
+const RECONCILE_FEDAPAY_TIMEOUT_MS = 2000;
+
 async function reconcilePendingBoosts(clerkUserId: string): Promise<void> {
+  const now = Date.now();
+  const cutoffIso = new Date(now - RECONCILE_MAX_AGE_MS).toISOString();
+
+  const { error: purgeError } = await supabaseAdmin
+    .from('boosts')
+    .update({ status: 'canceled', updated_at: new Date(now).toISOString() })
+    .eq('gerant_id', clerkUserId)
+    .eq('status', 'pending')
+    .lt('created_at', cutoffIso);
+  if (purgeError) {
+    console.warn('[boosts] purge des tentatives anciennes impossible :', purgeError.message);
+  }
+
   const { data, error } = await supabaseAdmin
     .from('boosts')
     .select(
@@ -93,8 +118,9 @@ async function reconcilePendingBoosts(clerkUserId: string): Promise<void> {
     )
     .eq('gerant_id', clerkUserId)
     .eq('status', 'pending')
-    .order('created_at', { ascending: false })
-    .limit(3);
+    .gte('created_at', cutoffIso)
+    .order('created_at', { ascending: true })
+    .limit(RECONCILE_LIMIT);
   if (error || !Array.isArray(data)) return;
 
   for (const row of data) {
@@ -104,24 +130,54 @@ async function reconcilePendingBoosts(clerkUserId: string): Promise<void> {
     const fedapayId = tx?.fedapay_transaction_id;
     if (!row.transaction_id || !fedapayId) continue;
     try {
-      const remote = (await withFedapayTimeout(Transaction.retrieve(fedapayId))) as {
+      const remote = (await withFedapayTimeout(
+        Transaction.retrieve(fedapayId),
+        RECONCILE_FEDAPAY_TIMEOUT_MS,
+      )) as {
         status?: unknown;
         amount?: unknown;
         customer?: { email?: string } | null;
       };
       const status = mapFedaPayStatus(remote.status);
+      const txAmount = Number.isFinite(Number(remote.amount)) ? Number(remote.amount) : 0;
       const persisted = await upsertPremiumTransaction({
         fedapayTransactionId: fedapayId,
         clerkUserId,
         market: row.market,
-        amount: Number.isFinite(Number(remote.amount)) ? Number(remote.amount) : 0,
+        amount: txAmount,
         status,
         customerEmail: remote.customer?.email ?? null,
         rawEvent: { source: 'reconcile', transaction_status: remote.status },
         type: 'boost',
       });
       if (status === 'approved') {
-        await activateBoostForTransaction(persisted.id);
+        // m6 : même défense en profondeur que le webhook et /confirm. Un
+        // montant hors grille n'active rien — et comme l'argent est déjà
+        // encaissé, on alerte le support au lieu d'un simple warn.
+        if (!BOOST_BUDGETS.some((budget) => budget === txAmount)) {
+          console.warn(
+            '[boosts] rattrapage : montant hors grille (' + txAmount + ') pour tx ' + fedapayId + ' — activation refusée',
+          );
+          await flagPaidWithoutCampaign({
+            clerkUserId,
+            market: row.market,
+            transactionId: fedapayId,
+            amount: txAmount,
+            source: 'reconcile-amount',
+          });
+          continue;
+        }
+        const activation = await activateBoostForTransaction(persisted.id);
+        if (!activation.boostId) {
+          // M4 : encaissé mais plus de campagne à créditer → alerte support.
+          await flagPaidWithoutCampaign({
+            clerkUserId,
+            market: row.market,
+            transactionId: fedapayId,
+            amount: txAmount,
+            source: 'reconcile',
+          });
+        }
       } else if (status === 'declined' || status === 'canceled') {
         await cancelBoostForTransaction(persisted.id);
       }
@@ -129,6 +185,21 @@ async function reconcilePendingBoosts(clerkUserId: string): Promise<void> {
       console.warn('[boosts] rattrapage impossible pour', row.id, (err as Error)?.message || err);
     }
   }
+}
+
+/** Un seul rattrapage par gérant à la fois (M3 : lancé en arrière-plan). */
+const reconcileInFlight = new Set<string>();
+
+function reconcileInBackground(clerkUserId: string): void {
+  if (reconcileInFlight.has(clerkUserId)) return;
+  reconcileInFlight.add(clerkUserId);
+  void reconcilePendingBoosts(clerkUserId)
+    .catch((err: unknown) => {
+      console.warn('[boosts] rattrapage en arrière-plan :', (err as Error)?.message || err);
+    })
+    .finally(() => {
+      reconcileInFlight.delete(clerkUserId);
+    });
 }
 
 // ── Configuration publique (affichée sur l'écran de création et la landing) ──
@@ -145,8 +216,11 @@ router.get('/config', (_req: Request, res: Response) => {
 
 // ── Emplacements sponsorisés de la landing (public, cache 300 s) ──
 
-router.get('/featured', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/featured', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    // C1 : pose l'identité visiteur (cookie signé) avant les événements de
+    // tracking — sans elle, impression/click répondraient visitor_issued.
+    issueTrackCookieIfMissing(req, res);
     const nowIso = new Date().toISOString();
     const { data, error } = await supabaseAdmin
       .from('boosts')
@@ -214,7 +288,23 @@ async function handleCharge(
       res.status(400).json({ error: 'Données invalides', details: parsedBody.error.flatten() });
       return;
     }
-    const { boost_id, visitor_id } = parsedBody.data;
+    const { boost_id } = parsedBody.data;
+
+    // C1 : l'identité de dédup vient du cookie signé, JAMAIS du corps — un
+    // `visitor_id` fourni par le client se vidait d'un budget en 100 requêtes.
+    const { visitorId, issued } = ensureTrackVisitor(req, res);
+    if (issued) {
+      // Cookie absent/forgé : on le pose et on laisse le client relancer une
+      // fois. Aucune lecture base, aucun verrou, aucun débit.
+      res.status(200).json({
+        counted: false,
+        billed: false,
+        exhausted: false,
+        remaining: null,
+        visitor_issued: true,
+      });
+      return;
+    }
 
     const { data: boost, error } = await supabaseAdmin
       .from('boosts')
@@ -232,7 +322,7 @@ async function handleCharge(
     const { data, error: chargeError } = await supabaseAdmin.rpc('charge_boost', {
       p_boost_id: boost_id,
       p_kind: kind,
-      p_visitor_id: visitor_id,
+      p_visitor_id: visitorId,
       p_amount: amount,
     });
     if (chargeError) throw chargeError;
@@ -245,8 +335,15 @@ async function handleCharge(
             billed: Boolean(row.billed),
             exhausted: Boolean(row.exhausted),
             remaining: row.remaining ?? null,
+            visitor_issued: false,
           }
-        : { counted: false, billed: false, exhausted: false, remaining: null }
+        : {
+            counted: false,
+            billed: false,
+            exhausted: false,
+            remaining: null,
+            visitor_issued: false,
+          }
     );
   } catch (err) {
     next(err);
@@ -304,6 +401,18 @@ router.post('/initiate', requireClerkAuth, async (req: Request, res: Response, n
       return res.status(400).json({ error: 'Cette chambre n\'est plus disponible' });
     }
 
+    // M1 : expiration paresseuse de CETTE chambre. Sans cette transition, une
+    // campagne dont la fenêtre est passée reste `active` et bloque toute nouvelle
+    // création à jamais (l'unique partielle n'est libérée que par `ended`).
+    const nowIso = new Date().toISOString();
+    const { error: expireError } = await supabaseAdmin
+      .from('boosts')
+      .update({ status: 'ended', updated_at: nowIso })
+      .eq('room_id', room_id)
+      .eq('status', 'active')
+      .lte('ends_at', nowIso);
+    if (expireError) throw expireError;
+
     // Index partiel UNIQUE (une seule campagne pending/active par chambre) :
     // refuse une nouvelle tentative trop proche de la précédente, remplace
     // celles abandonnées (> BOOST_PENDING_SUPERSEDE_MS) pour ne jamais
@@ -349,7 +458,7 @@ router.post('/initiate', requireClerkAuth, async (req: Request, res: Response, n
         description: `Boost ${mode.toUpperCase()} - ${room.title}`,
         amount: budget_total,
         currency: { iso: BOOST_CURRENCY },
-        callback_url: getCallbackUrl(req, room.market),
+        callback_url: getCallbackUrl(room.market),
         customer: { email: customerEmail },
         metadata: {
           clerk_user_id: authUserId,
@@ -462,6 +571,19 @@ router.post('/confirm', requireClerkAuth, async (req: Request, res: Response, ne
       return res.status(400).json({ error: 'Transaction non éligible à un boost' });
     }
     if (!Number.isFinite(amountFromTx) || !BOOST_BUDGETS.some((b) => b === amountFromTx)) {
+      // m6 + M4 : la transaction est approuvée mais le montant n'est dans
+      // aucune grille → rien n'est crédité. L'argent étant encaissé, on alerte
+      // le support (idempotent : même id que webhook et rattrapage). Un
+      // montant faux sur un paiement non approuvé n'est pas un incident.
+      if (status === 'approved') {
+        await flagPaidWithoutCampaign({
+          clerkUserId: clerkUserIdFromMeta,
+          market: marketFromMeta,
+          transactionId: transaction.id,
+          amount: Number.isFinite(amountFromTx) ? amountFromTx : 0,
+          source: 'confirm-amount',
+        });
+      }
       return res.status(400).json({ error: 'Montant de transaction invalide' });
     }
 
@@ -493,8 +615,18 @@ router.post('/confirm', requireClerkAuth, async (req: Request, res: Response, ne
     // Idem premium : la RPC tranche (webhook probablement déjà passé).
     const activation = await activateBoostForTransaction(persisted.id);
     if (!activation.boostId) {
+      // M4 : la transaction est approved mais la campagne a disparu →
+      // l'argent est encaissé, rien n'est crédité : on alerte le support.
+      await flagPaidWithoutCampaign({
+        clerkUserId: clerkUserIdFromMeta,
+        market: marketFromMeta,
+        transactionId: transaction.id,
+        amount: amountFromTx,
+        source: 'confirm',
+      });
       return res.status(409).json({
         error: 'Cette tentative de paiement n\'est plus valable (campagne remplacée ou annulée).',
+        status: 'paid_without_campaign',
       });
     }
 
@@ -524,7 +656,9 @@ router.get('/mine', requireClerkAuth, async (req: Request, res: Response, next: 
       return res.status(401).json({ error: 'Non autorisé' });
     }
 
-    await reconcilePendingBoosts(authUserId);
+    // M3 : en arrière-plan — 3 appels FedaPay de 15 s ne doivent jamais
+    // faire échouer le chargement de la liste (timeout front = 15 s).
+    reconcileInBackground(authUserId);
 
     const { data, error } = await supabaseAdmin
       .from('boosts')
@@ -584,12 +718,24 @@ router.patch('/:id/schedule', requireClerkAuth, async (req: Request, res: Respon
       .update({
         starts_at: parsedBody.data.starts_at.toISOString(),
         ends_at: parsedBody.data.ends_at.toISOString(),
+        // M1 : une campagne `ended` repassée en ligne doit redevenir `active`,
+        // sinon elle ne se facturerait jamais (charge_boost exige active).
+        ...(boost.status === 'ended' ? { status: 'active' } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq('id', boost.id)
       .select(`*, ${BOOST_ROOM_EMBED}`)
       .single();
-    if (updateError) throw updateError;
+    if (updateError) {
+      // 23505 : une autre campagne pending/active occupe déjà la chambre
+      // (index partiel) — la reprogrammation reste impossible sans 500.
+      if (updateError.code === '23505') {
+        return res
+          .status(409)
+          .json({ error: 'Une autre campagne est déjà en cours pour cette chambre.' });
+      }
+      throw updateError;
+    }
 
     res.json({ boost: mapBoostRow(updated) });
   } catch (err) {

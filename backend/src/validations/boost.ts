@@ -37,7 +37,10 @@ function refineWindow(
   }
   if (end <= start) {
     addIssue(['ends_at'], 'La date de fin doit être postérieure à la date de début');
-  } else if (end - start > BOOST_MAX_DURATION_DAYS * 24 * 60 * 60 * 1000) {
+  } else if (end - start > (BOOST_MAX_DURATION_DAYS + 0.5) * 24 * 60 * 60 * 1000) {
+    // m11 : le client envoie la fin à 23:59:59 du dernier jour — une fenêtre
+    // D → D+90 dure 90 j + 11:59:59, on garde « 90 jours entre début et fin »
+    // en accordant la demi-journée de fin (le front valide à l'identique).
     addIssue(['ends_at'], `La campagne ne peut pas durer plus de ${BOOST_MAX_DURATION_DAYS} jours`);
   }
 }

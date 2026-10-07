@@ -4,7 +4,7 @@ import { useAuth } from '@clerk/clerk-react';
 import { useHomePath } from '../../hooks/useHomePath';
 import { apiBoosts, apiGerants, type BoostConfig, type BoostMode, type GerantData } from '../../lib/api';
 import { fetchMyRooms, type Room } from '../../data/rooms';
-import { boostAmount, isoDay, validateBoostWindow } from '../../lib/boosts';
+import { boostAmount, boostEndIso, boostStartIso, isoDay, validateBoostWindow } from '../../lib/boosts';
 
 function addDays(days: number): string {
   return isoDay(new Date(Date.now() + days * 24 * 60 * 60 * 1000));
@@ -70,8 +70,8 @@ export default function BoostCreatePage() {
         room_id: effectiveRoomId,
         mode,
         budget_total: effectiveBudget,
-        starts_at: new Date(`${startDay}T12:00:00`).toISOString(),
-        ends_at: new Date(`${endDay}T12:00:00`).toISOString(),
+        starts_at: boostStartIso(startDay),
+        ends_at: boostEndIso(endDay),
       });
       window.location.href = payment_url;
     } catch (err) {
