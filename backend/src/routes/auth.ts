@@ -139,7 +139,7 @@ router.post('/bootstrap', async (req: Request, res: Response, next: NextFunction
 
     const { data: existing } = await supabaseAdmin
       .from('gerants')
-      .select('id')
+      .select('id, market')
       .eq('clerk_user_id', authUserId)
       .maybeSingle();
 
@@ -152,6 +152,15 @@ router.post('/bootstrap', async (req: Request, res: Response, next: NextFunction
         market,
       });
       if (error) throw error;
+    } else if (existing.market !== market) {
+      // Un gérant est rattaché à UN seul marché à la fois. Si l'URL demande
+      // un marché différent de celui du profil, on renvoie 409 avec le marché
+      // réel pour que le front redirige vers l'espace gérant du bon marché.
+      return res.status(409).json({
+        error: `Compte gérant déjà enregistré sur le marché ${existing.market}`,
+        role: 'gerant',
+        market: existing.market,
+      });
     }
 
     await setClerkRole(identity.clerk, authUserId, 'gerant');
@@ -159,6 +168,7 @@ router.post('/bootstrap', async (req: Request, res: Response, next: NextFunction
       role: 'gerant',
       profile_role: 'gerant',
       clerk_role: 'gerant',
+      market: existing?.market ?? market,
     });
   } catch (err: any) {
     if (err?.status) {

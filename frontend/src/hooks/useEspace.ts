@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, useUser } from '@clerk/clerk-react';
-import { apiAuth, setAuthTokenGetter, type AuthRole } from '../lib/api';
+import { apiAuth, setAuthTokenGetter, ApiError, type AuthRole } from '../lib/api';
 import { useMarket } from '../contexts/MarketContext';
+import { isMarketCode } from '../config/markets';
 
 function readRole(meta: unknown): AuthRole | null {
   if (meta && typeof meta === 'object' && 'role' in meta) {
@@ -70,7 +71,17 @@ export function useEspace() {
       navigate(role === 'gerant' ? `${home}/gerant` : `${home}/compte`, {
         replace: true,
       });
-    } catch {
+    } catch (err) {
+      // 409 avec un marché renvoyé : le compte gérant est rattaché à un
+      // autre marché que celui de l'URL → on redirige vers le bon espace.
+      if (err instanceof ApiError && err.status === 409) {
+        const detail = err.detail as { market?: string; role?: string } | undefined;
+        const actualMarket = detail?.market;
+        if (detail?.role === 'gerant' && actualMarket && isMarketCode(actualMarket)) {
+          navigate(`/${actualMarket.toLowerCase()}/gerant`, { replace: true });
+          return;
+        }
+      }
       navigate(`${home}/compte`, { replace: true });
     } finally {
       setLoading(false);

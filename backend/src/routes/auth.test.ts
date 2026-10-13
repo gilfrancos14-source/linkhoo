@@ -205,7 +205,7 @@ describe('POST /api/auth/bootstrap', () => {
       .send({ role: 'gerant', market: 'CI' });
 
     expect(res.status).toBe(201);
-    expect(res.body).toEqual({ role: 'gerant', profile_role: 'gerant', clerk_role: 'gerant' });
+    expect(res.body).toEqual({ role: 'gerant', profile_role: 'gerant', clerk_role: 'gerant', market: 'CI' });
     expect(inserted.insert).toHaveBeenCalledWith(
       expect.objectContaining({ clerk_user_id: 'user_1', market: 'CI' }),
     );
@@ -224,7 +224,7 @@ describe('POST /api/auth/bootstrap', () => {
 
   it('201 : profil gérant existant mais rôle absent de Clerk', async () => {
     const roleCheck = fakeChain({ data: null, error: null });
-    const existing = fakeChain({ data: { id: 'g1' }, error: null });
+    const existing = fakeChain({ data: { id: 'g1', market: 'BJ' }, error: null });
     stubTables({ gerants: [roleCheck, existing] });
 
     const res = await request(app)
@@ -234,5 +234,36 @@ describe('POST /api/auth/bootstrap', () => {
 
     expect(res.status).toBe(201);
     expect(existing.insert).not.toHaveBeenCalled();
+  });
+
+  it('409 : gérant existant sur un autre marché → renvoie le marché réel', async () => {
+    const roleCheck = fakeChain({ data: { id: 'g1' }, error: null });
+    const existing = fakeChain({ data: { id: 'g1', market: 'CI' }, error: null });
+    stubTables({ gerants: [roleCheck, existing] });
+
+    const res = await request(app)
+      .post('/api/auth/bootstrap')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ role: 'gerant', market: 'BJ' });
+
+    expect(res.status).toBe(409);
+    expect(res.body.role).toBe('gerant');
+    expect(res.body.market).toBe('CI');
+    expect(existing.insert).not.toHaveBeenCalled();
+  });
+
+  it('200 : gérant existant sur le même marché → OK', async () => {
+    const roleCheck = fakeChain({ data: { id: 'g1' }, error: null });
+    const existing = fakeChain({ data: { id: 'g1', market: 'CI' }, error: null });
+    stubTables({ gerants: [roleCheck, existing] });
+
+    const res = await request(app)
+      .post('/api/auth/bootstrap')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ role: 'gerant', market: 'CI' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.role).toBe('gerant');
+    expect(res.body.market).toBe('CI');
   });
 });

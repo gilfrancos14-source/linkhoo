@@ -5,7 +5,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import RoleRouteGuard from './RoleRouteGuard';
-import type { AuthRole } from '../lib/api';
+import { ApiError, type AuthRole } from '../lib/api';
 
 type BootstrapArgs = { role: AuthRole; market?: MarketCode };
 
@@ -31,10 +31,14 @@ vi.mock('@clerk/clerk-react', () => ({
   useClerk: () => ({ signOut: mocks.signOut }),
 }));
 
-vi.mock('../lib/api', () => ({
-  apiAuth: { bootstrap: mocks.bootstrap },
-  setAuthTokenGetter: mocks.setAuthTokenGetter,
-}));
+vi.mock('../lib/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/api')>();
+  return {
+    ...actual,
+    apiAuth: { bootstrap: mocks.bootstrap },
+    setAuthTokenGetter: mocks.setAuthTokenGetter,
+  };
+});
 
 function renderGuard(
   role: AuthRole,
@@ -152,6 +156,18 @@ describe('RoleRouteGuard', () => {
     renderGuard('gerant', '/ci/protege');
 
     expect(await screen.findByText('Mon compte')).toBeInTheDocument();
+  });
+
+  it("redirige un gérant de CI vers /ci/gerant quand le bootstrap échoue avec 409 market=CI", async () => {
+    mocks.isSignedIn = true;
+    // Le backend renvoie 409 avec le marché réel du compte gérant
+    mocks.bootstrap.mockRejectedValue(
+      new ApiError('Compte gérant déjà enregistré sur le marché CI', 409, { market: 'CI' }),
+    );
+
+    renderGuard('gerant', '/bj/protege');
+
+    expect(await screen.findByText('Espace gérant')).toBeInTheDocument();
   });
 
   it("redirige vers /ci/gerant si le bootstrap échoue avec un message évoquant le rôle gerant", async () => {

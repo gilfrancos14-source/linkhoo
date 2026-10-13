@@ -3,7 +3,7 @@ import { isMarketCode } from '../config/markets';
 import { useEffect, useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { useAuth, useClerk } from '@clerk/clerk-react';
-import { apiAuth, setAuthTokenGetter, type AuthRole } from '../lib/api';
+import { apiAuth, setAuthTokenGetter, ApiError, type AuthRole } from '../lib/api';
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkConfigured = Boolean(clerkKey && clerkKey.startsWith('pk_'));
@@ -46,9 +46,10 @@ function AuthenticatedGuard({
   const { market } = useParams<{ market: string }>();
   const { isSignedIn, isLoaded, getToken } = useAuth();
   const { signOut } = useClerk();
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error' | 'wrong-role'>('loading');
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error' | 'wrong-role' | 'wrong-market'>('loading');
   const [message, setMessage] = useState<string | null>(null);
   const [retryToken, setRetryToken] = useState(0);
+  const [redirectMarket, setRedirectMarket] = useState<string | null>(null);
 
   useEffect(() => {
     setAuthTokenGetter(() => getToken());
@@ -75,6 +76,17 @@ function AuthenticatedGuard({
         setStatus('ready');
       } catch (err) {
         if (cancelled) return;
+        // 409 avec un marché renvoyé : le compte gérant est rattaché à un
+        // autre marché que celui de l'URL → on redirige vers le bon espace.
+        if (err instanceof ApiError && err.status === 409 && expectedRole === 'gerant') {
+          const detail = err.detail as { market?: string } | undefined;
+          const actualMarket = detail?.market;
+          if (actualMarket && isMarketCode(actualMarket)) {
+            setRedirectMarket(actualMarket.toLowerCase());
+            setStatus('wrong-market');
+            return;
+          }
+        }
         const errorMessage = err instanceof Error ? err.message : '';
         if (errorMessage.includes(expectedRole === 'client' ? 'gerant' : 'client')) {
           setStatus('wrong-role');
@@ -111,6 +123,9 @@ function AuthenticatedGuard({
   if (!isSignedIn) return <Navigate to={loginPath} replace />;
   if (status === 'loading') return <Loading />;
   if (status === 'wrong-role') return <Navigate to={wrongRolePath} replace />;
+  if (status === 'wrong-market' && redirectMarket) {
+    return <Navigate to={`/${redirectMarket}/gerant`} replace />;
+  }
 
   if (status === 'error') {
     return (

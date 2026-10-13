@@ -152,7 +152,7 @@ export async function request<T>(path: string, options?: RequestOptions): Promis
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new ApiError(body.error || `API error ${res.status}`, res.status, body.status);
+    throw new ApiError(body.error || `API error ${res.status}`, res.status, body);
   }
   // Toute mutation invalide le cache public : une création/édition ne doit
   // jamais être masquée par une réponse mise en cache 60 s plus tôt.
@@ -726,6 +726,8 @@ export interface AuthBootstrapResponse {
   role: AuthRole | null;
   profile_role: AuthRole | null;
   clerk_role: AuthRole | null;
+  /** Présent sur un 409 marché : le marché réel du compte gérant. */
+  market?: string;
 }
 
 export const apiAuth = {

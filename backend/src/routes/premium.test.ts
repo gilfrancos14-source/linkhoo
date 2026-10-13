@@ -123,21 +123,17 @@ describe('POST /api/premium/initiate', () => {
     expect(res.body.expires_at).toBe(FUTURE);
   });
 
-  it('400 si un premium actif existe déjà sur un autre marché', async () => {
-    const firstFetch = fakeChain({ data: { ...activeGerant, market: 'CI' }, error: null });
-    const otherMarket = fakeChain({
-      data: { market: 'CI', is_premium: true, premium_expires_at: FUTURE },
-      error: null,
-    });
-    stubTables({ gerants: [firstFetch, otherMarket] });
+  it('403 si le gérant tente un premium pour un autre marché que le sien', async () => {
+    gerants = fakeChain({ data: { ...activeGerant, market: 'CI' }, error: null });
+    stubTables();
 
     const res = await request(app)
       .post('/api/premium/initiate')
       .set('Authorization', clerkBearer('user_1'))
       .send({ market: 'BJ' });
 
-    expect(res.status).toBe(400);
-    expect(res.body.error).toContain('un autre marché');
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain('rattaché au marché CI');
   });
 
   it('400 si lemail du gérant est manquant', async () => {

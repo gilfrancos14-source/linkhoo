@@ -82,11 +82,17 @@ router.post('/initiate', requireClerkAuth, async (req: Request, res: Response, n
 
     const { data: gerant, error: fetchError } = await supabaseAdmin
       .from('gerants')
-      .select('id, email, is_premium, premium_expires_at')
+      .select('id, email, market, is_premium, premium_expires_at')
       .eq('clerk_user_id', clerk_user_id)
       .maybeSingle();
     if (fetchError) throw fetchError;
     if (!gerant) return res.status(404).json({ error: 'Gérant introuvable' });
+
+    if (gerant.market !== market) {
+      return res.status(403).json({
+        error: `Votre compte gérant est rattaché au marché ${gerant.market}. Impossible de souscrire un premium pour le marché ${market}.`,
+      });
+    }
 
     if (isPremiumActive(gerant)) {
       return res.status(400).json({ error: 'Vous êtes déjà premium', expires_at: gerant.premium_expires_at });

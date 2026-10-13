@@ -13,13 +13,14 @@ const MAX_AUTO_RETRIES = 3;
  * M5 : on ne se fie plus à un regex sur le texte (« en attente » matchait
  * aussi « Paiement declined » → 3 relances puis « réessayez dans quelques
  * secondes » sur un refus définitif). Le serveur porte une raison structurée :
- * `ApiError.status` + `ApiError.detail` (`body.status` de /boosts/confirm).
+ * `ApiError.status` + `ApiError.detail.status` (body de /boosts/confirm).
  */
 function classify(err: unknown): { status?: number; reason?: string } {
   if (!(err instanceof ApiError)) return {};
+  const detail = err.detail as { status?: unknown } | undefined;
   return {
     status: err.status,
-    reason: typeof err.detail === 'string' ? err.detail : undefined,
+    reason: typeof detail?.status === 'string' ? detail.status : undefined,
   };
 }
 
