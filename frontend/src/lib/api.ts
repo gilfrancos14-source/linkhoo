@@ -210,6 +210,8 @@ export interface RoomListParams {
   prixMax?: number;
   chambres?: number;
   disponible?: boolean;
+  promoGroup?: string;
+  q?: string;
   page?: number;
   limit?: number;
 }
@@ -241,6 +243,8 @@ export const apiRooms = {
     if (params.prixMax !== undefined) search.set('prix_max', String(params.prixMax));
     if (params.chambres !== undefined) search.set('chambres', String(params.chambres));
     if (params.disponible !== undefined) search.set('disponible', String(params.disponible));
+    if (params.promoGroup) search.set('promo_group', params.promoGroup);
+    if (params.q) search.set('q', params.q);
     if (params.page !== undefined) search.set('page', String(params.page));
     if (params.limit !== undefined) search.set('limit', String(params.limit));
     const qs = search.toString();

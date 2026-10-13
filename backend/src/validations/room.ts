@@ -73,6 +73,8 @@ export const roomListQuerySchema = z
     prix_max: z.coerce.number().min(0).max(1000000000).optional(),
     chambres: z.coerce.number().int().min(1).max(100).optional(),
     disponible: z.enum(['true', 'false']).optional(),
+    promo_group: z.enum(['promo_15', 'promo_10', 'promo_5']).optional(),
+    q: z.string().trim().min(1).max(100).optional(),
     page: z.coerce.number().int().min(1).max(100000).optional(),
     limit: z.coerce.number().int().min(1).max(100).optional(),
   })

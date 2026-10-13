@@ -10,9 +10,11 @@ import type { Category } from '../data/categories';
 import SearchResultsPage from './SearchResultsPage';
 
 const mocks = vi.hoisted(() => ({
-  fetchRoomsByMarket: vi.fn<(market: MarketCode) => Promise<unknown[]>>(),
+  fetchRoomsPage: vi.fn<(filters: unknown) => Promise<{ items: unknown[]; total: number; page: number; limit: number }>>(),
   fetchAvailableRooms: vi.fn<(...args: unknown[]) => Promise<unknown[]>>(),
   fetchCategoriesByMarket: vi.fn<(market: MarketCode) => Promise<unknown[]>>(),
+  fetchVilles: vi.fn<(market?: MarketCode) => Promise<string[]>>(),
+  fetchQuartiers: vi.fn<(market?: MarketCode) => Promise<string[]>>(),
   request: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   cachedGet: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
 }));
@@ -28,8 +30,10 @@ vi.mock('../data/rooms', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../data/rooms')>();
   return {
     ...actual,
-    fetchRoomsByMarket: mocks.fetchRoomsByMarket,
+    fetchRoomsPage: mocks.fetchRoomsPage,
     fetchAvailableRooms: mocks.fetchAvailableRooms,
+    fetchVilles: mocks.fetchVilles,
+    fetchQuartiers: mocks.fetchQuartiers,
   };
 });
 
@@ -102,9 +106,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.request.mockRejectedValue(new Error('réseau interdit dans les tests'));
   mocks.cachedGet.mockRejectedValue(new Error('réseau interdit dans les tests'));
-  mocks.fetchRoomsByMarket.mockResolvedValue([]);
+  mocks.fetchRoomsPage.mockResolvedValue({ items: [], total: 0, page: 1, limit: 6 });
   mocks.fetchAvailableRooms.mockResolvedValue([]);
   mocks.fetchCategoriesByMarket.mockResolvedValue(CATEGORIES);
+  mocks.fetchVilles.mockResolvedValue([]);
+  mocks.fetchQuartiers.mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -124,8 +130,6 @@ describe('SearchResultsPage — états', () => {
   });
 
   it("affiche le panneau de dates quand les dates manquent", async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom()]);
-
     renderPage('/ci/recherche');
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Sélectionnez vos dates' })).toBeInTheDocument();
@@ -133,8 +137,6 @@ describe('SearchResultsPage — états', () => {
   });
 
   it('affiche la requête dans le titre du panneau de dates', async () => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom()]);
-
     renderPage('/ci/recherche?q=bord%20de%20mer');
 
     expect(await screen.findByRole('heading', { level: 1, name: /Recherche pour/ })).toHaveTextContent(
@@ -192,10 +194,6 @@ describe('SearchResultsPage — états', () => {
 });
 
 describe('SearchResultsPage — panneau de dates', () => {
-  beforeEach(() => {
-    mocks.fetchRoomsByMarket.mockResolvedValue([makeRoom()]);
-  });
-
   it('refuse la soumission sans dates', async () => {
     renderPage('/ci/recherche');
 
@@ -269,16 +267,16 @@ describe('SearchResultsPage — requêtes', () => {
     await screen.findByRole('heading', { level: 1, name: /Résultats pour/ });
 
     expect(mocks.fetchAvailableRooms).toHaveBeenCalledWith('CI', '2026-03-01', '2026-03-04');
-    expect(mocks.fetchRoomsByMarket).not.toHaveBeenCalled();
+    expect(mocks.fetchRoomsPage).not.toHaveBeenCalled();
     expect(mocks.fetchCategoriesByMarket).toHaveBeenCalledWith('CI');
   });
 
-  it('interroge tous les biens du marché quand les dates manquent', async () => {
+  it('interroge les biens du marché paginés quand les dates manquent', async () => {
     renderPage('/ci/recherche');
 
     await screen.findByRole('heading', { level: 1, name: 'Sélectionnez vos dates' });
 
-    expect(mocks.fetchRoomsByMarket).toHaveBeenCalledWith('CI');
+    expect(mocks.fetchRoomsPage).toHaveBeenCalledWith(expect.objectContaining({ market: 'CI' }));
     expect(mocks.fetchAvailableRooms).not.toHaveBeenCalled();
   });
 
@@ -337,6 +335,8 @@ describe('SearchResultsPage — résultats', () => {
         disponible: false,
       }),
     ]);
+    mocks.fetchVilles.mockResolvedValue(['Abidjan', 'Grand-Bassam']);
+    mocks.fetchQuartiers.mockResolvedValue(['Cocody', 'Ficaye', 'Plateau']);
     renderPage(DATED);
     // Attendre le compteur et non le titre : le plafond de prix (priceMax)
     // n'est calculé qu'après le rendu des biens, ce qui laisse un rendu
@@ -382,7 +382,7 @@ describe('SearchResultsPage — résultats', () => {
 
   it('filtre au prix maximal avec le curseur', () => {
     const range = screen.getByLabelText<HTMLInputElement>(/Prix max/);
-    expect(range.value).toBe('60000');
+    expect(range.value).toBe('500000');
 
     fireEvent.change(range, { target: { value: '30000' } });
 
@@ -449,6 +449,7 @@ describe('SearchResultsPage — requête libre et pagination', () => {
         makeRoom({ id: `x${i}`, title: `Bien ${i}`, ville: 'Grand-Bassam' }),
       ),
     ]);
+    mocks.fetchVilles.mockResolvedValue(['Abidjan', 'Grand-Bassam']);
 
     const { container } = renderPage(DATED);
     await screen.findByRole('navigation', { name: 'Pagination' });

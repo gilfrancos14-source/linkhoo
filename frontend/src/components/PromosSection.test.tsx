@@ -25,12 +25,12 @@ const mocks = vi.hoisted(() => {
   Element.prototype.scrollBy = (() => {}) as unknown as typeof Element.prototype.scrollBy;
   Element.prototype.scrollIntoView = (() => {}) as unknown as typeof Element.prototype.scrollIntoView;
   return {
-    fetchRooms: vi.fn<(market: MarketCode) => Promise<Room[]>>(),
+    fetchRooms: vi.fn<(filters: unknown) => Promise<{ items: Room[]; total: number; page: number; limit: number }>>(),
     fetchBanners: vi.fn<(market: MarketCode, section: string) => Promise<Banner[]>>(),
   };
 });
 
-vi.mock('../data/rooms', () => ({ fetchRoomsByMarket: mocks.fetchRooms }));
+vi.mock('../data/rooms', () => ({ fetchRoomsPage: mocks.fetchRooms }));
 vi.mock('../data/banners', () => ({ fetchBannersBySection: mocks.fetchBanners }));
 
 function room(overrides: Partial<Room> & { id: string }): Room {
@@ -93,15 +93,15 @@ afterEach(() => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.fetchRooms.mockResolvedValue([]);
+  mocks.fetchRooms.mockResolvedValue({ items: [], total: 0, page: 1, limit: 100 });
   mocks.fetchBanners.mockResolvedValue([]);
 });
 
 describe('PromosSection', () => {
   it('affiche les squelettes pendant le chargement des biens', async () => {
-    let resolveRooms!: (value: Room[]) => void;
+    let resolveRooms!: (value: { items: Room[]; total: number; page: number; limit: number }) => void;
     mocks.fetchRooms.mockReturnValue(
-      new Promise<Room[]>((resolve) => {
+      new Promise((resolve) => {
         resolveRooms = resolve;
       }),
     );
@@ -112,7 +112,7 @@ describe('PromosSection', () => {
     expect(container.querySelectorAll('.card-skeleton')).toHaveLength(3);
     expect(screen.getByText('Offres promotionnelles')).toBeInTheDocument();
 
-    resolveRooms([]);
+    resolveRooms({ items: [], total: 0, page: 1, limit: 100 });
     await waitFor(() =>
       expect(container.querySelector('.promos__grid')).toHaveAttribute('aria-busy', 'false'),
     );
@@ -178,10 +178,11 @@ describe('PromosSection', () => {
   });
 
   it('liste les biens concernés par la promotion active', async () => {
-    mocks.fetchRooms.mockResolvedValue([
+    const rooms = [
       room({ id: 'r15', promoGroup: 'promo_15' }),
       room({ id: 'r15b', promoGroup: 'promo_15', title: 'Deuxième bien' }),
-    ]);
+    ];
+    mocks.fetchRooms.mockResolvedValue({ items: rooms, total: rooms.length, page: 1, limit: 100 });
 
     const { container } = renderSection();
     await waitFor(() => expect(promoCards(container)).toHaveLength(3));
@@ -210,10 +211,11 @@ describe('PromosSection', () => {
   });
 
   it('ignore les promotions dont la période est déjà passée', async () => {
-    mocks.fetchRooms.mockResolvedValue([
+    const rooms = [
       room({ id: 'expired', promoGroup: 'promo_15', promoEnd: '2000-01-01' }),
       room({ id: 'future', promoGroup: 'promo_15', promoStart: '2099-01-01' }),
-    ]);
+    ];
+    mocks.fetchRooms.mockResolvedValue({ items: rooms, total: rooms.length, page: 1, limit: 100 });
 
     const { container } = renderSection();
     await waitFor(() => expect(promoCards(container)).toHaveLength(3));
@@ -225,7 +227,12 @@ describe('PromosSection', () => {
   });
 
   it('n’affiche pas les biens des autres groupes de promotion', async () => {
-    mocks.fetchRooms.mockResolvedValue([room({ id: 'r10', promoGroup: 'promo_10' })]);
+    mocks.fetchRooms.mockResolvedValue({
+      items: [room({ id: 'r10', promoGroup: 'promo_10' })],
+      total: 1,
+      page: 1,
+      limit: 100,
+    });
 
     const { container } = renderSection();
     await waitFor(() => expect(promoCards(container)).toHaveLength(3));
@@ -239,10 +246,11 @@ describe('PromosSection', () => {
   });
 
   it("affiche les flèches de navigation avec la précédente désactivée", async () => {
-    mocks.fetchRooms.mockResolvedValue([
+    const rooms = [
       room({ id: 'a', promoGroup: 'promo_10' }),
       room({ id: 'b', promoGroup: 'promo_10' }),
-    ]);
+    ];
+    mocks.fetchRooms.mockResolvedValue({ items: rooms, total: rooms.length, page: 1, limit: 100 });
 
     const { container } = renderSection();
     await waitFor(() => expect(promoCards(container)).toHaveLength(3));
@@ -279,7 +287,7 @@ describe('PromosSection', () => {
 
   it('interroge les données du marché courant', async () => {
     renderSection('/bj');
-    await waitFor(() => expect(mocks.fetchRooms).toHaveBeenCalledWith('BJ'));
+    await waitFor(() => expect(mocks.fetchRooms).toHaveBeenCalledWith(expect.objectContaining({ market: 'BJ' })));
 
     expect(mocks.fetchBanners).toHaveBeenCalledWith('BJ', 'promos');
     expect(screen.getByTestId('location')).toHaveTextContent('/bj');

@@ -24,13 +24,13 @@ const mocks = vi.hoisted(() => {
   Element.prototype.scrollTo = (() => {}) as unknown as typeof Element.prototype.scrollTo;
   return {
     fetchCategories: vi.fn<(market: MarketCode) => Promise<Category[]>>(),
-    fetchRooms: vi.fn<(market: MarketCode) => Promise<Room[]>>(),
+    fetchRooms: vi.fn<(filters: unknown) => Promise<{ items: Room[]; total: number; page: number; limit: number }>>(),
     fetchBanners: vi.fn<(market: MarketCode, section: string) => Promise<Banner[]>>(),
   };
 });
 
 vi.mock('../data/categories', () => ({ fetchCategoriesByMarket: mocks.fetchCategories }));
-vi.mock('../data/rooms', () => ({ fetchRoomsByMarket: mocks.fetchRooms }));
+vi.mock('../data/rooms', () => ({ fetchRoomsPage: mocks.fetchRooms }));
 vi.mock('../data/banners', () => ({ fetchBannersBySection: mocks.fetchBanners }));
 
 const categories: Category[] = [
@@ -100,7 +100,7 @@ afterEach(() => {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.fetchCategories.mockResolvedValue(categories);
-  mocks.fetchRooms.mockResolvedValue([]);
+  mocks.fetchRooms.mockResolvedValue({ items: [], total: 0, page: 1, limit: 100 });
   mocks.fetchBanners.mockResolvedValue([]);
 });
 
@@ -133,11 +133,12 @@ describe('CategoriesSection', () => {
   });
 
   it('compte les biens de chaque catégorie dans le badge', async () => {
-    mocks.fetchRooms.mockResolvedValue([
+    const rooms = [
       room('r1', 'ci-appartements'),
       room('r2', 'ci-appartements'),
       room('r3', 'ci-hotels'),
-    ]);
+    ];
+    mocks.fetchRooms.mockResolvedValue({ items: rooms, total: rooms.length, page: 1, limit: 100 });
 
     renderSection();
     await screen.findByRole('heading', { level: 3, name: 'Appartements' });
@@ -201,7 +202,7 @@ describe('CategoriesSection', () => {
     await screen.findByRole('heading', { level: 3, name: 'Appartements' });
 
     expect(mocks.fetchCategories).toHaveBeenCalledWith('BJ');
-    expect(mocks.fetchRooms).toHaveBeenCalledWith('BJ');
+    expect(mocks.fetchRooms).toHaveBeenCalledWith(expect.objectContaining({ market: 'BJ' }));
     expect(mocks.fetchBanners).toHaveBeenCalledWith('BJ', 'categories');
     expect(document.querySelector<HTMLAnchorElement>('a.cat-card')).toHaveAttribute(
       'href',

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useMarket } from '../contexts/MarketContext';
-import { fetchRoomsByMarket, type Room } from '../data/rooms';
+import { fetchRoomsPage, type Room } from '../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../data/categories';
 import { fetchBannersBySection, type Banner } from '../data/banners';
 import BannerCarousel from './BannerCarousel';
@@ -36,9 +36,11 @@ export default function CategoriesSection() {
 
   useEffect(() => {
     let alive = true;
-    fetchRoomsByMarket(market)
-      .then((data) => {
-        if (alive) setRooms(data);
+    // Page bornée : les badges n'ont besoin que d'un échantillon pour
+    // afficher un compte par catégorie, pas du catalogue entier.
+    fetchRoomsPage({ market, limit: 100 })
+      .then((page) => {
+        if (alive) setRooms(page.items);
       })
       .catch(() => {
         if (alive) setRooms([]);

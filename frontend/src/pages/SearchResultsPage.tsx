@@ -2,7 +2,13 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { useState, useMemo, useEffect, type FormEvent } from 'react';
 import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
-import { fetchAvailableRooms, fetchRoomsByMarket, getVillesFromRooms, getQuartiersFromRooms, type Room } from '../data/rooms';
+import {
+  fetchAvailableRooms,
+  fetchRoomsPage,
+  fetchVilles,
+  fetchQuartiers,
+  type Room,
+} from '../data/rooms';
 import { fetchCategoriesByMarket } from '../data/categories';
 import { roomMeta, roomSubtitle } from '../lib/roomDisplay';
 import StayCard from '../components/StayCard';
@@ -10,6 +16,7 @@ import Pagination from '../components/Pagination';
 
 const ITEMS_PER_PAGE = 6;
 
+/** Filtre client — n'utilisé qu'en mode dates (liste disponible non paginée). */
 function matchesQuery(room: Room, query: string): boolean {
   if (!query) return true;
   const q = query.toLowerCase();
@@ -29,7 +36,10 @@ export default function SearchResultsPage() {
   const homePath = useHomePath();
   const [searchParams, setSearchParams] = useSearchParams();
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [total, setTotal] = useState(0);
   const [categories, setCategories] = useState<any[]>([]);
+  const [villes, setVilles] = useState<string[]>([]);
+  const [quartiers, setQuartiers] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const query = searchParams.get('q') ?? '';
@@ -37,45 +47,101 @@ export default function SearchResultsPage() {
   const dateDepart = searchParams.get('depart') ?? '';
   const categorieParam = searchParams.get('categorie') ?? '';
 
-  useEffect(() => {
-    setLoading(true);
-    const roomsPromise = dateArrivee && dateDepart
-      ? fetchAvailableRooms(market, dateArrivee, dateDepart)
-      : fetchRoomsByMarket(market);
-    Promise.all([
-      roomsPromise,
-      fetchCategoriesByMarket(market),
-    ]).then(([r, c]) => {
-      setRooms(r);
-      setCategories(c);
-    }).catch(() => {
-      setRooms([]);
-      setCategories([]);
-    }).finally(() => {
-      setLoading(false);
-    });
-  }, [market, dateArrivee, dateDepart]);
-
-  const villes = useMemo(() => getVillesFromRooms(rooms), [rooms]);
-  const quartiers = useMemo(() => getQuartiersFromRooms(rooms), [rooms]);
-
-  // Dates manquantes → on affiche le panneau de sélection
-  const needsDates = !dateArrivee || !dateDepart;
-
   // Filtres
   const [selectedVille, setSelectedVille] = useState('');
   const [selectedQuartier, setSelectedQuartier] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(categorieParam);
-  const [maxPrice, setMaxPrice] = useState(500);
-  const [priceMax, setPriceMax] = useState(500);
+  const [priceMax, setPriceMax] = useState(500_000);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Référentiels : catégories, villes, quartiers (endpoints dédiés,
+  // pas besoin de tout le catalogue).
   useEffect(() => {
-    const highest = rooms.reduce((max, room) => Math.max(max, room.priceNum), 0);
-    const ceiling = highest > 0 ? Math.ceil(highest / 100) * 100 : 500;
-    setMaxPrice(ceiling);
-    setPriceMax(ceiling);
-  }, [rooms]);
+    let alive = true;
+    Promise.all([
+      fetchCategoriesByMarket(market),
+      fetchVilles(market),
+      fetchQuartiers(market),
+    ])
+      .then(([c, v, q]) => {
+        if (!alive) return;
+        setCategories(c);
+        setVilles(v);
+        setQuartiers(q);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setCategories([]);
+        setVilles([]);
+        setQuartiers([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [market]);
+
+  // Dates manquantes → on affiche le panneau de sélection
+  const needsDates = !dateArrivee || !dateDepart;
+  const hasDates = !needsDates;
+
+  // Clé de fetch : en mode dates on ne re-télécharge que si le marché ou les
+  // dates changent (les filtres locaux sont appliqués en mémoire) ; sans dates,
+  // chaque filtre serveur ou page déclenche un nouvel appel.
+  const fetchKey = hasDates
+    ? `d|${market}|${dateArrivee}|${dateDepart}`
+    : `s|${market}|${query}|${selectedVille}|${selectedQuartier}|${selectedCategory}|${priceMax}|${currentPage}`;
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+
+    if (hasDates) {
+      fetchAvailableRooms(market, dateArrivee, dateDepart)
+        .then((data) => {
+          if (!alive) return;
+          setRooms(data);
+          setTotal(data.length);
+        })
+        .catch(() => {
+          if (!alive) return;
+          setRooms([]);
+          setTotal(0);
+        })
+        .finally(() => {
+          if (alive) setLoading(false);
+        });
+    } else {
+      fetchRoomsPage({
+        market,
+        q: query || undefined,
+        ville: selectedVille || undefined,
+        quartier: selectedQuartier || undefined,
+        category: selectedCategory || undefined,
+        prixMax: priceMax < 500_000 ? priceMax : undefined,
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
+      })
+        .then((page) => {
+          if (!alive) return;
+          setRooms(page.items);
+          setTotal(page.total);
+        })
+        .catch(() => {
+          if (!alive) return;
+          setRooms([]);
+          setTotal(0);
+        })
+        .finally(() => {
+          if (!alive) return;
+          setLoading(false);
+        });
+    }
+
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchKey regroupe les deps
+  }, [fetchKey]);
 
   // Panneau de dates
   const [panelArrivee, setPanelArrivee] = useState('');
@@ -101,8 +167,9 @@ export default function SearchResultsPage() {
     });
   };
 
-  // Filtrage
+  // Mode dates : filtre client sur la liste disponible (sous-ensemble).
   const filteredRooms = useMemo(() => {
+    if (!hasDates) return rooms;
     return rooms.filter((room) => {
       if (!matchesQuery(room, query)) return false;
       if (selectedVille && room.ville !== selectedVille) return false;
@@ -111,14 +178,20 @@ export default function SearchResultsPage() {
       if (room.priceNum > priceMax) return false;
       return true;
     });
-  }, [rooms, query, selectedVille, selectedQuartier, selectedCategory, priceMax]);
+  }, [hasDates, rooms, query, selectedVille, selectedQuartier, selectedCategory, priceMax]);
 
-  const totalPages = Math.ceil(filteredRooms.length / ITEMS_PER_PAGE);
-  const paginatedRooms = filteredRooms.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  // Sans dates : total vient du serveur ; avec dates : découpage local.
+  const totalPages = hasDates
+    ? Math.ceil(filteredRooms.length / ITEMS_PER_PAGE)
+    : Math.ceil(total / ITEMS_PER_PAGE);
+  const paginatedRooms = hasDates
+    ? filteredRooms.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+      )
+    : filteredRooms;
 
+  const resultCount = hasDates ? filteredRooms.length : total;
   const displayQuery = query.trim() || 'Tous les biens';
 
   if (loading) {
@@ -193,7 +266,7 @@ export default function SearchResultsPage() {
                   Résultats pour <em>{displayQuery}</em>
                 </h1>
                 <p className="search-page__count">
-                  {filteredRooms.length} bien{filteredRooms.length !== 1 ? 's' : ''} trouvé{filteredRooms.length !== 1 ? 's' : ''}
+                  {resultCount} bien{resultCount !== 1 ? 's' : ''} trouvé{resultCount !== 1 ? 's' : ''}
                 </p>
               </div>
               {dateArrivee && dateDepart && (
@@ -236,17 +309,17 @@ export default function SearchResultsPage() {
                     type="range"
                     id="sp-prix"
                     min={0}
-                    max={maxPrice}
-                    step={100}
+                    max={500_000}
+                    step={1000}
                     value={priceMax}
                     onChange={(e) => { setPriceMax(Number(e.target.value)); setCurrentPage(1); }}
                   />
                 </div>
-                {(selectedVille || selectedQuartier || selectedCategory || priceMax < maxPrice) && (
+                {(selectedVille || selectedQuartier || selectedCategory || priceMax < 500_000) && (
                   <button
                     type="button"
                     className="search-page__filter-reset"
-                    onClick={() => { setSelectedVille(''); setSelectedQuartier(''); setSelectedCategory(''); setPriceMax(maxPrice); setCurrentPage(1); }}
+                    onClick={() => { setSelectedVille(''); setSelectedQuartier(''); setSelectedCategory(''); setPriceMax(500_000); setCurrentPage(1); }}
                   >
                     Réinitialiser les filtres
                   </button>

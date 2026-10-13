@@ -81,6 +81,8 @@ export interface RoomListFilters {
   category?: string;
   chambres?: number;
   disponible?: boolean;
+  promoGroup?: string;
+  q?: string;
   page?: number;
   limit?: number;
 }
@@ -101,6 +103,8 @@ export async function fetchRoomsPage(filters: RoomListFilters): Promise<RoomList
     category: filters.category,
     chambres: filters.chambres,
     disponible: filters.disponible,
+    promoGroup: filters.promoGroup,
+    q: filters.q,
     page: filters.page,
     limit: filters.limit,
   });

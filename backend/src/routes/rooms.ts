@@ -38,6 +38,13 @@ function applyRoomFilters(query: any, filters: RoomListFilters): any {
     q = filters.chambres >= 3 ? q.gte('chambres', 3) : q.eq('chambres', filters.chambres);
   }
   if (filters.disponible !== undefined) q = q.eq('disponible', filters.disponible === 'true');
+  if (filters.promo_group) q = q.eq('promo_group', filters.promo_group);
+  if (filters.q) {
+    // Recherche texte sur les champs visibles de la carte — description
+    // exclue (colonne jusqu'à 10 k caractères, trop coûteuse à ILIKE).
+    const pattern = `%${filters.q.replace(/[%_,()]/g, ' ')}%`;
+    q = q.or(`title.ilike.${pattern},subtitle.ilike.${pattern},ville.ilike.${pattern},quartier.ilike.${pattern},category.ilike.${pattern}`);
+  }
   return q;
 }
 

@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useMarket } from '../contexts/MarketContext';
-import { fetchRoomsByMarket, type Room } from '../data/rooms';
+import { fetchRoomsPage, type Room } from '../data/rooms';
 import { fetchBannersBySection, type Banner } from '../data/banners';
 import { priceWithCurrency } from '../lib/roomDisplay';
 import BannerCarousel from './BannerCarousel';
@@ -44,9 +44,12 @@ export default function PromosSection() {
   useEffect(() => {
     let alive = true;
     setRoomsLoading(true);
-    fetchRoomsByMarket(market)
-      .then((data) => {
-        if (alive) setRooms(data);
+    // Page bornée : les promos actives sont rares, un échantillon de 100
+    // lignes suffit pour peupler les trois groupes sans téléverser le
+    // catalogue entier.
+    fetchRoomsPage({ market, limit: 100 })
+      .then((page) => {
+        if (alive) setRooms(page.items);
       })
       .catch(() => {
         if (alive) setRooms([]);
