@@ -1,10 +1,28 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { MarketProvider } from '../contexts/MarketContext';
 import { MARKET_CODES } from '../config/markets';
 import MarketSelector from './MarketSelector';
+
+const mocks = vi.hoisted(() => ({
+  isLoaded: true,
+  isSignedIn: false,
+  getMe: vi.fn<() => Promise<{ market: string }>>(),
+}));
+
+vi.mock('@clerk/clerk-react', () => ({
+  useAuth: () => ({ isLoaded: mocks.isLoaded, isSignedIn: mocks.isSignedIn }),
+}));
+
+vi.mock('../lib/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/api')>();
+  return {
+    ...actual,
+    apiGerants: { getMe: mocks.getMe },
+  };
+});
 
 function PathProbe() {
   const { pathname } = useLocation();
@@ -40,6 +58,13 @@ function triggerButton() {
 
 afterEach(() => {
   cleanup();
+});
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.isLoaded = true;
+  mocks.isSignedIn = false;
+  mocks.getMe.mockRejectedValue(new Error('Non connecté'));
 });
 
 describe('MarketSelector — pages de marché', () => {
@@ -189,5 +214,28 @@ describe('MarketSelector — page d’accueil', () => {
     fireEvent.mouseDown(screen.getByRole('button', { name: 'Bouton extérieur' }));
 
     expect(screen.queryByRole('listbox')).toBeNull();
+  });
+});
+
+describe('MarketSelector — gérant connecté', () => {
+  it('affiche le drapeau fixe du marché du gérant, non cliquable', async () => {
+    mocks.isSignedIn = true;
+    mocks.getMe.mockResolvedValue({ market: 'CI' });
+
+    renderSelector('/');
+
+    // Le sélecteur est remplacé par un drapeau statique
+    expect(await screen.findByRole('img', { name: "Marché Côte d'Ivoire (compte gérant)" })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Choisir le marché' })).toBeNull();
+    expect(screen.queryByRole('listbox')).toBeNull();
+  });
+
+  it("un client connecté garde le sélecteur normal", async () => {
+    mocks.isSignedIn = true;
+    mocks.getMe.mockRejectedValue(new Error('Pas un gérant'));
+
+    renderSelector('/');
+
+    expect(await screen.findByRole('button', { name: 'Choisir le marché' })).toBeInTheDocument();
   });
 });

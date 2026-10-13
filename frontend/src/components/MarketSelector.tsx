@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@clerk/clerk-react';
 import { isRootPath, useMarket, type MarketCode } from '../contexts/MarketContext';
 import { MARKETS as MARKET_REGISTRY } from '../config/markets';
+import { apiGerants } from '../lib/api';
 import {
   FlagBF,
   FlagBJ,
@@ -64,7 +66,10 @@ function FlagNone() {
 export default function MarketSelector() {
   const { market, setMarket } = useMarket();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const { isSignedIn, isLoaded } = useAuth();
   const [open, setOpen] = useState(false);
+  const [gerantMarket, setGerantMarket] = useState<MarketCode | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   const selected = MARKETS.find((m) => m.code === market) ?? MARKETS[0];
@@ -73,6 +78,19 @@ export default function MarketSelector() {
   // Sur les pages de marché (/ci, /bj, …) on affiche uniquement le drapeau,
   // non cliquable.
   const isLanding = isRootPath(pathname);
+
+  // Un gérant connecté est rattaché à UN seul marché : on bloque le switch.
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn || !isLanding) {
+      setGerantMarket(null);
+      return;
+    }
+    let cancelled = false;
+    apiGerants.getMe()
+      .then((gerant) => { if (!cancelled) setGerantMarket(gerant.market); })
+      .catch(() => { if (!cancelled) setGerantMarket(null); });
+    return () => { cancelled = true; };
+  }, [isLoaded, isSignedIn, isLanding]);
 
   useEffect(() => {
     if (!open) return;
@@ -91,6 +109,13 @@ export default function MarketSelector() {
   }, [open]);
 
   const switchMarket = (code: MarketCode) => {
+    // Un gérant connecté ne peut pas changer de marché : on le renvoie
+    // directement sur son espace gérant.
+    if (gerantMarket) {
+      navigate(`/${gerantMarket.toLowerCase()}/gerant`, { replace: true });
+      setOpen(false);
+      return;
+    }
     // setMarket navigue : le contexte dérive du marché de l'URL.
     // À l'accueil aucun marché n'est encore choisi (même CI) : on navigue
     // toujours, le choix n'est jamais déjà « actif ».
@@ -107,6 +132,22 @@ export default function MarketSelector() {
           aria-label={`Marché ${selected.label}`}
         >
           <span className="market-selector__flag">{selected.flag}</span>
+        </span>
+      </div>
+    );
+  }
+
+  // Gérant connecté : drapeau fixe de son marché, non cliquable.
+  if (gerantMarket) {
+    const gerantSelected = MARKETS.find((m) => m.code === gerantMarket) ?? MARKETS[0];
+    return (
+      <div className="market-selector market-selector--static">
+        <span
+          className="header-btn header-btn--market"
+          role="img"
+          aria-label={`Marché ${gerantSelected.label} (compte gérant)`}
+        >
+          <span className="market-selector__flag">{gerantSelected.flag}</span>
         </span>
       </div>
     );
