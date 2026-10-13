@@ -59,9 +59,11 @@ const AdminGerantsPage = lazy(() => import('./pages/admin/AdminGerantsPage'));
 const AdminBannersPage = lazy(() => import('./pages/admin/AdminBannersPage'));
 const AdminEventsPage = lazy(() => import('./pages/admin/AdminEventsPage'));
 const AdminDestinationsPage = lazy(() => import('./pages/admin/AdminDestinationsPage'));
+const AdminEscapadesPage = lazy(() => import('./pages/admin/AdminEscapadesPage'));
 const AdminReservationsPage = lazy(() => import('./pages/admin/AdminReservationsPage'));
 const AdminPromotionsPage = lazy(() => import('./pages/admin/AdminPromotionsPage'));
 const AdminBoostsPage = lazy(() => import('./pages/admin/AdminBoostsPage'));
+const AdminEquipePage = lazy(() => import('./pages/admin/AdminEquipePage'));
 
 function RouteFallback() {
   return (
@@ -98,8 +100,10 @@ const adminSectionRoutes = (
       <Route path="banners" element={<AdminBannersPage />} />
       <Route path="evenements" element={<AdminEventsPage />} />
       <Route path="destinations" element={<AdminDestinationsPage />} />
+      <Route path="escapades" element={<AdminEscapadesPage />} />
       <Route path="promotions" element={<AdminPromotionsPage />} />
       <Route path="boosts" element={<AdminBoostsPage />} />
+      <Route path="equipe" element={<AdminEquipePage />} />
     </Route>
   </>
 );

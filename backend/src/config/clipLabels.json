@@ -1,0 +1,27 @@
+{
+  "positifs": [
+    { "label": "the interior of an apartment", "categorie": "interieur" },
+    { "label": "an empty room in an apartment", "categorie": "interieur" },
+    { "label": "a bedroom with a bed", "categorie": "interieur" },
+    { "label": "a living room with a sofa", "categorie": "interieur" },
+    { "label": "a kitchen with cabinets", "categorie": "interieur" },
+    { "label": "a bathroom with a shower", "categorie": "interieur" },
+    { "label": "the facade of an apartment building", "categorie": "facade" },
+    { "label": "an apartment building seen from the street", "categorie": "facade" },
+    { "label": "the exterior of a residential building", "categorie": "facade" }
+  ],
+  "negatifs": [
+    "a photo of a person",
+    "a portrait of a person",
+    "a landscape with mountains and sky",
+    "a beach with sand and sea",
+    "food on a plate",
+    "a car on a road",
+    "an identity document",
+    "a screenshot of a webpage",
+    "a logo or a graphic design",
+    "an animal or a pet",
+    "a handwritten note"
+  ],
+  "personnes": ["a photo of a person", "a portrait of a person"]
+}

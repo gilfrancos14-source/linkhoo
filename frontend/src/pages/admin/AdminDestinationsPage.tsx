@@ -1,4 +1,4 @@
-import { MARKETS, type MarketCode } from '../../config/markets';
+import { MARKETS, MARKET_CODES, type MarketCode } from '../../config/markets';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { apiAdmin, type AdminDestination } from '../../lib/adminApi';
@@ -30,6 +30,8 @@ export default function AdminDestinationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [marketFilter, setMarketFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const [panelOpen, setPanelOpen] = useState(false);
   const [editing, setEditing] = useState<AdminDestination | null>(null);
@@ -54,8 +56,8 @@ export default function AdminDestinationsPage() {
     [],
   );
 
-  // GET /tourism exige ?market= : on charge les deux marchés, on affiche les
-  // deux listes dans l'ordre serveur (grosses cartes d'abord).
+  // GET /tourism est par marché : on interroge TOUS les marchés puis on
+  // concatène, en gardant l'ordre serveur (grosses cartes d'abord) par marché.
   const loadDestinations = useCallback(async (options?: { silent?: boolean }) => {
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -65,13 +67,12 @@ export default function AdminDestinationsPage() {
       setError('');
     }
     try {
-      const [ci, bj] = await Promise.all([
-        apiAdmin.getDestinations('CI'),
-        apiAdmin.getDestinations('BJ'),
-      ]);
+      const partitions = await Promise.all(
+        MARKET_CODES.map((code) => apiAdmin.getDestinations(code)),
+      );
       if (controller.signal.aborted) return;
-      setDestinations([...ci.big, ...ci.small, ...bj.big, ...bj.small]);
-      setBigIds(new Set([...ci.big, ...bj.big].map((d) => d.id)));
+      setDestinations(partitions.flatMap((p) => [...p.big, ...p.small]));
+      setBigIds(new Set(partitions.flatMap((p) => p.big).map((d) => d.id)));
     } catch {
       if (!controller.signal.aborted && !options?.silent) {
         setError('Impossible de charger les destinations.');
@@ -90,10 +91,14 @@ export default function AdminDestinationsPage() {
   // saisie pour que la ville de la destination tombe pile sur celle d'un
   // événement (sinon la carte ne bascule jamais en grande carte).
   useEffect(() => {
-    Promise.all([apiRooms.villes(), apiAdmin.getEvents('CI'), apiAdmin.getEvents('BJ')])
-      .then(([villes, ciEvents, bjEvents]) => {
+    Promise.all([apiRooms.villes(), apiAdmin.getEvents()])
+      .then(([villes, eventCities]) => {
         const seen = new Map<string, string>();
-        for (const value of [...destinations.map((d) => d.city), ...villes, ...ciEvents.map((e) => e.city), ...bjEvents.map((e) => e.city)]) {
+        for (const value of [
+          ...destinations.map((d) => d.city),
+          ...villes,
+          ...eventCities.map((e) => e.city),
+        ]) {
           const raw = (value || '').trim();
           if (!raw) continue;
           const key = raw.toLowerCase();
@@ -107,6 +112,17 @@ export default function AdminDestinationsPage() {
   }, [destinations]);
 
   const filtered = marketFilter === 'all' ? destinations : destinations.filter((d) => d.market === marketFilter);
+
+  // Un changement de filtre peut réduire la liste à moins de pages : on
+  // revient à la première pour ne pas afficher une page vide.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [marketFilter]);
+
+  // Pagination côté client (les destinations sont déjà toutes chargées) : on
+  // n'en montre que 10 par page au lieu de toute la liste.
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const openCreate = () => {
     setEditing(null);
@@ -270,7 +286,7 @@ export default function AdminDestinationsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((destination) => (
+                  {paginated.map((destination) => (
                     <tr key={destination.id}>
                       <td>
                         <img
@@ -317,7 +333,7 @@ export default function AdminDestinationsPage() {
           </div>
 
           <div className="banners-mobile-cards">
-            {filtered.map((destination) => (
+            {paginated.map((destination) => (
               <div className="gerant-card" key={destination.id}>
                 {destination.img && (
                   <img
@@ -349,6 +365,34 @@ export default function AdminDestinationsPage() {
               </div>
             ))}
           </div>
+
+          {totalPages > 1 && (
+            <div className="admin-pagination">
+              <button
+                className="admin-pagination__btn"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(currentPage - 1)}
+              >
+                ←
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  className={`admin-pagination__btn ${page === currentPage ? 'admin-pagination__btn--active' : ''}`}
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                className="admin-pagination__btn"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(currentPage + 1)}
+              >
+                →
+              </button>
+            </div>
+          )}
         </>
       )}
 

@@ -1,8 +1,11 @@
 import { z } from 'zod';
 import { idSchema } from './common';
 import {
-  BOOST_BUDGETS,
   BOOST_MAX_DURATION_DAYS,
+  BOOST_MAX_BUDGET,
+  BOOST_MIN_BUDGET,
+  BOOST_PRICE_CPI,
+  BOOST_PRICE_CPC,
   BOOST_START_GRACE_MS,
 } from '../config/boosts';
 
@@ -45,15 +48,43 @@ function refineWindow(
   }
 }
 
+/**
+ * Budget multiple du pas de facturation du mode : 50 F en cpc, 5 F en cpi.
+ * Sans cela, un budget « rond » mais non multiple (ex. 3 010 F en cpc)
+ * s'épuise en laissant un reliquat que le gérant a payé sans le consommer.
+ */
+function refineBudget(
+  data: { mode: 'cpc' | 'cpi'; budget_total: number },
+  context: { addIssue: (issue: { code: typeof z.ZodIssueCode.custom; path: (string | number)[]; message: string }) => void }
+): void {
+  if ((data.mode !== 'cpc' && data.mode !== 'cpi') || !Number.isInteger(data.budget_total)) return;
+  const step = data.mode === 'cpc' ? BOOST_PRICE_CPC : BOOST_PRICE_CPI;
+  const unit = data.mode === 'cpc' ? 'un clic' : 'une impression';
+  if (data.budget_total % step !== 0) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['budget_total'],
+      message: `Le budget doit être un multiple de ${step} FCFA (${unit})`,
+    });
+  }
+}
+
 export const boostInitiateSchema = z
   .object({
     room_id: idSchema,
     mode: z.enum(['cpc', 'cpi']),
-    budget_total: z.union([z.literal(BOOST_BUDGETS[0]), z.literal(BOOST_BUDGETS[1]), z.literal(BOOST_BUDGETS[2])]),
+    // Budget libre saisi par le gérant : entier, pas de facturation, borné
+    // serveur (borne de CRÉATION — la borne d'acceptation reste large).
+    budget_total: z
+      .number()
+      .int('Le budget doit être un nombre entier')
+      .min(BOOST_MIN_BUDGET, `Le budget minimum est de ${BOOST_MIN_BUDGET} FCFA`)
+      .max(BOOST_MAX_BUDGET, `Le budget maximum est de ${BOOST_MAX_BUDGET} FCFA`),
     ...windowFields,
   })
   .strict()
-  .superRefine(refineWindow);
+  .superRefine(refineWindow)
+  .superRefine(refineBudget);
 
 export const boostScheduleSchema = z
   .object(windowFields)

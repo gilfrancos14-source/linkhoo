@@ -33,12 +33,27 @@ let adminChain: FakeChain;
 
 const app = buildTestApp('/api/events', eventsRouter);
 
+function superadminChain(): FakeChain {
+  return fakeChain({
+    data: { id: 'admin-1', email: 'admin@test.ci', is_superadmin: true, permissions: [] },
+    error: null,
+  });
+}
+
+// requirePermission lit la table admins à chaque requête authentifiée :
+// on la route vers un superadmin, le reste vers la chaîne du test.
+function mockAdminFrom(chain: FakeChain): void {
+  vi.mocked(supabaseAdmin.from).mockImplementation(
+    ((table: string) => (table === 'admins' ? superadminChain() : chain)) as never,
+  );
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   publicChain = fakeChain({ data: [], error: null });
   adminChain = fakeChain({ data: null, error: null });
   vi.mocked(supabasePublic.from).mockReturnValue(publicChain as never);
-  vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+  mockAdminFrom(adminChain);
 });
 
 describe('GET /api/events', () => {
@@ -69,6 +84,21 @@ describe('GET /api/events', () => {
     expect(publicChain.gte).not.toHaveBeenCalled();
   });
 
+  it('200 sans market avec include_past=1 : liste TOUS les marchés (back-office)', async () => {
+    const res = await request(app)
+      .get('/api/events?include_past=1')
+      .set('Authorization', `Bearer ${adminToken()}`);
+    expect(res.status).toBe(200);
+    expect(publicChain.eq).not.toHaveBeenCalled();
+    expect(publicChain.gte).not.toHaveBeenCalled();
+  });
+
+  it('401 sur include_past=1 sans market ni token admin', async () => {
+    const res = await request(app).get('/api/events?include_past=1');
+    expect(res.status).toBe(401);
+    expect(publicChain.eq).not.toHaveBeenCalled();
+  });
+
   it('400 sur un paramètre inconnu', async () => {
     const res = await request(app).get('/api/events?market=CI&tri=date');
     expect(res.status).toBe(400);
@@ -89,9 +119,30 @@ describe('POST /api/events', () => {
     expect(res.status).toBe(400);
   });
 
+  it('403 si l’admin connecté n’a pas la permission evenements', async () => {
+    vi.mocked(supabaseAdmin.from).mockImplementation(
+      ((table: string) =>
+        table === 'admins'
+          ? fakeChain({
+              data: { id: 'admin-2', is_superadmin: false, permissions: ['gerants'] },
+              error: null,
+            })
+          : adminChain) as never,
+    );
+
+    const res = await request(app)
+      .post('/api/events')
+      .set('Authorization', `Bearer ${adminToken()}`)
+      .send(validEvent);
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ error: 'Permission refusée' });
+    expect(adminChain.insert).not.toHaveBeenCalled();
+  });
+
   it('201 et insertion avec un id généré', async () => {
     adminChain = fakeChain({ data: { id: 'nouvel-id', ...validEvent }, error: null });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .post('/api/events')
@@ -122,7 +173,7 @@ describe('PUT /api/events/:id', () => {
 
   it('404 quand l’événement n’existe pas', async () => {
     adminChain = fakeChain({ data: null, error: null });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .put('/api/events/inconnu')
@@ -134,7 +185,7 @@ describe('PUT /api/events/:id', () => {
 
   it('200 sur une mise à jour valide', async () => {
     adminChain = fakeChain({ data: { id: 'abc', title: 'X' }, error: null });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .put('/api/events/abc')
@@ -155,7 +206,7 @@ describe('DELETE /api/events/:id', () => {
 
   it('404 quand l’événement n’existe pas', async () => {
     adminChain = fakeChain({ data: null, error: null });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .delete('/api/events/inconnu')
@@ -166,7 +217,7 @@ describe('DELETE /api/events/:id', () => {
 
   it('204 sur une suppression valide', async () => {
     adminChain = fakeChain({ data: { id: 'abc' }, error: null });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .delete('/api/events/abc')

@@ -141,14 +141,15 @@ beforeEach(() => {
 });
 
 describe('GET /api/boosts/config', () => {
-  it('expose les tarifs et budgets serveur', async () => {
+  it('expose les tarifs et les bornes de budget serveur', async () => {
     const res = await request(app).get('/api/boosts/config');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       currency: 'XOF',
       price_cpc: 50,
       price_cpi: 5,
-      budgets: [1000, 3000, 5000],
+      budget_min: 3000,
+      budget_max: 100000,
       max_duration_days: 90,
     });
   });
@@ -362,12 +363,72 @@ describe('POST /api/boosts/initiate', () => {
     expect(res.status).toBe(401);
   });
 
-  it('400 sur un budget hors tarification', async () => {
+  it('400 sur un budget sous le minimum', async () => {
     const res = await request(app)
       .post('/api/boosts/initiate')
       .set('Authorization', clerkBearer('user_1'))
       .send(initiateBody({ budget_total: 2000 }));
     expect(res.status).toBe(400);
+    expect(JSON.stringify(res.body.details)).toContain('minimum');
+  });
+
+  it('400 sur un budget au-dessus du plafond', async () => {
+    const res = await request(app)
+      .post('/api/boosts/initiate')
+      .set('Authorization', clerkBearer('user_1'))
+      .send(initiateBody({ budget_total: 150000 }));
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(res.body.details)).toContain('maximum');
+  });
+
+  it('400 sur un budget non entier', async () => {
+    const res = await request(app)
+      .post('/api/boosts/initiate')
+      .set('Authorization', clerkBearer('user_1'))
+      .send(initiateBody({ budget_total: 3500.5 }));
+    expect(res.status).toBe(400);
+  });
+
+  it('400 si le budget n\'est pas multiple du pas en mode impression', async () => {
+    // Corps de test en mode cpi : le pas est de 5 F.
+    const res = await request(app)
+      .post('/api/boosts/initiate')
+      .set('Authorization', clerkBearer('user_1'))
+      .send(initiateBody({ budget_total: 3003 }));
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(res.body.details)).toContain('multiple');
+  });
+
+  it('400 si le budget est multiple de 5 mais pas de 50 en mode clic', async () => {
+    const res = await request(app)
+      .post('/api/boosts/initiate')
+      .set('Authorization', clerkBearer('user_1'))
+      .send(initiateBody({ mode: 'cpc', budget_total: 3010 }));
+    expect(res.status).toBe(400);
+    expect(JSON.stringify(res.body.details)).toContain('50 FCFA');
+  });
+
+  it('accepte un budget libre dans l’intervalle serveur', async () => {
+    const generateToken = vi.fn().mockResolvedValue({ url: 'https://process.fedapay.com/tok' });
+    vi.mocked(Transaction.create).mockResolvedValue({ id: 778, generateToken } as never);
+
+    const insertChain = fakeChain({ data: { id: 'boost-custom' }, error: null });
+    stubTables({
+      boosts: [fakeChain({ data: [], error: null }), insertChain],
+    });
+
+    const res = await request(app)
+      .post('/api/boosts/initiate')
+      .set('Authorization', clerkBearer('user_1'))
+      .send(initiateBody({ budget_total: 7500 }));
+
+    expect(res.status).toBe(200);
+    expect(Transaction.create).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 7500 })
+    );
+    expect(insertChain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'pending', budget_total: 7500 })
+    );
   });
 
   it('400 si la fenêtre dépasse 90 jours', async () => {
@@ -551,7 +612,7 @@ describe('POST /api/boosts/confirm', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toContain('Montant');
-    // La transaction est approuvée et le montant hors grille : argent
+    // La transaction est approuvée et le montant hors intervalle : argent
     // encaissé, rien de crédité → le support doit être prévenu (m6 + M4).
     expect(notifications.insert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -707,7 +768,7 @@ describe('GET /api/boosts/mine', () => {
     });
   });
 
-  it('rattrapage : montant hors grille → activation refusée + alerte support (m6/M4)', async () => {
+  it('rattrapage : montant hors intervalle → activation refusée + alerte support (m6/M4)', async () => {
     vi.mocked(Transaction.retrieve).mockResolvedValue(
       fedapayBoostTransaction({ status: 'approved', amount: 1234 }) as never,
     );

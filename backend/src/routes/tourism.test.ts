@@ -40,6 +40,21 @@ let adminChain: FakeChain;
 
 const app = buildTestApp('/api/tourism', tourismRouter);
 
+function superadminChain(): FakeChain {
+  return fakeChain({
+    data: { id: 'admin-1', email: 'admin@test.ci', is_superadmin: true, permissions: [] },
+    error: null,
+  });
+}
+
+// requirePermission lit la table admins à chaque requête authentifiée :
+// on la route vers un superadmin, le reste vers la chaîne du test.
+function mockAdminFrom(chain: FakeChain): void {
+  vi.mocked(supabaseAdmin.from).mockImplementation(
+    ((table: string) => (table === 'admins' ? superadminChain() : chain)) as never,
+  );
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   eventsChain = fakeChain({ data: [], error: null });
@@ -49,7 +64,7 @@ beforeEach(() => {
     events: eventsChain,
     tourism_destinations: destinationsChain,
   });
-  vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+  mockAdminFrom(adminChain);
 });
 
 describe('GET /api/tourism', () => {
@@ -149,9 +164,30 @@ describe('POST /api/tourism', () => {
     expect(res.status).toBe(400);
   });
 
+  it('403 si l’admin connecté n’a pas la permission destinations', async () => {
+    vi.mocked(supabaseAdmin.from).mockImplementation(
+      ((table: string) =>
+        table === 'admins'
+          ? fakeChain({
+              data: { id: 'admin-2', is_superadmin: false, permissions: ['gerants'] },
+              error: null,
+            })
+          : adminChain) as never,
+    );
+
+    const res = await request(app)
+      .post('/api/tourism')
+      .set('Authorization', `Bearer ${adminToken()}`)
+      .send(validDestination);
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ error: 'Permission refusée' });
+    expect(adminChain.insert).not.toHaveBeenCalled();
+  });
+
   it('201, id généré et featured par défaut à false', async () => {
     adminChain = fakeChain({ data: { id: 'nouvel-id', ...validDestination }, error: null });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const { featured: _ignored, ...body } = validDestination;
     const res = await request(app)
@@ -168,7 +204,7 @@ describe('POST /api/tourism', () => {
 
   it('500 quand l’insertion échoue', async () => {
     adminChain = fakeChain({ data: null, error: { message: 'boom' } });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .post('/api/tourism')
@@ -195,7 +231,7 @@ describe('PUT /api/tourism/:id', () => {
 
   it('404 quand la destination n’existe pas', async () => {
     adminChain = fakeChain({ data: null, error: null });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .put('/api/tourism/inconnu')
@@ -207,7 +243,7 @@ describe('PUT /api/tourism/:id', () => {
 
   it('200 sur une mise à jour valide (bypass featured)', async () => {
     adminChain = fakeChain({ data: { id: 'abc', featured: true }, error: null });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .put('/api/tourism/abc')
@@ -221,7 +257,7 @@ describe('PUT /api/tourism/:id', () => {
 
   it('500 quand la mise à jour échoue', async () => {
     adminChain = fakeChain({ data: null, error: { message: 'boom' } });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .put('/api/tourism/abc')
@@ -240,7 +276,7 @@ describe('DELETE /api/tourism/:id', () => {
 
   it('404 quand la destination n’existe pas', async () => {
     adminChain = fakeChain({ data: null, error: null });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .delete('/api/tourism/inconnu')
@@ -260,7 +296,7 @@ describe('DELETE /api/tourism/:id', () => {
 
   it('204 sur une suppression valide', async () => {
     adminChain = fakeChain({ data: { id: 'abc' }, error: null });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .delete('/api/tourism/abc')
@@ -273,7 +309,7 @@ describe('DELETE /api/tourism/:id', () => {
 
   it('500 quand la suppression échoue', async () => {
     adminChain = fakeChain({ data: null, error: { message: 'boom' } });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .delete('/api/tourism/abc')

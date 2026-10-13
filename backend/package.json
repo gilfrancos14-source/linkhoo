@@ -12,16 +12,21 @@
     "migrate:check": "tsx src/db/migrateCli.ts --check",
     "migrate:audit": "tsx src/db/auditConstraints.ts",
     "seed:demo": "tsx src/seedDemo.ts",
+    "clean:rooms:phones": "tsx src/scripts/cleanPhonesInRooms.ts",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "lint": "oxlint --deny-warnings",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
     "test:smoke": "tsx src/smoke/fedapayRiskTests.ts",
     "test:boosts": "node scripts/testBoostRpcs.mjs",
-    "optimize:images": "node scripts/optimize-images.mjs"
+    "optimize:images": "node scripts/optimize-images.mjs",
+    "model:preload": "node scripts/modelPreload.mjs",
+    "clip:bench": "node scripts/clipBench.mjs",
+    "clip:calibrate": "node scripts/clipCalibrate.mjs"
   },
   "dependencies": {
     "@clerk/backend": "^3.18.1",
+    "@huggingface/transformers": "^4.3.1",
     "@supabase/supabase-js": "^2.49.1",
     "axios": "^0.28.0",
     "bcrypt": "^6.0.0",

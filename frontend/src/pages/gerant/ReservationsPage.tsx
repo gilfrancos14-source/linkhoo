@@ -10,6 +10,9 @@ interface VerifyState {
   reservation: Reservation;
   loading: boolean;
   available: boolean | null;
+  error?: string;
+  actionLoading?: boolean;
+  actionError?: string;
 }
 
 export default function ReservationsPage() {
@@ -76,8 +79,16 @@ export default function ReservationsPage() {
       return;
     }
 
-    const result = await checkDateConflict(res.roomId, res.dateDebut, res.dateFin, res.id);
-    setVerify((prev) => prev ? { ...prev, loading: false, available: !result.hasConflict } : null);
+    try {
+      const result = await checkDateConflict(res.roomId, res.dateDebut, res.dateFin, res.id);
+      setVerify((prev) => prev ? { ...prev, loading: false, available: !result.hasConflict } : null);
+    } catch {
+      // Sans try/catch la modal restait en « Vérification… » jusqu'à la mort
+      // de l'onglet : l'échec réseau/RPC devenait une impasse sans bouton.
+      setVerify((prev) => prev
+        ? { ...prev, loading: false, available: null, error: 'Impossible de vérifier la disponibilité. Réessayez.' }
+        : null);
+    }
   };
 
   const handleConfirmFromPopup = async () => {
@@ -86,31 +97,45 @@ export default function ReservationsPage() {
     const gerantLabel = r.gerantIsVerified && r.gerantIsPremium && r.gerantPrenom
       ? `${r.gerantPrenom} ${r.gerantNom || ''}`.trim()
       : "l'administrateur";
-    await updateReservationStatut(r.id, 'confirmee');
-    await addClientNotification({
-      type: 'reservation_confirmed',
-      roomTitle: r.roomTitle,
-      roomId: r.roomId,
-      clientEmail: r.clientEmail,
-      message: `Votre réservation pour "${r.roomTitle}" a été confirmée par ${gerantLabel}.`,
-    });
-    setVerify(null);
-    await loadData();
+    setVerify((prev) => prev ? { ...prev, actionLoading: true, actionError: undefined } : null);
+    try {
+      await updateReservationStatut(r.id, 'confirmee');
+      await addClientNotification({
+        type: 'reservation_confirmed',
+        roomTitle: r.roomTitle,
+        roomId: r.roomId,
+        clientEmail: r.clientEmail,
+        message: `Votre réservation pour "${r.roomTitle}" a été confirmée par ${gerantLabel}.`,
+      });
+      setVerify(null);
+      await loadData();
+    } catch {
+      setVerify((prev) => prev
+        ? { ...prev, actionLoading: false, actionError: 'La confirmation a échoué. Réessayez.' }
+        : null);
+    }
   };
 
   const handleRejectFromPopup = async () => {
     if (!verify) return;
     const r = verify.reservation;
-    await updateReservationStatut(r.id, 'annulee');
-    await addClientNotification({
-      type: 'reservation_rejected',
-      roomTitle: r.roomTitle,
-      roomId: r.roomId,
-      clientEmail: r.clientEmail,
-      message: `Désolé, "${r.roomTitle}" n'est pas disponible pour les dates souhaitées.`,
-    });
-    setVerify(null);
-    await loadData();
+    setVerify((prev) => prev ? { ...prev, actionLoading: true, actionError: undefined } : null);
+    try {
+      await updateReservationStatut(r.id, 'annulee');
+      await addClientNotification({
+        type: 'reservation_rejected',
+        roomTitle: r.roomTitle,
+        roomId: r.roomId,
+        clientEmail: r.clientEmail,
+        message: `Désolé, "${r.roomTitle}" n'est pas disponible pour les dates souhaitées.`,
+      });
+      setVerify(null);
+      await loadData();
+    } catch {
+      setVerify((prev) => prev
+        ? { ...prev, actionLoading: false, actionError: 'Le refus a échoué. Réessayez.' }
+        : null);
+    }
   };
 
   const totalRevenu = reservations
@@ -237,13 +262,31 @@ export default function ReservationsPage() {
       )}
 
       {verify && (
-        <div className="verify-overlay" onClick={() => !verify.loading && setVerify(null)}>
+        <div className="verify-overlay" onClick={() => !verify.loading && !verify.actionLoading && setVerify(null)}>
           <div className="verify-modal" onClick={(e) => e.stopPropagation()}>
             {verify.loading ? (
               <div className="verify-modal__loading">
                 <div className="verify-spinner" />
                 <p>Vérification de la disponibilité...</p>
                 <span className="verify-modal__room">{verify.reservation.roomTitle}</span>
+              </div>
+            ) : verify.error ? (
+              <div className="verify-modal__result verify-modal__result--unavailable">
+                <div className="verify-modal__icon verify-modal__icon--unavailable">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+                  </svg>
+                </div>
+                <h3>Erreur de vérification</h3>
+                <p>{verify.error}</p>
+                <div className="verify-modal__actions">
+                  <button className="verify-btn verify-btn--confirm" onClick={() => handleVerify(verify.reservation)}>
+                    Réessayer
+                  </button>
+                  <button className="verify-btn verify-btn--cancel" onClick={() => setVerify(null)}>
+                    Fermer
+                  </button>
+                </div>
               </div>
             ) : verify.available ? (
               <div className="verify-modal__result verify-modal__result--available">
@@ -254,12 +297,15 @@ export default function ReservationsPage() {
                 </div>
                 <h3>Disponible</h3>
                 <p>La chambre <strong>{verify.reservation.roomTitle}</strong> est disponible pour les dates demandées.</p>
+                {verify.actionError && (
+                  <p className="verif-alert verif-alert--danger" role="alert">{verify.actionError}</p>
+                )}
                 <div className="verify-modal__actions">
-                  <button className="verify-btn verify-btn--confirm" onClick={handleConfirmFromPopup}>
+                  <button className="verify-btn verify-btn--confirm" onClick={handleConfirmFromPopup} disabled={verify.actionLoading}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L20 7"/></svg>
-                    Disponible — Confirmer
+                    {verify.actionLoading ? 'Confirmation…' : 'Disponible — Confirmer'}
                   </button>
-                  <button className="verify-btn verify-btn--cancel" onClick={() => setVerify(null)}>
+                  <button className="verify-btn verify-btn--cancel" onClick={() => setVerify(null)} disabled={verify.actionLoading}>
                     Annuler
                   </button>
                 </div>
@@ -273,12 +319,15 @@ export default function ReservationsPage() {
                 </div>
                 <h3>Non disponible</h3>
                 <p>La chambre <strong>{verify.reservation.roomTitle}</strong> n'est pas disponible pour les dates demandées.</p>
+                {verify.actionError && (
+                  <p className="verif-alert verif-alert--danger" role="alert">{verify.actionError}</p>
+                )}
                 <div className="verify-modal__actions">
-                  <button className="verify-btn verify-btn--reject" onClick={handleRejectFromPopup}>
+                  <button className="verify-btn verify-btn--reject" onClick={handleRejectFromPopup} disabled={verify.actionLoading}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                    Non disponible — Refuser
+                    {verify.actionLoading ? 'Refus…' : 'Non disponible — Refuser'}
                   </button>
-                  <button className="verify-btn verify-btn--cancel" onClick={() => setVerify(null)}>
+                  <button className="verify-btn verify-btn--cancel" onClick={() => setVerify(null)} disabled={verify.actionLoading}>
                     Annuler
                   </button>
                 </div>

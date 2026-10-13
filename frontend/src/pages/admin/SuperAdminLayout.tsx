@@ -1,6 +1,14 @@
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { apiAdmin, setAdminToken, type AdminData, type AdminNotification } from '../../lib/adminApi';
+import {
+  apiAdmin,
+  setAdminToken,
+  getAdminToken,
+  ADMIN_UNAUTHORIZED_EVENT,
+  type AdminData,
+  type AdminNotification,
+  type AdminPermissionKey,
+} from '../../lib/adminApi';
 import { marketSlugFromPath } from '../../contexts/MarketContext';
 
 function timeAgo(iso: string): string {
@@ -35,8 +43,26 @@ export default function SuperAdminLayout() {
   const adminPath = marketSlug ? `/${marketSlug}/admin` : '/admin';
 
   useEffect(() => {
-    apiAdmin.getMe().then(setAdmin).catch(() => {});
+    let cancelled = false;
+    apiAdmin.getMe()
+      .then((data) => {
+        if (!cancelled) setAdmin(data);
+      })
+      .catch(() => {
+        // 401 : le listener ci-dessous redirige. Autre erreur : on laisse la
+        // sidebar réduite (can() false) plutôt que de naviguer depuis un catch.
+        if (!cancelled && !getAdminToken()) setAdmin(null);
+      });
+    return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    const onUnauthorized = () => {
+      navigate(marketSlug ? `/${marketSlug}/admin/login` : '/admin/login', { replace: true });
+    };
+    window.addEventListener(ADMIN_UNAUTHORIZED_EVENT, onUnauthorized);
+    return () => window.removeEventListener(ADMIN_UNAUTHORIZED_EVENT, onUnauthorized);
+  }, [navigate, marketSlug]);
 
   const loadNotifs = useCallback(async () => {
     try {
@@ -115,17 +141,26 @@ export default function SuperAdminLayout() {
     }
   };
 
+  // Menu filtré selon le périmètre ( permissions lues sur /admin/me) :
+  // un admin limité ne voit que ses sections, le superadmin voit tout.
+  // Pendant le chargement (admin null) : mot de passe seul, aucun flash.
+  const ownedPermissions = new Set(admin?.permissions ?? []);
+  const can = (key: AdminPermissionKey) =>
+    Boolean(admin?.is_superadmin) || ownedPermissions.has(key);
+
   const navItems = [
-    { to: adminPath, label: 'Tableau de bord', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="3" width="7" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="12" width="7" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="3" y="16" width="7" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.8"/></svg> },
-    { to: `${adminPath}/reservations`, label: 'Réservations', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>, pill: unread > 0 ? String(unread) : undefined },
-    { to: `${adminPath}/gerants`, label: 'Gérants', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 011.92 2.76"/></svg> },
-    { to: `${adminPath}/banners`, label: 'Bannières', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> },
-    { to: `${adminPath}/evenements`, label: 'Événements', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><circle cx="12" cy="16" r="2"/></svg> },
-    { to: `${adminPath}/destinations`, label: 'Destinations', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> },
-    { to: `${adminPath}/promotions`, label: 'Promotions', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> },
-    { to: `${adminPath}/boosts`, label: 'Booster', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg> },
-    { to: `${adminPath}/mot-de-passe`, label: 'Mot de passe', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> },
-  ];
+    { to: adminPath, label: 'Tableau de bord', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="3" width="7" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="12" width="7" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="3" y="16" width="7" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.8"/></svg>, show: can('stats') },
+    { to: `${adminPath}/reservations`, label: 'Réservations', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>, pill: unread > 0 ? String(unread) : undefined, show: can('reservations') },
+    { to: `${adminPath}/gerants`, label: 'Gérants', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 011.92 2.76"/></svg>, show: can('gerants') },
+    { to: `${adminPath}/banners`, label: 'Bannières', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>, show: can('bannieres') },
+    { to: `${adminPath}/evenements`, label: 'Événements', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><circle cx="12" cy="16" r="2"/></svg>, show: can('evenements') },
+    { to: `${adminPath}/destinations`, label: 'Destinations', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>, show: can('destinations') },
+    { to: `${adminPath}/escapades`, label: 'Escapades', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>, show: can('escapades') },
+    { to: `${adminPath}/promotions`, label: 'Promotions', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>, show: can('promotions') },
+    { to: `${adminPath}/boosts`, label: 'Booster', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>, show: can('boosts') },
+    { to: `${adminPath}/equipe`, label: 'Équipe', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 011.92 2.76"/></svg>, show: Boolean(admin?.is_superadmin) },
+    { to: `${adminPath}/mot-de-passe`, label: 'Mot de passe', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>, show: true },
+  ].filter((item) => item.show);
 
   return (
     <div className={`admin ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
@@ -163,7 +198,9 @@ export default function SuperAdminLayout() {
               <span className="sidebar__user-name">
                 {admin?.prenom || admin?.email || 'Admin'}
               </span>
-              <span className="sidebar__user-role">Administrateur</span>
+              <span className="sidebar__user-role">
+                {admin?.is_superadmin ? 'Super administrateur' : 'Administrateur'}
+              </span>
             </div>
           </div>
           <button

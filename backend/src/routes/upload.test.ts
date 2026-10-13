@@ -5,6 +5,12 @@ import sharp from 'sharp';
 import uploadRouter from './upload';
 import { supabaseAdmin } from '../config/supabase';
 import {
+  checkApartmentImage,
+  IMAGE_CHECK_REJECT_MESSAGE,
+  ImageCheckQueueFullError,
+  ImageCheckUnavailableError,
+} from '../services/apartmentImageCheck';
+import {
   adminToken,
   buildTestApp,
   clerkBearer,
@@ -40,6 +46,14 @@ vi.mock('sharp', () => ({
   }),
 }));
 
+vi.mock('../services/apartmentImageCheck', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../services/apartmentImageCheck')>();
+  return {
+    ...actual,
+    checkApartmentImage: vi.fn(),
+  };
+});
+
 const app = buildTestApp('/api/upload', uploadRouter);
 
 const PNG_HEADER = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x01, 0x02]);
@@ -50,6 +64,12 @@ let gerants: FakeChain;
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(verifyToken).mockImplementation(defaultVerifyToken);
+  vi.mocked(checkApartmentImage).mockResolvedValue({
+    accepte: true,
+    categorie: 'interieur',
+    confiance: 0.9,
+    motif: 'photo_appartement',
+  });
   gerants = fakeChain({ data: null, error: null });
   useSupabaseTables(supabaseAdmin.from, { gerants });
 });
@@ -360,6 +380,78 @@ describe('POST /api/upload — échecs des artefacts', () => {
 
     expect(res.status).toBe(500);
     expect(res.body.error).toBe('Erreur interne du serveur');
+  });
+});
+
+describe('POST /api/upload — vérification des images', () => {
+  beforeEach(() => {
+    gerants = fakeChain({ data: { id: 'g1' }, error: null });
+    useSupabaseTables(supabaseAdmin.from, { gerants });
+  });
+
+  it("400 : refuse une image qui n'est pas un appartement", async () => {
+    vi.mocked(checkApartmentImage).mockResolvedValueOnce({
+      accepte: false,
+      categorie: 'autre',
+      confiance: 0.2,
+      motif: 'sujet_inconnu',
+    });
+
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', clerkBearer('user_1'))
+      .attach('file', PNG_HEADER, { filename: 'photo.png', contentType: 'image/png' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe(IMAGE_CHECK_REJECT_MESSAGE);
+    expect(res.body.motif).toBe('sujet_inconnu');
+    expect(vi.mocked(sharp)).not.toHaveBeenCalled();
+    expect(supabaseStorage().upload).not.toHaveBeenCalled();
+  });
+
+  it("l'admin est exempté de la vérification", async () => {
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', `Bearer ${adminToken()}`)
+      .attach('file', PNG_HEADER, { filename: 'photo.png', contentType: 'image/png' });
+
+    expect(res.status).toBe(200);
+    expect(checkApartmentImage).not.toHaveBeenCalled();
+  });
+
+  it('le bucket verification-docs est exempté', async () => {
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', clerkBearer('user_1'))
+      .field('bucket', 'verification-docs')
+      .attach('file', PNG_HEADER, { filename: 'carte.png', contentType: 'image/png' });
+
+    expect(res.status).toBe(200);
+    expect(checkApartmentImage).not.toHaveBeenCalled();
+  });
+
+  it("429 quand la file d'attente d'analyse est pleine", async () => {
+    vi.mocked(checkApartmentImage).mockRejectedValueOnce(new ImageCheckQueueFullError());
+
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', clerkBearer('user_1'))
+      .attach('file', PNG_HEADER, { filename: 'photo.png', contentType: 'image/png' });
+
+    expect(res.status).toBe(429);
+    expect(res.body.error).toContain('Trop');
+  });
+
+  it('503 quand le moteur de vérification est indisponible', async () => {
+    vi.mocked(checkApartmentImage).mockRejectedValueOnce(new ImageCheckUnavailableError());
+
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', clerkBearer('user_1'))
+      .attach('file', PNG_HEADER, { filename: 'photo.png', contentType: 'image/png' });
+
+    expect(res.status).toBe(503);
+    expect(res.body.error).toContain('indisponible');
   });
 });
 

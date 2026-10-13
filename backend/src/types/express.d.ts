@@ -19,6 +19,12 @@ export interface RequestAdminInfo {
   email: string;
 }
 
+/** Permissions de l'admin authentifié, lues en base puis cachées sur la requête. */
+export interface RequestAdminPerms {
+  isSuper: boolean;
+  perms: Set<string>;
+}
+
 export interface RawBodyRequest {
   rawBody?: string;
 }
@@ -28,6 +34,7 @@ declare global {
     interface Request {
       auth?: RequestAuthInfo;
       admin?: RequestAdminInfo;
+      adminPerms?: RequestAdminPerms;
       rawBody?: string;
     }
   }

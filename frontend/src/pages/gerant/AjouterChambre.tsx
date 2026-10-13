@@ -6,6 +6,7 @@ import { createRoom, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import { formatPrice, roomSubtitle } from '../../lib/roomDisplay';
 import { apiRooms, apiUpload } from '../../lib/api';
+import { containsPhoneNumber, PHONE_IN_TEXT_ERROR } from '../../utils/validators';
 
 interface PhotoItem {
   file: File;
@@ -113,7 +114,12 @@ export default function AjouterChambre() {
   };
 
   const removePhoto = (index: number) => {
+    const nextLength = photos.length - 1;
     setPhotos((prev) => prev.filter((_, i) => i !== index));
+    // previewImg doit suivre la taille de la liste : sans ça, revenir sur
+    // l'étape 4 après une suppression lit photos[previewImg] hors bornes
+    // et plante (ErrorBoundary en boucle, formulaire perdu).
+    setPreviewImg((p) => Math.min(p, Math.max(nextLength - 1, 0)));
     setPhotoError('');
     setMainPhotoIndex((prev) => {
       if (prev === index) return 0;
@@ -130,6 +136,7 @@ export default function AjouterChambre() {
     if (!form.ville.trim()) e.ville = 'La ville est requise';
     if (!form.quartier.trim()) e.quartier = 'Le quartier est requis';
     if (!form.description.trim()) e.description = 'La description est requise';
+    else if (containsPhoneNumber(form.description)) e.description = PHONE_IN_TEXT_ERROR;
     if (!form.category) e.category = 'Choisissez une catégorie';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -139,6 +146,7 @@ export default function AjouterChambre() {
     const e: Record<string, string> = {};
     if (!form.priceNum || form.priceNum <= 0) e.priceNum = 'Le prix doit être supérieur à 0';
     if (!form.conditions.trim()) e.conditions = 'Les conditions sont requises';
+    else if (containsPhoneNumber(form.conditions)) e.conditions = PHONE_IN_TEXT_ERROR;
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -156,8 +164,10 @@ export default function AjouterChambre() {
 
     try {
       const urls: string[] = [];
-      for (const photo of photos) {
-        const { url } = await apiUpload.upload(photo.file);
+      for (let i = 0; i < photos.length; i++) {
+        const { url } = await apiUpload.upload(photos[i].file).catch((err: unknown) => {
+          throw new Error(`Photo ${i + 1} refusée : ${err instanceof Error ? err.message : 'téléversement impossible'}`);
+        });
         urls.push(url);
       }
 
@@ -282,23 +292,24 @@ export default function AjouterChambre() {
                 <input type="text" value={form.quartier} onChange={(e) => update('quartier', e.target.value)} placeholder="Ex: Centre-ville" />
                 {errors.quartier && <span className="field-error">{errors.quartier}</span>}
               </label>
+
+              <label className={`admin-field ${errors.category ? 'admin-field--error' : ''}`}>
+                <span>Catégorie *</span>
+                <select value={form.category} onChange={(e) => update('category', e.target.value)}>
+                  <option value="">Choisir une catégorie</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.title}</option>
+                  ))}
+                </select>
+                {errors.category && <span className="field-error">{errors.category}</span>}
+              </label>
             </div>
 
             <label className={`admin-field admin-field--full ${errors.description ? 'admin-field--error' : ''}`}>
               <span>Description *</span>
               <textarea rows={4} value={form.description} onChange={(e) => update('description', e.target.value)} placeholder="Décrivez l'appartement en détail : ambiance, équipements, points forts..." />
+              <small className="admin-field__hint">Pas de numéro de téléphone : les clients vous contactent via la messagerie.</small>
               {errors.description && <span className="field-error">{errors.description}</span>}
-            </label>
-
-            <label className={`admin-field admin-field--full ${errors.category ? 'admin-field--error' : ''}`}>
-              <span>Catégorie *</span>
-              <select value={form.category} onChange={(e) => update('category', e.target.value)}>
-                <option value="">Choisir une catégorie</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.title}</option>
-                ))}
-              </select>
-              {errors.category && <span className="field-error">{errors.category}</span>}
             </label>
 
             <div className="form-nav">
@@ -348,6 +359,7 @@ export default function AjouterChambre() {
             <label className={`admin-field admin-field--full ${errors.conditions ? 'admin-field--error' : ''}`}>
               <span>Conditions *</span>
               <textarea rows={3} value={form.conditions} onChange={(e) => update('conditions', e.target.value)} placeholder="Ex: Caution 1 mois, durée min 6 mois, charges comprises..." />
+              <small className="admin-field__hint">Pas de numéro de téléphone : les clients vous contactent via la messagerie.</small>
               {errors.conditions && <span className="field-error">{errors.conditions}</span>}
             </label>
 
@@ -412,6 +424,10 @@ export default function AjouterChambre() {
               </div>
 
               <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handlePhotos} />
+
+              <p className="photo-hint">
+                Photos intérieures et extérieures de l'appartement uniquement, sans personne visible.
+              </p>
             </div>
 
             <div className="form-nav">
@@ -437,7 +453,7 @@ export default function AjouterChambre() {
             <div className="preview-card">
               {/* Gallery */}
               <div className="preview-gallery">
-                {photos.length > 0 ? (
+                {photos.length > 0 && photos[previewImg] ? (
                   <>
                     <div className="preview-gallery__main">
                       <img src={photos[previewImg].preview} alt={form.title} />

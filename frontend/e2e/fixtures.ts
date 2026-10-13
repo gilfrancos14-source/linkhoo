@@ -293,7 +293,8 @@ export async function mockApi(page: Page, options: MockApiOptions = {}): Promise
           currency: 'XOF',
           price_cpc: 50,
           price_cpi: 5,
-          budgets: [1000, 3000, 5000],
+          budget_min: 3000,
+          budget_max: 100000,
           max_duration_days: 90,
         },
       );

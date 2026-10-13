@@ -5,6 +5,11 @@ import multer from 'multer';
 import sharp from 'sharp';
 import { supabaseAdmin } from '../config/supabase';
 import { requireClerkOrAdminAuth, requireAdminOrGerant } from '../middleware/clerkAuth';
+import {
+  checkApartmentImage,
+  IMAGE_CHECK_REJECT_MESSAGE,
+  ImageCheckQueueFullError,
+} from '../services/apartmentImageCheck';
 
 const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'] as const;
 const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf'] as const;
@@ -73,6 +78,25 @@ router.post('/', requireClerkOrAdminAuth, requireAdminOrGerant, handleUpload, as
     const validBuckets = ['images', 'verification-docs'];
     if (!validBuckets.includes(bucket)) {
       return res.status(400).json({ error: 'Bucket invalide' });
+    }
+
+    if (!req.admin && bucket === 'images' && imageMimeTypes.includes(file.mimetype)) {
+      try {
+        const verdict = await checkApartmentImage(file.buffer);
+        if (!verdict.accepte) {
+          return res.status(400).json({
+            error: IMAGE_CHECK_REJECT_MESSAGE,
+            motif: verdict.motif,
+            categorie: verdict.categorie,
+          });
+        }
+      } catch (err) {
+        if (err instanceof ImageCheckQueueFullError) {
+          return res.status(429).json({ error: "Trop d'images à analyser en parallèle, veuillez réessayer dans un instant" });
+        }
+        console.error('[upload] vérification image :', err);
+        return res.status(503).json({ error: 'La vérification des images est momentanément indisponible, veuillez réessayer plus tard' });
+      }
     }
 
     let uploadBuffer: Buffer;

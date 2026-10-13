@@ -20,7 +20,7 @@ export default function BoostCreatePage() {
   const [config, setConfig] = useState<BoostConfig | null>(null);
   const [roomId, setRoomId] = useState('');
   const [mode, setMode] = useState<BoostMode>('cpc');
-  const [budgetChoice, setBudgetChoice] = useState<number | null>(null);
+  const [budgetInput, setBudgetInput] = useState('');
   const [startDay, setStartDay] = useState(() => isoDay(new Date()));
   const [endDay, setEndDay] = useState(() => addDays(30));
   const [processing, setProcessing] = useState(false);
@@ -33,11 +33,13 @@ export default function BoostCreatePage() {
       apiGerants.getMe().catch(() => null),
       fetchMyRooms().catch(() => [] as Room[]),
       apiBoosts.config().catch(() => null),
-    ]).then(([gerantData, roomList, boostConfig]) => {
+    ])    .then(([gerantData, roomList, boostConfig]) => {
       if (!alive) return;
       setGerant(gerantData);
       setRooms(Array.isArray(roomList) ? roomList : []);
       setConfig(boostConfig);
+      // Budget libre : on préremplit avec le minimum serveur.
+      if (boostConfig) setBudgetInput(String(boostConfig.budget_min));
       setLoading(false);
     });
     return () => {
@@ -47,11 +49,33 @@ export default function BoostCreatePage() {
 
   const disponibleRooms = useMemo(() => rooms.filter((room) => room.disponible), [rooms]);
   const effectiveRoomId = roomId || disponibleRooms[0]?.id || '';
-  const effectiveBudget = budgetChoice ?? config?.budgets[0] ?? 0;
   const windowError = validateBoostWindow(startDay, endDay);
 
+  // Budget libre saisi par le gérant : borné ici, borné aussi par le serveur.
+  const budgetValue = Number(budgetInput.trim());
+  const budgetEmpty = budgetInput.trim() === '';
+  const effectiveBudget = !budgetEmpty && Number.isInteger(budgetValue)
+    ? budgetValue
+    : (config?.budget_min ?? 0);
+  // Pas de saisie = prix de l'unité facturée : aucun reliquat perdu.
+  const budgetStep = config ? (mode === 'cpc' ? config.price_cpc : config.price_cpi) : 0;
+
+  const budgetError = !config
+    ? ''
+    : budgetEmpty
+      ? 'Saisissez un budget.'
+      : !Number.isInteger(budgetValue)
+        ? 'Le budget doit être un nombre entier.'
+        : budgetValue < config.budget_min
+          ? `Le budget minimum est de ${boostAmount(config.budget_min, config.currency)}.`
+          : budgetValue > config.budget_max
+            ? `Le budget maximum est de ${boostAmount(config.budget_max, config.currency)}.`
+            : budgetValue % budgetStep !== 0
+              ? `Le budget doit être un multiple de ${budgetStep} F (${mode === 'cpc' ? 'un clic' : 'une impression'}).`
+              : '';
+
   const estimate =
-    config && effectiveBudget > 0
+    config && !budgetError && effectiveBudget > 0
       ? mode === 'cpc'
         ? `≈ ${Math.floor(effectiveBudget / config.price_cpc)} clics`
         : `≈ ${Math.floor(effectiveBudget / config.price_cpi)} impressions`
@@ -59,8 +83,8 @@ export default function BoostCreatePage() {
 
   const handleSubmit = async () => {
     const localError = validateBoostWindow(startDay, endDay);
-    if (localError || !effectiveRoomId) {
-      setError(localError || 'Choisissez une chambre à booster.');
+    if (localError || budgetError || !effectiveRoomId) {
+      setError(localError || budgetError || 'Choisissez une chambre à booster.');
       return;
     }
     setProcessing(true);
@@ -239,23 +263,27 @@ export default function BoostCreatePage() {
           <h2>3. Budget</h2>
         </div>
         <div style={{ padding: '16px 24px' }}>
-          <div className="boost-options">
-            {config.budgets.map((amount) => (
-              <button
-                key={amount}
-                type="button"
-                className={`boost-option${effectiveBudget === amount ? ' is-selected' : ''}`}
-                aria-pressed={effectiveBudget === amount}
-                onClick={() => setBudgetChoice(amount)}
-              >
-                <span className="boost-option__title">{boostAmount(amount, config.currency)}</span>
-                <span className="boost-option__hint">
-                  {mode === 'cpc'
-                    ? `≈ ${Math.floor(amount / config.price_cpc)} clics`
-                    : `≈ ${Math.floor(amount / config.price_cpi)} impressions`}
-                </span>
-              </button>
-            ))}
+          <div className="boost-field">
+            <label htmlFor="boost-budget">Budget (FCFA)</label>
+            <input
+              id="boost-budget"
+              type="number"
+              inputMode="numeric"
+              min={config.budget_min}
+              max={config.budget_max}
+              step={budgetStep}
+              value={budgetInput}
+              onChange={(e) => setBudgetInput(e.target.value)}
+            />
+            <p style={{ margin: '6px 0 0', fontSize: 13, color: '#64748B' }}>
+              De {boostAmount(config.budget_min, config.currency)} à{' '}
+              {boostAmount(config.budget_max, config.currency)} — par multiples de{' '}
+              {budgetStep} F ({mode === 'cpc' ? 'un clic' : 'une impression'}).
+              {estimate ? ` ${estimate}.` : ''}
+            </p>
+            {budgetError && (
+              <p style={{ margin: '6px 0 0', color: '#991B1B', fontSize: 13 }}>{budgetError}</p>
+            )}
           </div>
         </div>
       </section>
@@ -301,7 +329,12 @@ export default function BoostCreatePage() {
           <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 2, color: '#334155', fontSize: 14 }}>
             <li>Chambre : {selectedRoom?.title ?? '—'}</li>
             <li>Mode : {mode === 'cpc' ? 'Par clic' : 'Par impression'} ({boostAmount(mode === 'cpc' ? config.price_cpc : config.price_cpi)} / {mode === 'cpc' ? 'clic' : 'impression'})</li>
-            <li>Budget : {boostAmount(effectiveBudget, config.currency)}{estimate ? ` — ${estimate}` : ''}</li>
+            <li>
+              Budget :{' '}
+              {budgetError
+                ? '—'
+                : `${boostAmount(effectiveBudget, config.currency)}${estimate ? ` — ${estimate}` : ''}`}
+            </li>
             <li>Du {startDay} au {endDay}</li>
           </ul>
 
@@ -318,9 +351,9 @@ export default function BoostCreatePage() {
             <button
               className="admin-btn admin-btn--primary"
               onClick={handleSubmit}
-              disabled={processing || Boolean(windowError)}
+              disabled={processing || Boolean(windowError) || Boolean(budgetError)}
             >
-              {processing ? 'Redirection...' : `Payer ${boostAmount(effectiveBudget, config.currency)}`}
+              {processing ? 'Redirection...' : budgetError ? 'Payer' : `Payer ${boostAmount(effectiveBudget, config.currency)}`}
             </button>
           </div>
         </div>

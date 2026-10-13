@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
 import { supabaseAdmin, supabasePublic } from '../config/supabase';
 import { requireAdminAuth } from '../middleware/requireAdminAuth';
+import { requirePermission, requireSuperadmin } from '../middleware/adminPermissions';
 import { idParamsSchema, marketQuerySchema } from '../validations/common';
 import { bannerCreateSchema, bannerUpdateSchema } from '../validations/banner';
 
@@ -36,7 +37,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-router.post('/', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', requireAdminAuth, requirePermission('bannieres'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedBody = bannerCreateSchema.safeParse(req.body);
     if (!parsedBody.success) {
@@ -55,7 +56,7 @@ router.post('/', requireAdminAuth, async (req: Request, res: Response, next: Nex
   }
 });
 
-router.put('/:id', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', requireAdminAuth, requirePermission('bannieres'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     const parsedBody = bannerUpdateSchema.safeParse(req.body);
@@ -77,7 +78,7 @@ router.put('/:id', requireAdminAuth, async (req: Request, res: Response, next: N
   }
 });
 
-router.delete('/:id', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', requireAdminAuth, requireSuperadmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     if (!parsedParams.success) {

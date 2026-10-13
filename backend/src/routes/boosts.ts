@@ -43,13 +43,15 @@ import {
   isNotFoundError,
 } from '../smoke/fedapayRiskTests.helpers';
 import {
-  BOOST_BUDGETS,
   BOOST_CURRENCY,
+  BOOST_MAX_BUDGET,
   BOOST_MAX_DURATION_DAYS,
+  BOOST_MIN_BUDGET,
   BOOST_PRICE_CPI,
   BOOST_PRICE_CPC,
   BOOST_PENDING_SUPERSEDE_MS,
   boostChargeAmount,
+  isValidBoostBudget,
 } from '../config/boosts';
 
 const router = Router();
@@ -152,11 +154,11 @@ async function reconcilePendingBoosts(clerkUserId: string): Promise<void> {
       });
       if (status === 'approved') {
         // m6 : même défense en profondeur que le webhook et /confirm. Un
-        // montant hors grille n'active rien — et comme l'argent est déjà
+        // montant hors intervalle n'active rien — et comme l'argent est déjà
         // encaissé, on alerte le support au lieu d'un simple warn.
-        if (!BOOST_BUDGETS.some((budget) => budget === txAmount)) {
+        if (!isValidBoostBudget(txAmount)) {
           console.warn(
-            '[boosts] rattrapage : montant hors grille (' + txAmount + ') pour tx ' + fedapayId + ' — activation refusée',
+            '[boosts] rattrapage : montant hors intervalle (' + txAmount + ') pour tx ' + fedapayId + ' — activation refusée',
           );
           await flagPaidWithoutCampaign({
             clerkUserId,
@@ -209,7 +211,8 @@ router.get('/config', (_req: Request, res: Response) => {
     currency: BOOST_CURRENCY,
     price_cpc: BOOST_PRICE_CPC,
     price_cpi: BOOST_PRICE_CPI,
-    budgets: [...BOOST_BUDGETS],
+    budget_min: BOOST_MIN_BUDGET,
+    budget_max: BOOST_MAX_BUDGET,
     max_duration_days: BOOST_MAX_DURATION_DAYS,
   });
 });
@@ -570,7 +573,7 @@ router.post('/confirm', requireClerkAuth, async (req: Request, res: Response, ne
     if (metaType !== 'boost') {
       return res.status(400).json({ error: 'Transaction non éligible à un boost' });
     }
-    if (!Number.isFinite(amountFromTx) || !BOOST_BUDGETS.some((b) => b === amountFromTx)) {
+    if (!isValidBoostBudget(amountFromTx)) {
       // m6 + M4 : la transaction est approuvée mais le montant n'est dans
       // aucune grille → rien n'est crédité. L'argent étant encaissé, on alerte
       // le support (idempotent : même id que webhook et rattrapage). Un

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { MARKET_CODES } from '../config/markets';
+import { containsPhoneNumber, PHONE_IN_TEXT_ERROR } from '../utils/phoneInText';
 
 export const marketSchema = z.enum(MARKET_CODES);
 
@@ -31,6 +32,14 @@ export const dateStringSchema = z
   }, 'Date invalide');
 
 export const optionalText = (max: number) => z.string().trim().max(max).optional().default('');
+
+/**
+ * Champ texte lu publiquement (description, conditions) : les coordonnées
+ * téléphoniques sont refusées, le contact passe par la messagerie de la
+ * plateforme (profil gérant pour le téléphone vérifié).
+ */
+export const withoutPhoneNumber = <T extends z.ZodString>(schema: T) =>
+  schema.refine((value) => !containsPhoneNumber(value), { message: PHONE_IN_TEXT_ERROR });
 
 export const marketQuerySchema = z.object({
   market: marketSchema.optional(),

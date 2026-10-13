@@ -393,6 +393,27 @@ describe('apiTourism', () => {
   });
 });
 
+describe('apiEscapades', () => {
+  it('list GET /escapades avec le marché (tableau plat)', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse([]));
+
+    const escapades = await api.apiEscapades.list('BJ');
+
+    expect(lastCall().url).toBe('/api/escapades?market=BJ');
+    expect(escapades).toEqual([]);
+  });
+
+  it('list met la réponse en cache public (60 s) comme les autres cartes de la home', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse([]));
+    fetchMock.mockResolvedValueOnce(jsonResponse([]));
+
+    await api.apiEscapades.list('CI');
+    await api.apiEscapades.list('CI');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('apiReservations', () => {
   it('list GET /reservations', async () => {
     await api.apiReservations.list();
@@ -883,6 +904,7 @@ describe("propagation d'erreurs par namespace", () => {
     ['apiBanners.list', () => api.apiBanners.list('CI')],
     ['apiEvents.list', () => api.apiEvents.list('CI')],
     ['apiTourism.list', () => api.apiTourism.list('CI')],
+    ['apiEscapades.list', () => api.apiEscapades.list('CI')],
     ['apiReservations.list', () => api.apiReservations.list()],
     ['apiReservations.create', () => api.apiReservations.create(reservationInput())],
     ['apiNewsletter.subscribe', () => api.apiNewsletter.subscribe({ email: 'a@b.ci' })],

@@ -77,7 +77,12 @@ beforeEach(() => {
   gerants = fakeChain({ data: null, error: null });
   rooms = fakeChain({ data: null, error: null });
   reservations = fakeChain({ data: null, error: null });
-  admins = fakeChain({ data: null, error: null });
+  // requirePermission relit is_superadmin/permissions par requête : défaut
+  // superadmin pour que les routes verrouillées restent ouvertes aux tests.
+  admins = fakeChain({
+    data: { id: 'admin-1', email: 'admin@test.ci', is_superadmin: true, permissions: [] },
+    error: null,
+  });
   documents = fakeChain({ data: null, error: null });
   notifications = fakeChain({ data: null, error: null });
   clientNotifications = fakeChain({ data: null, error: null });
@@ -92,6 +97,9 @@ describe('POST /api/admin/login', () => {
   });
 
   it('401 pour un email inconnu', async () => {
+    admins = fakeChain({ data: null, error: null });
+    stubTables();
+
     const res = await request(app)
       .post('/api/admin/login')
       .send({ email: 'inconnu@test.ci', password: 'Admin123!' });
@@ -157,6 +165,9 @@ describe('requireAdminAuth', () => {
 
 describe('GET /api/admin/me', () => {
   it('404 si la ligne admin a disparu', async () => {
+    admins = fakeChain({ data: null, error: null });
+    stubTables();
+
     const res = await request(app).get('/api/admin/me').set(auth(adminToken()));
     expect(res.status).toBe(404);
   });
@@ -236,8 +247,9 @@ describe('GET /api/admin/stats', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual(stats);
     expect(supabaseAdmin.rpc).toHaveBeenCalledWith('admin_stats');
-    // Plus aucun chargement de table entière pour les statistiques.
-    expect(supabaseAdmin.from).not.toHaveBeenCalled();
+    // Plus aucun chargement de table entière pour les statistiques :
+    // seule la lecture de permission (admins) subsiste côté from().
+    expect(vi.mocked(supabaseAdmin.from).mock.calls.map((call) => call[0])).toEqual(['admins']);
   });
 
   it('500 si la RPC remonte une erreur', async () => {
@@ -564,8 +576,8 @@ describe('GET /api/admin/reservations', () => {
       p_limit: 20,
     });
     // La qualification des gérants et la pagination sont désormais en SQL :
-    // aucune table n'est chargée en mémoire.
-    expect(supabaseAdmin.from).not.toHaveBeenCalled();
+    // aucune table n'est chargée en mémoire (seule la permission est lue).
+    expect(vi.mocked(supabaseAdmin.from).mock.calls.map((call) => call[0])).toEqual(['admins']);
   });
 
   it('200 : transmet statut, recherche et pagination à la RPC', async () => {

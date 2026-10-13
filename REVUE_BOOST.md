@@ -24,7 +24,7 @@ Tous les défauts relevés sont corrigés.
 | m3 | ✅ | `getCallbackUrl(market)` basé sur `APP_PUBLIC_URL` (allow-list), `req.headers.origin` supprimé. |
 | m4 | ✅ | Compteurs (`events_count`/`clicks_count`/`impressions_count`) n'incrémentent que si `v_charge > 0` (0014). |
 | m5 | ✅ | `NO_CACHE_PURGE_PATHS` : `/boosts/impression` et `/boosts/click` n'invalident plus le cache public. |
-| m6 | ✅ | Webhook : `BOOST_BUDGETS.includes(amount)` exigé avant `activateBoostForTransaction` pour `type='boost'`. |
+| m6 | ✅ | Webhook : `isValidBoostBudget(amount)` exigé avant `activateBoostForTransaction` pour `type='boost'`. |
 | m7 | ✅ | `upsertPremiumTransaction({ onlyIfPending: true })` : pas de régression de statut sur rejeu `declined`/`canceled`. |
 | m8 | ✅ | Purge des pendings > 24 h (`canceled`) en tête du rattrapage ; plus de `limit 3` bloquant. |
 | m9 | ✅ | `adminBoostsQuerySchema` sans `.strict()`, enums élargies (`ended`). |
@@ -146,7 +146,7 @@ Le serveur renvoie `error: 'Paiement declined'` / `'Paiement canceled'` (`boosts
 
 ## ✅ Zones contrôlées — aucun défaut trouvé
 
-- **Montants** : 100 % serveur. `budget_total` validé par `z.union([z.literal(...)])` (`validations/boost.ts:53`), montant facturé calculé par `boostChargeAmount()` depuis `mode` relu en base (`boosts.ts:231`) — aucun montant accepté du client.
+- **Montants** : 100 % serveur. `budget_total` validé par `z.number().int().min(3000).max(100000)` (`validations/boost.ts`), paiement contrôlé par `isValidBoostBudget()` aux 3 chemins (initiate, webhook, `/confirm`, rattrapage), montant facturé calculé par `boostChargeAmount()` depuis `mode` relu en base (`boosts.ts`) — aucun montant accepté du client.
 - **Webhook / idempotence** : rejeu FedaPay sans double crédit (claim `activated_at NULL → now()` dans `activate_boost_checked` + `upsert` `onConflict: fedapay_transaction_id`) ; webhook et `/confirm` arbitrés par la RPC ; `BOOST_NOT_FOUND` annule le claim (rollback complet). Signature webhook vérifiée, erreurs → 500 pour forcer le retry FedaPay.
 - **Injection SQL** : uniquement le client Supabase (requêtes paramétrées) et des RPC à paramètres typés ; `BOOST_ROOM_EMBED` est une constante, aucun concat avec de l'utilisateur. RLS activée sur `boosts`/`boost_dedup`, service role uniquement.
 - **Auth/autorisations** : `/initiate`, `/confirm`, `/mine`, `/:id/schedule` derrière `requireClerkAuth` + vérification `gerant_id`/`room.gerant_id`/`meta.clerk_user_id` ; routes admin derrière `requireAdminAuth` ; `is_verified` exigé ; corps admin borné par enums zod.
@@ -164,9 +164,24 @@ Une seconde revue (code-reviewer, non impliqué dans les correctifs) a relu les 
 |---|---|
 | C1 pas totalement clos : le serveur émettait une identité signée à chaque requête sans cookie → 2 requêtes par événement facturé → 40 req/15 min = 20 clics = **un budget d'entrée de 1 000 F vidé par une seule IP**. | `boostIssueLimiter` (10 nouvelles identités / 15 min / IP, `skip` si cookie valide) monté sur `/featured`, `/impression` et `/click` — `index.ts`. Test : 11e requête → 429 (`index.test.ts`). |
 | `APP_PUBLIC_URL` non obligatoire : depuis m3, le callback FedaPay pointe sur localhost si la variable manque → paiement jamais confirmé côté gérant. | Fail-fast en production (identique à `ALLOWED_ORIGINS`), `.env.example` passé en OBLIGATOIRE + `BOOST_TRACK_SECRET` documenté. Test : import en production sans la variable → `exit(1)`. |
-| m6 appliqué dans 1 chemin sur 3 : ni le rattrapage ni les branches de refus (webhook, `/confirm`) n'alertaient → argent encaissé, support non prévenu. | Contrôle `BOOST_BUDGETS` + `flagPaidWithoutCampaign` ajoutés au rattrapage (`source: 'reconcile-amount'`), à `/confirm` (`'confirm-amount'`, uniquement si `approved`) et au refus webhook (`'webhook-amount'`). Tests dans les 3 routeurs. |
+| m6 appliqué dans 1 chemin sur 3 : ni le rattrapage ni les branches de refus (webhook, `/confirm`) n'alertaient → argent encaissé, support non prévenu. | Contrôle `isValidBoostBudget()` + `flagPaidWithoutCampaign` ajoutés au rattrapage (`source: 'reconcile-amount'`), à `/confirm` (`'confirm-amount'`, uniquement si `approved`) et au refus webhook (`'webhook-amount'`). Tests dans les 3 routeurs. |
 | PATCH admin `/boosts/:id/status` : course check-then-update → `23505` → 500 muet (le catch existait déjà sur `/:id/schedule`). | `23505` → 409 explicite, même message que le contrôle. Test dédié. |
 
 **Points opérationnels restants (configuration, pas de code)** : `TRUST_PROXY=1` obligatoire derrière un proxy (sinon tous les clients partagent le même seau de rate limiting → sous-facturation), `BOOST_TRACK_SECRET` recommandé (clé dédiée, distincte d'`ADMIN_JWT_SECRET`), `APP_PUBLIC_URL` à vérifier avant tout redéploiement (le serveur refuse désormais de démarrer sans elle en production).
+
+---
+
+## 💰 Budget libre du gérant (7 oct. 2026)
+
+Décision produit : le gérant **saisit lui-même** le budget de sa campagne, **à partir de 3 000 F** (les forfaits fixes 1 000 / 3 000 / 5 000 F ont été retirés).
+
+- **Bornes serveur** : `BOOST_MIN_BUDGET = 3000`, `BOOST_MAX_BUDGET = 100000` (FCFA) pour la **création**, et un couple distinct `BOOST_ACCEPT_MIN_BUDGET` / `BOOST_ACCEPT_MAX_BUDGET` pour l'**acceptation des paiements** — remonter le minimum de création plus tard ne refuse donc jamais un paiement en cours (pas de fausse alerte `boost_paid_without_campaign`).
+- **`GET /api/boosts/config`** renvoie `budget_min` / `budget_max` (le tableau `budgets[]` a disparu).
+- **Création** : `budget_total` validé par `z.number().int().min(3000).max(100000)` + **multiple du pas de facturation** (`boostBudgetStep()` : 50 F en clic, 5 F en impression) — message serveur en français.
+- **Paiement** : les 3 chemins de confirmation (webhook, `/confirm`, rattrapage) exigent `isValidBoostBudget(amount)` sur la borne d'acceptation → sinon aucune activation + alerte `boost_paid_without_campaign`.
+- **Base** : migration **0015** — `CHECK boosts_budget_total_range` sur `budget_total BETWEEN 3000 AND 100000` (bornes d'acceptation), preuve live : 1 000 / 2 999 / 100 001 rejetés, 3 000 / 100 000 acceptés.
+- **Front** : champ libre `input[type=number]` prérempli à 3 000 F, bornes `min`/`max`, `step` dynamique selon le mode, erreurs min / max / non entier / multiple affichées, estimation clics-impressions recalculée, bouton « Payer » bloqué tant que le budget est invalide.
+- **Anciens montants (1 000 F)** : refusés (décision explicite).
+- **Tests** : backend (400 sous le minimum, 400 au-dessus du plafond, 400 non entier, 400 multiple invalide cpi et cpc, 200 avec 7 500 F) + front (saisie libre, refus min/max/non entier/multiple, payload 12 500 F).
 
 ---

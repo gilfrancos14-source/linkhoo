@@ -73,19 +73,35 @@ type FromLike = {
 };
 
 /**
+ * Ligne `admins` par défaut : superadmin complet, pour que requirePermission
+ * (lookup is_superadmin/permissions à chaque requête) laisse passer les
+ * tests existants. Un test qui stubbe déjà `admins` garde sa propre chaîne.
+ */
+function defaultAdminsChain(): FakeChain {
+  return fakeChain({
+    data: { id: 'admin-1', email: 'admin@test.ci', is_superadmin: true, permissions: [] },
+    error: null,
+  });
+}
+
+/**
  * Branche `supabaseAdmin.from` sur un routage par table : chaque table reçoit
  * sa propre chaîne, et une table dont on passe un tableau consomme les chaînes
  * dans l'ordre des appels (utile quand la même table est interrogée puis
  * modifiée dans un même traitement). Les tables non listées tombent sur une
- * chaîne vide `{ data: null, error: null }`.
+ * chaîne vide `{ data: null, error: null }` (sauf `admins`, voir plus bas).
  */
 export function useSupabaseTables(
   fromMock: unknown,
   tables: Record<string, FakeChain | FakeChain[]>,
 ): void {
   const target = fromMock as FromLike;
+  const merged: Record<string, FakeChain | FakeChain[]> = { ...tables };
+  if (merged.admins === undefined) {
+    merged.admins = defaultAdminsChain();
+  }
   const queues = new Map<string, { items: FakeChain[]; cursor: number }>();
-  for (const [table, value] of Object.entries(tables)) {
+  for (const [table, value] of Object.entries(merged)) {
     queues.set(table, { items: Array.isArray(value) ? value : [value], cursor: 0 });
   }
   const fallback = fakeChain({ data: null, error: null });

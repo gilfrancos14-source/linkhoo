@@ -11,6 +11,15 @@ import { isPremiumActive } from '../../lib/premium';
 
 const PAGE_SIZE = 5;
 
+function todayLabel(): string {
+  return new Date().toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
 export default function DashboardPage() {
   const { market } = useMarket();
   const homePath = useHomePath();
@@ -54,16 +63,26 @@ export default function DashboardPage() {
 
   const total = rooms.length;
   const disponibles = rooms.filter((room) => room.disponible).length;
+  const occupees = total - disponibles;
   const recentRooms = rooms.slice(0, 8);
   const totalPages = Math.ceil(recentRooms.length / PAGE_SIZE);
   const pageItems = recentRooms.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const prenom = gerant?.prenom?.trim() || 'Gérant';
 
   if (loading) {
     return (
       <div className="dash">
-        <div className="dash-page-head">
-          <h1>Aperçu</h1>
-          <p>Chargement...</p>
+        <div className="dash-hero">
+          <div className="dash-hero__glow" aria-hidden="true" />
+          <div className="dash-hero__pattern" aria-hidden="true" />
+          <div className="dash-hero__copy">
+            <span className="dash-hero__eyebrow">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+              Espace gérant
+            </span>
+            <h1>Aperçu</h1>
+            <p>Chargement...</p>
+          </div>
         </div>
       </div>
     );
@@ -72,10 +91,18 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="dash">
-        <div className="dash-page-head">
-          <h1>Aperçu</h1>
-          <p>{error}</p>
-          <button className="admin-btn" onClick={loadData}>Réessayer</button>
+        <div className="dash-hero">
+          <div className="dash-hero__glow" aria-hidden="true" />
+          <div className="dash-hero__pattern" aria-hidden="true" />
+          <div className="dash-hero__copy">
+            <span className="dash-hero__eyebrow">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+              Espace gérant
+            </span>
+            <h1>Aperçu</h1>
+            <p>{error}</p>
+            <button className="admin-btn admin-btn--primary dash-hero__retry" onClick={loadData}>Réessayer</button>
+          </div>
         </div>
       </div>
     );
@@ -83,9 +110,74 @@ export default function DashboardPage() {
 
   return (
     <div className="dash">
-      <div className="dash-page-head">
-        <h1>Aperçu</h1>
-        <p>Vue d'ensemble de votre activité sur le marché {market}.</p>
+      <div className="dash-hero">
+        <div className="dash-hero__glow" aria-hidden="true" />
+        <div className="dash-hero__pattern" aria-hidden="true" />
+        <div className="dash-hero__copy">
+          <span className="dash-hero__eyebrow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+            Espace gérant · {market}
+          </span>
+          <h1>Bonjour {prenom}</h1>
+          <p>Vue d'ensemble de votre activité sur le marché {market}.</p>
+          <div className="dash-hero__meta">
+            <span className="dash-hero__date">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              {todayLabel()}
+            </span>
+            {gerant?.is_verified && (
+              <span className="dash-hero__chip dash-hero__chip--verified">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                Gérant vérifié
+              </span>
+            )}
+            {isPremiumActive(gerant) && (
+              <span className="dash-hero__chip dash-hero__chip--premium">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                Premium
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="dash-hero__stats">
+          <div className="hero-kpi">
+            <div className="hero-kpi__top">
+              <span className="hero-kpi__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21V7a2 2 0 012-2h6a2 2 0 012 2v14"/><path d="M13 21V11a2 2 0 012-2h4a2 2 0 012 2v10"/><path d="M3 21h18"/></svg>
+              </span>
+              <span className="hero-kpi__label">Chambres enregistrées</span>
+            </div>
+            <span className="hero-kpi__value">{total}</span>
+            <span className="hero-kpi__change">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+              {disponibles} disponibles
+            </span>
+          </div>
+          <div className="hero-divider" aria-hidden="true"></div>
+          <div className="hero-side">
+            <div className="hero-mini">
+              <span className="hero-mini__icon" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>
+              </span>
+              <span className="hero-mini__label">Disponibles</span>
+              <span className="hero-mini__value">{disponibles}</span>
+            </div>
+            <div className="hero-mini">
+              <span className="hero-mini__icon" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+              </span>
+              <span className="hero-mini__label">Catégories</span>
+              <span className="hero-mini__value">{categories.length}</span>
+            </div>
+            <div className="hero-mini">
+              <span className="hero-mini__icon" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+              </span>
+              <span className="hero-mini__label">Occupées</span>
+              <span className="hero-mini__value">{occupees}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {(!gerant || !gerant.is_verified) && (
@@ -122,40 +214,6 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {gerant && gerant.is_verified && (
-        <section className="verify-cta verify-cta--done">
-          <div className="verify-cta__icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              <path d="M9 12l2 2 4-4"/>
-            </svg>
-          </div>
-          <div className="verify-cta__text">
-            <h3>Compte vérifié</h3>
-            <p>Votre compte est vérifié depuis le {new Date(gerant.verified_at!).toLocaleDateString('fr-FR')}.</p>
-          </div>
-        </section>
-      )}
-
-      <section className="hero-band">
-        <div className="hero-kpi">
-          <span className="hero-kpi__label">Chambres enregistrées</span>
-          <span className="hero-kpi__value">{total}</span>
-          <span className="hero-kpi__change">{disponibles} disponibles</span>
-        </div>
-        <div className="hero-side">
-          <div className="hero-mini">
-            <span className="hero-mini__label">Disponibles</span>
-            <span className="hero-mini__value">{disponibles}</span>
-          </div>
-          <div className="hero-divider"></div>
-          <div className="hero-mini">
-            <span className="hero-mini__label">Catégories</span>
-            <span className="hero-mini__value">{categories.length}</span>
-          </div>
-        </div>
-      </section>
-
       <section className="panel">
         <div className="panel__head">
           <h2>Actions rapides</h2>
@@ -165,27 +223,43 @@ export default function DashboardPage() {
             <div className="quick-action__icon quick-action__icon--blue">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </div>
-            Ajouter chambre
+            <span className="quick-action__body">
+              <span className="quick-action__label">Ajouter chambre</span>
+              <span className="quick-action__hint" aria-hidden="true">Publiez un nouveau bien</span>
+            </span>
+            <svg className="quick-action__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
           </Link>
           {gerant?.is_verified && isPremiumActive(gerant) && (
             <Link to={`${gerantPath}/reservations`} className="quick-action">
               <div className="quick-action__icon quick-action__icon--amber">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
               </div>
-              Réservations
+              <span className="quick-action__body">
+                <span className="quick-action__label">Réservations</span>
+                <span className="quick-action__hint" aria-hidden="true">Suivez vos demandes</span>
+              </span>
+              <svg className="quick-action__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
             </Link>
           )}
           <Link to={`${gerantPath}/chambres`} className="quick-action">
             <div className="quick-action__icon quick-action__icon--purple">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 21V7a2 2 0 012-2h6a2 2 0 012 2v14"/><path d="M13 21V11a2 2 0 012-2h4a2 2 0 012 2v10"/><path d="M3 21h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
             </div>
-            Gérer les chambres
+            <span className="quick-action__body">
+              <span className="quick-action__label">Gérer les chambres</span>
+              <span className="quick-action__hint" aria-hidden="true">Titres, prix, photos</span>
+            </span>
+            <svg className="quick-action__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
           </Link>
           <Link to={homePath} className="quick-action">
             <div className="quick-action__icon quick-action__icon--green">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </div>
-            Voir le site
+            <span className="quick-action__body">
+              <span className="quick-action__label">Voir le site</span>
+              <span className="quick-action__hint" aria-hidden="true">Aperçu côté client</span>
+            </span>
+            <svg className="quick-action__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
           </Link>
         </div>
       </section>
@@ -193,9 +267,21 @@ export default function DashboardPage() {
       <section className="panel table-panel">
         <div className="panel__head">
           <h2>Chambres récentes</h2>
+          <Link to={`${gerantPath}/chambres`} className="panel__link">
+            Voir tout
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+          </Link>
         </div>
         {recentRooms.length === 0 ? (
-          <p className="admin-table__empty">Aucune chambre enregistrée.</p>
+          <div className="admin-empty">
+            <div className="admin-empty__icon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21V7a2 2 0 012-2h6a2 2 0 012 2v14"/><path d="M13 21V11a2 2 0 012-2h4a2 2 0 012 2v10"/><path d="M3 21h18"/></svg>
+            </div>
+            <p className="admin-table__empty">Aucune chambre enregistrée.</p>
+            <Link to={`${gerantPath}/chambres/ajouter`} className="admin-btn admin-btn--primary">
+              Ajouter une chambre
+            </Link>
+          </div>
         ) : (
           <>
             <div className="admin-table-wrap">

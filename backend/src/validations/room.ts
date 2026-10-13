@@ -1,7 +1,18 @@
 import { z } from 'zod';
-import { dateStringSchema, marketSchema, optionalText } from './common';
+import { dateStringSchema, marketSchema, optionalText, withoutPhoneNumber } from './common';
 
-const imageUrlSchema = z.string().trim().min(1).max(2048);
+const SUPABASE_PUBLIC_IMAGE_RE =
+  /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/images\/[A-Za-z0-9._~-]+(?:\/[A-Za-z0-9._~-]+)*$/;
+const LOCAL_IMAGE_RE = /^\/images\/[A-Za-z0-9._~-]+(?:\/[A-Za-z0-9._~-]+)*$/;
+
+const imageUrlSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(2048)
+  .refine((value) => SUPABASE_PUBLIC_IMAGE_RE.test(value) || LOCAL_IMAGE_RE.test(value), {
+    message: "URL d'image invalide : seules les images du stockage de la plateforme sont acceptées",
+  });
 
 export const roomCreateSchema = z
   .object({
@@ -14,7 +25,7 @@ export const roomCreateSchema = z
     img: imageUrlSchema,
     alt: optionalText(300),
     images: z.array(imageUrlSchema).min(1).max(3),
-    description: z.string().trim().min(1).max(10000),
+    description: withoutPhoneNumber(z.string().trim().min(1).max(10000)),
     capacity: optionalText(100),
     category: z.string().trim().min(1).max(200),
     market: marketSchema,
@@ -25,7 +36,7 @@ export const roomCreateSchema = z
     douches: z.number().int().positive().max(100),
     disponible: z.boolean(),
     date_dispo: z.string().trim().max(50).optional().default(''),
-    conditions: z.string().trim().min(1).max(5000),
+    conditions: withoutPhoneNumber(z.string().trim().min(1).max(5000)),
     is_popular: z.boolean().optional().default(false),
     promo_group: z.enum(['promo_15', 'promo_10', 'promo_5']).nullable().optional(),
     promo_start: z.string().nullable().optional(),

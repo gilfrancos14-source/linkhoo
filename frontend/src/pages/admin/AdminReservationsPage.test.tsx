@@ -423,16 +423,21 @@ describe('AdminReservationsPage', () => {
 
     await waitFor(() => expect(mocks.checkAvailability).toHaveBeenCalledTimes(1));
     expect(await rowOf('Aya Koné').findByText('En attente')).toBeInTheDocument();
-    expect(screen.queryByText('API KO')).not.toBeInTheDocument();
+    // L'échec n'est plus silencieux : un message s'affiche (contrairement à
+    // l'ancien « keep current state » où 403/401 passaient pour un succès).
+    expect(screen.getByText('API KO')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Vérifier dispo' })).toBeEnabled();
   });
 
-  it('affiche un tableau vide quand le chargement initial échoue', async () => {
+  it('affiche une erreur avec Réessayer quand le chargement initial échoue', async () => {
     mocks.getReservations.mockRejectedValue(new Error('réseau coupé'));
 
     render(<AdminReservationsPage />);
 
-    expect(await screen.findByText('Aucune réservation trouvée')).toBeInTheDocument();
+    // Plus de faux « Aucune réservation trouvée » sur une panne réseau.
+    expect(await screen.findByText('réseau coupé')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument();
+    expect(screen.queryByText('Aucune réservation trouvée')).not.toBeInTheDocument();
     expect(screen.queryByText('Chargement...')).not.toBeInTheDocument();
   });
 

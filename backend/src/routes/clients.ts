@@ -1,9 +1,20 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { createClerkClient } from '@clerk/backend';
 import { supabaseAdmin } from '../config/supabase';
 import { clientCreateSchema, clientUpdateSchema } from '../validations/client';
 import { requireProfile } from '../middleware/requireProfile';
 
 const router = Router();
+
+async function resolveClerkEmail(userId: string): Promise<string> {
+  const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! });
+  const user = await clerk.users.getUser(userId);
+  const email = user.primaryEmailAddress?.emailAddress || user.emailAddresses?.[0]?.emailAddress || '';
+  if (!email) {
+    throw Object.assign(new Error('Adresse email manquante sur le compte Clerk'), { status: 400 });
+  }
+  return email.toLowerCase();
+}
 
 router.get('/me', requireProfile('client'), async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -93,14 +104,34 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       return res.status(409).json({ error: 'Profil client déjà existant', role: 'client' });
     }
 
+    const email = await resolveClerkEmail(authUserId);
+
+    const { data: existingByEmail } = await supabaseAdmin
+      .from('clients')
+      .select('id, clerk_user_id')
+      .eq('email', email)
+      .maybeSingle();
+    if (existingByEmail && existingByEmail.clerk_user_id !== authUserId) {
+      return res.status(409).json({ error: 'Cet email est déjà associé à un autre compte' });
+    }
+
     const { data, error } = await supabaseAdmin
       .from('clients')
-      .insert(parsedBody.data)
+      .insert({
+        clerk_user_id: parsedBody.data.clerk_user_id,
+        email,
+        nom: parsedBody.data.nom,
+        prenom: parsedBody.data.prenom,
+        telephone: parsedBody.data.telephone,
+      })
       .select()
       .single();
     if (error) throw error;
     res.status(201).json(data);
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.status) {
+      return res.status(err.status).json({ error: err.message });
+    }
     next(err);
   }
 });

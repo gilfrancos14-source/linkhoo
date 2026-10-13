@@ -8,9 +8,9 @@ const validRoom = {
   price: '250 000 FCFA',
   price_num: 250000,
   price_unit: '/ mois' as const,
-  img: 'https://storage.test/images/studio.webp',
+  img: 'https://ilehya.supabase.co/storage/v1/object/public/images/studio.webp',
   alt: 'Salon du studio',
-  images: ['https://storage.test/images/studio-1.webp'],
+  images: ['https://ilehya.supabase.co/storage/v1/object/public/images/studio-1.webp'],
   description: 'Un studio confortable au cœur de Cocody.',
   capacity: '2 personnes',
   category: 'Studio',
@@ -27,13 +27,33 @@ const validRoom = {
 
 describe('roomCreateSchema', () => {
   it('accepte au maximum trois images', () => {
-    const images = ['a', 'b', 'c'].map((n) => `https://storage.test/${n}.webp`);
+    const images = ['a', 'b', 'c'].map((n) => `https://ilehya.supabase.co/storage/v1/object/public/images/${n}.webp`);
     expect(roomCreateSchema.safeParse({ ...validRoom, images }).success).toBe(true);
   });
 
   it('refuse plus de trois images', () => {
-    const images = ['a', 'b', 'c', 'd'].map((n) => `https://storage.test/${n}.webp`);
+    const images = ['a', 'b', 'c', 'd'].map((n) => `https://ilehya.supabase.co/storage/v1/object/public/images/${n}.webp`);
     expect(roomCreateSchema.safeParse({ ...validRoom, images }).success).toBe(false);
+  });
+
+  it('accepte un chemin local /images/', () => {
+    const parsed = roomCreateSchema.safeParse({
+      ...validRoom,
+      img: '/images/pexels-123.jpg',
+      images: ['/images/pexels-123.jpg'],
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('refuse une URL image hors du stockage de la plateforme', () => {
+    expect(roomCreateSchema.safeParse({ ...validRoom, img: 'https://evil.example.com/photo.webp' }).success).toBe(false);
+    expect(
+      roomCreateSchema.safeParse({
+        ...validRoom,
+        img: 'https://ilehya.supabase.co/storage/v1/object/public/verification-docs/x.webp',
+      }).success,
+    ).toBe(false);
+    expect(roomCreateSchema.safeParse({ ...validRoom, img: 'data:image/png;base64,AAAA' }).success).toBe(false);
   });
 
   it('accepte une chambre complète', () => {
@@ -92,6 +112,30 @@ describe('roomCreateSchema', () => {
     const parsed = roomCreateSchema.safeParse({ ...validRoom, chambres: 0 });
     expect(parsed.success).toBe(false);
   });
+
+  it('refuse un numéro de téléphone dans la description', () => {
+    const parsed = roomCreateSchema.safeParse({
+      ...validRoom,
+      description: 'Un studio confortable. Appelez le 07 07 07 07 07 pour visiter.',
+    });
+    expect(parsed.success).toBe(false);
+    if (parsed.success) return;
+    expect(parsed.error.issues[0].message).toMatch(/numéros de téléphone/i);
+  });
+
+  it('refuse un numéro de téléphone dans les conditions', () => {
+    expect(
+      roomCreateSchema.safeParse({ ...validRoom, conditions: 'Caution 1 mois. WhatsApp : +2250707070707' }).success,
+    ).toBe(false);
+  });
+
+  it('accepte prix et dates dans la description (pas de faux positif)', () => {
+    const parsed = roomCreateSchema.safeParse({
+      ...validRoom,
+      description: 'Loyer 150 000 FCFA par mois, caution 1 mois. Disponible le 12-03-2026.',
+    });
+    expect(parsed.success).toBe(true);
+  });
 });
 
 describe('roomUpdateSchema', () => {
@@ -107,6 +151,11 @@ describe('roomUpdateSchema', () => {
     expect(parsed.success).toBe(true);
     if (!parsed.success) return;
     expect(Object.keys(parsed.data).length).toBeGreaterThan(0);
+  });
+
+  it('refuse un téléphone dans une mise à jour partielle de description', () => {
+    const parsed = roomUpdateSchema.safeParse({ description: 'Contact : 0123456789' });
+    expect(parsed.success).toBe(false);
   });
 
   it('refuse un champ inconnu (strict)', () => {

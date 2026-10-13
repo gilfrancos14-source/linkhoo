@@ -145,6 +145,7 @@ vi.mock('./lib/adminApi', () => ({
   API_BASE: '/api',
   getAdminToken: mocks.getAdminToken,
   setAdminToken: vi.fn(),
+  ADMIN_UNAUTHORIZED_EVENT: 'admin:unauthorized',
   apiAdmin: {
     getMe: mocks.adminGetMe,
     login: vi.fn(() => Promise.resolve({ token: 'jwt-test' })),

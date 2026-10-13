@@ -25,6 +25,26 @@ cp .env.example .env   # configurer Supabase
 npm run dev
 ```
 
+### Vérification des images (CLIP local)
+
+Chaque photo téléversée par un gérant (bucket `images`) est analysée localement
+par un worker isolé (`scripts/clipWorker.mjs`, modèle CLIP quantifié ~150 Mo) :
+seules les photos d'appartement (intérieur ou façade) sont acceptées, jamais de
+personne visible. Aucune API externe, coût 0 € à l'usage.
+
+```bash
+cd backend
+npm run model:preload                  # une fois par machine : télécharge le modèle
+npm run clip:bench                     # latence/ mémoire sur le VPS
+npm run clip:calibrate -- <dossier>    # scores CLIP sur des photos réelles
+```
+
+Variables (voir `backend/.env.example`) : `IMAGE_CHECK_MODE`
+(`strict` bloquant en production, `lenient` ailleurs, `off`), `IMAGE_CHECK_THRESHOLD`,
+`CLIP_CACHE_DIR`, `CLIP_DTYPE`. En `strict`, un worker indisponible répond 503
+(et 429 si la file d'attente est pleine) ; en `lenient`, l'image passe et
+l'incident est journalisé.
+
 ## Base de données
 
 Le schéma et les migrations SQL sont dans `backend/supabase/migrations/`

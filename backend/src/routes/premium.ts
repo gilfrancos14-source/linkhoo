@@ -13,7 +13,7 @@ import {
   upsertPremiumTransaction,
   activateBoostForTransaction,
 } from '../utils/premiumTx';
-import { BOOST_BUDGETS } from '../config/boosts';
+import { isValidBoostBudget } from '../config/boosts';
 import { flagPaidWithoutCampaign } from '../utils/boostAlerts';
 
 const PREMIUM_AMOUNT = 5000;
@@ -328,8 +328,8 @@ router.post('/webhook', async (req: Request, res: Response, _next: NextFunction)
         // même que le gérant ne voie sa page de succès. BOOST_NOT_FOUND =
         // campagne remplacée/annulée entre-temps → claim déjà annulé par la
         // RPC, on ne crédite rien et on alerte le support (M4).
-        if (!BOOST_BUDGETS.some((budget) => budget === amount)) {
-          // m6 : défense en profondeur — un montant hors grille n'active rien,
+        if (!isValidBoostBudget(amount)) {
+          // m6 : défense en profondeur — un montant hors intervalle n'active rien,
           // même en cas de webhook forgeé ou de montant corrompu. L'argent
           // étant encaissé, on alerte le support comme sur BOOST_NOT_FOUND.
           console.warn(

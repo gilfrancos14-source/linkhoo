@@ -18,6 +18,24 @@ import {
 
 const router = Router();
 const clientLimiter = createClientLimiter();
+// Anti-DoS : une trentaine de POST anonymes gèle une annonce pour toujours
+// (en_attente bloque les dates). Plafond serré sur les écritures.
+const reserveLimiter = createClientLimiter({ limit: 10 });
+
+// Une demande en_attente non traitée par le gérant ne doit pas réserver les
+// dates indéfiniment : après 48 h elle est auto-annulée et cesse de bloquer.
+const PENDING_TTL_MS = 48 * 60 * 60 * 1000;
+
+async function expireStalePending(roomId: string): Promise<void> {
+  const cutoff = new Date(Date.now() - PENDING_TTL_MS).toISOString();
+  const { error } = await supabaseAdmin
+    .from('reservations')
+    .update({ statut: 'annulee', responded_at: new Date().toISOString() })
+    .eq('room_id', roomId)
+    .eq('statut', 'en_attente')
+    .lt('created_at', cutoff);
+  if (error) console.error('[reservations] expireStalePending échoué:', error.message);
+}
 
 router.get('/', requireClerkAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -121,12 +139,14 @@ router.get('/client', requireClerkAuth, clientLimiter, async (req: Request, res:
   }
 });
 
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', reserveLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedBody = reservationCreateSchema.safeParse(req.body);
     if (!parsedBody.success) {
       return res.status(400).json({ error: 'Données de réservation invalides' });
     }
+
+    await expireStalePending(parsedBody.data.room_id);
 
     // Idempotence : la même clé client ne doit créer qu'une seule réservation.
     // Un rejeu (file offline, timeout, retry) renvoie la ligne existante au
@@ -374,6 +394,8 @@ router.get('/check', async (req: Request, res: Response, next: NextFunction) => 
     if (!parsedQuery.success) {
       return res.status(400).json({ error: 'Paramètres de disponibilité invalides' });
     }
+
+    await expireStalePending(parsedQuery.data.room_id);
 
     // Test SQL exact : la version précédente tirait TOUTES les réservations de
     // la chambre et PostgREST tronquait à 1000 lignes → faux « aucun conflit ».

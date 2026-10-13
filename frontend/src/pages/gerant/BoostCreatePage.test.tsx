@@ -66,7 +66,8 @@ const makeConfig = (): BoostConfig => ({
   currency: 'XOF',
   price_cpc: 50,
   price_cpi: 5,
-  budgets: [1000, 3000, 5000],
+  budget_min: 3000,
+  budget_max: 100000,
   max_duration_days: 90,
 });
 
@@ -180,13 +181,15 @@ describe('BoostCreatePage', () => {
       'false',
     );
 
-    expect(screen.getByRole('button', { name: /^1\s000\sF/ })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: /^3\s000\sF/ })).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByRole('button', { name: /^5\s000\sF/ })).toBeInTheDocument();
+    const budgetInput = screen.getByLabelText('Budget (FCFA)') as HTMLInputElement;
+    expect(budgetInput.value).toBe('3000');
+    expect(budgetInput).toHaveAttribute('min', '3000');
+    expect(budgetInput).toHaveAttribute('max', '100000');
+    expect(screen.getByText(/De 3 000 F à 100 000 F/)).toBeInTheDocument();
 
     expect(screen.getByText('Chambre : Suite Plateau')).toBeInTheDocument();
     expect(screen.getByText('Mode : Par clic (50 F / clic)')).toBeInTheDocument();
-    expect(screen.getByText('Budget : 1 000 F — ≈ 20 clics')).toBeInTheDocument();
+    expect(screen.getByText('Budget : 3 000 F — ≈ 60 clics')).toBeInTheDocument();
 
     const start = screen.getByLabelText('Début') as HTMLInputElement;
     const end = screen.getByLabelText('Fin') as HTMLInputElement;
@@ -194,19 +197,66 @@ describe('BoostCreatePage', () => {
     expect(end.value).toBe(isoDay(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)));
     expect(screen.getByText(`Du ${start.value} au ${end.value}`)).toBeInTheDocument();
 
-    expect(screen.getByRole('button', { name: /^Payer\s1\s000\sF$/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^Payer\s3\s000\sF$/ })).toBeEnabled();
   });
 
-  it('change le budget sélectionné et le montant à payer', async () => {
+  it('accepte un budget libre saisi par le gérant', async () => {
     renderCreate();
     await screen.findByRole('heading', { name: '3. Budget' });
 
-    fireEvent.click(screen.getByRole('button', { name: /^3\s000\sF/ }));
+    const budgetInput = screen.getByLabelText('Budget (FCFA)') as HTMLInputElement;
+    fireEvent.change(budgetInput, { target: { value: '7500' } });
 
-    expect(screen.getByRole('button', { name: /^3\s000\sF/ })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: /^1\s000\sF/ })).toHaveAttribute('aria-pressed', 'false');
-    expect(screen.getByRole('button', { name: /^Payer\s3\s000\sF$/ })).toBeInTheDocument();
-    expect(screen.getByText('Budget : 3 000 F — ≈ 60 clics')).toBeInTheDocument();
+    expect(screen.getByText('Budget : 7 500 F — ≈ 150 clics')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Payer\s7\s500\sF$/ })).toBeEnabled();
+  });
+
+  it('refuse un budget sous le minimum serveur', async () => {
+    renderCreate();
+    await screen.findByRole('heading', { name: '3. Budget' });
+
+    fireEvent.change(screen.getByLabelText('Budget (FCFA)'), { target: { value: '1500' } });
+
+    expect(await screen.findByText('Le budget minimum est de 3 000 F.')).toBeInTheDocument();
+    expect(screen.getByText('Budget : —')).toBeInTheDocument();
+
+    const pay = screen.getByRole('button', { name: 'Payer' });
+    expect(pay).toBeDisabled();
+    fireEvent.click(pay);
+    expect(mocks.initiate).not.toHaveBeenCalled();
+  });
+
+  it('refuse un budget au-dessus du plafond serveur', async () => {
+    renderCreate();
+    await screen.findByRole('heading', { name: '3. Budget' });
+
+    fireEvent.change(screen.getByLabelText('Budget (FCFA)'), { target: { value: '150000' } });
+
+    expect(await screen.findByText('Le budget maximum est de 100 000 F.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Payer' })).toBeDisabled();
+  });
+
+  it('refuse un budget non entier', async () => {
+    renderCreate();
+    await screen.findByRole('heading', { name: '3. Budget' });
+
+    fireEvent.change(screen.getByLabelText('Budget (FCFA)'), { target: { value: '3500.5' } });
+
+    expect(await screen.findByText('Le budget doit être un nombre entier.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Payer' })).toBeDisabled();
+  });
+
+  it('refuse un budget qui n\'est pas multiple du pas de facturation', async () => {
+    renderCreate();
+    await screen.findByRole('heading', { name: '3. Budget' });
+
+    // Mode clic par défaut : le pas est de 50 F.
+    fireEvent.change(screen.getByLabelText('Budget (FCFA)'), { target: { value: '3010' } });
+
+    expect(
+      await screen.findByText('Le budget doit être un multiple de 50 F (un clic).'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Payer' })).toBeDisabled();
   });
 
   it('recalcule le mode de facturation et les estimations en par impression', async () => {
@@ -224,8 +274,7 @@ describe('BoostCreatePage', () => {
       'false',
     );
     expect(screen.getByText('Mode : Par impression (5 F / impression)')).toBeInTheDocument();
-    expect(screen.getByText('Budget : 1 000 F — ≈ 200 impressions')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^3\s000\sF/ })).toHaveTextContent('≈ 600 impressions');
+    expect(screen.getByText('Budget : 3 000 F — ≈ 600 impressions')).toBeInTheDocument();
   });
 
   it('refuse la soumission avec une fenêtre de dates invalide', async () => {
@@ -241,7 +290,7 @@ describe('BoostCreatePage', () => {
       screen.getByText('La date de fin doit être postérieure à la date de début'),
     ).toBeInTheDocument();
 
-    const pay = screen.getByRole('button', { name: /^Payer\s1\s000\sF$/ });
+    const pay = screen.getByRole('button', { name: /^Payer\s3\s000\sF$/ });
     expect(pay).toBeDisabled();
     fireEvent.click(pay);
     expect(mocks.initiate).not.toHaveBeenCalled();
@@ -249,15 +298,16 @@ describe('BoostCreatePage', () => {
 
   it('initie le paiement avec les valeurs du formulaire', async () => {
     renderCreate();
-    await screen.findByRole('button', { name: /^Payer\s1\s000\sF$/ });
+    await screen.findByRole('button', { name: /^Payer\s3\s000\sF$/ });
 
-    fireEvent.click(screen.getByRole('button', { name: /^Payer\s1\s000\sF$/ }));
+    fireEvent.change(screen.getByLabelText('Budget (FCFA)'), { target: { value: '12500' } });
+    fireEvent.click(screen.getByRole('button', { name: /^Payer\s12\s500\sF$/ }));
 
     expect(mocks.initiate).toHaveBeenCalledTimes(1);
     const payload = mocks.initiate.mock.calls[0][0];
     expect(payload.room_id).toBe('room-1');
     expect(payload.mode).toBe('cpc');
-    expect(payload.budget_total).toBe(1000);
+    expect(payload.budget_total).toBe(12500);
     expect(payload.starts_at).toBe(new Date(`${isoDay(new Date())}T12:00:00`).toISOString());
     // m11 : fin de journée, plus de demi-journée non livrée.
     expect(payload.ends_at).toBe(
@@ -269,12 +319,12 @@ describe('BoostCreatePage', () => {
   it("affiche l'erreur serveur et débloque le bouton après un échec d'initiation", async () => {
     mocks.initiate.mockRejectedValue(new Error('Budget épuisé : session expirée'));
     renderCreate();
-    await screen.findByRole('button', { name: /^Payer\s1\s000\sF$/ });
+    await screen.findByRole('button', { name: /^Payer\s3\s000\sF$/ });
 
-    fireEvent.click(screen.getByRole('button', { name: /^Payer\s1\s000\sF$/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Payer\s3\s000\sF$/ }));
 
     expect(await screen.findByText('Budget épuisé : session expirée')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Payer\s1\s000\sF$/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /^Payer\s3\s000\sF$/ })).toBeEnabled();
     expect(mocks.initiate).toHaveBeenCalledTimes(1);
   });
 

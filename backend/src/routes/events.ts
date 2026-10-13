@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
 import { supabaseAdmin, supabasePublic } from '../config/supabase';
 import { requireAdminAuth } from '../middleware/requireAdminAuth';
+import { requirePermission, requireSuperadmin } from '../middleware/adminPermissions';
 import { idParamsSchema } from '../validations/common';
 import { eventQuerySchema, eventCreateSchema, eventUpdateSchema } from '../validations/event';
 
@@ -17,15 +18,21 @@ function pastCutoff(): string {
 
 // Les événements passés ne sont visibles que par le back-office : la route
 // publique renvoie uniquement les événements à venir, sauf si l'appelant
-// demande `include_past=1` et prouve son rôle admin.
+// demande `include_past=1` et prouve son rôle admin (section Événements).
 function requireAdminForPast(req: Request, res: Response, next: NextFunction) {
-  if (req.query.include_past === '1') return requireAdminAuth(req, res, next);
+  if (req.query.include_past === '1') {
+    requireAdminAuth(req, res, (err?: unknown) => {
+      if (err) return next(err);
+      requirePermission('evenements')(req, res, next);
+    });
+    return;
+  }
   next();
 }
 
-// GET public : le marché est obligatoire (eventQuerySchema), le tri est
-// déterministe (event_date, puis id) pour que la couverture d'une ville et
-// l'ordre des cartes soient stables entre deux appels.
+// GET public : le marché est obligatoire hors back-office (eventQuerySchema),
+// le tri est déterministe (event_date, puis id) pour que la couverture d'une
+// ville et l'ordre des cartes soient stables entre deux appels.
 router.get('/', requireAdminForPast, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedQuery = eventQuerySchema.safeParse(req.query);
@@ -33,10 +40,12 @@ router.get('/', requireAdminForPast, async (req: Request, res: Response, next: N
       return res.status(400).json({ error: 'Paramètres invalides' });
     }
 
-    let query = supabasePublic
-      .from('events')
-      .select('*')
-      .eq('market', parsedQuery.data.market);
+    let query = supabasePublic.from('events').select('*');
+    // Marché omis (back-office avec include_past=1) : on renvoie TOUS les
+    // marchés en une seule requête, sinon on filtre sur le marché demandé.
+    if (parsedQuery.data.market) {
+      query = query.eq('market', parsedQuery.data.market);
+    }
     if (parsedQuery.data.include_past !== '1') {
       query = query.gte('event_date', pastCutoff());
     }
@@ -50,7 +59,7 @@ router.get('/', requireAdminForPast, async (req: Request, res: Response, next: N
   }
 });
 
-router.post('/', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', requireAdminAuth, requirePermission('evenements'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedBody = eventCreateSchema.safeParse(req.body);
     if (!parsedBody.success) {
@@ -69,7 +78,7 @@ router.post('/', requireAdminAuth, async (req: Request, res: Response, next: Nex
   }
 });
 
-router.put('/:id', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', requireAdminAuth, requirePermission('evenements'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     const parsedBody = eventUpdateSchema.safeParse(req.body);
@@ -91,7 +100,7 @@ router.put('/:id', requireAdminAuth, async (req: Request, res: Response, next: N
   }
 });
 
-router.delete('/:id', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', requireAdminAuth, requireSuperadmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     if (!parsedParams.success) {

@@ -228,13 +228,13 @@ describe('apiAdmin — endpoints back-office', () => {
     expect(fetchMock.mock.calls[1][0]).toBe('/api/banners');
   });
 
-  it('getEvents force include_past=1 pour le back-office', async () => {
+  it("getEvents force include_past=1 et liste tous les marchés", async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse([]));
 
-    await apiAdmin.getEvents('CI');
+    await apiAdmin.getEvents();
 
     const { url } = firstCall();
-    expect(url).toBe('/api/events?market=CI&include_past=1');
+    expect(url).toBe('/api/events?include_past=1');
   });
 
   it('changePassword envoie les deux mots de passe en JSON', async () => {
@@ -373,6 +373,59 @@ describe('apiAdmin — endpoints back-office', () => {
 
     const { url, init } = firstCall();
     expect(url).toBe('/api/tourism/d1');
+    expect(init.method).toBe('DELETE');
+    expect(clearCacheMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('getEscapades exige le marché dans la query', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse([]));
+
+    const escapades = await apiAdmin.getEscapades('BJ');
+
+    expect(firstCall().url).toBe('/api/escapades?market=BJ');
+    expect(escapades).toEqual([]);
+    expect(clearCacheMock).not.toHaveBeenCalled();
+  });
+
+  it('createEscapade envoie market, lieu, description et images', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'esc-bj-ouidah' }));
+
+    await apiAdmin.createEscapade({
+      market: 'BJ',
+      lieu: 'Ouidah',
+      description: 'Plages et musée.',
+      images: ['/images/ouidah.jpg'],
+    });
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/escapades');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      market: 'BJ',
+      lieu: 'Ouidah',
+      images: ['/images/ouidah.jpg'],
+    });
+    expect(clearCacheMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('updateEscapade PUT la ressource', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'esc-bj-ouidah', lieu: 'Ouidah' }));
+
+    await apiAdmin.updateEscapade('esc-bj-ouidah', { lieu: 'Ouidah' });
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/escapades/esc-bj-ouidah');
+    expect(init.method).toBe('PUT');
+    expect(init.body).toBe(JSON.stringify({ lieu: 'Ouidah' }));
+  });
+
+  it('deleteEscapade DELETE la ressource', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 200 }));
+
+    await apiAdmin.deleteEscapade('esc-bj-ouidah');
+
+    const { url, init } = firstCall();
+    expect(url).toBe('/api/escapades/esc-bj-ouidah');
     expect(init.method).toBe('DELETE');
     expect(clearCacheMock).toHaveBeenCalledTimes(1);
   });

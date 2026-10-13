@@ -121,17 +121,26 @@ describe('PremiumPage', () => {
     expect(
       await screen.findByRole('heading', { name: 'Avantages Premium' }),
     ).toBeInTheDocument();
-    // « Badge <strong>Premium</strong> » est découpé : on lit le texte
-    // concaténé de chaque <li> plutôt que getByText sur un nœud texte.
-    const avantages = screen
-      .getAllByRole('listitem')
-      .map((item) => item.textContent);
-    expect(avantages).toHaveLength(5);
-    expect(avantages).toContain('Une annonce sur 3 en tête des recherches et des catégories');
-    expect(avantages).toContain('Badge Premium sur vos cartes de résultats');
-    expect(avantages).toContain('Badge Premium sur la fiche publique de vos biens');
-    expect(avantages).toContain('Gestion des réservations de vos biens');
-    expect(avantages).toContain('Badge PRO et statut Premium dans votre espace gérant');
+    const items = screen.getAllByRole('listitem');
+    expect(items).toHaveLength(5);
+    // Chaque <li> contient le titre du bénéfice dans .premium-perk__title
+    // (le textContent du <li> inclut aussi le paragraphe d'explication).
+    const titres = items.map(
+      (item) => item.querySelector('.premium-perk__title')?.textContent,
+    );
+    expect(titres).toEqual([
+      'Une annonce sur 3 en tête des recherches et des catégories',
+      'Badge Premium sur vos cartes de résultats',
+      'Badge Premium sur la fiche publique de vos biens',
+      'Gestion des réservations de vos biens',
+      'Badge PRO et statut Premium dans votre espace gérant',
+    ]);
+    // Chaque avantage est accompagné d'un court paragraphe d'explication.
+    for (const item of items) {
+      const desc = item.querySelector('.premium-perk__desc');
+      expect(desc).not.toBeNull();
+      expect(desc?.textContent?.trim().length).toBeGreaterThan(0);
+    }
   });
 
   it('initie le paiement pour le marché CI puis reste bloqué sur la redirection', async () => {

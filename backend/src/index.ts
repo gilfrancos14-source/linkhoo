@@ -14,6 +14,7 @@ import categoriesRouter from './routes/categories';
 import bannersRouter from './routes/banners';
 import eventsRouter from './routes/events';
 import tourismRouter from './routes/tourism';
+import escapadesRouter from './routes/escapades';
 import reservationsRouter from './routes/reservations';
 import newsletterRouter from './routes/newsletter';
 import contactRouter from './routes/contact';
@@ -27,6 +28,7 @@ import boostsRouter from './routes/boosts';
 import adminRouter from './routes/admin';
 import authRouter from './routes/auth';
 import { startNotificationPurge } from './utils/notificationPurge';
+import { warmUpImageCheck } from './services/apartmentImageCheck';
 
 const requiredEnvVars = ['CLERK_SECRET_KEY', 'ADMIN_JWT_SECRET', 'FEDAPAY_PUBLIC_KEY', 'FEDAPAY_SECRET_KEY'];
 for (const envVar of requiredEnvVars) {
@@ -200,6 +202,7 @@ const PUBLIC_CACHE_PATHS = [
   '/api/categories',
   '/api/events',
   '/api/tourism',
+  '/api/escapades',
   '/api/reviews/featured',
   '/api/rooms/popular',
   '/api/boosts/featured',
@@ -235,6 +238,7 @@ app.use('/api/categories', categoriesRouter);
 app.use('/api/banners', bannersRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/tourism', tourismRouter);
+app.use('/api/escapades', escapadesRouter);
 app.use('/api/reservations', reservationsRouter);
 app.use('/api/newsletter', newsletterRouter);
 app.use('/api/contact', contactRouter);
@@ -269,6 +273,7 @@ const server = app.listen(port, () => {
   // P1 #8 : purge quotidienne des notifications de plus de 30 jours
   // (timers unref, jamais bloquant pour l'arrêt du process).
   startNotificationPurge();
+  if (process.env.NODE_ENV !== 'test') void warmUpImageCheck();
 });
 
 process.on('unhandledRejection', (reason, _promise) => {

@@ -34,6 +34,8 @@ export default function AdminEventsPage() {
   const [error, setError] = useState('');
   const [marketFilter, setMarketFilter] = useState<string>('all');
   const [cityFilter, setCityFilter] = useState<CityFilter>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const [panelOpen, setPanelOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<AdminEvent | null>(null);
@@ -58,8 +60,8 @@ export default function AdminEventsPage() {
     [],
   );
 
-  // GET /events exige ?market= : on charge les deux marchés puis on filtre
-  // côté client, pour que « Tous les marchés » reste possible.
+  // GET /events sans ?market= (back-office) renvoie TOUS les marchés en une
+  // requête ; on ne fait que trier côté client (event_date, puis id).
   const loadEvents = useCallback(async () => {
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -67,10 +69,10 @@ export default function AdminEventsPage() {
     setLoading(true);
     setError('');
     try {
-      const [ci, bj] = await Promise.all([apiAdmin.getEvents('CI'), apiAdmin.getEvents('BJ')]);
+      const all = await apiAdmin.getEvents();
       if (controller.signal.aborted) return;
       setEvents(
-        [...ci, ...bj].sort((a, b) =>
+        [...all].sort((a, b) =>
           a.event_date < b.event_date ? -1 : a.event_date > b.event_date ? 1 : a.id < b.id ? -1 : 1,
         ),
       );
@@ -92,8 +94,19 @@ export default function AdminEventsPage() {
     apiRooms.villes().then(setRoomCities).catch(() => {});
   }, []);
 
+  // Un changement de filtre peut réduire la liste à moins de pages : on
+  // revient à la première pour ne pas afficher une page vide.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [marketFilter, cityFilter]);
+
   const byMarket = marketFilter === 'all' ? events : events.filter((e) => e.market === marketFilter);
   const filtered = cityFilter === 'all' ? byMarket : byMarket.filter((e) => e.city === cityFilter);
+
+  // Pagination côté client (les événements sont déjà tous chargés) : on n'en
+  // montre que 10 par page au lieu de toute la liste.
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   // Union événements + biens, dédup (casse) en gardant la première occurrence.
   const citySuggestions = (() => {
@@ -292,7 +305,7 @@ export default function AdminEventsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((event) => (
+                  {paginated.map((event) => (
                     <tr key={event.id}>
                       <td>
                         <img
@@ -330,7 +343,7 @@ export default function AdminEventsPage() {
           </div>
 
           <div className="banners-mobile-cards">
-            {filtered.map((event) => (
+            {paginated.map((event) => (
               <div className="gerant-card" key={event.id}>
                 {event.img && (
                   <img
@@ -360,6 +373,34 @@ export default function AdminEventsPage() {
               </div>
             ))}
           </div>
+
+          {totalPages > 1 && (
+            <div className="admin-pagination">
+              <button
+                className="admin-pagination__btn"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(currentPage - 1)}
+              >
+                ←
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  className={`admin-pagination__btn ${page === currentPage ? 'admin-pagination__btn--active' : ''}`}
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                className="admin-pagination__btn"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(currentPage + 1)}
+              >
+                →
+              </button>
+            </div>
+          )}
         </>
       )}
 

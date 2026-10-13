@@ -87,7 +87,7 @@ const CI_CATEGORY_MODEL = [
   { key: 'chambres-moins-cheres', title: 'Chambres moins chères', img: '/images/pexels-fotoaibe-1571460.jpg', alt: 'Chambres abordables' },
   { key: 'chambres-premium', title: 'Chambres premium', img: '/images/pexels-artbovich-6782567.jpg', alt: 'Chambres premium' },
   { key: 'appartements', title: 'Appartements', img: '/images/pexels-artbovich-7214173.jpg', alt: 'Appartements' },
-  { key: 'hotels', title: 'Hôtels', img: '/images/pexels-artbovich-7045712.jpg', alt: "Chambres d'hôtel" },
+  { key: 'hotels', title: 'Hôtel', img: '/images/pexels-artbovich-7045712.jpg', alt: "Chambres d'hôtel" },
 ] as const;
 
 type CategoryKey = (typeof CI_CATEGORY_MODEL)[number]['key'];

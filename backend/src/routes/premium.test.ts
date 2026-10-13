@@ -528,12 +528,12 @@ describe('POST /api/premium/webhook', () => {
     );
   });
 
-  it('200 : refuse d’activer un boost au montant hors grille ET alerte le support (m6/M4)', async () => {
+  it('200 : refuse d’activer un boost au montant hors intervalle ET alerte le support (m6/M4)', async () => {
     vi.mocked(Webhook.constructEvent).mockReturnValue({
       name: 'transaction.approved',
       entity: {
         id: 4244,
-        amount: 2000, // hors BOOST_BUDGETS [1000, 3000, 5000]
+        amount: 2000, // hors intervalle [3000; 100000]
         status: 'approved',
         customer: { email: 'gerant@example.ci' },
         metadata: { clerk_user_id: 'user_1', market: 'CI', type: 'boost' },

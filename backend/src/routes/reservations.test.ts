@@ -23,6 +23,12 @@ vi.mock('@clerk/backend', () => ({
   createClerkClient: vi.fn(),
 }));
 
+// Limiteur isolé (singleton partagé) : neutralisé ici, comportement vérifié
+// dans reservationsRateLimit.test.ts.
+vi.mock('../utils/rateLimiters', () => ({
+  createClientLimiter: () => (_req: unknown, _res: unknown, next: () => void) => next(),
+}));
+
 // Les routes publient un « réveil » Realtime après chaque notification :
 // neutralisé ici, les assertions le vérifient via ce spy.
 vi.mock('../utils/realtime', () => ({

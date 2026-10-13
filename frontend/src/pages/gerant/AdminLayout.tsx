@@ -241,6 +241,9 @@ export default function AdminLayout() {
 
         <div className="sidebar__footer">
           <div className="sidebar__user">
+            <div className="sidebar__avatar" aria-hidden="true">
+              {(gerant?.prenom || user?.firstName || 'G').trim().charAt(0).toUpperCase()}
+            </div>
             <div className="sidebar__user-info">
               <span className="sidebar__user-name">
                 {gerant?.prenom || user?.firstName || gerant?.email || user?.emailAddresses?.[0]?.emailAddress || 'Gérant'}

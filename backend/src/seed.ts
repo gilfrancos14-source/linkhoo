@@ -11,10 +11,10 @@ import {
 } from './seedMarkets';
 
 const defaultCategories = [
-  { id: 'appartements-moins-chers', title: 'Appartements moins chers', img: '/images/pexels-fotoaibe-1571460.jpg', alt: 'Appartement lumineux au meilleur prix', market: 'BJ' },
-  { id: 'appartements-premium', title: 'Appartements premium', img: '/images/pexels-donaldtong94-189333.jpg', alt: 'Appartement premium avec salon spacieux', market: 'BJ' },
-  { id: 'villas-premium', title: 'Villas premium', img: '/images/pexels-artbovich-7214173.jpg', alt: 'Villa premium avec jardin', market: 'BJ' },
-  { id: 'hotel', title: 'Hôtel', img: '/images/pexels-artbovich-7045712.jpg', alt: 'Suite hôtelière avec vue mer', market: 'BJ' },
+  { id: 'bj-chambres-moins-cheres', title: 'Chambres moins chères', img: '/images/pexels-fotoaibe-1571460.jpg', alt: 'Chambres abordables', market: 'BJ' },
+  { id: 'bj-chambres-premium', title: 'Chambres premium', img: '/images/pexels-artbovich-6782567.jpg', alt: 'Chambres premium', market: 'BJ' },
+  { id: 'bj-appartements', title: 'Appartements', img: '/images/pexels-artbovich-7214173.jpg', alt: 'Appartements', market: 'BJ' },
+  { id: 'bj-hotels', title: 'Hôtel', img: '/images/pexels-artbovich-7045712.jpg', alt: "Chambres d'hôtel", market: 'BJ' },
   { id: 'ci-chambres-moins-chères', title: 'Chambres moins chères', img: '/images/pexels-fotoaibe-1571460.jpg', alt: 'Chambre simple et abordable', market: 'CI' },
   { id: 'ci-chambres-premium', title: 'Chambres premium', img: '/images/pexels-artbovich-6782567.jpg', alt: 'Chambre premium bien équipée', market: 'CI' },
   { id: 'ci-appartements', title: 'Appartements', img: '/images/pexels-artbovich-7214173.jpg', alt: 'Appartement spacieux', market: 'CI' },
@@ -30,7 +30,7 @@ const defaultRooms = [
     img: '/images/pexels-artbovich-6782567.jpg', alt: 'Familial, Quartier des arts',
     images: ['/images/pexels-artbovich-6782567.jpg', '/images/pexels-artbovich-7045712.jpg'],
     description: 'Appartement familial lumineux situé au cœur du quartier des arts.', capacity: '4 personnes',
-    category: 'appartements-moins-chers', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Quartier des arts',
+    category: 'bj-appartements', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Quartier des arts',
     chambres: 2, douches: 1, disponible: true, date_dispo: '2026-09-15',
     conditions: 'Caution : 1 mois de loyer, Durée minimale : 6 mois',
   },
@@ -40,7 +40,7 @@ const defaultRooms = [
     img: '/images/pexels-artbovich-7045712.jpg', alt: 'Jardin, Front de mer',
     images: ['/images/pexels-artbovich-7045712.jpg', '/images/pexels-artbovich-7214173.jpg'],
     description: 'Maison avec jardin privatif en bord de mer.', capacity: '4 personnes',
-    category: 'appartements-premium', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Front de mer',
+    category: 'bj-appartements', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Front de mer',
     chambres: 2, douches: 2, disponible: true, date_dispo: '2026-09-10',
     conditions: 'Caution : 2 mois de loyer, Durée minimale : 12 mois',
   },
@@ -50,7 +50,7 @@ const defaultRooms = [
     img: '/images/pexels-artbovich-7214173.jpg', alt: 'Lumineux, Centre-ville',
     images: ['/images/pexels-artbovich-7214173.jpg', '/images/pexels-artbovich-6782567.jpg'],
     description: 'Appartement lumineux au cœur de la ville.', capacity: '4 personnes',
-    category: 'appartements-moins-chers', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Centre-ville',
+    category: 'bj-appartements', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Centre-ville',
     chambres: 2, douches: 1, disponible: true, date_dispo: '2026-09-20',
     conditions: 'Caution : 1 mois de loyer, Durée minimale : 6 mois',
   },
@@ -60,7 +60,7 @@ const defaultRooms = [
     img: '/images/pexels-donaldtong94-189333.jpg', alt: 'Vue mer, Corniche',
     images: ['/images/pexels-donaldtong94-189333.jpg', '/images/pexels-artbovich-7045712.jpg'],
     description: 'Appartement premium sur la corniche avec vue panoramique.', capacity: '4 personnes',
-    category: 'appartements-premium', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Corniche',
+    category: 'bj-appartements', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Corniche',
     chambres: 2, douches: 2, disponible: true, date_dispo: '2026-10-01',
     conditions: 'Caution : 2 mois de loyer, Durée minimale : 12 mois',
   },
@@ -70,7 +70,7 @@ const defaultRooms = [
     img: '/images/pexels-fotoaibe-1571460.jpg', alt: 'Calme, Périphérie',
     images: ['/images/pexels-fotoaibe-1571460.jpg', '/images/pexels-artbovich-6283961.jpg'],
     description: 'Appartement calme en périphérie.', capacity: '4 personnes',
-    category: 'appartements-moins-chers', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Périphérie',
+    category: 'bj-appartements', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Périphérie',
     chambres: 2, douches: 1, disponible: false, date_dispo: '2026-12-01',
     conditions: 'Caution : 1 mois de loyer, Durée minimale : 6 mois',
   },
@@ -80,7 +80,7 @@ const defaultRooms = [
     img: '/images/pexels-artbovich-6758771.jpg', alt: 'Suite Prestige, Front de mer',
     images: ['/images/pexels-artbovich-6758771.jpg', '/images/pexels-artbovich-6315808.jpg'],
     description: 'Suite prestige en front de mer avec salon séparé.', capacity: '3 personnes',
-    category: 'hotel', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Front de mer',
+    category: 'bj-hotels', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Front de mer',
     chambres: 1, douches: 1, disponible: true, date_dispo: '2026-09-10',
     conditions: 'Réservation en ligne, Annulation gratuite 48h avant',
   },
@@ -90,7 +90,7 @@ const defaultRooms = [
     img: '/images/pexels-artbovich-6315808.jpg', alt: 'Suite Vue Mer, Top floor',
     images: ['/images/pexels-artbovich-6315808.jpg', '/images/pexels-artbovich-6758771.jpg'],
     description: 'Suite au dernier étage avec terrasse privée.', capacity: '3 personnes',
-    category: 'hotel', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Front de mer',
+    category: 'bj-hotels', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Front de mer',
     chambres: 1, douches: 1, disponible: true, date_dispo: '2026-09-10',
     conditions: 'Réservation en ligne, Annulation gratuite 48h avant',
   },
@@ -100,7 +100,7 @@ const defaultRooms = [
     img: '/images/pexels-artbovich-6283961.jpg', alt: 'Suite Charme, Centre-ville',
     images: ['/images/pexels-artbovich-6283961.jpg', '/images/pexels-artbovich-6758771.jpg'],
     description: 'Suite charme au cœur de la ville.', capacity: '2 personnes',
-    category: 'hotel', market: 'BJ', pays: 'Bénin', ville: 'Porto-Novo', quartier: 'Centre-ville',
+    category: 'bj-hotels', market: 'BJ', pays: 'Bénin', ville: 'Porto-Novo', quartier: 'Centre-ville',
     chambres: 1, douches: 1, disponible: true, date_dispo: '2026-09-12',
     conditions: 'Réservation en ligne, Annulation gratuite 24h avant',
   },
@@ -110,7 +110,7 @@ const defaultRooms = [
     img: '/images/pexels-artbovich-6238608.jpg', alt: 'Suite Familiale, Calme',
     images: ['/images/pexels-artbovich-6238608.jpg', '/images/pexels-artbovich-6782567.jpg'],
     description: 'Grande suite familiale dans un cadre calme.', capacity: '4 personnes',
-    category: 'hotel', market: 'BJ', pays: 'Bénin', ville: 'Ouidah', quartier: 'Périphérie',
+    category: 'bj-hotels', market: 'BJ', pays: 'Bénin', ville: 'Ouidah', quartier: 'Périphérie',
     chambres: 2, douches: 2, disponible: true, date_dispo: '2026-09-18',
     conditions: 'Réservation en ligne, Annulation gratuite 48h avant',
   },
@@ -120,7 +120,7 @@ const defaultRooms = [
     img: '/images/pexels-artbovich-5998120.jpg', alt: 'Lumineux, Centre-ville',
     images: ['/images/pexels-artbovich-5998120.jpg', '/images/pexels-artbovich-5998117.jpg'],
     description: 'Studio lumineux au 3e étage avec ascenseur.', capacity: '2 personnes',
-    category: 'appartements-moins-chers', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Centre-ville',
+    category: 'bj-appartements', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Centre-ville',
     chambres: 1, douches: 1, disponible: true, date_dispo: '2026-09-14',
     conditions: 'Caution : 1 mois de loyer, Durée minimale : 6 mois',
   },
@@ -130,7 +130,7 @@ const defaultRooms = [
     img: '/images/pexels-artbovich-5998117.jpg', alt: 'Cosy, Quartier des arts',
     images: ['/images/pexels-artbovich-5998117.jpg', '/images/pexels-artbovich-5998120.jpg'],
     description: 'Studio cosy au cœur du quartier des arts.', capacity: '2 personnes',
-    category: 'appartements-moins-chers', market: 'BJ', pays: 'Bénin', ville: 'Porto-Novo', quartier: 'Quartier des arts',
+    category: 'bj-appartements', market: 'BJ', pays: 'Bénin', ville: 'Porto-Novo', quartier: 'Quartier des arts',
     chambres: 1, douches: 1, disponible: false, date_dispo: '2026-11-15',
     conditions: 'Caution : 1 mois de loyer, Durée minimale : 6 mois',
   },
@@ -140,7 +140,7 @@ const defaultRooms = [
     img: '/images/pexels-artbovich-7214173.jpg', alt: 'Moderne, Front de mer',
     images: ['/images/pexels-artbovich-7214173.jpg', '/images/pexels-artbovich-7045712.jpg'],
     description: 'Studio moderne au 4e étage avec vue mer.', capacity: '2 personnes',
-    category: 'appartements-premium', market: 'BJ', pays: 'Bénin', ville: 'Grand Popo', quartier: 'Front de mer',
+    category: 'bj-appartements', market: 'BJ', pays: 'Bénin', ville: 'Grand Popo', quartier: 'Front de mer',
     chambres: 1, douches: 1, disponible: true, date_dispo: '2026-09-10',
     conditions: 'Caution : 1 mois de loyer, Durée minimale : 6 mois',
   },
@@ -150,7 +150,7 @@ const defaultRooms = [
     img: '/images/pexels-artbovich-6283961.jpg', alt: 'Chaleureux, Périphérie',
     images: ['/images/pexels-artbovich-6283961.jpg', '/images/pexels-artbovich-5998117.jpg'],
     description: 'Studio chaleureux au 1er étage en périphérie.', capacity: '2 personnes',
-    category: 'appartements-moins-chers', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Périphérie',
+    category: 'bj-appartements', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Périphérie',
     chambres: 1, douches: 1, disponible: true, date_dispo: '2026-09-10',
     conditions: 'Caution : 1 mois de loyer, Durée minimale : 6 mois',
   },
@@ -339,6 +339,101 @@ async function seedTourism() {
   console.log(`  ${toInsert.length} destinations créées (${rows.length - toInsert.length} existantes conservées)`);
 }
 
+interface EscapadeSeed {
+  id: string;
+  market: 'CI' | 'BJ' | 'SN' | 'TG' | 'CM' | 'BF' | 'CG' | 'GA' | 'GN' | 'ML' | 'NE' | 'CD';
+  lieu: string;
+  description: string;
+  images: string[];
+}
+
+// Section Escapade weekend : miroir du seed SQL (0017_escapades.sql) pour
+// les environnements qui lancent `npm run seed` sans repasser la migration.
+// Comme les événements et les destinations, l'admin est la source de vérité :
+// on n'insère que les IDs absents, jamais d'upsert.
+const defaultEscapades: EscapadeSeed[] = [
+  { id: 'esc-bj-ouidah', market: 'BJ', lieu: 'Ouidah', description: "Plages, musée d'histoire et balades en famille.", images: ['/images/ouidah.jpg'] },
+  { id: 'esc-bj-ganvie', market: 'BJ', lieu: 'Ganvié', description: 'Pirogue sur le lac, marchés flottants et découvertes.', images: ['/images/pexels-artbovich-7045712.jpg'] },
+  { id: 'esc-bj-grand-popo', market: 'BJ', lieu: 'Grand Popo', description: "Lagune, plage sauvage et pique-nique au bord de l'eau.", images: ['/images/pexels-artbovich-7214173.jpg'] },
+  { id: 'esc-bj-abomey', market: 'BJ', lieu: 'Abomey', description: 'Palais royaux, art et histoire du Dahomey.', images: ['/images/pexels-artbovich-6283961.jpg'] },
+  { id: 'esc-bj-tori-bossito', market: 'BJ', lieu: 'Tori Bossito', description: 'Nature, randonnée et villages authentiques.', images: ['/images/tori.jpg'] },
+  { id: 'esc-ci-assinie', market: 'CI', lieu: 'Assinie', description: 'Plages, lagunes et balades entre cocotiers.', images: ['/images/pexels-fotoaibe-1571460.jpg'] },
+  { id: 'esc-ci-grand-bassam', market: 'CI', lieu: 'Grand-Bassam', description: "Front de mer, musées et patrimoine classé à l'UNESCO.", images: ['/images/pexels-artbovich-7214173.jpg'] },
+  { id: 'esc-ci-yamoussoukro', market: 'CI', lieu: 'Yamoussoukro', description: 'Basilique de la Paix, jardins et grands axes.', images: ['/images/pexels-artbovich-6283961.jpg'] },
+  { id: 'esc-ci-korhogo', market: 'CI', lieu: 'Korhogo', description: 'Savanes du nord, tissages et villages authentiques.', images: ['/images/ouidah.jpg'] },
+  { id: 'esc-ci-parc-comoe', market: 'CI', lieu: 'Parc de la Comoé', description: 'Nature, randonnée et réserve de biosphère.', images: ['/images/tori.jpg'] },
+  { id: 'esc-sn-dakar', market: 'SN', lieu: 'Dakar', description: 'Caps, plages et marché des arts de la Corniche.', images: ['/images/pexels-artbovich-7214173.jpg'] },
+  { id: 'esc-sn-goree', market: 'SN', lieu: 'Île de Gorée', description: 'Mémoire, maisons colorées et musée de la traite.', images: ['/images/ouidah.jpg'] },
+  { id: 'esc-sn-saly', market: 'SN', lieu: 'Saly', description: 'Plages de la côte atlantique et balades en bateau.', images: ['/images/tori.jpg'] },
+  { id: 'esc-sn-saint-louis', market: 'SN', lieu: 'Saint-Louis', description: 'Île coloniale, pont Faidherbe et pêche traditionnelle.', images: ['/images/pexels-fotoaibe-1571460.jpg'] },
+  { id: 'esc-sn-lac-rose', market: 'SN', lieu: 'Lac Rose', description: 'Eaux salines, cueillette et lagunes de la Langue de Barbarie.', images: ['/images/pexels-artbovich-6283961.jpg'] },
+  { id: 'esc-tg-lome', market: 'TG', lieu: 'Lomé', description: 'Grand marché, Quartier allemand et front de mer.', images: ['/images/pexels-artbovich-7214173.jpg'] },
+  { id: 'esc-tg-kpalime', market: 'TG', lieu: 'Kpalimé', description: 'Chutes, forêt et randonnées dans les montagnes.', images: ['/images/ouidah.jpg'] },
+  { id: 'esc-tg-anho', market: 'TG', lieu: 'Aného', description: 'Lagon, maisons coloniales et plages tranquilles.', images: ['/images/tori.jpg'] },
+  { id: 'esc-tg-kara', market: 'TG', lieu: 'Kara', description: 'Plateaux du nord et culture kabyè.', images: ['/images/pexels-fotoaibe-1571460.jpg'] },
+  { id: 'esc-tg-togoville', market: 'TG', lieu: 'Togoville', description: 'Case du roi et rives du lagon Togo.', images: ['/images/pexels-artbovich-6283961.jpg'] },
+  { id: 'esc-cm-douala', market: 'CM', lieu: 'Douala', description: 'Marché du Wouri, Bonanjo et vie nocturne.', images: ['/images/pexels-artbovich-7214173.jpg'] },
+  { id: 'esc-cm-yaounde', market: 'CM', lieu: 'Yaoundé', description: 'Collines, musées et marché Mvog-Mbi.', images: ['/images/ouidah.jpg'] },
+  { id: 'esc-cm-kribi', market: 'CM', lieu: 'Kribi', description: "Plages et chutes de la Lobé dans l'océan.", images: ['/images/tori.jpg'] },
+  { id: 'esc-cm-bafoussam', market: 'CM', lieu: 'Bafoussam', description: 'Hauts-Plateaux, marchés et royautés bamiléké.', images: ['/images/pexels-fotoaibe-1571460.jpg'] },
+  { id: 'esc-cm-limbe', market: 'CM', lieu: 'Limbe', description: 'Sable noir, océan et parc zoologique.', images: ['/images/pexels-artbovich-6283961.jpg'] },
+  { id: 'esc-bf-ouaga', market: 'BF', lieu: 'Ouagadougou', description: 'Grande Mosquée, marchés et artisanat du zoma.', images: ['/images/pexels-artbovich-7214173.jpg'] },
+  { id: 'esc-bf-bobo', market: 'BF', lieu: 'Bobo-Dioulasso', description: 'Grande mosquée en banco et ruelles du vieux quartier.', images: ['/images/ouidah.jpg'] },
+  { id: 'esc-bf-banfora', market: 'BF', lieu: 'Banfora', description: 'Cascades de Karfiguéla et plantations de canne.', images: ['/images/tori.jpg'] },
+  { id: 'esc-bf-gorom', market: 'BF', lieu: 'Gorom-Gorom', description: 'Marché du jeudi touareg au cœur du Sahel.', images: ['/images/pexels-fotoaibe-1571460.jpg'] },
+  { id: 'esc-bf-sindou', market: 'BF', lieu: 'Pics de Sindou', description: 'Roches sculptées et randonnées au pays kassena.', images: ['/images/pexels-artbovich-6283961.jpg'] },
+  { id: 'esc-cg-brazzaville', market: 'CG', lieu: 'Brazzaville', description: 'Basilique Sainte-Anne et marchés de Bacongo.', images: ['/images/pexels-artbovich-7214173.jpg'] },
+  { id: 'esc-cg-pointe-noire', market: 'CG', lieu: 'Pointe-Noire', description: 'Plage de La Pointe et vie du port.', images: ['/images/ouidah.jpg'] },
+  { id: 'esc-cg-sibiti', market: 'CG', lieu: 'Sibiti', description: 'Case à palabres et chutes de Kondoro.', images: ['/images/tori.jpg'] },
+  { id: 'esc-cg-oyo', market: 'CG', lieu: 'Oyo', description: 'Plateau du centre, rivières et bains de pierre.', images: ['/images/pexels-fotoaibe-1571460.jpg'] },
+  { id: 'esc-cg-ouesso', market: 'CG', lieu: 'Ouesso', description: 'Porte du parc de Nouabalé-Ndoki et forêt primaire.', images: ['/images/pexels-artbovich-6283961.jpg'] },
+  { id: 'esc-ga-libreville', market: 'GA', lieu: 'Libreville', description: 'Batterie IV, aquarium et estuaire.', images: ['/images/pexels-artbovich-7214173.jpg'] },
+  { id: 'esc-ga-pongara', market: 'GA', lieu: 'Pongara', description: 'Forêt mangrove et plage à une heure de la capitale.', images: ['/images/ouidah.jpg'] },
+  { id: 'esc-ga-port-gentil', market: 'GA', lieu: 'Port-Gentil', description: "Îles et plages de l'Ogooué-Maritime.", images: ['/images/tori.jpg'] },
+  { id: 'esc-ga-lambarene', market: 'GA', lieu: 'Lambaréné', description: "Hôpital Albert Schweitzer et îles de l'Ogooué.", images: ['/images/pexels-fotoaibe-1571460.jpg'] },
+  { id: 'esc-ga-lope', market: 'GA', lieu: 'Parc de la Lopé', description: 'Savanes et forêts classées UNESCO.', images: ['/images/pexels-artbovich-6283961.jpg'] },
+  { id: 'esc-gn-conakry', market: 'GN', lieu: 'Conakry', description: 'Péninsule de Kaloum, marchés et front de mer.', images: ['/images/pexels-artbovich-7214173.jpg'] },
+  { id: 'esc-gn-los', market: 'GN', lieu: 'Îles de Los', description: 'Plages rocheuses et baignade à un braquet du continent.', images: ['/images/ouidah.jpg'] },
+  { id: 'esc-gn-labe', market: 'GN', lieu: 'Labé', description: 'Fouta-Djallon : montagnes, chutes et marchés de bétail.', images: ['/images/tori.jpg'] },
+  { id: 'esc-gn-dalaba', market: 'GN', lieu: 'Dalaba', description: 'Ville fraîche des montagnes, bains et randonnées.', images: ['/images/pexels-fotoaibe-1571460.jpg'] },
+  { id: 'esc-gn-kindia', market: 'GN', lieu: 'Kindia', description: 'Chutes de la Soumba et pays de la mangue.', images: ['/images/pexels-artbovich-6283961.jpg'] },
+  { id: 'esc-ml-bamako', market: 'ML', lieu: 'Bamako', description: 'Grand marché, musée national et rives du Niger.', images: ['/images/pexels-artbovich-7214173.jpg'] },
+  { id: 'esc-ml-djenne', market: 'ML', lieu: 'Djenné', description: 'Grande mosquée en banco et cité classée UNESCO.', images: ['/images/ouidah.jpg'] },
+  { id: 'esc-ml-segou', market: 'ML', lieu: 'Ségou', description: 'Artisanat, Bognokoli et bords du fleuve.', images: ['/images/tori.jpg'] },
+  { id: 'esc-ml-mopti', market: 'ML', lieu: 'Mopti', description: 'Port fluvial, pirogues et grand marché.', images: ['/images/pexels-fotoaibe-1571460.jpg'] },
+  { id: 'esc-ml-tombouctou', market: 'ML', lieu: 'Tombouctou', description: 'Manuscrits, mosquées de sable et histoires de sable.', images: ['/images/pexels-artbovich-6283961.jpg'] },
+  { id: 'esc-ne-niamey', market: 'NE', lieu: 'Niamey', description: 'Grand marché, grande mosquée et rives du fleuve.', images: ['/images/pexels-artbovich-7214173.jpg'] },
+  { id: 'esc-ne-agadez', market: 'NE', lieu: 'Agadez', description: "Médina de banco et cité caravanière de l'Aïr.", images: ['/images/ouidah.jpg'] },
+  { id: 'esc-ne-zinder', market: 'NE', lieu: 'Zinder', description: 'Palais du Sultan et grand marché de la médina.', images: ['/images/tori.jpg'] },
+  { id: 'esc-ne-tillaberi', market: 'NE', lieu: 'Tillabéri', description: 'Rives du Niger et portes du parc W.', images: ['/images/pexels-fotoaibe-1571460.jpg'] },
+  { id: 'esc-ne-maradi', market: 'NE', lieu: 'Maradi', description: 'Marché du bétail et dombés du sud.', images: ['/images/pexels-artbovich-6283961.jpg'] },
+  { id: 'esc-cd-kinshasa', market: 'CD', lieu: 'Kinshasa', description: 'Corniche, Gombe et marchés de la capitale.', images: ['/images/pexels-artbovich-7214173.jpg'] },
+  { id: 'esc-cd-goma', market: 'CD', lieu: 'Goma', description: 'Lac Kivu, sable noir et vue sur le Nyiragongo.', images: ['/images/ouidah.jpg'] },
+  { id: 'esc-cd-bukavu', market: 'CD', lieu: 'Bukavu', description: 'Jardin botanique et rive sud du lac Kivu.', images: ['/images/tori.jpg'] },
+  { id: 'esc-cd-lubumbashi', market: 'CD', lieu: 'Lubumbashi', description: 'Hauts-Katanga, musées et kifumbu.', images: ['/images/pexels-fotoaibe-1571460.jpg'] },
+  { id: 'esc-cd-matadi', market: 'CD', lieu: 'Matadi', description: "Port du Congo et gorges de l'Inga.", images: ['/images/pexels-artbovich-6283961.jpg'] },
+];
+
+async function seedEscapades() {
+  const { data: existing, error: checkError } = await supabaseAdmin
+    .from('escapades')
+    .select('id')
+    .in('id', defaultEscapades.map((r) => r.id));
+  if (checkError) throw checkError;
+
+  const existingIds = new Set((existing ?? []).map((r) => r.id));
+  const toInsert = defaultEscapades.filter((r) => !existingIds.has(r.id));
+
+  if (toInsert.length === 0) {
+    console.log('  escapades déjà présentes — inchangé');
+    return;
+  }
+
+  const { error } = await supabaseAdmin.from('escapades').insert(toInsert);
+  if (error) throw error;
+  console.log(`  ${toInsert.length} escapades créées (${defaultEscapades.length - toInsert.length} existantes conservées)`);
+}
+
 // La table `admins` est vide tant que personne ne l'écrit : sans ce seed,
 // /api/admin/login répond toujours 401 « Email ou mot de passe incorrect ».
 // Aucun mot de passe en dur : il vient de l'environnement. Si le compte
@@ -402,6 +497,9 @@ async function seed() {
 
   console.log('Seeding tourism destinations...');
   await seedTourism();
+
+  console.log('Seeding escapades...');
+  await seedEscapades();
 
   console.log('Done!');
 }

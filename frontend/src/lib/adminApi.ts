@@ -5,6 +5,9 @@ import type { BoostData, VerificationDocument } from './api';
 
 let adminToken: string | null = localStorage.getItem('admin_token');
 
+/** Émis (window) quand le serveur répond 401 : token expiré ou révoqué. */
+export const ADMIN_UNAUTHORIZED_EVENT = 'admin:unauthorized';
+
 export function setAdminToken(token: string | null) {
   adminToken = token;
   if (token) {
@@ -16,6 +19,14 @@ export function setAdminToken(token: string | null) {
 
 export function getAdminToken(): string | null {
   return adminToken;
+}
+
+function notifyUnauthorized() {
+  // Purge immédiate + signal global : le guard et le layout réagissent sans
+  // attendre un refresh manuel (sinon le back-office reste « mort » en silence
+  // jusqu'à F5, token 24 h déjà expiré).
+  setAdminToken(null);
+  window.dispatchEvent(new Event(ADMIN_UNAUTHORIZED_EVENT));
 }
 
 async function adminRequest<T>(path: string, options?: RequestInit): Promise<T> {
@@ -40,6 +51,7 @@ async function adminRequest<T>(path: string, options?: RequestInit): Promise<T> 
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
+    if (res.status === 401) notifyUnauthorized();
     throw new Error(body.error || `API error ${res.status}`);
   }
   // Une mutation admin (bannières, événements, promos…) invalide le cache
@@ -48,11 +60,59 @@ async function adminRequest<T>(path: string, options?: RequestInit): Promise<T> 
   return parseJsonBody<T>(res);
 }
 
+export type AdminPermissionKey =
+  | 'gerants'
+  | 'reservations'
+  | 'bannieres'
+  | 'evenements'
+  | 'destinations'
+  | 'escapades'
+  | 'promotions'
+  | 'boosts'
+  | 'stats';
+
 export interface AdminData {
   id: string;
   email: string;
   nom: string;
   prenom: string;
+  /** Présents depuis /admin/me (absents de la réponse de login). */
+  is_superadmin?: boolean;
+  permissions?: AdminPermissionKey[];
+}
+
+export interface AdminPermissionDef {
+  key: AdminPermissionKey;
+  label: string;
+  description: string;
+}
+
+export interface AdminTeamMember {
+  id: string;
+  email: string;
+  nom: string;
+  prenom: string;
+  is_superadmin: boolean;
+  permissions: AdminPermissionKey[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminTeamCreatePayload {
+  email: string;
+  password: string;
+  nom: string;
+  prenom: string;
+  permissions: AdminPermissionKey[];
+}
+
+export interface AdminTeamUpdatePayload {
+  email?: string;
+  password?: string;
+  nom?: string;
+  prenom?: string;
+  permissions?: AdminPermissionKey[];
+  is_superadmin?: boolean;
 }
 
 export interface AdminStats {
@@ -144,6 +204,17 @@ export interface AdminTourismPartition {
   small: AdminDestination[];
 }
 
+// Carte de la section Escapade weekend : même table que côté public.
+// images[0] = couverture ; alt est dérivé de `lieu` au rendu (pas de champ dédié).
+export interface AdminEscapade {
+  id: string;
+  market: MarketCode;
+  lieu: string;
+  description: string;
+  images: string[];
+  created_at?: string;
+}
+
 export interface AdminReservation {
   id: string;
   client_name: string;
@@ -212,6 +283,27 @@ export const apiAdmin = {
     }),
 
   getMe: () => adminRequest<AdminData>('/admin/me'),
+
+  // ── Équipe (gestion des comptes admins, superadmin uniquement) ──
+
+  listTeam: () => adminRequest<AdminTeamMember[]>('/admin/admins'),
+
+  getPermissionCatalog: () => adminRequest<AdminPermissionDef[]>('/admin/admins/permissions'),
+
+  createTeamMember: (payload: AdminTeamCreatePayload) =>
+    adminRequest<AdminTeamMember>('/admin/admins', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  updateTeamMember: (id: string, payload: AdminTeamUpdatePayload) =>
+    adminRequest<AdminTeamMember>(`/admin/admins/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
+  deleteTeamMember: (id: string) =>
+    adminRequest<void>(`/admin/admins/${id}`, { method: 'DELETE' }),
 
   getStats: () => adminRequest<AdminStats>('/admin/stats'),
 
@@ -316,11 +408,10 @@ export const apiAdmin = {
   deleteBanner: (id: string) =>
     adminRequest<void>(`/banners/${id}`, { method: 'DELETE' }),
 
-  // `market` est obligatoire : le GET /events exige ?market=CI|BJ (400 sinon).
-  // `include_past=1` donne accès aux événements passés (réservé au back-office,
-  // la route exige alors un token admin valide).
-  getEvents: (market: string) =>
-    adminRequest<AdminEvent[]>(`/events?market=${market}&include_past=1`),
+  // `include_past=1` donne accès aux événements passés ET à TOUS les marchés
+  // (réservé au back-office : la route exige un token admin + la permission
+  // evenements). Sans `market`, le back-office reçoit tous les événements.
+  getEvents: () => adminRequest<AdminEvent[]>('/events?include_past=1'),
 
   createEvent: (data: Omit<AdminEvent, 'id' | 'created_at'>) =>
     adminRequest<AdminEvent>('/events', {
@@ -355,6 +446,25 @@ export const apiAdmin = {
 
   deleteDestination: (id: string) =>
     adminRequest<void>(`/tourism/${id}`, { method: 'DELETE' }),
+
+  // `market` est obligatoire : le GET /escapades exige ?market=CI|BJ (400 sinon).
+  getEscapades: (market: string) =>
+    adminRequest<AdminEscapade[]>(`/escapades?market=${market}`),
+
+  createEscapade: (data: Omit<AdminEscapade, 'id' | 'created_at'>) =>
+    adminRequest<AdminEscapade>('/escapades', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateEscapade: (id: string, data: Partial<Omit<AdminEscapade, 'id' | 'created_at'>>) =>
+    adminRequest<AdminEscapade>(`/escapades/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteEscapade: (id: string) =>
+    adminRequest<void>(`/escapades/${id}`, { method: 'DELETE' }),
 
   uploadFile: async (file: File): Promise<{ url: string; path: string }> => {
     const headers: Record<string, string> = {};

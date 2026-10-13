@@ -3,17 +3,22 @@ import { marketSchema, optionalText, dateStringSchema } from './common';
 
 const imageUrlSchema = z.string().trim().min(1).max(2048);
 
-// `market` est OBLIGATOIRE sur ce point d'entrée : GET /api/events sert à
-// construire les cartes par ville, et sans marché les villes CI et BJ se
+// `market` est OBLIGATOIRE pour le site public : GET /api/events sert à
+// construire les cartes par ville, et sans marché les villes se
 // mélangeraient en produisant un marqueur faux.
-// `include_past=1` est réservé au back-office (exigé par requireAdminAuth sur
-// la route) : le public ne reçoit que les événements à venir.
+// Le back-office peut l'OMETTRE (avec `include_past=1`) pour lister TOUS les
+// marchés en une seule requête (section Événements). `include_past=1` est
+// réservé au back-office (exigé par requireAdminAuth sur la route) : le public
+// ne reçoit que les événements à venir, et doit donc préciser `market`.
 export const eventQuerySchema = z
   .object({
-    market: marketSchema,
+    market: marketSchema.optional(),
     include_past: z.enum(['0', '1']).optional(),
   })
-  .strict();
+  .strict()
+  .refine((v) => v.market !== undefined || v.include_past === '1', {
+    message: 'market est requis pour le site public',
+  });
 
 export const eventCreateSchema = z
   .object({

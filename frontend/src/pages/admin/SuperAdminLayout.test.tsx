@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   markNotificationRead: vi.fn<(id: string) => Promise<void>>(),
   checkAvailability: vi.fn<(id: string) => Promise<{ statut: string; reason: string | null }>>(),
   setAdminToken: vi.fn<(token: string | null) => void>(),
+  getAdminToken: vi.fn<() => string | null>(),
 }));
 
 vi.mock('../../lib/adminApi', () => ({
@@ -23,6 +24,8 @@ vi.mock('../../lib/adminApi', () => ({
     checkAvailability: mocks.checkAvailability,
   },
   setAdminToken: mocks.setAdminToken,
+  getAdminToken: mocks.getAdminToken,
+  ADMIN_UNAUTHORIZED_EVENT: 'admin:unauthorized',
 }));
 
 function makeAdmin(overrides: Partial<AdminData> = {}): AdminData {
@@ -31,6 +34,8 @@ function makeAdmin(overrides: Partial<AdminData> = {}): AdminData {
     email: 'root@ilehya.ci',
     nom: 'Bar',
     prenom: 'Awa',
+    is_superadmin: true,
+    permissions: [],
     ...overrides,
   };
 }
@@ -83,7 +88,10 @@ function layoutRoute(path: string) {
       <Route path="banners" element={<p>Contenu bannières</p>} />
       <Route path="evenements" element={<p>Contenu événements</p>} />
       <Route path="destinations" element={<p>Contenu destinations</p>} />
+      <Route path="escapades" element={<p>Contenu escapades</p>} />
       <Route path="promotions" element={<p>Contenu promotions</p>} />
+      <Route path="boosts" element={<p>Contenu boosts</p>} />
+      <Route path="equipe" element={<p>Contenu équipe</p>} />
       <Route path="mot-de-passe" element={<p>Contenu mot de passe</p>} />
     </Route>
   );
@@ -130,6 +138,11 @@ function navLink(name: RegExp) {
   return screen.getByRole('link', { name });
 }
 
+async function waitNavLoaded() {
+  await waitFor(() => expect(mocks.getMe).toHaveBeenCalled());
+  await screen.findByRole('link', { name: /Mot de passe/ });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
@@ -145,19 +158,22 @@ afterEach(() => {
 });
 
 describe('SuperAdminLayout — navigation de la barre latérale', () => {
-  it("affiche le logo, le groupe d'administration et le pied de panneau", () => {
+  it("affiche le logo, le groupe d'administration et le pied de panneau", async () => {
     const { container } = renderLayout();
+    await waitNavLoaded();
 
     expect(container.querySelector('aside.sidebar')).not.toBeNull();
     expect(screen.getByRole('img', { name: 'Logo Linkhoo' })).toBeInTheDocument();
     expect(screen.getByText('Administration')).toBeInTheDocument();
-    expect(screen.getByText('Administrateur')).toBeInTheDocument();
+    expect(await screen.findByText('Super administrateur')).toBeInTheDocument();
     expect(container.querySelector('nav.sidebar__nav')).not.toBeNull();
     expect(screen.getByText('Contenu tableau de bord')).toBeInTheDocument();
   });
 
-  it("construit les huit liens de navigation depuis la route racine", () => {
+  it("construit les dix liens de navigation depuis la route racine", async () => {
     renderLayout('/admin');
+    await waitNavLoaded();
+    await screen.findByRole('link', { name: /Équipe/ });
 
     expect(navLink(/Tableau de bord/)).toHaveAttribute('href', '/admin');
     expect(navLink(/Réservations/)).toHaveAttribute('href', '/admin/reservations');
@@ -165,12 +181,17 @@ describe('SuperAdminLayout — navigation de la barre latérale', () => {
     expect(navLink(/Bannières/)).toHaveAttribute('href', '/admin/banners');
     expect(navLink(/Événements/)).toHaveAttribute('href', '/admin/evenements');
     expect(navLink(/Destinations/)).toHaveAttribute('href', '/admin/destinations');
+    expect(navLink(/Escapades/)).toHaveAttribute('href', '/admin/escapades');
     expect(navLink(/Promotions/)).toHaveAttribute('href', '/admin/promotions');
+    expect(navLink(/Booster/)).toHaveAttribute('href', '/admin/boosts');
+    expect(navLink(/Équipe/)).toHaveAttribute('href', '/admin/equipe');
     expect(navLink(/Mot de passe/)).toHaveAttribute('href', '/admin/mot-de-passe');
   });
 
-  it("préfixe tous les liens du marché détecté dans l'URL", () => {
+  it("préfixe tous les liens du marché détecté dans l'URL", async () => {
     renderLayout('/ci/admin');
+    await waitNavLoaded();
+    await screen.findByRole('link', { name: /Équipe/ });
 
     expect(navLink(/Tableau de bord/)).toHaveAttribute('href', '/ci/admin');
     expect(navLink(/Réservations/)).toHaveAttribute('href', '/ci/admin/reservations');
@@ -178,12 +199,58 @@ describe('SuperAdminLayout — navigation de la barre latérale', () => {
     expect(navLink(/Bannières/)).toHaveAttribute('href', '/ci/admin/banners');
     expect(navLink(/Événements/)).toHaveAttribute('href', '/ci/admin/evenements');
     expect(navLink(/Destinations/)).toHaveAttribute('href', '/ci/admin/destinations');
+    expect(navLink(/Escapades/)).toHaveAttribute('href', '/ci/admin/escapades');
     expect(navLink(/Promotions/)).toHaveAttribute('href', '/ci/admin/promotions');
+    expect(navLink(/Booster/)).toHaveAttribute('href', '/ci/admin/boosts');
+    expect(navLink(/Équipe/)).toHaveAttribute('href', '/ci/admin/equipe');
     expect(navLink(/Mot de passe/)).toHaveAttribute('href', '/ci/admin/mot-de-passe');
   });
 
-  it("marque le tableau de bord comme lien actif uniquement à la racine", () => {
+  it("n'affiche que les sections autorisées pour un compte limité", async () => {
+    mocks.getMe.mockResolvedValue(
+      makeAdmin({ is_superadmin: false, permissions: ['reservations', 'bannieres'] }),
+    );
+
     renderLayout('/admin');
+    await screen.findByRole('link', { name: /Réservations/ });
+
+    expect(navLink(/Réservations/)).toHaveAttribute('href', '/admin/reservations');
+    expect(navLink(/Bannières/)).toHaveAttribute('href', '/admin/banners');
+    expect(screen.queryByRole('link', { name: /Tableau de bord/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Gérants/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Événements/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Destinations/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Escapades/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Promotions/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Booster/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Équipe/ })).toBeNull();
+    expect(navLink(/Mot de passe/)).toHaveAttribute('href', '/admin/mot-de-passe');
+  });
+
+  it("masque le menu des sections tant que le profil n'est pas chargé", () => {
+    mocks.getMe.mockImplementation(() => new Promise<AdminData>(() => {}));
+
+    renderLayout('/admin');
+
+    expect(screen.queryByRole('link', { name: /Réservations/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Équipe/ })).toBeNull();
+    expect(navLink(/Mot de passe/)).toHaveAttribute('href', '/admin/mot-de-passe');
+  });
+
+  it("retombe sur le menu minimal quand le profil ne peut pas être chargé", async () => {
+    mocks.getMe.mockRejectedValue(new Error('401'));
+
+    renderLayout('/admin');
+
+    expect(await screen.findByText('Admin')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Réservations/ })).toBeNull();
+    expect(navLink(/Mot de passe/)).toHaveAttribute('href', '/admin/mot-de-passe');
+  });
+
+  it("marque le tableau de bord comme lien actif uniquement à la racine", async () => {
+    renderLayout('/admin');
+    await waitNavLoaded();
+    await screen.findByRole('link', { name: /Tableau de bord/ });
 
     expect(navLink(/Tableau de bord/)).toHaveClass('sidebar__link--active');
     expect(navLink(/Réservations/)).not.toHaveClass('sidebar__link--active');
@@ -192,6 +259,8 @@ describe('SuperAdminLayout — navigation de la barre latérale', () => {
 
   it("marque la page courante comme lien actif sur une sous-route", async () => {
     const { container } = renderLayout('/admin/reservations');
+    await waitNavLoaded();
+    await screen.findByRole('link', { name: /Réservations/ });
 
     expect(navLink(/Réservations/)).toHaveClass('sidebar__link--active');
     expect(navLink(/Tableau de bord/)).not.toHaveClass('sidebar__link--active');
@@ -205,6 +274,17 @@ describe('SuperAdminLayout — navigation de la barre latérale', () => {
 
     expect(await screen.findByText('Awa')).toBeInTheDocument();
     expect(mocks.getMe).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Super administrateur')).toBeInTheDocument();
+  });
+
+  it('affiche le rôle Administrateur pour un compte limité', async () => {
+    mocks.getMe.mockResolvedValue(
+      makeAdmin({ is_superadmin: false, permissions: ['reservations'] }),
+    );
+
+    renderLayout();
+
+    expect(await screen.findByText('Awa')).toBeInTheDocument();
     expect(screen.getByText('Administrateur')).toBeInTheDocument();
   });
 

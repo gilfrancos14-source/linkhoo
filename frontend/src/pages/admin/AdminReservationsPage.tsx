@@ -26,10 +26,13 @@ export default function AdminReservationsPage() {
   const [counts, setCounts] = useState<AdminReservationCounts>(ZERO_COUNTS);
   const [total, setTotal] = useState(0);
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [filterStatut, setFilterStatut] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [checkingId, setCheckingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Filtrage (statut, recherche) et pagination sont délégués au serveur
   // (RPC admin_reservations en SQL) : chaque changement reinterroge la page
@@ -38,6 +41,7 @@ export default function AdminReservationsPage() {
   // recherche.
   useEffect(() => {
     let cancelled = false;
+    setLoadError('');
     apiAdmin
       .getReservations({
         statut: filterStatut,
@@ -51,11 +55,14 @@ export default function AdminReservationsPage() {
         setTotal(data.total);
         setCounts(data.counts);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         if (cancelled) return;
+        // Sans état d'erreur, une panne réseau/401 s'affichait comme
+        // « Aucune réservation trouvée » → l'admin décidait sur du faux.
         setReservations([]);
         setTotal(0);
         setCounts(ZERO_COUNTS);
+        setLoadError(err instanceof Error && err.message ? err.message : 'Impossible de charger les réservations.');
       })
       .finally(() => {
         if (!cancelled) setReady(true);
@@ -63,12 +70,13 @@ export default function AdminReservationsPage() {
     return () => {
       cancelled = true;
     };
-  }, [filterStatut, search, currentPage]);
+  }, [filterStatut, search, currentPage, reloadKey]);
 
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
   const handleCheckAvailability = async (reservation: AdminReservation) => {
     setCheckingId(reservation.id);
+    setActionError('');
     try {
       const result = await apiAdmin.checkAvailability(reservation.id);
       setReservations((prev) =>
@@ -85,8 +93,9 @@ export default function AdminReservationsPage() {
           [to]: prev[to] + 1,
         }));
       }
-    } catch {
-      // keep current state
+    } catch (err: unknown) {
+      // Un 403/401/500 ne doit pas passer pour un succès silencieux.
+      setActionError(err instanceof Error && err.message ? err.message : 'L\'action a échoué. Réessayez.');
     } finally {
       setCheckingId(null);
     }
@@ -116,6 +125,25 @@ export default function AdminReservationsPage() {
           Gérants non qualifiés — {counts.pending} en attente
         </span>
       </div>
+
+      {loadError && (
+        <div className="verif-alert verif-alert--danger" role="alert" style={{ marginBottom: '16px' }}>
+          <p>{loadError}</p>
+          <button
+            type="button"
+            className="admin-btn admin-btn--sm admin-btn--primary"
+            onClick={() => setReloadKey((k) => k + 1)}
+          >
+            Réessayer
+          </button>
+        </div>
+      )}
+
+      {actionError && (
+        <p className="verif-alert verif-alert--danger" role="alert" style={{ marginBottom: '16px' }}>
+          {actionError}
+        </p>
+      )}
 
       <div className="admin-stats" style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
         {[
@@ -204,9 +232,14 @@ export default function AdminReservationsPage() {
                 </td>
               </tr>
             ))}
-            {reservations.length === 0 && (
+            {reservations.length === 0 && !loadError && (
               <tr>
                 <td colSpan={6} className="admin-table__empty">Aucune réservation trouvée</td>
+              </tr>
+            )}
+            {reservations.length === 0 && loadError && (
+              <tr>
+                <td colSpan={6} className="admin-table__empty">Données indisponibles — voir le message d'erreur ci-dessus</td>
               </tr>
             )}
           </tbody>

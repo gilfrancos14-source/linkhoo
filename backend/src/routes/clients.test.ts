@@ -13,6 +13,10 @@ import {
   type FakeChain,
 } from '../testHelpers/supertestApp';
 
+const clerkUsers = vi.hoisted(() => ({
+  getUser: vi.fn(),
+}));
+
 vi.mock('../config/supabase', async () => {
   const helper = await import('../testHelpers/supertestApp');
   return helper.createSupabaseMock();
@@ -20,7 +24,7 @@ vi.mock('../config/supabase', async () => {
 
 vi.mock('@clerk/backend', () => ({
   verifyToken: vi.fn(),
-  createClerkClient: vi.fn(),
+  createClerkClient: vi.fn(() => ({ users: clerkUsers })),
 }));
 
 const app = buildTestApp('/api/clients', clientsRouter, {
@@ -47,6 +51,10 @@ function stubTables(tables: Partial<Record<TableName, FakeChain | FakeChain[]>>)
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(verifyToken).mockImplementation(defaultVerifyToken);
+  clerkUsers.getUser.mockResolvedValue({
+    primaryEmailAddress: { emailAddress: 'client@exemple.ci' },
+    emailAddresses: [],
+  });
   clients = fakeChain({ data: null, error: null });
   gerants = fakeChain({ data: null, error: null });
   stubTables({});
@@ -291,14 +299,20 @@ describe('POST /api/clients', () => {
     expect(existing.insert).not.toHaveBeenCalled();
   });
 
-  it('201 : crée le profil avec les valeurs par défaut', async () => {
+  it('201 : crée le profil avec l’email résolu depuis Clerk', async () => {
     const insertChain = fakeChain({ data: { id: 'c1', ...validClient }, error: null });
-    stubTables({ clients: [fakeChain({ data: null, error: null }), insertChain] });
+    stubTables({
+      clients: [
+        fakeChain({ data: null, error: null }),
+        fakeChain({ data: null, error: null }),
+        insertChain,
+      ],
+    });
 
     const res = await request(app)
       .post('/api/clients')
       .set('Authorization', clerkBearer('user_1'))
-      .send({ clerk_user_id: 'user_1', email: 'CLIENT@Exemple.ci' });
+      .send({ clerk_user_id: 'user_1', email: 'victim@exemple.ci', nom: 'Koffi' });
 
     expect(res.status).toBe(201);
     expect(res.body).toEqual(expect.objectContaining({ id: 'c1' }));
@@ -306,16 +320,50 @@ describe('POST /api/clients', () => {
       expect.objectContaining({
         clerk_user_id: 'user_1',
         email: 'client@exemple.ci',
-        nom: '',
+        nom: 'Koffi',
         prenom: '',
         telephone: '',
       }),
     );
   });
 
+  it('409 si l’email Clerk est déjà associé à un autre compte', async () => {
+    stubTables({
+      clients: [
+        fakeChain({ data: null, error: null }),
+        fakeChain({ data: { id: 'autre', clerk_user_id: 'user_victime' }, error: null }),
+      ],
+    });
+
+    const res = await request(app)
+      .post('/api/clients')
+      .set('Authorization', clerkBearer('user_1'))
+      .send(validClient);
+
+    expect(res.status).toBe(409);
+    expect(res.body).toEqual({ error: 'Cet email est déjà associé à un autre compte' });
+  });
+
+  it('400 si Clerk n’a pas d’email sur le compte', async () => {
+    clerkUsers.getUser.mockResolvedValue({ primaryEmailAddress: null, emailAddresses: [] });
+    stubTables({ clients: fakeChain({ data: null, error: null }) });
+
+    const res = await request(app)
+      .post('/api/clients')
+      .set('Authorization', clerkBearer('user_1'))
+      .send(validClient);
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({ error: 'Adresse email manquante sur le compte Clerk' });
+  });
+
   it('500 quand Supabase renvoie une erreur', async () => {
     stubTables({
-      clients: [fakeChain({ data: null, error: null }), fakeChain({ data: null, error: { message: 'boom' } })],
+      clients: [
+        fakeChain({ data: null, error: null }),
+        fakeChain({ data: null, error: null }),
+        fakeChain({ data: null, error: { message: 'boom' } }),
+      ],
     });
 
     const res = await request(app)

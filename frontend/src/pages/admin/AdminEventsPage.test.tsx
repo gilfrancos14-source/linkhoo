@@ -5,7 +5,7 @@ import AdminEventsPage from './AdminEventsPage';
 import type { AdminEvent } from '../../lib/adminApi';
 
 const mocks = vi.hoisted(() => ({
-  getEvents: vi.fn<(market: string) => Promise<AdminEvent[]>>(),
+  getEvents: vi.fn<() => Promise<AdminEvent[]>>(),
   createEvent: vi.fn<(data: Record<string, unknown>) => Promise<AdminEvent>>(),
   updateEvent: vi.fn<(id: string, data: Record<string, unknown>) => Promise<AdminEvent>>(),
   deleteEvent: vi.fn<(id: string) => Promise<void>>(),
@@ -177,7 +177,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   ciEvents = [festival, salon];
   bjEvents = [carnaval];
-  mocks.getEvents.mockImplementation(async (market) => (market === 'CI' ? ciEvents : bjEvents));
+  // mockImplementation (et non mockResolvedValue) : certains tests vident
+  // ciEvents/bjEvents APRÈS le beforeEach, il faut donc évaluer le tableau
+  // au moment de l'appel.
+  mocks.getEvents.mockImplementation(() => Promise.resolve([...ciEvents, ...bjEvents]));
   mocks.createEvent.mockImplementation(async (data) =>
     makeEvent({ id: 'ev-new', created_at: '2026-02-01T00:00:00.000Z', ...data }),
   );
@@ -198,7 +201,7 @@ afterEach(() => {
 });
 
 describe('AdminEventsPage — chargement des événements', () => {
-  it("affiche l'état de chargement tant que les deux marchés ne sont pas résolus", () => {
+  it("affiche l'état de chargement tant que les événements ne sont pas résolus", () => {
     mocks.getEvents.mockImplementation(() => new Promise<AdminEvent[]>(() => {}));
 
     render(<AdminEventsPage />);
@@ -208,18 +211,17 @@ describe('AdminEventsPage — chargement des événements', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
-  it("interroge les événements des deux marchés puis masque le chargement", async () => {
+  it("interroge tous les marchés en une requête puis masque le chargement", async () => {
     render(<AdminEventsPage />);
 
     expect(await screen.findByRole('table')).toBeInTheDocument();
     expect(screen.queryByText('Chargement...')).not.toBeInTheDocument();
-    expect(mocks.getEvents).toHaveBeenCalledTimes(2);
-    expect(mocks.getEvents).toHaveBeenNthCalledWith(1, 'CI');
-    expect(mocks.getEvents).toHaveBeenNthCalledWith(2, 'BJ');
+    expect(mocks.getEvents).toHaveBeenCalledTimes(1);
+    expect(mocks.getEvents).toHaveBeenCalledWith();
     expect(mocks.villes).toHaveBeenCalledTimes(1);
   });
 
-  it("affiche l'erreur quand le chargement des deux marchés échoue", async () => {
+  it("affiche l'erreur quand le chargement échoue", async () => {
     mocks.getEvents.mockRejectedValue(new Error('réseau coupé'));
 
     render(<AdminEventsPage />);
@@ -231,21 +233,7 @@ describe('AdminEventsPage — chargement des événements', () => {
     expect(screen.queryByText('Chargement...')).not.toBeInTheDocument();
   });
 
-  it("affiche la même erreur quand un seul marché est en échec", async () => {
-    mocks.getEvents.mockImplementation(async (market) => {
-      if (market === 'BJ') throw new Error('500');
-      return ciEvents;
-    });
-
-    render(<AdminEventsPage />);
-
-    expect(
-      await screen.findByText('Impossible de charger les événements.'),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
-  });
-
-  it("affiche l'état vide quand aucun événement n'existe sur les deux marchés", async () => {
+  it("affiche l'état vide quand aucun événement n'existe", async () => {
     ciEvents = [];
     bjEvents = [];
 
@@ -389,7 +377,7 @@ describe('AdminEventsPage — filtres marché et ville', () => {
     expect(table().getByText('Carnaval de Grand Popo')).toBeInTheDocument();
     expect(table().queryByText('Festival des masques')).not.toBeInTheDocument();
     expect(tab(/^Cotonou/)).toHaveClass('gerants-filter-card__tab--active');
-    expect(mocks.getEvents).toHaveBeenCalledTimes(2);
+    expect(mocks.getEvents).toHaveBeenCalledTimes(1);
   });
 
   it("revient à tous les événements avec l'onglet Toutes", async () => {
@@ -412,7 +400,7 @@ describe('AdminEventsPage — filtres marché et ville', () => {
 
     await waitFor(() => expect(table().getAllByRole('row')).toHaveLength(2));
     expect(table().getByText('Carnaval de Grand Popo')).toBeInTheDocument();
-    expect(mocks.getEvents).toHaveBeenCalledTimes(2);
+    expect(mocks.getEvents).toHaveBeenCalledTimes(1);
     expect(within(tab(/^Toutes/)).getByText('1')).toBeInTheDocument();
   });
 
@@ -956,5 +944,93 @@ describe('AdminEventsPage — suppression', () => {
     expect(await screen.findByText('Erreur lors de la suppression.')).toBeInTheDocument();
     expect(table().getByText('Festival des masques')).toBeInTheDocument();
     expect(document.querySelector('.verify-modal')).not.toBeNull();
+  });
+});
+
+describe('AdminEventsPage — pagination (10 par page)', () => {
+  /** Génère `count` événements alternés CI/BJ pour couvrir plusieurs pages. */
+  function manyEvents(count: number): AdminEvent[] {
+    return Array.from({ length: count }, (_, i) =>
+      makeEvent({
+        // id padifié : le tri du backend est lexicographique sur l'id
+        // (ev-01 < ev-02 < … < ev-12), donc l'ordre suit la numérotation.
+        id: `ev-${String(i + 1).padStart(2, '0')}`,
+        market: i % 2 === 0 ? 'CI' : 'BJ',
+        city: i % 2 === 0 ? 'Abidjan' : 'Cotonou',
+        title: `Événement ${i + 1}`,
+        event_date: '2026-03-15',
+      }),
+    );
+  }
+
+  function pagination() {
+    const el = document.querySelector('.admin-pagination');
+    if (!el) throw new Error('pagination absente');
+    return within(el as HTMLElement);
+  }
+
+  it("n'affiche pas de pagination avec 10 événements ou moins", async () => {
+    mocks.getEvents.mockImplementation(() => Promise.resolve(manyEvents(10)));
+
+    render(<AdminEventsPage />);
+    const scope = await tableReady();
+
+    expect(scope.getAllByRole('row')).toHaveLength(11); // 10 lignes + en-tête
+    expect(document.querySelector('.admin-pagination')).toBeNull();
+  });
+
+  it('pagine à 10 par page et marque la page active', async () => {
+    mocks.getEvents.mockImplementation(() => Promise.resolve(manyEvents(12)));
+
+    render(<AdminEventsPage />);
+    const scope = await tableReady();
+
+    expect(scope.getAllByRole('row')).toHaveLength(11); // 10 lignes + en-tête
+    expect(scope.getByText('Événement 1')).toBeInTheDocument();
+    expect(scope.queryByText('Événement 11')).not.toBeInTheDocument();
+    expect(pagination().getByRole('button', { name: '1' })).toHaveClass(
+      'admin-pagination__btn--active',
+    );
+  });
+
+  it("passe à la page 2 pour afficher le reste puis revient", async () => {
+    const u = user();
+    mocks.getEvents.mockImplementation(() => Promise.resolve(manyEvents(12)));
+
+    render(<AdminEventsPage />);
+    await tableReady();
+
+    await u.click(pagination().getByRole('button', { name: '→' }));
+
+    await waitFor(() => expect(table().getByText('Événement 11')).toBeInTheDocument());
+    expect(table().getAllByRole('row')).toHaveLength(3); // 2 lignes + en-tête
+    expect(table().queryByText('Événement 1')).not.toBeInTheDocument();
+    expect(pagination().getByRole('button', { name: '2' })).toHaveClass(
+      'admin-pagination__btn--active',
+    );
+
+    await u.click(pagination().getByRole('button', { name: '←' }));
+
+    await waitFor(() => expect(table().getByText('Événement 1')).toBeInTheDocument());
+    expect(table().getAllByRole('row')).toHaveLength(11);
+  });
+
+  it('revient à la page 1 au changement de filtre de marché', async () => {
+    const u = user();
+    mocks.getEvents.mockImplementation(() => Promise.resolve(manyEvents(12)));
+
+    render(<AdminEventsPage />);
+    await tableReady();
+
+    await u.click(pagination().getByRole('button', { name: '→' }));
+    await waitFor(() => expect(table().getByText('Événement 11')).toBeInTheDocument());
+
+    fireEvent.change(filterSelect(), { target: { value: 'CI' } });
+
+    // 6 événements CI → une seule page : la pagination disparaît et la page
+    // est réinitialisée à 1.
+    await waitFor(() => expect(table().getAllByRole('row')).toHaveLength(7)); // 6 + en-tête
+    expect(document.querySelector('.admin-pagination')).toBeNull();
+    expect(table().getByText('Événement 1')).toBeInTheDocument();
   });
 });

@@ -4,7 +4,15 @@ import bcrypt from 'bcrypt';
 import { supabaseAdmin } from '../config/supabase';
 import { publishNotificationChanged } from '../utils/realtime';
 import { requireAdminAuth, signAdminToken } from '../middleware/requireAdminAuth';
-import { adminLoginSchema, adminChangePasswordSchema, adminReservationsQuerySchema } from '../validations/admin';
+import { requirePermission, requireSuperadmin } from '../middleware/adminPermissions';
+import { ADMIN_PERMISSIONS } from '../config/adminPermissions';
+import {
+  adminLoginSchema,
+  adminChangePasswordSchema,
+  adminReservationsQuerySchema,
+  adminCreateSchema,
+  adminUpdateSchema,
+} from '../validations/admin';
 import { idParamsSchema, marketSchema } from '../validations/common';
 import { verificationReviewSchema, verificationRejectSchema } from '../validations/gerant';
 import { isQualifiedGerant } from '../utils/gerantQualification';
@@ -47,7 +55,7 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
   }
 });
 
-router.get('/stats', requireAdminAuth, async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/stats', requireAdminAuth, requirePermission('stats'), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     // Agrégats calculés en SQL par la RPC (P1 #7) : plus de chargement des
     // tables gerants/rooms/reservations entières en mémoire.
@@ -63,7 +71,7 @@ router.get('/me', requireAdminAuth, async (req: Request, res: Response, next: Ne
   try {
     const { data, error } = await supabaseAdmin
       .from('admins')
-      .select('id, email, nom, prenom')
+      .select('id, email, nom, prenom, is_superadmin, permissions')
       .eq('id', req.admin!.adminId)
       .maybeSingle();
     if (error) throw error;
@@ -105,9 +113,174 @@ router.post('/change-password', requireAdminAuth, async (req: Request, res: Resp
   }
 });
 
+// ── Équipe : comptes administrateurs (superadmin uniquement) ──
+
+// Jamais password_hash en réponse : le hash ne quitte jamais la base.
+const ADMIN_PUBLIC_COLUMNS = 'id, email, nom, prenom, is_superadmin, permissions, created_at, updated_at';
+
+router.get('/admins/permissions', requireAdminAuth, (_req: Request, res: Response) => {
+  res.json(ADMIN_PERMISSIONS);
+});
+
+router.get('/admins', requireAdminAuth, requireSuperadmin, async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('admins')
+      .select(ADMIN_PUBLIC_COLUMNS)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    res.json(Array.isArray(data) ? data : []);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/admins', requireAdminAuth, requireSuperadmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = adminCreateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Données invalides', details: parsed.error.flatten() });
+    }
+    const { email, password, nom, prenom, permissions } = parsed.data;
+
+    const { data: existing, error: checkError } = await supabaseAdmin
+      .from('admins')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+    if (checkError) throw checkError;
+    if (existing) return res.status(409).json({ error: 'Un compte existe déjà avec cet email' });
+
+    const { data, error } = await supabaseAdmin
+      .from('admins')
+      .insert({
+        id: randomUUID(),
+        email,
+        password_hash: await bcrypt.hash(password, 12),
+        nom,
+        prenom,
+        permissions,
+        is_superadmin: false,
+      })
+      .select(ADMIN_PUBLIC_COLUMNS)
+      .single();
+    if (error) throw error;
+    res.status(201).json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch('/admins/:id', requireAdminAuth, requireSuperadmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsedParams = idParamsSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      return res.status(400).json({ error: 'Identifiant invalide' });
+    }
+    const { id } = parsedParams.data;
+
+    const parsedBody = adminUpdateSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      return res.status(400).json({ error: 'Données invalides', details: parsedBody.error.flatten() });
+    }
+    const body = parsedBody.data;
+
+    const { data: target, error: fetchError } = await supabaseAdmin
+      .from('admins')
+      .select('id, is_superadmin')
+      .eq('id', id)
+      .maybeSingle();
+    if (fetchError) throw fetchError;
+    if (!target) return res.status(404).json({ error: 'Compte introuvable' });
+
+    if (body.email) {
+      const { data: clash, error: clashError } = await supabaseAdmin
+        .from('admins')
+        .select('id')
+        .eq('email', body.email)
+        .neq('id', id)
+        .maybeSingle();
+      if (clashError) throw clashError;
+      if (clash) return res.status(409).json({ error: 'Un compte existe déjà avec cet email' });
+    }
+
+    // Retrait du statut : impossible de descendre le dernier superadmin.
+    if (body.is_superadmin === false && target.is_superadmin) {
+      const { data: supers, error: superError } = await supabaseAdmin
+        .from('admins')
+        .select('id')
+        .eq('is_superadmin', true);
+      if (superError) throw superError;
+      const rows = Array.isArray(supers) ? supers : [];
+      if (rows.length <= 1) {
+        return res.status(409).json({ error: 'Impossible de retirer le statut du dernier superadmin' });
+      }
+    }
+
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (body.email !== undefined) updates.email = body.email;
+    if (body.nom !== undefined) updates.nom = body.nom;
+    if (body.prenom !== undefined) updates.prenom = body.prenom;
+    if (body.permissions !== undefined) updates.permissions = body.permissions;
+    if (body.is_superadmin !== undefined) updates.is_superadmin = body.is_superadmin;
+    if (body.password !== undefined) updates.password_hash = await bcrypt.hash(body.password, 12);
+
+    const { data, error } = await supabaseAdmin
+      .from('admins')
+      .update(updates)
+      .eq('id', id)
+      .select(ADMIN_PUBLIC_COLUMNS)
+      .single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/admins/:id', requireAdminAuth, requireSuperadmin, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsedParams = idParamsSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      return res.status(400).json({ error: 'Identifiant invalide' });
+    }
+    const { id } = parsedParams.data;
+
+    if (id === req.admin!.adminId) {
+      return res.status(400).json({ error: 'Vous ne pouvez pas supprimer votre propre compte' });
+    }
+
+    const { data: target, error: fetchError } = await supabaseAdmin
+      .from('admins')
+      .select('id, is_superadmin')
+      .eq('id', id)
+      .maybeSingle();
+    if (fetchError) throw fetchError;
+    if (!target) return res.status(404).json({ error: 'Compte introuvable' });
+
+    if (target.is_superadmin) {
+      const { data: supers, error: superError } = await supabaseAdmin
+        .from('admins')
+        .select('id')
+        .eq('is_superadmin', true);
+      if (superError) throw superError;
+      const rows = Array.isArray(supers) ? supers : [];
+      if (rows.length <= 1) {
+        return res.status(409).json({ error: 'Impossible de supprimer le dernier superadmin' });
+      }
+    }
+
+    const { error: deleteError } = await supabaseAdmin.from('admins').delete().eq('id', id);
+    if (deleteError) throw deleteError;
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── Gerants CRUD ──
 
-router.get('/gerants', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/gerants', requireAdminAuth, requirePermission('gerants'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { market, verification_status } = req.query;
 
@@ -141,7 +314,7 @@ router.get('/gerants', requireAdminAuth, async (req: Request, res: Response, nex
   }
 });
 
-router.patch('/gerants/:id/verify', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/gerants/:id/verify', requireAdminAuth, requirePermission('gerants'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     if (!parsedParams.success) {
@@ -174,7 +347,7 @@ router.patch('/gerants/:id/verify', requireAdminAuth, async (req: Request, res: 
   }
 });
 
-router.patch('/gerants/:id/revoke-verification', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/gerants/:id/revoke-verification', requireAdminAuth, requirePermission('gerants'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     if (!parsedParams.success) {
@@ -205,7 +378,7 @@ router.patch('/gerants/:id/revoke-verification', requireAdminAuth, async (req: R
 
 // ── Vérification Documents Admin ──
 
-router.get('/gerants/:id/documents', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/gerants/:id/documents', requireAdminAuth, requirePermission('gerants'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     if (!parsedParams.success) {
@@ -241,7 +414,7 @@ router.get('/gerants/:id/documents', requireAdminAuth, async (req: Request, res:
   }
 });
 
-router.patch('/documents/:docId/review', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/documents/:docId/review', requireAdminAuth, requirePermission('gerants'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const docId = req.params.docId;
     if (!docId) {
@@ -279,7 +452,7 @@ router.patch('/documents/:docId/review', requireAdminAuth, async (req: Request, 
   }
 });
 
-router.patch('/gerants/:id/start-review', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/gerants/:id/start-review', requireAdminAuth, requirePermission('gerants'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     if (!parsedParams.success) {
@@ -314,7 +487,7 @@ router.patch('/gerants/:id/start-review', requireAdminAuth, async (req: Request,
   }
 });
 
-router.patch('/gerants/:id/approve-verification', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/gerants/:id/approve-verification', requireAdminAuth, requirePermission('gerants'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     if (!parsedParams.success) {
@@ -368,7 +541,7 @@ router.patch('/gerants/:id/approve-verification', requireAdminAuth, async (req: 
   }
 });
 
-router.patch('/gerants/:id/reject-verification', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/gerants/:id/reject-verification', requireAdminAuth, requirePermission('gerants'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     if (!parsedParams.success) {
@@ -425,7 +598,7 @@ router.patch('/gerants/:id/reject-verification', requireAdminAuth, async (req: R
   }
 });
 
-router.get('/verification/pending', requireAdminAuth, async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/verification/pending', requireAdminAuth, requirePermission('gerants'), async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const data = await fetchAllRows<any>((from, to) =>
       supabaseAdmin
@@ -443,7 +616,7 @@ router.get('/verification/pending', requireAdminAuth, async (_req: Request, res:
 
 // ── Reservations (non-qualified gerants) ──
 
-router.get('/reservations', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/reservations', requireAdminAuth, requirePermission('reservations'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsed = adminReservationsQuerySchema.safeParse(req.query);
     if (!parsed.success) {
@@ -467,7 +640,7 @@ router.get('/reservations', requireAdminAuth, async (req: Request, res: Response
   }
 });
 
-router.post('/reservations/:id/check-availability', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/reservations/:id/check-availability', requireAdminAuth, requirePermission('reservations'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     if (!parsedParams.success) {
@@ -660,7 +833,7 @@ router.patch('/notifications/:id/read', requireAdminAuth, async (req: Request, r
 
 // ── Promo Group ──
 
-router.patch('/rooms/:id/promo-group', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/rooms/:id/promo-group', requireAdminAuth, requirePermission('promotions'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     if (!parsedParams.success) {
@@ -717,7 +890,7 @@ const adminBoostStatusSchema = z
   })
   .strict();
 
-router.get('/boosts', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/boosts', requireAdminAuth, requirePermission('boosts'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedQuery = adminBoostsQuerySchema.safeParse(req.query);
     if (!parsedQuery.success) {
@@ -747,7 +920,7 @@ router.get('/boosts', requireAdminAuth, async (req: Request, res: Response, next
   }
 });
 
-router.patch('/boosts/:id/status', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/boosts/:id/status', requireAdminAuth, requirePermission('boosts'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     if (!parsedParams.success) {

@@ -274,7 +274,7 @@ describe('DashboardPage', () => {
     expect(screen.getByRole('link', { name: 'Resoumettre' })).toBeInTheDocument();
   });
 
-  it('affiche le compte vérifié avec sa date et masque l’appel à l’action', async () => {
+  it('masque l’appel à la vérification pour un compte vérifié', async () => {
     const verifiedAt = '2026-01-05T12:00:00.000Z';
     mocks.getMe.mockResolvedValue(
       makeGerant({
@@ -286,12 +286,7 @@ describe('DashboardPage', () => {
 
     renderDashboard();
 
-    expect(await screen.findByText('Compte vérifié')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        `Votre compte est vérifié depuis le ${new Date(verifiedAt).toLocaleDateString('fr-FR')}.`,
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Gérant vérifié')).toBeInTheDocument();
     expect(screen.queryByText('Devenez gérant vérifié')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: 'Demander la vérification' }),

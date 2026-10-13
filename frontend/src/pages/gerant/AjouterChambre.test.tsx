@@ -245,6 +245,26 @@ describe('étape 1 — identification', () => {
     expect(screen.queryByText('Le titre est requis')).toBeNull();
   });
 
+  it('refuse un numéro de téléphone dans la description', async () => {
+    renderForm();
+
+    await fillStep1({ description: 'Studio calme. Appelez le 07 07 07 07 07.' });
+
+    expect(
+      screen.getByText('Les numéros de téléphone ne sont pas autorisés : les clients vous contactent via la messagerie de la plateforme.'),
+    ).toBeInTheDocument();
+    expect(steps(document.querySelector('.add-room') as HTMLElement)[0]).toHaveClass('step--active');
+    expect(screen.queryByText('Photos *')).toBeNull();
+  });
+
+  it('accepte prix et dates dans la description sans les confondre avec un téléphone', async () => {
+    renderForm();
+
+    await fillStep1({ description: 'Loyer 150 000 FCFA, caution 1 mois. Disponible le 12-03-2026.' });
+
+    expect(steps(document.querySelector('.add-room') as HTMLElement)[1]).toHaveClass('step--active');
+  });
+
   it('propose les catégories du marché dans le sélecteur', async () => {
     renderForm();
 
@@ -299,6 +319,17 @@ describe('étape 2 — détails', () => {
 
     expect(screen.getByText('Les conditions sont requises')).toBeInTheDocument();
     expect(screen.queryByText('Le prix doit être supérieur à 0')).toBeNull();
+  });
+
+  it('refuse un numéro de téléphone dans les conditions', async () => {
+    setText(screen.getByPlaceholderText('660'), '660');
+    setText(screen.getByPlaceholderText(/Caution 1 mois/), 'Caution 1 mois. WhatsApp : +2250707070707');
+    await userEvent.click(screen.getByRole('button', { name: /Étape suivante/ }));
+
+    expect(
+      screen.getByText('Les numéros de téléphone ne sont pas autorisés : les clients vous contactent via la messagerie de la plateforme.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Photos *')).toBeNull();
   });
 
   it('passe à l’étape Photos avec un prix et des conditions valides', async () => {

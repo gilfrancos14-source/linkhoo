@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import userEvent from '@testing-library/user-event';
 import AdminDestinationsPage from './AdminDestinationsPage';
 import type { AdminDestination, AdminTourismPartition } from '../../lib/adminApi';
+import { MARKET_CODES } from '../../config/markets';
 
 type DestinationPayload = Omit<AdminDestination, 'id' | 'created_at'>;
 
@@ -12,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   updateDestination: vi.fn<(id: string, data: Partial<DestinationPayload>) => Promise<AdminDestination>>(),
   deleteDestination: vi.fn<(id: string) => Promise<void>>(),
   uploadFile: vi.fn<(file: File) => Promise<{ url: string; path: string }>>(),
-  getEvents: vi.fn<(market: string) => Promise<unknown[]>>(),
+  getEvents: vi.fn<() => Promise<{ city: string }[]>>(),
   villes: vi.fn<() => Promise<string[]>>(),
   createBlob: vi.fn<() => string>(),
   revokeBlob: vi.fn<(url: string) => void>(),
@@ -180,8 +181,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   ciPartition = { big: [abidjan], small: [bassam] };
   bjPartition = { big: [ouidah, tori], small: [] };
+  // Seuls CI et BJ ont des destinations dans ces fixtures : les autres
+  // marchés (interrogés par la page) renvoient une partition vide.
   mocks.getDestinations.mockImplementation(async (market) =>
-    market === 'CI' ? ciPartition : bjPartition,
+    market === 'CI' ? ciPartition : market === 'BJ' ? bjPartition : { big: [], small: [] },
   );
   mocks.createDestination.mockImplementation(async (data) =>
     makeDestination({ id: 'dst-new', created_at: '2026-02-01T00:00:00.000Z', ...data }),
@@ -204,7 +207,7 @@ afterEach(() => {
 });
 
 describe('AdminDestinationsPage — chargement', () => {
-  it("affiche l'état de chargement tant que les deux marchés ne sont pas résolus", () => {
+  it("affiche l'état de chargement tant que les destinations ne sont pas résolues", () => {
     mocks.getDestinations.mockImplementation(() => new Promise<AdminTourismPartition>(() => {}));
 
     render(<AdminDestinationsPage />);
@@ -214,12 +217,12 @@ describe('AdminDestinationsPage — chargement', () => {
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
   });
 
-  it("interroge les deux marchés et affiche les lignes dans l'ordre serveur", async () => {
+  it("interroge tous les marchés et affiche les lignes dans l'ordre serveur", async () => {
     render(<AdminDestinationsPage />);
 
     const scope = await tableReady();
     expect(screen.queryByText('Chargement...')).not.toBeInTheDocument();
-    expect(mocks.getDestinations).toHaveBeenCalledTimes(2);
+    expect(mocks.getDestinations).toHaveBeenCalledTimes(MARKET_CODES.length);
     expect(mocks.getDestinations).toHaveBeenNthCalledWith(1, 'CI');
     expect(mocks.getDestinations).toHaveBeenNthCalledWith(2, 'BJ');
 
@@ -241,7 +244,7 @@ describe('AdminDestinationsPage — chargement', () => {
     expect(rowIn(scope, 'Tori Bossito').getByText('Grande carte')).toBeInTheDocument();
   });
 
-  it('affiche le message du réseau quand les deux marchés échouent', async () => {
+  it('affiche le message du réseau quand le chargement échoue', async () => {
     mocks.getDestinations.mockRejectedValue(new Error('réseau coupé'));
 
     render(<AdminDestinationsPage />);
@@ -276,11 +279,12 @@ describe('AdminDestinationsPage — filtres et suggestions', () => {
 
   it('propose les villes des destinations, des biens et des événements sans doublon', async () => {
     mocks.villes.mockResolvedValue(['Cotonou', 'abidjan']);
-    mocks.getEvents.mockImplementation(async (market) =>
-      market === 'CI'
-        ? [{ city: 'Abidjan' }, { city: 'Bouaké' }]
-        : [{ city: 'Ouidah' }, { city: 'OUIDAH' }],
-    );
+    mocks.getEvents.mockResolvedValue([
+      { city: 'Abidjan' },
+      { city: 'Bouaké' },
+      { city: 'Ouidah' },
+      { city: 'OUIDAH' },
+    ]);
 
     render(<AdminDestinationsPage />);
     await tableReady();
@@ -354,7 +358,7 @@ describe('AdminDestinationsPage — création', () => {
       img: '/uploads/destination.jpg',
     });
     // Rechargement silencieux des deux marchés après la création.
-    await waitFor(() => expect(mocks.getDestinations).toHaveBeenCalledTimes(4));
+    await waitFor(() => expect(mocks.getDestinations).toHaveBeenCalledTimes(MARKET_CODES.length * 2));
     expect(document.querySelector('.banner-slide-panel--open')).toBeNull();
   });
 
@@ -456,7 +460,7 @@ describe('AdminDestinationsPage — modification', () => {
     expect(payload.img).toBe('/img/ouidah.jpg');
     expect(mocks.uploadFile).not.toHaveBeenCalled();
     expect(mocks.createDestination).not.toHaveBeenCalled();
-    await waitFor(() => expect(mocks.getDestinations).toHaveBeenCalledTimes(4));
+    await waitFor(() => expect(mocks.getDestinations).toHaveBeenCalledTimes(MARKET_CODES.length * 2));
   });
 
   it("affiche l'erreur quand la sauvegarde échoue", async () => {
@@ -469,12 +473,12 @@ describe('AdminDestinationsPage — modification', () => {
     await user().click(screen.getByRole('button', { name: 'Enregistrer' }));
 
     expect(await screen.findByText('titre déjà pris')).toBeInTheDocument();
-    expect(mocks.getDestinations).toHaveBeenCalledTimes(2);
+    expect(mocks.getDestinations).toHaveBeenCalledTimes(MARKET_CODES.length);
   });
 });
 
 describe('AdminDestinationsPage — suppression', () => {
-  it('supprime après confirmation et recharge les deux marchés', async () => {
+  it('supprime après confirmation et recharge tous les marchés', async () => {
     render(<AdminDestinationsPage />);
     const scope = await tableReady();
 
@@ -484,7 +488,7 @@ describe('AdminDestinationsPage — suppression', () => {
     await user().click(modal().getByRole('button', { name: 'Supprimer' }));
 
     await waitFor(() => expect(mocks.deleteDestination).toHaveBeenCalledWith('dst-ci-2'));
-    await waitFor(() => expect(mocks.getDestinations).toHaveBeenCalledTimes(4));
+    await waitFor(() => expect(mocks.getDestinations).toHaveBeenCalledTimes(MARKET_CODES.length * 2));
     expect(document.querySelector('.verify-modal')).toBeNull();
   });
 
@@ -510,5 +514,101 @@ describe('AdminDestinationsPage — suppression', () => {
 
     expect(await screen.findByText('Erreur lors de la suppression.')).toBeInTheDocument();
     expect(screen.getByRole('table')).toBeInTheDocument();
+  });
+});
+
+describe('AdminDestinationsPage — pagination (10 par page)', () => {
+  /** Génère `count` destinations (marché CI) pour couvrir plusieurs pages. */
+  function manyDestinations(count: number): AdminDestination[] {
+    return Array.from({ length: count }, (_, i) =>
+      makeDestination({
+        id: `dst-${String(i + 1).padStart(2, '0')}`,
+        title: `Destination ${i + 1}`,
+        city: 'Abidjan',
+      }),
+    );
+  }
+
+  function pagination() {
+    const el = document.querySelector('.admin-pagination');
+    if (!el) throw new Error('pagination absente');
+    return within(el as HTMLElement);
+  }
+
+  it("n'affiche pas de pagination avec 10 destinations ou moins", async () => {
+    mocks.getDestinations.mockImplementation(async (market) =>
+      market === 'CI' ? { big: manyDestinations(10), small: [] } : { big: [], small: [] },
+    );
+
+    render(<AdminDestinationsPage />);
+    const scope = await tableReady();
+
+    expect(scope.getAllByRole('row')).toHaveLength(11); // 10 lignes + en-tête
+    expect(document.querySelector('.admin-pagination')).toBeNull();
+  });
+
+  it('pagine à 10 par page et marque la page active', async () => {
+    mocks.getDestinations.mockImplementation(async (market) =>
+      market === 'CI' ? { big: manyDestinations(12), small: [] } : { big: [], small: [] },
+    );
+
+    render(<AdminDestinationsPage />);
+    const scope = await tableReady();
+
+    expect(scope.getAllByRole('row')).toHaveLength(11); // 10 lignes + en-tête
+    expect(scope.getByText('Destination 1')).toBeInTheDocument();
+    expect(scope.queryByText('Destination 11')).not.toBeInTheDocument();
+    expect(pagination().getByRole('button', { name: '1' })).toHaveClass(
+      'admin-pagination__btn--active',
+    );
+  });
+
+  it("passe à la page 2 pour afficher le reste puis revient", async () => {
+    const u = user();
+    mocks.getDestinations.mockImplementation(async (market) =>
+      market === 'CI' ? { big: manyDestinations(12), small: [] } : { big: [], small: [] },
+    );
+
+    render(<AdminDestinationsPage />);
+    await tableReady();
+
+    await u.click(pagination().getByRole('button', { name: '→' }));
+
+    await waitFor(() => expect(table().getByText('Destination 11')).toBeInTheDocument());
+    expect(table().getAllByRole('row')).toHaveLength(3); // 2 lignes + en-tête
+    expect(table().queryByText('Destination 1')).not.toBeInTheDocument();
+    expect(pagination().getByRole('button', { name: '2' })).toHaveClass(
+      'admin-pagination__btn--active',
+    );
+
+    await u.click(pagination().getByRole('button', { name: '←' }));
+
+    await waitFor(() => expect(table().getByText('Destination 1')).toBeInTheDocument());
+    expect(table().getAllByRole('row')).toHaveLength(11);
+  });
+
+  it('revient à la page 1 au changement de filtre de marché', async () => {
+    const u = user();
+    mocks.getDestinations.mockImplementation(async (market) =>
+      market === 'CI'
+        ? { big: manyDestinations(12), small: [] }
+        : market === 'BJ'
+          ? { big: [makeDestination({ id: 'dst-bj-1', market: 'BJ', city: 'Ouidah', title: 'Ouidah, cité vaudou' })], small: [] }
+          : { big: [], small: [] },
+    );
+
+    render(<AdminDestinationsPage />);
+    await tableReady();
+
+    await u.click(pagination().getByRole('button', { name: '→' }));
+    await waitFor(() => expect(table().getByText('Destination 11')).toBeInTheDocument());
+
+    fireEvent.change(filterSelect(), { target: { value: 'BJ' } });
+
+    // 1 destination BJ → une seule page : la pagination disparaît et la page
+    // est réinitialisée à 1.
+    await waitFor(() => expect(table().getAllByRole('row')).toHaveLength(2)); // 1 + en-tête
+    expect(document.querySelector('.admin-pagination')).toBeNull();
+    expect(table().getByText('Ouidah')).toBeInTheDocument();
   });
 });

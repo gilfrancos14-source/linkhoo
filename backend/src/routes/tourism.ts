@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
 import { supabaseAdmin, supabasePublic } from '../config/supabase';
 import { requireAdminAuth } from '../middleware/requireAdminAuth';
+import { requirePermission, requireSuperadmin } from '../middleware/adminPermissions';
 import { idParamsSchema } from '../validations/common';
 import {
   destinationQuerySchema,
@@ -51,7 +52,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-router.post('/', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', requireAdminAuth, requirePermission('destinations'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedBody = destinationCreateSchema.safeParse(req.body);
     if (!parsedBody.success) {
@@ -70,7 +71,7 @@ router.post('/', requireAdminAuth, async (req: Request, res: Response, next: Nex
   }
 });
 
-router.put('/:id', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', requireAdminAuth, requirePermission('destinations'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     const parsedBody = destinationUpdateSchema.safeParse(req.body);
@@ -92,7 +93,7 @@ router.put('/:id', requireAdminAuth, async (req: Request, res: Response, next: N
   }
 });
 
-router.delete('/:id', requireAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', requireAdminAuth, requireSuperadmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     if (!parsedParams.success) {

@@ -35,12 +35,27 @@ const bearer = () => `Bearer ${adminToken()}`;
 let publicChain: FakeChain;
 let adminChain: FakeChain;
 
+function superadminChain(): FakeChain {
+  return fakeChain({
+    data: { id: 'admin-1', email: 'admin@test.ci', is_superadmin: true, permissions: [] },
+    error: null,
+  });
+}
+
+// requirePermission lit la table admins à chaque requête authentifiée :
+// on la route vers un superadmin, le reste vers la chaîne du test.
+function mockAdminFrom(chain: FakeChain): void {
+  vi.mocked(supabaseAdmin.from).mockImplementation(
+    ((table: string) => (table === 'admins' ? superadminChain() : chain)) as never,
+  );
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   publicChain = fakeChain({ data: [], error: null });
   adminChain = fakeChain({ data: null, error: null });
   vi.mocked(supabasePublic.from).mockReturnValue(publicChain as never);
-  vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+  mockAdminFrom(adminChain);
 });
 
 describe('GET /api/banners', () => {
@@ -132,7 +147,8 @@ describe('POST /api/banners', () => {
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: 'Données de bannière invalides' });
-    expect(supabaseAdmin.from).not.toHaveBeenCalled();
+    // La permission est vérifiée avant la validation du corps.
+    expect(vi.mocked(supabaseAdmin.from).mock.calls.map((call) => call[0])).toEqual(['admins']);
   });
 
   it('400 si un champ inconnu est présent (strict)', async () => {
@@ -143,7 +159,7 @@ describe('POST /api/banners', () => {
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: 'Données de bannière invalides' });
-    expect(supabaseAdmin.from).not.toHaveBeenCalled();
+    expect(vi.mocked(supabaseAdmin.from).mock.calls.map((call) => call[0])).toEqual(['admins']);
   });
 
   it('400 si order n’est pas un entier entre 0 et 10000', async () => {
@@ -160,12 +176,34 @@ describe('POST /api/banners', () => {
       .send({ ...validBanner, order: 10_001 });
 
     expect(resHaut.status).toBe(400);
-    expect(supabaseAdmin.from).not.toHaveBeenCalled();
+    // Deux requêtes (une par corps invalide) : une lecture de permission chacune.
+    expect(vi.mocked(supabaseAdmin.from).mock.calls.map((call) => call[0])).toEqual(['admins', 'admins']);
+  });
+
+  it('403 si l’admin connecté n’a pas la permission bannieres', async () => {
+    vi.mocked(supabaseAdmin.from).mockImplementation(
+      ((table: string) =>
+        table === 'admins'
+          ? fakeChain({
+              data: { id: 'admin-2', is_superadmin: false, permissions: ['gerants'] },
+              error: null,
+            })
+          : adminChain) as never,
+    );
+
+    const res = await request(app)
+      .post('/api/banners')
+      .set('Authorization', bearer())
+      .send(validBanner);
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ error: 'Permission refusée' });
+    expect(adminChain.insert).not.toHaveBeenCalled();
   });
 
   it('201 : insère la bannière avec un id généré', async () => {
     adminChain = fakeChain({ data: { id: 'b1', ...validBanner }, error: null });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .post('/api/banners')
@@ -181,7 +219,7 @@ describe('POST /api/banners', () => {
 
   it('500 quand Supabase renvoie une erreur', async () => {
     adminChain = fakeChain({ data: null, error: { message: 'boom' } });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .post('/api/banners')
@@ -209,7 +247,7 @@ describe('PUT /api/banners/:id', () => {
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: 'Données de bannière invalides' });
-    expect(supabaseAdmin.from).not.toHaveBeenCalled();
+    expect(vi.mocked(supabaseAdmin.from).mock.calls.map((call) => call[0])).toEqual(['admins']);
   });
 
   it('400 sur un champ invalide', async () => {
@@ -219,7 +257,7 @@ describe('PUT /api/banners/:id', () => {
       .send({ order: -1 });
 
     expect(res.status).toBe(400);
-    expect(supabaseAdmin.from).not.toHaveBeenCalled();
+    expect(vi.mocked(supabaseAdmin.from).mock.calls.map((call) => call[0])).toEqual(['admins']);
   });
 
   it('400 sur un champ inconnu (strict)', async () => {
@@ -229,12 +267,12 @@ describe('PUT /api/banners/:id', () => {
       .send({ section: 'popular', inconnu: true });
 
     expect(res.status).toBe(400);
-    expect(supabaseAdmin.from).not.toHaveBeenCalled();
+    expect(vi.mocked(supabaseAdmin.from).mock.calls.map((call) => call[0])).toEqual(['admins']);
   });
 
   it('404 quand la bannière n’existe pas', async () => {
     adminChain = fakeChain({ data: null, error: null });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .put('/api/banners/inconnue')
@@ -247,7 +285,7 @@ describe('PUT /api/banners/:id', () => {
 
   it('200 : met à jour la bannière', async () => {
     adminChain = fakeChain({ data: { id: 'b1', order: 5 }, error: null });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .put('/api/banners/b1')
@@ -262,7 +300,7 @@ describe('PUT /api/banners/:id', () => {
 
   it('200 : un corps vide garde le défaut alt et touche la bannière', async () => {
     adminChain = fakeChain({ data: { id: 'b1', alt: '' }, error: null });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .put('/api/banners/b1')
@@ -275,7 +313,7 @@ describe('PUT /api/banners/:id', () => {
 
   it('500 quand Supabase renvoie une erreur', async () => {
     adminChain = fakeChain({ data: null, error: { message: 'boom' } });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app)
       .put('/api/banners/b1')
@@ -300,12 +338,12 @@ describe('DELETE /api/banners/:id', () => {
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: 'Identifiant invalide' });
-    expect(supabaseAdmin.from).not.toHaveBeenCalled();
+    expect(vi.mocked(supabaseAdmin.from).mock.calls.map((call) => call[0])).toEqual(['admins']);
   });
 
   it('404 quand la bannière n’existe pas', async () => {
     adminChain = fakeChain({ data: null, error: null });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app).delete('/api/banners/inconnue').set('Authorization', bearer());
 
@@ -315,7 +353,7 @@ describe('DELETE /api/banners/:id', () => {
 
   it('204 : supprime la bannière', async () => {
     adminChain = fakeChain({ data: { id: 'b1' }, error: null });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app).delete('/api/banners/b1').set('Authorization', bearer());
 
@@ -327,7 +365,7 @@ describe('DELETE /api/banners/:id', () => {
 
   it('500 quand Supabase renvoie une erreur', async () => {
     adminChain = fakeChain({ data: null, error: { message: 'boom' } });
-    vi.mocked(supabaseAdmin.from).mockReturnValue(adminChain as never);
+    mockAdminFrom(adminChain);
 
     const res = await request(app).delete('/api/banners/b1').set('Authorization', bearer());
 

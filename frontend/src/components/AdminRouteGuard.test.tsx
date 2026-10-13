@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../lib/adminApi', () => ({
   getAdminToken: mocks.getAdminToken,
   apiAdmin: { getMe: mocks.getMe },
+  ADMIN_UNAUTHORIZED_EVENT: 'admin:unauthorized',
 }));
 
 const admin: AdminData = {
@@ -88,13 +89,30 @@ describe('AdminRouteGuard', () => {
     expect(await screen.findByText('Tableau de bord admin')).toBeInTheDocument();
   });
 
-  it('redirige vers /ci/admin/login quand getMe rejette', async () => {
+  it('redirige vers /ci/admin/login quand getMe rejette avec un token purgé (401)', async () => {
+    // Scénario 401 : adminApi a purgé le token avant de throw → getAdminToken null.
     mocks.getAdminToken.mockReturnValue('jwt-admin');
-    mocks.getMe.mockRejectedValue(new Error('Token invalide'));
+    mocks.getMe.mockImplementation(async () => {
+      mocks.getAdminToken.mockReturnValue(null);
+      throw new Error('API error 401');
+    });
 
     renderAdmin('/ci/admin');
 
     expect(await screen.findByText('Connexion admin')).toBeInTheDocument();
+    expect(screen.queryByText('Tableau de bord admin')).not.toBeInTheDocument();
+  });
+
+  it('affiche un retry (pas de déconnexion) quand getMe échoue sur un réseau coupé', async () => {
+    // Scénario réseau : le token est encore valide, on ne déconnecte pas.
+    mocks.getAdminToken.mockReturnValue('jwt-admin');
+    mocks.getMe.mockRejectedValue(new Error('Délai dépassé'));
+
+    renderAdmin('/ci/admin');
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument();
+    expect(screen.queryByText('Connexion admin')).not.toBeInTheDocument();
     expect(screen.queryByText('Tableau de bord admin')).not.toBeInTheDocument();
   });
 

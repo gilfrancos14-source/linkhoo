@@ -324,6 +324,24 @@ export const apiTourism = {
   list: (market: string) => cachedGet<TourismPartition>(`/tourism?market=${market}`),
 };
 
+// ── Escapades ──
+// Carte de la section Escapade weekend. `market` obligatoire (400 sinon) :
+// sans lui, les cartes CI et BJ se mélangeraient. images[0] = couverture
+// de la carte ; le carrousel complet s'affiche dans le panneau de détail.
+// alt est dérivé de `lieu` au rendu (pas de champ dédié côté base).
+export interface EscapadeData {
+  id: string;
+  market: MarketCode;
+  lieu: string;
+  description: string;
+  images: string[];
+  created_at?: string;
+}
+
+export const apiEscapades = {
+  list: (market: string) => cachedGet<EscapadeData[]>(`/escapades?market=${market}`),
+};
+
 // ── Reservations ──
 export interface ReservationData {
   id: string;
@@ -613,7 +631,9 @@ export interface BoostConfig {
   currency: string;
   price_cpc: number;
   price_cpi: number;
-  budgets: number[];
+  /** Budget libre du gérant : bornes serveur (entier, FCFA). */
+  budget_min: number;
+  budget_max: number;
   max_duration_days: number;
 }
 

@@ -182,15 +182,6 @@ CREATE INDEX IF NOT EXISTS idx_gerants_market ON gerants(market);
 CREATE INDEX IF NOT EXISTS idx_gerants_created_at ON gerants(created_at);
 CREATE INDEX IF NOT EXISTS idx_rooms_promo_group ON rooms(promo_group);
 CREATE INDEX IF NOT EXISTS idx_rooms_is_popular ON rooms(is_popular);
-CREATE INDEX IF NOT EXISTS idx_events_market_city ON events(market, city);
-CREATE INDEX IF NOT EXISTS idx_events_market_date ON events(market, event_date);
-CREATE INDEX IF NOT EXISTS idx_tourism_market ON tourism_destinations(market);
-CREATE INDEX IF NOT EXISTS idx_premium_tx_clerk_user_id ON premium_transactions(clerk_user_id);
-CREATE INDEX IF NOT EXISTS idx_premium_tx_status ON premium_transactions(status);
-CREATE INDEX IF NOT EXISTS idx_premium_tx_created_at ON premium_transactions(created_at);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_newsletter_subscribers_email
-  ON newsletter_subscribers (lower(email)) WHERE unsubscribed_at IS NULL;
-CREATE INDEX IF NOT EXISTS idx_newsletter_subscribers_created_at ON newsletter_subscribers(created_at);
 
 -- Verification documents table
 CREATE TABLE IF NOT EXISTS verification_documents (
@@ -307,6 +298,20 @@ CREATE TABLE IF NOT EXISTS newsletter_subscribers (
   unsubscribed_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Indexes sur les tables créées ci-dessus (events, tourism_destinations,
+-- premium_transactions, newsletter_subscribers) : placés APRÈS leur
+-- CREATE TABLE — un index sur une table inexistante fait échouer toute
+-- la migration sur une base neuve.
+CREATE INDEX IF NOT EXISTS idx_events_market_city ON events(market, city);
+CREATE INDEX IF NOT EXISTS idx_events_market_date ON events(market, event_date);
+CREATE INDEX IF NOT EXISTS idx_tourism_market ON tourism_destinations(market);
+CREATE INDEX IF NOT EXISTS idx_premium_tx_clerk_user_id ON premium_transactions(clerk_user_id);
+CREATE INDEX IF NOT EXISTS idx_premium_tx_status ON premium_transactions(status);
+CREATE INDEX IF NOT EXISTS idx_premium_tx_created_at ON premium_transactions(created_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_newsletter_subscribers_email
+  ON newsletter_subscribers (lower(email)) WHERE unsubscribed_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_newsletter_subscribers_created_at ON newsletter_subscribers(created_at);
 
 -- Storage bucket for images
 INSERT INTO storage.buckets (id, name, public) VALUES ('images', 'images', true) ON CONFLICT DO NOTHING;

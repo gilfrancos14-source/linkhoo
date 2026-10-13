@@ -47,7 +47,8 @@ describe('fetchCategoriesByMarket', () => {
     const categories = await fetchCategoriesByMarket('BJ');
 
     expect(categories.every((c) => c.market === 'BJ')).toBe(true);
-    expect(categories.map((c) => c.title)).toContain('Appartements moins chers');
+    expect(categories.map((c) => c.title)).toContain('Chambres moins chères');
+    expect(categories.map((c) => c.title)).toContain('Hôtel');
   });
 
   it('retombe sur le jeu par défaut quand la requête échoue', async () => {
