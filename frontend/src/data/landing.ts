@@ -39,7 +39,7 @@ export const LANDING_SLIDES: LandingSlide[] = [
   },
   {
     id: 'slide-appartements',
-    img: '/images/4.jpg',
+    img: '/images/4.webp',
     alt: 'Appartement confortable au quotidien',
   },
   {

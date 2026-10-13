@@ -847,7 +847,7 @@ body.nav-open {
 .hero__bg {
   position: absolute;
   inset: 0;
-  background: url("/images/4.jpg")
+  background: url("/images/4.webp")
     center 30% / cover no-repeat;
   animation: hero-zoom 24s var(--ease) forwards;
 }
@@ -13361,7 +13361,7 @@ body.nav-open {
      zone de texte reste à droite — voilée d'un dégradé pour le titre. */
   background-image:
     linear-gradient(to left, rgba(0, 30, 88, 0.93) 0%, rgba(0, 45, 130, 0.7) 38%, rgba(0, 70, 190, 0.3) 62%, rgba(0, 88, 225, 0) 85%),
-    url('/images/hero-portrait.png');
+    url('/images/hero-portrait.webp');
   background-position: center, left top;
   background-size: cover, cover;
   background-repeat: no-repeat, no-repeat;

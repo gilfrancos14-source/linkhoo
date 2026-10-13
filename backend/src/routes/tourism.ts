@@ -30,22 +30,25 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const today = new Date().toISOString().slice(0, 10);
     const { to } = upcomingWindow(today);
 
-    const eventsResult = await supabasePublic
-      .from('events')
-      .select('city, event_date')
-      .eq('market', market)
-      .gte('event_date', today)
-      .lte('event_date', to);
+    // Les deux lectures partent en parallèle : la latence totale devient le
+    // max des deux au lieu de la somme des deux aller-retours Supabase.
+    const [eventsResult, destinationsResult] = await Promise.all([
+      supabasePublic
+        .from('events')
+        .select('city, event_date')
+        .eq('market', market)
+        .gte('event_date', today)
+        .lte('event_date', to),
+      supabasePublic
+        .from('tourism_destinations')
+        .select('*')
+        .eq('market', market),
+    ]);
     if (eventsResult.error) throw eventsResult.error;
-
-    const { data, error } = await supabasePublic
-      .from('tourism_destinations')
-      .select('*')
-      .eq('market', market);
-    if (error) throw error;
+    if (destinationsResult.error) throw destinationsResult.error;
 
     const upcoming = upcomingEventCities(eventsResult.data ?? [], today);
-    const { big, small } = partitionDestinations(data ?? [], upcoming);
+    const { big, small } = partitionDestinations(destinationsResult.data ?? [], upcoming);
     res.json({ big, small });
   } catch (err) {
     next(err);

@@ -7,11 +7,14 @@ import Hero from './components/Hero';
 import PopularSection from './components/PopularSection';
 import PromosSection from './components/PromosSection';
 import CategoriesSection from './components/CategoriesSection';
-import EventsSection from './components/EventsSection';
-import TourismSection from './components/TourismSection';
-import EscapadeSection from './components/EscapadeSection';
-import ReviewsSection from './components/ReviewsSection';
 import Footer from './components/Footer';
+
+// Sections sous la ligne de flottaison : chargées après le premier rendu
+// pour alléger le chunk d'entrée de la home (~40 % du JS critique).
+const EventsSection = lazy(() => import('./components/EventsSection'));
+const TourismSection = lazy(() => import('./components/TourismSection'));
+const EscapadeSection = lazy(() => import('./components/EscapadeSection'));
+const ReviewsSection = lazy(() => import('./components/ReviewsSection'));
 import BackToTop from './components/BackToTop';
 import ErrorBoundary from './components/ErrorBoundary';
 import NotFoundPage from './pages/NotFoundPage';
@@ -116,10 +119,12 @@ function HomePage() {
       <PopularSection />
       <PromosSection />
       <CategoriesSection />
-      <EventsSection />
-      <TourismSection />
-      <EscapadeSection />
-      <ReviewsSection />
+      <Suspense fallback={<div className="route-loading" aria-hidden="true" />}>
+        <EventsSection />
+        <TourismSection />
+        <EscapadeSection />
+        <ReviewsSection />
+      </Suspense>
     </main>
   );
 }
@@ -226,11 +231,12 @@ function CatchAllRedirect() {
 }
 
 function AppRoutes() {
-  const { pathname } = useLocation();
   return (
     <MarketProvider>
       <ScrollToTop />
-      <ErrorBoundary key={pathname}>
+      {/* Pas de key={pathname} : React Router reconcilie les routes sans
+          remonter tout l'arbre (header, footer, états, effets). */}
+      <ErrorBoundary>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/" element={<RootRedirect />} />

@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { verifyToken } from '@clerk/backend';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import roomsRouter from './rooms';
+import roomsRouter, { resetPremiumCacheForTests } from './rooms';
 import { supabaseAdmin, supabasePublic } from '../config/supabase';
 import {
   buildTestApp,
@@ -91,6 +91,7 @@ function roomRows(count: number, premiumFrom: number): any[] {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(verifyToken).mockImplementation(defaultVerifyToken);
+  resetPremiumCacheForTests();
   publicRooms = fakeChain({ data: [], error: null });
   rooms = fakeChain({ data: null, error: null });
   gerants = fakeChain({ data: { market: 'CI', is_verified: false }, error: null });

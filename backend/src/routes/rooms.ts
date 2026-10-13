@@ -50,26 +50,53 @@ function applyRoomFilters(query: any, filters: RoomListFilters): any {
  *
  * Cette lecture sert uniquement au classement : si elle échoue, on journalise
  * et on classe sans boost plutôt que de casser le catalogue.
+ *
+ * Cache en mémoire 90 s : la donnée ne bouge qu'à l'expiration premium, et
+ * chaque appel liste/popular/available en avait fait 1 aller-retour Supabase.
  */
-async function loadPremiumGerantIds(): Promise<Set<string>> {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('gerants')
-      .select('clerk_user_id, is_premium, premium_expires_at')
-      .eq('is_premium', true);
-    if (error) throw error;
+const PREMIUM_CACHE_TTL_MS = 90_000;
+let premiumCache: { ids: Set<string>; at: number } | null = null;
+let premiumInflight: Promise<Set<string>> | null = null;
 
-    const ids = new Set<string>();
-    // `select()` sans `.single()` renvoie une liste ; un résultat unique
-    // inattendu ne doit pas faire échouer le classement.
-    for (const gerant of Array.isArray(data) ? data : []) {
-      if (gerant.clerk_user_id && isPremiumActive(gerant)) ids.add(gerant.clerk_user_id);
-    }
-    return ids;
-  } catch (err) {
-    console.error('loadPremiumGerantIds : classement sans boost', err);
-    return new Set();
+/** Reset du cache premium — réservé aux tests (état module partagé). */
+export function resetPremiumCacheForTests(): void {
+  premiumCache = null;
+  premiumInflight = null;
+}
+
+async function loadPremiumGerantIds(): Promise<Set<string>> {
+  if (premiumCache && Date.now() - premiumCache.at < PREMIUM_CACHE_TTL_MS) {
+    return premiumCache.ids;
   }
+  // Déduplication des appels concurrents : une seule requête en vol.
+  if (premiumInflight) return premiumInflight;
+
+  premiumInflight = (async () => {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('gerants')
+        .select('clerk_user_id, is_premium, premium_expires_at')
+        .eq('is_premium', true);
+      if (error) throw error;
+
+      const ids = new Set<string>();
+      // `select()` sans `.single()` renvoie une liste ; un résultat unique
+      // inattendu ne doit pas faire échouer le classement.
+      for (const gerant of Array.isArray(data) ? data : []) {
+        if (gerant.clerk_user_id && isPremiumActive(gerant)) ids.add(gerant.clerk_user_id);
+      }
+      premiumCache = { ids, at: Date.now() };
+      return ids;
+    } catch (err) {
+      console.error('loadPremiumGerantIds : classement sans boost', err);
+      // Échec : on ne met pas en cache pour retenter au prochain appel.
+      return new Set();
+    } finally {
+      premiumInflight = null;
+    }
+  })();
+
+  return premiumInflight;
 }
 
 /** Drapeau `gerant_premium` sur chaque ligne (alimente le badge « Premium »). */
