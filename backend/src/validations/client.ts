@@ -12,7 +12,7 @@ const phoneSchema = z
 export const clientCreateSchema = z
   .object({
     clerk_user_id: z.string().trim().min(1).max(200),
-    email: emailSchema.optional(),
+    email: emailSchema,
     nom: z.string().trim().max(100).optional().default(''),
     prenom: z.string().trim().max(100).optional().default(''),
     telephone: phoneSchema,

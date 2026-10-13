@@ -10,6 +10,7 @@ export const emailSchema = z
   .string()
   .trim()
   .email()
+  .regex(/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/, 'Email invalide')
   .max(255)
   .transform((value) => value.toLowerCase());
 
