@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { MarketProvider } from '../contexts/MarketContext';
 import { MARKET_CODES } from '../config/markets';
+import { resetGerantMarketCache } from '../hooks/useGerantMarket';
 import MarketSelector from './MarketSelector';
 
 const mocks = vi.hoisted(() => ({
@@ -62,6 +63,7 @@ afterEach(() => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetGerantMarketCache();
   mocks.isLoaded = true;
   mocks.isSignedIn = false;
   mocks.getMe.mockRejectedValue(new Error('Non connecté'));
@@ -236,6 +238,10 @@ describe('MarketSelector — gérant connecté', () => {
 
     renderSelector('/');
 
-    expect(await screen.findByRole('button', { name: 'Choisir le marché' })).toBeInTheDocument();
+    // Pendant le loading le drapeau fixe s'affiche, puis le dropdown revient
+    // une fois que getMe() a rejeté (pas un gérant).
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Choisir le marché' })).toBeInTheDocument();
+    });
   });
 });

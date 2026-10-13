@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { LANDING_COUNTRIES } from '../data/landing';
+import { resetGerantMarketCache } from '../hooks/useGerantMarket';
 import CountrySelector from './CountrySelector';
 
 const mocks = vi.hoisted(() => ({
@@ -32,6 +33,7 @@ function renderSelector() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetGerantMarketCache();
   mocks.isLoaded = true;
   mocks.isSignedIn = false;
   mocks.getMe.mockRejectedValue(new Error('Non connecté'));

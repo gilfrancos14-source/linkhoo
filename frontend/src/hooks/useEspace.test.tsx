@@ -35,10 +35,14 @@ vi.mock('@clerk/clerk-react', () => ({
   useUser: () => ({ user: mocks.user }),
 }));
 
-vi.mock('../lib/api', () => ({
-  apiAuth: { me: mocks.me, bootstrap: mocks.bootstrap },
-  setAuthTokenGetter: mocks.setAuthTokenGetter,
-}));
+vi.mock('../lib/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/api')>();
+  return {
+    ...actual,
+    apiAuth: { me: mocks.me, bootstrap: mocks.bootstrap },
+    setAuthTokenGetter: mocks.setAuthTokenGetter,
+  };
+});
 
 let resolveRef: (() => Promise<void>) | null = null;
 

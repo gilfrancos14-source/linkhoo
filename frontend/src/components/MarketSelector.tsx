@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '@clerk/clerk-react';
 import { isRootPath, useMarket, type MarketCode } from '../contexts/MarketContext';
 import { MARKETS as MARKET_REGISTRY } from '../config/markets';
-import { apiGerants } from '../lib/api';
+import { useGerantMarket } from '../hooks/useGerantMarket';
 import {
   FlagBF,
   FlagBJ,
@@ -67,9 +66,8 @@ export default function MarketSelector() {
   const { market, setMarket } = useMarket();
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { isSignedIn, isLoaded } = useAuth();
   const [open, setOpen] = useState(false);
-  const [gerantMarket, setGerantMarket] = useState<MarketCode | null>(null);
+  const { gerantMarket, loading: gerantLoading } = useGerantMarket();
   const ref = useRef<HTMLDivElement>(null);
 
   const selected = MARKETS.find((m) => m.code === market) ?? MARKETS[0];
@@ -78,19 +76,6 @@ export default function MarketSelector() {
   // Sur les pages de marché (/ci, /bj, …) on affiche uniquement le drapeau,
   // non cliquable.
   const isLanding = isRootPath(pathname);
-
-  // Un gérant connecté est rattaché à UN seul marché : on bloque le switch.
-  useEffect(() => {
-    if (!isLoaded || !isSignedIn || !isLanding) {
-      setGerantMarket(null);
-      return;
-    }
-    let cancelled = false;
-    apiGerants.getMe()
-      .then((gerant) => { if (!cancelled) setGerantMarket(gerant.market); })
-      .catch(() => { if (!cancelled) setGerantMarket(null); });
-    return () => { cancelled = true; };
-  }, [isLoaded, isSignedIn, isLanding]);
 
   useEffect(() => {
     if (!open) return;
@@ -137,15 +122,19 @@ export default function MarketSelector() {
     );
   }
 
-  // Gérant connecté : drapeau fixe de son marché, non cliquable.
-  if (gerantMarket) {
-    const gerantSelected = MARKETS.find((m) => m.code === gerantMarket) ?? MARKETS[0];
+  // Gérant connecté (ou statut en cours de chargement) : drapeau fixe,
+  // non cliquable. Pendant le loading on n'affiche pas le dropdown pour
+  // éviter qu'un gérant choisisse un autre marché avant le blocage.
+  if (gerantMarket || gerantLoading) {
+    const gerantSelected = gerantMarket
+      ? MARKETS.find((m) => m.code === gerantMarket) ?? MARKETS[0]
+      : selected;
     return (
       <div className="market-selector market-selector--static">
         <span
           className="header-btn header-btn--market"
           role="img"
-          aria-label={`Marché ${gerantSelected.label} (compte gérant)`}
+          aria-label={gerantMarket ? `Marché ${gerantSelected.label} (compte gérant)` : `Marché ${gerantSelected.label}`}
         >
           <span className="market-selector__flag">{gerantSelected.flag}</span>
         </span>

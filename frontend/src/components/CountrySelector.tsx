@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '@clerk/clerk-react';
 import { LANDING_COUNTRIES, type LandingFlagId } from '../data/landing';
-import { apiGerants, type MarketCode } from '../lib/api';
+import { useGerantMarket } from '../hooks/useGerantMarket';
 import {
   FlagBF,
   FlagBJ,
@@ -40,20 +38,7 @@ const FLAGS: Record<LandingFlagId, (props: { width?: number }) => ReactNode> = {
 // Un gérant connecté voit la section en lecture seule : tous les pays
 // visibles, le sien en surbrillance, aucun lien.
 export default function CountrySelector() {
-  const { isSignedIn, isLoaded } = useAuth();
-  const [gerantMarket, setGerantMarket] = useState<MarketCode | null>(null);
-
-  useEffect(() => {
-    if (!isLoaded || !isSignedIn) {
-      setGerantMarket(null);
-      return;
-    }
-    let cancelled = false;
-    apiGerants.getMe()
-      .then((gerant) => { if (!cancelled) setGerantMarket(gerant.market); })
-      .catch(() => { if (!cancelled) setGerantMarket(null); });
-    return () => { cancelled = true; };
-  }, [isLoaded, isSignedIn]);
+  const { gerantMarket, loading } = useGerantMarket();
 
   const isGerant = gerantMarket !== null;
   const gerantSlug = gerantMarket?.toLowerCase() ?? null;
@@ -81,9 +66,13 @@ export default function CountrySelector() {
               </>
             );
 
+            // Pendant le chargement du statut gérant, on désactive les liens
+            // pour éviter qu'un gérant clique un autre marché avant le blocage.
+            const isLocked = loading || isGerant;
+
             return (
               <li key={country.id} className="landing-countries__item reveal">
-                {isGerant ? (
+                {isLocked ? (
                   <span
                     className={`landing-countries__card${isOwnMarket ? ' is-active' : ' is-disabled'}`}
                     aria-disabled={!isOwnMarket}
