@@ -1,5 +1,5 @@
 import { useSearchParams, Link } from 'react-router-dom';
-import { useState, useMemo, useEffect, type FormEvent } from 'react';
+import { useState, useMemo, useEffect, useRef, type FormEvent } from 'react';
 import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
 import {
@@ -83,6 +83,18 @@ export default function SearchResultsPage() {
   // Dates manquantes → on affiche le panneau de sélection
   const needsDates = !dateArrivee || !dateDepart;
   const hasDates = !needsDates;
+
+  // Changement de dates (ou bascule dates ↔ pas-de-dates) : revient à la
+  // première page pour éviter une page vide si le nouveau séjour a moins
+  // de résultats que la page courante.
+  const datesKey = `${dateArrivee}|${dateDepart}`;
+  const prevDatesKeyRef = useRef(datesKey);
+  useEffect(() => {
+    if (prevDatesKeyRef.current !== datesKey) {
+      prevDatesKeyRef.current = datesKey;
+      setCurrentPage(1);
+    }
+  }, [datesKey]);
 
   // Clé de fetch : en mode dates on ne re-télécharge que si le marché ou les
   // dates changent (les filtres locaux sont appliqués en mémoire) ; sans dates,

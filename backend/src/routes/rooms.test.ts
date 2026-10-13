@@ -160,6 +160,55 @@ describe('GET /api/rooms', () => {
     expect(publicRooms.eq).not.toHaveBeenCalledWith('chambres', 3);
   });
 
+  it('200 : promo_group applique eq sur promo_group', async () => {
+    publicRooms = fakeChain({ data: [], error: null });
+    stubPublic(publicRooms);
+
+    const res = await request(app).get('/api/rooms?promo_group=promo_15');
+
+    expect(res.status).toBe(200);
+    expect(publicRooms.eq).toHaveBeenCalledWith('promo_group', 'promo_15');
+  });
+
+  it('400 : promo_group hors enum', async () => {
+    expect((await request(app).get('/api/rooms?promo_group=promo_20')).status).toBe(400);
+  });
+
+  it('200 : q construit un or() ilike sur 5 champs et échappe les caractères spéciaux', async () => {
+    publicRooms = fakeChain({ data: [], error: null });
+    stubPublic(publicRooms);
+
+    const res = await request(app).get('/api/rooms?q=villa%22%5C(%2C%25');
+
+    expect(res.status).toBe(200);
+    // " \ ( , % remplacés par des espaces — jamais de " ni \ dans le pattern.
+    const orArg = (publicRooms.or as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as string;
+    expect(orArg).toContain('title.ilike.%villa     %');
+    expect(orArg).not.toContain('"');
+    expect(orArg).not.toContain('\\');
+    expect(orArg).toContain('subtitle.ilike.');
+    expect(orArg).toContain('ville.ilike.');
+    expect(orArg).toContain('quartier.ilike.');
+    expect(orArg).toContain('category.ilike.');
+  });
+
+  it('200 : q sans caractères spéciaux garde le pattern brut', async () => {
+    publicRooms = fakeChain({ data: [], error: null });
+    stubPublic(publicRooms);
+
+    const res = await request(app).get('/api/rooms?q=villa');
+
+    expect(res.status).toBe(200);
+    expect(publicRooms.or).toHaveBeenCalledWith(
+      'title.ilike.%villa%,subtitle.ilike.%villa%,ville.ilike.%villa%,quartier.ilike.%villa%,category.ilike.%villa%',
+    );
+  });
+
+  it('400 : q vide ou trop long', async () => {
+    expect((await request(app).get('/api/rooms?q=')).status).toBe(400);
+    expect((await request(app).get(`/api/rooms?q=${'x'.repeat(101)}`)).status).toBe(400);
+  });
+
   it('200 paginé : renvoie items/total/page/limit et lit la fenêtre de classement', async () => {
     const countChain = fakeChain({ count: 42, error: null, data: null });
     const rows = roomRows(60, 60);

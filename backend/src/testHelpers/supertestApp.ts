@@ -21,6 +21,7 @@ export interface FakeChain {
   lte: AnyFn;
   in: AnyFn;
   not: AnyFn;
+  or: AnyFn;
   order: AnyFn;
   limit: AnyFn;
   range: AnyFn;
@@ -52,6 +53,7 @@ export function fakeChain(result: { data?: unknown; error?: unknown; count?: num
   chain.lte = vi.fn(chainable);
   chain.in = vi.fn(chainable);
   chain.not = vi.fn(chainable);
+  chain.or = vi.fn(chainable);
   chain.order = vi.fn(chainable);
   chain.limit = vi.fn(chainable);
   chain.range = vi.fn(chainable);

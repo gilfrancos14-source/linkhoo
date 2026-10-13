@@ -42,7 +42,9 @@ function applyRoomFilters(query: any, filters: RoomListFilters): any {
   if (filters.q) {
     // Recherche texte sur les champs visibles de la carte — description
     // exclue (colonne jusqu'à 10 k caractères, trop coûteuse à ILIKE).
-    const pattern = `%${filters.q.replace(/[%_,()]/g, ' ')}%`;
+    // Échappement PostgREST : `"` et `\` cassent la syntaxe `or(...)` ;
+    // `%`, `_`, `,`, `(`, `)` sont des jokers/séparateurs du filtre.
+    const pattern = `%${filters.q.replace(/[%_,()"\\]/g, ' ')}%`;
     q = q.or(`title.ilike.${pattern},subtitle.ilike.${pattern},ville.ilike.${pattern},quartier.ilike.${pattern},category.ilike.${pattern}`);
   }
   return q;

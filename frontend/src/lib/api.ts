@@ -65,6 +65,15 @@ export async function cachedGet<T>(path: string, ttlMs = PUBLIC_CACHE_TTL_MS): P
   const hit = publicCache.get(path);
   if (hit && hit.expires > now) return hit.promise as Promise<T>;
 
+  // Balayage des entrées expirées : sans lui, chaque combinaison de filtres
+  // de recherche crée une clé unique qui resterait en mémoire jusqu'à une
+  // mutation globale (clearApiCache).
+  if (publicCache.size > 0) {
+    for (const [key, entry] of publicCache) {
+      if (entry.expires <= now) publicCache.delete(key);
+    }
+  }
+
   // `cache: 'no-cache'` force une revalidation conditionnelle (304) auprès du
   // serveur : après une mutation qui a purgé ce cache mémoire, la réponse
   // serveur fraîche doit être visible immédiatement — le cache HTTP du
