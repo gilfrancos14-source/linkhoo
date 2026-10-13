@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@clerk/clerk-react';
 import { LANDING_COUNTRIES, type LandingFlagId } from '../data/landing';
+import { apiGerants, type MarketCode } from '../lib/api';
 import {
   FlagBF,
   FlagBJ,
@@ -34,7 +37,27 @@ const FLAGS: Record<LandingFlagId, (props: { width?: number }) => ReactNode> = {
 // Bloc « Choisissez un Pays » — structure CoinAfrique : une seule rangée de
 // drapeaux ronds avec le nom dessous. Les marchés ouverts sont cliquables,
 // les autres sont annoncés « Bientôt ».
+// Un gérant connecté voit la section en lecture seule : tous les pays
+// visibles, le sien en surbrillance, aucun lien.
 export default function CountrySelector() {
+  const { isSignedIn, isLoaded } = useAuth();
+  const [gerantMarket, setGerantMarket] = useState<MarketCode | null>(null);
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) {
+      setGerantMarket(null);
+      return;
+    }
+    let cancelled = false;
+    apiGerants.getMe()
+      .then((gerant) => { if (!cancelled) setGerantMarket(gerant.market); })
+      .catch(() => { if (!cancelled) setGerantMarket(null); });
+    return () => { cancelled = true; };
+  }, [isLoaded, isSignedIn]);
+
+  const isGerant = gerantMarket !== null;
+  const gerantSlug = gerantMarket?.toLowerCase() ?? null;
+
   return (
     <section className="landing-countries" id="pays">
       <div className="container">
@@ -46,19 +69,28 @@ export default function CountrySelector() {
         <ul className="landing-countries__grid" role="list">
           {LANDING_COUNTRIES.map((country) => {
             const Flag = FLAGS[country.flag];
+            const isOwnMarket = isGerant && country.slug === gerantSlug;
             const content = (
               <>
                 <span className="landing-countries__flag" aria-hidden="true">
                   <Flag width={56} />
                 </span>
                 <span className="landing-countries__label">{country.label}</span>
-                {!country.slug && <span className="landing-countries__soon">Bientôt</span>}
+                {!country.slug && !isGerant && <span className="landing-countries__soon">Bientôt</span>}
+                {isOwnMarket && <span className="landing-countries__soon">Votre marché</span>}
               </>
             );
 
             return (
               <li key={country.id} className="landing-countries__item reveal">
-                {country.slug ? (
+                {isGerant ? (
+                  <span
+                    className={`landing-countries__card${isOwnMarket ? ' is-active' : ' is-disabled'}`}
+                    aria-disabled={!isOwnMarket}
+                  >
+                    {content}
+                  </span>
+                ) : country.slug ? (
                   <Link to={`/${country.slug}`} className="landing-countries__card">
                     {content}
                   </Link>

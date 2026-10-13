@@ -13529,6 +13529,20 @@ a.landing-countries__card:hover {
   cursor: not-allowed;
 }
 
+.landing-countries__card.is-active {
+  opacity: 1;
+  cursor: default;
+}
+
+.landing-countries__card.is-active .landing-countries__flag {
+  box-shadow: 0 0 0 2px var(--white), 0 0 0 3px var(--accent);
+}
+
+.landing-countries__card.is-active .landing-countries__label {
+  font-weight: 600;
+  color: var(--accent);
+}
+
 .landing-countries__flag {
   position: relative;
   display: block;
