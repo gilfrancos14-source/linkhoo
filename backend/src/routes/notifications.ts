@@ -12,7 +12,7 @@ import { isQualifiedGerantUser } from '../utils/gerantAccess';
 import { maskClientIdentity } from '../utils/clientIdentity';
 
 const router = Router();
-const notificationsLimiter = createClientLimiter();
+const notificationsLimiter = createClientLimiter({ prefix: 'notifications' });
 
 type NotificationRow = Record<string, any> & { id: string; date: string | null };
 

@@ -17,8 +17,10 @@ const mocks = vi.hoisted(() => ({
   signOut: vi.fn<() => Promise<void>>(),
   request: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   cachedGet: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+  unreadMessages: vi.fn<() => Promise<{ count: number }>>(),
   clerk: {
     isLoaded: true,
+    isSignedIn: true,
     user: null as unknown,
   },
 }));
@@ -34,6 +36,7 @@ vi.mock('../lib/api', async (importOriginal) => {
     setAuthTokenGetter: mocks.setAuthTokenGetter,
     apiClients: { ...actual.apiClients, getMe: mocks.getMe, updateMe: mocks.updateMe },
     apiReviews: { ...actual.apiReviews, listMine: mocks.listMine, create: mocks.createReview },
+    apiMessages: { ...actual.apiMessages, unread: mocks.unreadMessages },
   };
 });
 
@@ -49,7 +52,11 @@ vi.mock('../lib/reservations', async (importOriginal) => {
 
 vi.mock('@clerk/clerk-react', () => ({
   useUser: () => ({ user: mocks.clerk.user }),
-  useAuth: () => ({ isLoaded: mocks.clerk.isLoaded, getToken: mocks.getToken }),
+  useAuth: () => ({
+    isLoaded: mocks.clerk.isLoaded,
+    isSignedIn: mocks.clerk.isSignedIn,
+    getToken: mocks.getToken,
+  }),
   useClerk: () => ({ signOut: mocks.signOut }),
 }));
 
@@ -171,9 +178,10 @@ function cardByTitle(title: string): HTMLElement {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.clerk = { isLoaded: true, user: CLERK_USER };
+  mocks.clerk = { isLoaded: true, isSignedIn: true, user: CLERK_USER };
   mocks.request.mockRejectedValue(new Error('réseau interdit dans les tests'));
   mocks.cachedGet.mockRejectedValue(new Error('réseau interdit dans les tests'));
+  mocks.unreadMessages.mockResolvedValue({ count: 0 });
   mocks.getToken.mockResolvedValue('token-test');
   mocks.signOut.mockResolvedValue(undefined);
   mocks.getMyReservations.mockResolvedValue(RESERVATIONS);
@@ -200,7 +208,7 @@ describe('ClientComptePage — états de chargement', () => {
   });
 
   it("n'interroge rien tant que Clerk n'est pas chargé", () => {
-    mocks.clerk = { isLoaded: false, user: CLERK_USER };
+    mocks.clerk = { isLoaded: false, isSignedIn: true, user: CLERK_USER };
 
     renderPage();
 
@@ -250,7 +258,7 @@ describe('ClientComptePage — rail de navigation', () => {
   });
 
   it("retombe sur « à vous » et l'initiale U sans compte Clerk", async () => {
-    mocks.clerk = { isLoaded: true, user: null };
+    mocks.clerk = { isLoaded: true, isSignedIn: true, user: null };
     mocks.getMe.mockResolvedValue({ nom: '', prenom: '', telephone: '' });
 
     renderPage();
@@ -267,6 +275,22 @@ describe('ClientComptePage — rail de navigation', () => {
 
     expect(await screen.findByTestId('home')).toBeInTheDocument();
     expect(mocks.signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it("affiche l'accès Messages avec son badge de non lus", async () => {
+    mocks.unreadMessages.mockResolvedValue({ count: 4 });
+    await renderLoaded();
+
+    const link = screen.getByRole('link', { name: /Messages/ });
+    expect(link).toHaveAttribute('href', '/ci/messages');
+    expect(within(link).getByText('4')).toBeInTheDocument();
+  });
+
+  it("n'affiche pas de pastille Messages quand tout est lu", async () => {
+    await renderLoaded();
+
+    const link = screen.getByRole('link', { name: /Messages/ });
+    expect(link.querySelector('.compte-rail__pill')).toBeNull();
   });
 });
 
@@ -598,11 +622,11 @@ describe('ClientComptePage — appels réseau', () => {
   it("branche le jeton d'authentification sur l'API", async () => {
     await renderLoaded();
 
-    expect(mocks.setAuthTokenGetter).toHaveBeenCalledTimes(1);
-    // La page enregistre un getter (sans l'appeler) : c'est l'API qui l'invoquera
-    // plus tard. On le déclenche manuellement pour vérifier qu'il délègue bien
-    // à Clerk et renvoie le jeton.
-    const getter = mocks.setAuthTokenGetter.mock.calls[0][0] as () => Promise<string | null>;
+    // La page et le hook de non-lus enregistrent chacun un getter : on vérifie
+    // que celui qui reste en place délègue bien à Clerk.
+    expect(mocks.setAuthTokenGetter).toHaveBeenCalled();
+    const calls = mocks.setAuthTokenGetter.mock.calls;
+    const getter = calls[calls.length - 1][0] as () => Promise<string | null>;
     expect(getter).toBeTypeOf('function');
     await expect(getter()).resolves.toBe('token-test');
     expect(mocks.getToken).toHaveBeenCalled();

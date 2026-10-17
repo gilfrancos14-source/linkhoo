@@ -3,11 +3,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth, useClerk, useUser } from '@clerk/clerk-react';
 import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
-import { getNotifications, markAsRead, markAllAsRead, type Notification } from '../../lib/notifications';
+import { getNotifications, markAsRead, markAllAsRead, addClientNotification, type Notification } from '../../lib/notifications';
 import { fetchMyRooms } from '../../data/rooms';
 import { updateReservationStatut, getReservations, checkDateConflict } from '../../lib/reservations';
-import { addClientNotification } from '../../lib/notifications';
-import { apiGerants, type GerantData } from '../../lib/api';
+import { apiGerants, apiMessages, type GerantData } from '../../lib/api';
 import { isPremiumActive } from '../../lib/premium';
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -28,7 +27,6 @@ interface VerifyState {
   notif: Notification;
   loading: boolean;
   available: boolean | null;
-  reservation?: { dateDebut: string; dateFin: string } | null;
 }
 
 export default function AdminLayout() {
@@ -44,6 +42,7 @@ export default function AdminLayout() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unread, setUnread] = useState(0);
+  const [messagesUnread, setMessagesUnread] = useState(0);
   const [verify, setVerify] = useState<VerifyState | null>(null);
   const [roomCount, setRoomCount] = useState(0);
   const [gerant, setGerant] = useState<GerantData | null>(null);
@@ -67,6 +66,7 @@ export default function AdminLayout() {
 
   const navGestion = [
     ...(isQualified ? [{ to: `${gerantPath}/reservations`, label: 'Réservations', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> }] : []),
+    { to: `${gerantPath}/messages`, label: 'Messages', pill: messagesUnread > 0 ? String(messagesUnread) : undefined, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> },
     { to: `${gerantPath}/verification`, label: 'Vérification', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg> },
     { to: `${gerantPath}/profil`, label: 'Profil', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
   ];
@@ -91,6 +91,26 @@ export default function AdminLayout() {
     const interval = setInterval(loadNotifs, 30000);
     return () => clearInterval(interval);
   }, [loadNotifs]);
+
+  // Badge « Messages » : compteur de non-lus reçus, rafraîchi comme les
+  // notifications (30 s). Silencieux en cas d'échec — le polling réessaiera.
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      apiMessages
+        .gerantUnread()
+        .then(({ count }) => {
+          if (!cancelled) setMessagesUnread(count);
+        })
+        .catch(() => {});
+    };
+    load();
+    const interval = setInterval(load, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [userId]);
 
   useEffect(() => {
     localStorage.setItem('gerant-sidebar', String(collapsed));
@@ -122,12 +142,11 @@ export default function AdminLayout() {
   };
 
   const handleVerify = async (n: Notification) => {
-    setVerify({ notif: n, loading: true, available: null, reservation: null });
+    setVerify({ notif: n, loading: true, available: null });
 
     try {
       const allRes = await getReservations();
       const reservation = n.reservationId ? allRes.find((r) => r.id === n.reservationId) ?? null : null;
-      setVerify((prev) => prev ? { ...prev, reservation } : null);
 
       if (!reservation || !reservation.dateDebut || !reservation.dateFin) {
         setVerify((prev) => prev ? { ...prev, loading: false, available: false } : null);
@@ -219,6 +238,7 @@ export default function AdminLayout() {
                 className={({ isActive }) => `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`}>
                 {item.icon}
                 <span>{item.label}</span>
+                {item.pill && <span className="sidebar__pill">{item.pill}</span>}
               </NavLink>
             ))}
           </div>

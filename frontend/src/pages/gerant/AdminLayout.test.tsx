@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { MarketProvider } from '../../contexts/MarketContext';
@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   getReservations: vi.fn<() => Promise<unknown[]>>(),
   checkDateConflict: vi.fn<() => Promise<{ hasConflict: boolean }>>(),
   getMe: vi.fn<() => Promise<GerantData>>(),
+  gerantUnread: vi.fn<() => Promise<{ count: number }>>(),
   signOut: vi.fn<(opts: { redirectUrl: string }) => void>(),
   userId: 'user_abc',
   user: null as {
@@ -50,6 +51,7 @@ vi.mock('../../lib/reservations', () => ({
 
 vi.mock('../../lib/api', () => ({
   apiGerants: { getMe: mocks.getMe },
+  apiMessages: { gerantUnread: mocks.gerantUnread },
 }));
 
 // ── Données ──
@@ -151,6 +153,7 @@ beforeEach(() => {
   mocks.userId = 'user_abc';
   mocks.user = null;
   mocks.getMe.mockResolvedValue(gerantBrouillon);
+  mocks.gerantUnread.mockResolvedValue({ count: 0 });
   mocks.fetchMyRooms.mockResolvedValue([]);
   mocks.getNotifications.mockResolvedValue([]);
   mocks.markAsRead.mockResolvedValue(undefined);
@@ -255,6 +258,27 @@ describe('structure de la barre latérale', () => {
     expect(
       screen.getByRole('link', { name: 'Retour au site' }),
     ).toHaveAttribute('href', '/ci');
+  });
+});
+
+describe('badge messages', () => {
+  it('affiche le nombre de messages non lus sur l’onglet Messages', async () => {
+    mocks.gerantUnread.mockResolvedValue({ count: 2 });
+
+    renderLayout();
+
+    const link = await screen.findByRole('link', { name: /Messages/ });
+    expect(link).toHaveAttribute('href', '/ci/gerant/messages');
+    await waitFor(() => expect(within(link).getByText('2')).toBeInTheDocument());
+    expect(mocks.gerantUnread).toHaveBeenCalled();
+  });
+
+  it('n’affiche aucune pastille quand aucun message n’est non lu', async () => {
+    renderLayout();
+
+    await waitFor(() => expect(mocks.gerantUnread).toHaveBeenCalled());
+    const link = screen.getByRole('link', { name: 'Messages' });
+    expect(within(link).queryByText(/\d/)).toBeNull();
   });
 });
 

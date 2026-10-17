@@ -805,3 +805,76 @@ export const apiReviews = {
     commentaire?: string;
   }) => request<ReviewData>('/reviews', { method: 'POST', body: JSON.stringify(data) }),
 };
+
+// ── Messagerie client ↔ gérant (par chambre) ──
+export interface MessageRoomRef {
+  id: string;
+  title: string | null;
+  img: string | null;
+  market: string | null;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_role: 'client' | 'gerant';
+  body: string;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface Conversation {
+  id: string;
+  room_id: string;
+  client_id: string;
+  gerant_id: string;
+  client_name: string;
+  client_email: string;
+  last_message_at: string | null;
+  created_at: string;
+  /** Présent sur GET conversation et sur les boîtes de réception. */
+  room?: MessageRoomRef | null;
+  /** Dernier message — boîte de réception uniquement (RPC). */
+  last_message?: Message | null;
+  /** Messages non lus reçus — boîte de réception uniquement (RPC). */
+  unread_count?: number;
+}
+
+export interface InboxPage {
+  items: Conversation[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export const apiMessages = {
+  inbox: (page = 1) =>
+    request<InboxPage>(`/messages/conversations?page=${page}`),
+  gerantInbox: (page = 1) =>
+    request<InboxPage>(`/messages/gerant/conversations?page=${page}`),
+  getOrCreateConversation: (roomId: string) =>
+    request<Conversation>('/messages/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ room_id: roomId }),
+    }),
+  getConversation: (id: string) =>
+    request<Conversation>(`/messages/conversations/${encodeURIComponent(id)}`),
+  listMessages: (id: string, page = 1) =>
+    request<Message[]>(
+      `/messages/conversations/${encodeURIComponent(id)}/messages?page=${page}`,
+    ),
+  sendMessage: (id: string, body: string) =>
+    request<Message>(
+      `/messages/conversations/${encodeURIComponent(id)}/messages`,
+      { method: 'POST', body: JSON.stringify({ body }) },
+    ),
+  markRead: (id: string) =>
+    request<{ updated: number }>(
+      `/messages/conversations/${encodeURIComponent(id)}/read`,
+      { method: 'POST' },
+    ),
+  /** Compteur non lus du client connecté (badge d'en-tête). */
+  unread: () => request<{ count: number }>('/messages/unread'),
+  /** Compteur non lus du gérant connecté (badge de la barre latérale). */
+  gerantUnread: () => request<{ count: number }>('/messages/gerant/unread'),
+};

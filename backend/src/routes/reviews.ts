@@ -5,7 +5,7 @@ import { createClientLimiter } from '../utils/rateLimiters';
 import { reviewCreateSchema, reviewRoomQuerySchema } from '../validations/review';
 
 const router = Router();
-const reviewsLimiter = createClientLimiter();
+const reviewsLimiter = createClientLimiter({ prefix: 'reviews' });
 
 // GET /api/reviews?room_id= — avis publics d'un appartement + agrégats
 router.get('/', reviewsLimiter, async (req: Request, res: Response, next: NextFunction) => {

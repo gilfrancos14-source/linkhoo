@@ -351,6 +351,25 @@ describe('montage de src/index.ts', () => {
     expect(blockedBody).toEqual({ error: 'Trop de requêtes, veuillez réessayer plus tard' });
     expect(blockedRateLimit).toContain('remaining=0');
   }, 30000);
+
+  it('la connexion (/api/auth/*) échappe au quota global d’écritures', async () => {
+    // Épuise le quota global « write » (200 / 15 min / IP), comme le test
+    // précédent le fait déjà dans cette même app (store mémoire partagé).
+    let last = 0;
+    for (let attempt = 0; attempt < 210 && last !== 429; attempt++) {
+      last = (await request(app).post('/api/categories')).status;
+    }
+    expect(last).toBe(429);
+
+    // La route de connexion ne consomme pas ce quota : sans jeton elle répond
+    // 401 (authentification manquante), JAMAIS 429 — se connecter ne peut pas
+    // être bloqué par les écritures d'autres utilisateurs / du tracking.
+    const auth = await request(app)
+      .post('/api/auth/bootstrap')
+      .send({ role: 'gerant', market: 'CI' });
+
+    expect(auth.status).toBe(401);
+  }, 30000);
 });
 
 describe('montage de src/index.ts en production', () => {

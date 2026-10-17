@@ -5,7 +5,7 @@ import { apiAuth, setAuthTokenGetter, ApiError, type AuthRole } from '../lib/api
 import { useMarket } from '../contexts/MarketContext';
 import { isMarketCode } from '../config/markets';
 
-function readRole(meta: unknown): AuthRole | null {
+export function readRole(meta: unknown): AuthRole | null {
   if (meta && typeof meta === 'object' && 'role' in meta) {
     const role = (meta as { role?: unknown }).role;
     if (role === 'client' || role === 'gerant') return role;

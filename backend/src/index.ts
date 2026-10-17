@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { createRateLimitStore } from './utils/rateLimitStore';
+import { skipWriteQuota, userOrIpKey } from './utils/rateLimiters';
 import { readTrackVisitor } from './utils/trackVisitor';
 import { errorHandler } from './middleware/errorHandler';
 import { requireClerkAuth } from './middleware/clerkAuth';
@@ -23,6 +24,7 @@ import uploadRouter from './routes/upload';
 import gerantsRouter from './routes/gerants';
 import clientsRouter from './routes/clients';
 import reviewsRouter from './routes/reviews';
+import messagesRouter from './routes/messages';
 import premiumRouter from './routes/premium';
 import boostsRouter from './routes/boosts';
 import adminRouter from './routes/admin';
@@ -106,7 +108,26 @@ const writeLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   store: createRateLimitStore('write'),
-  skip: (req) => req.method === 'GET',
+  // Ne compte QUE les vraies écritures : les GET, la connexion
+  // (/api/auth/*) et le tracking boost (dont le propre limiteur existe plus
+  // bas) en sont exclus — sinon un pic de ces requêtes épuise le quota et
+  // bloque, par contagion, des écritures et des connexions légitimes.
+  skip: skipWriteQuota,
+  message: { error: 'Trop de requêtes, veuillez réessayer plus tard' },
+});
+
+// Connexion / bootstrap / me : limiteur DÉDIÉ et PAR UTILISATEUR (Clerk), monté
+// APRÈS requireClerkAuth pour disposer de req.auth.userId. Volontairement large
+// (bootstrap est idempotent et rejoué à chaque montage d'espace) : il borne
+// l'abus sans jamais bloquer une connexion légitime dont l'IP est partagée
+// (NAT, proxy sans TRUST_PROXY, dev).
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 120,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  store: createRateLimitStore('auth'),
+  keyGenerator: userOrIpKey,
   message: { error: 'Trop de requêtes, veuillez réessayer plus tard' },
 });
 
@@ -244,15 +265,19 @@ app.use('/api/newsletter', newsletterRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/upload', uploadRouter);
-app.use('/api/auth', requireClerkAuth, authRouter);
+app.use('/api/auth', requireClerkAuth, authLimiter, authRouter);
 app.use('/api/gerants', requireClerkAuth, gerantsRouter);
 app.use('/api/clients', requireClerkAuth, clientsRouter);
 app.use('/api/reviews', reviewsRouter);
+app.use('/api/messages', messagesRouter);
 app.use('/api/premium', premiumRouter);
 // /featured pose aussi le cookie de visiteur : même quota d'émission (C1).
 app.use('/api/boosts/featured', boostIssueLimiter);
 app.use('/api/boosts', boostsRouter);
-app.use('/api/admin/login', adminLoginLimiter, adminRouter);
+// Le limiteur ne couvre que la route de connexion ; le routeur admin n'est
+// monté qu'une fois (ci-dessous). Un second montage du routeur sous
+// `/api/admin/login` exposait inutilement tout le back-office à cette URL.
+app.use('/api/admin/login', adminLoginLimiter);
 app.use('/api/admin', adminRouter);
 
 app.get('/api/health', (_req, res) => {

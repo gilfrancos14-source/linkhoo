@@ -7,7 +7,8 @@ export default defineConfig({
   testDir: './e2e',
   // Les specs hors-ligne exigent un SW et le serveur mock dédié :
   // elles tournent via `npm run test:e2e:offline`.
-  testIgnore: '**/offline*.spec.ts',
+  // Les specs à authentification simulée tournent via `npm run test:e2e:auth`.
+  testIgnore: ['**/offline*.spec.ts', '**/auth/**'],
   fullyParallel: true,
   forbidOnly: process.env.CI === 'true',
   retries: process.env.CI === 'true' ? 2 : 0,

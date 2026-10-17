@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 // pour une carte désactivée « Bientôt ».
 
 const STAR =
-  'M12 3l2.47 5.01 5.53.8-4 3.9.94 5.5L12 15.6 7.06 18.2 8 12.74 8.8l5.53-.8z';
+  'M12 3l2.47 5.01 5.53 .8-4 3.9 .94 5.5L12 15.6 7.06 18.2 8 12.74 4 8.8l5.53 -.8z';
 
 function Star({ x, y, size, fill }: { x: number; y: number; size: number; fill: string }) {
   const scale = size / 24;

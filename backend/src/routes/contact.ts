@@ -10,7 +10,7 @@ const router = Router();
 // 5 messages par IP et par tranche de 15 minutes : largement suffisant pour
 // un formulaire de contact, suffisant pour limiter le spam (avec le pot de
 // miel `website`, aucune dépendance anti-robot tierce).
-const contactLimiter = createClientLimiter({ limit: 5 });
+const contactLimiter = createClientLimiter({ limit: 5, prefix: 'contact' });
 
 router.post('/', contactLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {

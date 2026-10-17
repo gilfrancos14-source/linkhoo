@@ -36,6 +36,7 @@ const CategoryPage = lazy(() => import('./pages/CategoryPage'));
 const SearchResultsPage = lazy(() => import('./pages/SearchResultsPage'));
 const ClientReservationPage = lazy(() => import('./pages/ClientReservationPage'));
 const ClientComptePage = lazy(() => import('./pages/ClientComptePage'));
+const ClientMessagesPage = lazy(() => import('./pages/messages/ClientMessagesPage'));
 const ClientLogin = lazy(() => import('./pages/ClientLogin'));
 const RegisterRolePage = lazy(() => import('./pages/RegisterRolePage'));
 
@@ -50,6 +51,7 @@ const BoostsPage = lazy(() => import('./pages/gerant/BoostsPage'));
 const BoostCreatePage = lazy(() => import('./pages/gerant/BoostCreatePage'));
 const BoostSuccessPage = lazy(() => import('./pages/gerant/BoostSuccessPage'));
 const ProfilPage = lazy(() => import('./pages/gerant/ProfilPage'));
+const GerantMessagesPage = lazy(() => import('./pages/messages/GerantMessagesPage'));
 const VerificationPage = lazy(() => import('./pages/gerant/VerificationPage'));
 const GerantLogin = lazy(() => import('./pages/gerant/GerantLogin'));
 const OAuthCallback = lazy(() => import('./pages/gerant/OAuthCallback'));
@@ -147,6 +149,10 @@ function MarketContent() {
     pathname.includes('/login') ||
     pathname.includes('/inscription') ||
     pathname.includes('/sso-callback');
+  // Messagerie : la page occupe toute la hauteur de l'écran et seule la zone
+  // des messages défile (fil ou boîte de réception) → le pied de page suivrait
+  // juste en dessous et ferait défiler la page, on le retire.
+  const hideFooter = /\/messages(\/[^/]+)?$/.test(pathname);
   return (
     <>
       <OfflineBanner />
@@ -165,6 +171,16 @@ function MarketContent() {
         <Route path="/compte" element={
           <RoleRouteGuard role="client">
             <ClientComptePage />
+          </RoleRouteGuard>
+        } />
+        <Route path="/messages" element={
+          <RoleRouteGuard role="client">
+            <ClientMessagesPage />
+          </RoleRouteGuard>
+        } />
+        <Route path="/messages/:conversationId" element={
+          <RoleRouteGuard role="client">
+            <ClientMessagesPage />
           </RoleRouteGuard>
         } />
 
@@ -192,6 +208,8 @@ function MarketContent() {
           <Route path="boosts/new" element={<BoostCreatePage />} />
           <Route path="boosts/success" element={<BoostSuccessPage />} />
           <Route path="verification" element={<VerificationPage />} />
+          <Route path="messages" element={<GerantMessagesPage />} />
+          <Route path="messages/:conversationId" element={<GerantMessagesPage />} />
           <Route path="profil" element={<ProfilPage />} />
         </Route>
 
@@ -199,7 +217,7 @@ function MarketContent() {
         </Routes>
       </Suspense>
       {!hideChrome && <ClientNotificationBanner />}
-      {!hideChrome && <Footer />}
+      {!hideChrome && !hideFooter && <Footer />}
       {!hideChrome && <BackToTop />}
     </>
   );

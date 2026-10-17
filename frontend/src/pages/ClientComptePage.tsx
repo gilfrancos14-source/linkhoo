@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, type FormEvent, type ReactNode, type 
 import { Link, useNavigate } from 'react-router-dom';
 import { useUser, useAuth, useClerk } from '@clerk/clerk-react';
 import { useHomePath } from '../hooks/useHomePath';
+import { useClientUnread } from '../hooks/useClientUnread';
 import { setAuthTokenGetter, apiClients, apiReviews, type ClientMineReservationData, type ReviewData } from '../lib/api';
 import { getMyReservations, cancelMyReservation, statutLabels, statutColors } from '../lib/reservations';
 
@@ -95,6 +96,7 @@ const glyphUser = (
 
 export default function ClientComptePage() {
   const homePath = useHomePath();
+  const unreadMessages = useClientUnread();
   const navigate = useNavigate();
   const { user } = useUser();
   const { getToken, isLoaded } = useAuth();
@@ -285,6 +287,16 @@ export default function ClientComptePage() {
                 );
               })}
             </nav>
+
+            {/* Hors tablist : ce n'est pas un onglet mais une page à part. */}
+            <Link to={`${homePath}/messages`} className="compte-rail__link">
+              Messages
+              {unreadMessages > 0 && (
+                <span className="compte-rail__pill" aria-label={`${unreadMessages} non lus`}>
+                  {unreadMessages > 99 ? '99+' : unreadMessages}
+                </span>
+              )}
+            </Link>
 
             <div className="compte-rail__footer">
               {memberSince && (

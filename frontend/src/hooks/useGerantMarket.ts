@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { apiGerants, type MarketCode } from '../lib/api';
+import { apiGerants } from '../lib/api';
+import type { MarketCode } from '../config/markets';
 
 // Cache module-level : le résultat de getMe() est partagé entre tous les
 // composants consommateurs (MarketSelector, CountrySelector, …) pour ne

@@ -79,6 +79,8 @@ export interface RoomListFilters {
   ville?: string;
   quartier?: string;
   category?: string;
+  prixMin?: number;
+  prixMax?: number;
   chambres?: number;
   disponible?: boolean;
   promoGroup?: string;
@@ -101,6 +103,8 @@ export async function fetchRoomsPage(filters: RoomListFilters): Promise<RoomList
     ville: filters.ville,
     quartier: filters.quartier,
     category: filters.category,
+    prixMin: filters.prixMin,
+    prixMax: filters.prixMax,
     chambres: filters.chambres,
     disponible: filters.disponible,
     promoGroup: filters.promoGroup,

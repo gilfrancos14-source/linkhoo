@@ -111,6 +111,39 @@ export function makeBoostFeatured(
   };
 }
 
+/** Message de messagerie (forme `Message` de `lib/api.ts`). */
+export function makeMessage(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: 'msg-1',
+    conversation_id: 'conv-1',
+    sender_role: 'client',
+    body: 'Bonjour',
+    read_at: null,
+    created_at: '2026-10-01T10:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** Conversation de messagerie (forme `Conversation` de `lib/api.ts`). */
+export function makeConversation(
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return {
+    id: 'conv-1',
+    room_id: 'rm-1',
+    client_id: 'client-1',
+    gerant_id: 'gerant-1',
+    client_name: 'Awa Koné',
+    client_email: 'awa@example.ci',
+    last_message_at: '2026-10-01T10:00:00.000Z',
+    created_at: '2026-10-01T09:00:00.000Z',
+    room: { id: 'rm-1', title: 'Studio Cocody Riviera', img: null, market: 'CI' },
+    last_message: null,
+    unread_count: 0,
+    ...overrides,
+  };
+}
+
 const reviewsResponse = {
   reviews: [],
   room_avg: 4.5,
@@ -154,6 +187,14 @@ export interface MockApiOptions {
   boosts?: Record<string, unknown>[];
   /** Tarifs servis par GET /boosts/config. */
   boostConfig?: Record<string, unknown>;
+  /** Nombre de messages non lus du client (GET /messages/unread). */
+  unreadCount?: number;
+  /** Nombre de messages non lus du gérant (GET /messages/gerant/unread). */
+  gerantUnreadCount?: number;
+  /** Conversations servies par les boîtes de réception. */
+  conversations?: Record<string, unknown>[];
+  /** Messages servis par GET /messages/conversations/:id/messages. */
+  messages?: Record<string, unknown>[];
 }
 
 async function respond(route: Route, body: unknown, status = 200): Promise<void> {
@@ -196,6 +237,28 @@ export async function mockApi(page: Page, options: MockApiOptions = {}): Promise
       }
       if (path === '/admin/change-password') {
         return respond(route, { message: 'Mot de passe modifié avec succès' });
+      }
+      // Messagerie : envoi de message, marquage lu, création de conversation.
+      if (path.startsWith('/messages/conversations/') && path.endsWith('/messages')) {
+        const payload = (route.request().postDataJSON() ?? {}) as { body?: string };
+        const conversationId = path.split('/')[3] ?? 'conv-1';
+        return respond(
+          route,
+          makeMessage({
+            id: `msg-sent-${Date.now()}`,
+            conversation_id: conversationId,
+            sender_role: options.role === 'gerant' ? 'gerant' : 'client',
+            body: payload.body ?? '',
+            created_at: new Date().toISOString(),
+          }),
+          201,
+        );
+      }
+      if (path.startsWith('/messages/conversations/') && path.endsWith('/read')) {
+        return respond(route, { updated: 0 });
+      }
+      if (path === '/messages/conversations') {
+        return respond(route, (options.conversations ?? [])[0] ?? makeConversation(), 201);
       }
       return respond(route, {});
     }
@@ -269,6 +332,22 @@ export async function mockApi(page: Page, options: MockApiOptions = {}): Promise
       return respond(route, { disponible: true });
     }
     if (path.startsWith('/notifications')) return respond(route, []);
+    // Messagerie : compteurs de non-lus et boîtes de réception.
+    if (path === '/messages/unread') return respond(route, { count: options.unreadCount ?? 0 });
+    if (path === '/messages/gerant/unread') {
+      return respond(route, { count: options.gerantUnreadCount ?? 0 });
+    }
+    if (path === '/messages/conversations' || path === '/messages/gerant/conversations') {
+      const items = options.conversations ?? [];
+      return respond(route, { items, total: items.length, page: 1, limit: 20 });
+    }
+    if (path.startsWith('/messages/conversations/')) {
+      const rest = path.slice('/messages/conversations/'.length);
+      if (rest.endsWith('/messages')) return respond(route, options.messages ?? []);
+      const id = decodeURIComponent(rest);
+      const conversation = (options.conversations ?? []).find((c) => c.id === id);
+      return respond(route, conversation ?? {}, conversation ? 200 : 404);
+    }
     if (path === '/auth/me') {
       return respond(route, { role: null, client: null, gerant: null });
     }

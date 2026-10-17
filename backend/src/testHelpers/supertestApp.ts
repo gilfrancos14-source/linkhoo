@@ -20,6 +20,7 @@ export interface FakeChain {
   lt: AnyFn;
   lte: AnyFn;
   in: AnyFn;
+  is: AnyFn;
   not: AnyFn;
   or: AnyFn;
   order: AnyFn;
@@ -52,6 +53,7 @@ export function fakeChain(result: { data?: unknown; error?: unknown; count?: num
   chain.lt = vi.fn(chainable);
   chain.lte = vi.fn(chainable);
   chain.in = vi.fn(chainable);
+  chain.is = vi.fn(chainable);
   chain.not = vi.fn(chainable);
   chain.or = vi.fn(chainable);
   chain.order = vi.fn(chainable);

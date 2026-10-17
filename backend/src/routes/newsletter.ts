@@ -5,7 +5,7 @@ import { createClientLimiter } from '../utils/rateLimiters';
 import { newsletterSubscribeSchema } from '../validations/newsletter';
 
 const router = Router();
-const newsletterLimiter = createClientLimiter({ limit: 10 });
+const newsletterLimiter = createClientLimiter({ limit: 10, prefix: 'newsletter' });
 
 function isUniqueViolation(err: unknown): boolean {
   return typeof err === 'object' && err !== null && 'code' in err && (err as { code?: string }).code === '23505';

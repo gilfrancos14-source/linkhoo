@@ -23,8 +23,10 @@ vi.mock('../../lib/api', async (importOriginal) => {
 });
 
 /** Refus structuré du serveur (POST /boosts/confirm → body.status). */
-function confirmError(status: number, detail?: string) {
-  return import('../../lib/api').then(({ ApiError }) => new ApiError('Paiement', status, detail));
+function confirmError(status: number, reason: string) {
+  return import('../../lib/api').then(
+    ({ ApiError }) => new ApiError('Paiement', status, { status: reason }),
+  );
 }
 
 function renderSuccess(entry = '/ci/gerant/boosts/success?id=123') {

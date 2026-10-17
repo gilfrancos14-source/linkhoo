@@ -17,10 +17,10 @@ import {
 } from '../validations/reservation';
 
 const router = Router();
-const clientLimiter = createClientLimiter();
+const clientLimiter = createClientLimiter({ prefix: 'reservations' });
 // Anti-DoS : une trentaine de POST anonymes gèle une annonce pour toujours
 // (en_attente bloque les dates). Plafond serré sur les écritures.
-const reserveLimiter = createClientLimiter({ limit: 10 });
+const reserveLimiter = createClientLimiter({ limit: 10, prefix: 'reservations-create' });
 
 // Une demande en_attente non traitée par le gérant ne doit pas réserver les
 // dates indéfiniment : après 48 h elle est auto-annulée et cesse de bloquer.

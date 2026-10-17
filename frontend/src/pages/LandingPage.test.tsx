@@ -19,7 +19,12 @@ vi.mock('../lib/api', () => ({
     impression: mocks.boostImpression,
     click: mocks.boostClick,
   },
+  apiGerants: { getMe: vi.fn(() => Promise.resolve(null)) },
   cachedGet: vi.fn(() => Promise.resolve([])),
+}));
+
+vi.mock('@clerk/clerk-react', () => ({
+  useAuth: () => ({ isLoaded: true, isSignedIn: false, userId: null }),
 }));
 
 vi.mock('../data/categories', () => ({

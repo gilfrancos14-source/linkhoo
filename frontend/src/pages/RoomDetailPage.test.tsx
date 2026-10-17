@@ -17,6 +17,8 @@ const mocks = vi.hoisted(() => ({
   addReservation: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   request: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   cachedGet: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
+  me: vi.fn<() => Promise<unknown>>(),
+  getOrCreateConversation: vi.fn<(roomId: string) => Promise<unknown>>(),
   clerk: {
     isLoaded: true,
     isSignedIn: false,
@@ -28,6 +30,8 @@ const mocks = vi.hoisted(() => ({
 // rejettent, les fonctions métier sont remplacées par des mocks.
 vi.mock('../lib/api', () => ({
   apiReviews: { listByRoom: mocks.listByRoom },
+  apiAuth: { me: mocks.me },
+  apiMessages: { getOrCreateConversation: mocks.getOrCreateConversation },
   request: mocks.request,
   cachedGet: mocks.cachedGet,
 }));
@@ -140,6 +144,10 @@ function renderPage(entry = '/ci/chambre/r1') {
           <Route path="/:market/chambre/:id" element={<RoomDetailPage />} />
           <Route path="/:market" element={<div data-testid="home">Accueil du marché</div>} />
           <Route path="/:market/categorie/:catId" element={<div data-testid="cat">Catégorie</div>} />
+          <Route
+            path="/:market/messages/:conversationId"
+            element={<div data-testid="messages-thread">Fil de discussion</div>}
+          />
         </Routes>
       </MarketProvider>
     </MemoryRouter>,
@@ -198,6 +206,8 @@ beforeEach(() => {
   mocks.fetchRoomById.mockResolvedValue(makeRoom());
   mocks.listByRoom.mockResolvedValue(REVIEWS);
   mocks.addReservation.mockResolvedValue({ id: 'res-1' });
+  mocks.me.mockRejectedValue(new Error('réseau interdit dans les tests'));
+  mocks.getOrCreateConversation.mockRejectedValue(new Error('réseau interdit dans les tests'));
 });
 
 afterEach(() => {
@@ -370,6 +380,19 @@ describe('RoomDetailPage — contenu', () => {
     expect(screen.getByText('Premium')).toBeInTheDocument();
   });
 
+  it("affiche la carte d'un gérant vérifié non premium, sans badge Premium", async () => {
+    mocks.fetchRoomById.mockResolvedValue(
+      makeRoom({ gerant: { ...GERANT_VERIFIED, is_premium: false } }),
+    );
+
+    await renderLoaded();
+
+    expect(screen.getByRole('heading', { level: 2, name: "Votre hôte" })).toBeInTheDocument();
+    expect(screen.getByText('Aya Kouassi')).toBeInTheDocument();
+    expect(screen.getByText('Vérifié')).toBeInTheDocument();
+    expect(screen.queryByText('Premium')).not.toBeInTheDocument();
+  });
+
   it("n'affiche pas la carte de l'hôte pour un gérant non vérifié", async () => {
     mocks.fetchRoomById.mockResolvedValue(makeRoom({ gerant: GERANT_PLAIN }));
 
@@ -387,13 +410,27 @@ describe('RoomDetailPage — contenu', () => {
     expect(screen.getByRole('link', { name: '+2250707070707' })).toHaveAttribute('href', 'tel:+2250707070707');
   });
 
-  it("n'affiche pas de lien téléphonique quand le gérant n'a pas de numéro", async () => {
+  it("affiche un lien WhatsApp qui ouvre la discussion avec un message pré-rempli", async () => {
+    mocks.fetchRoomById.mockResolvedValue(makeRoom({ gerant: GERANT_VERIFIED }));
+
+    await renderLoaded();
+
+    const wa = screen.getByRole('link', { name: 'Discuter avec le gérant sur WhatsApp' });
+    expect(wa).toHaveAttribute('href', expect.stringContaining('https://wa.me/2250707070707?text='));
+    expect(wa).toHaveAttribute('href', expect.stringContaining(encodeURIComponent('Suite vue mer')));
+    expect(wa).toHaveAttribute('target', '_blank');
+    expect(wa).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it("n'affiche pas de lien téléphonique ni WhatsApp sans numéro", async () => {
     mocks.fetchRoomById.mockResolvedValue(makeRoom({ gerant: { ...GERANT_VERIFIED, phone: null } }));
 
     await renderLoaded();
 
     expect(screen.getByRole('heading', { level: 2, name: "Votre hôte" })).toBeInTheDocument();
     expect(document.querySelector('.host-card__phone')).toBeNull();
+    expect(document.querySelector('.host-card__whatsapp')).toBeNull();
+    expect(document.querySelector('.host-card__actions')).toBeNull();
   });
 
   it("charge la chambre via fetchRoomById et affiche son gérant", async () => {
@@ -417,6 +454,79 @@ describe('RoomDetailPage — contenu', () => {
     expect(mocks.fetchRoomById).toHaveBeenCalledWith('r1');
     // La page ne télécharge plus le catalogue du marché.
     expect(mocks.fetchRoomsByMarket).not.toHaveBeenCalled();
+  });
+});
+
+describe('RoomDetailPage — bouton Message', () => {
+  function signInClient() {
+    mocks.clerk = {
+      isLoaded: true,
+      isSignedIn: true,
+      user: {
+        firstName: 'Jean',
+        lastName: 'Koffi',
+        primaryEmailAddress: { emailAddress: 'jean@test.com' },
+        emailAddresses: [],
+      },
+    };
+    mocks.me.mockResolvedValue({ role: 'client' });
+  }
+
+  it("affiche le bouton Message pour un client connecté, même sans téléphone", async () => {
+    signInClient();
+    mocks.fetchRoomById.mockResolvedValue(
+      makeRoom({ gerant: { ...GERANT_VERIFIED, phone: null } }),
+    );
+
+    await renderLoaded();
+
+    expect(screen.getByRole('button', { name: /Message/ })).toBeEnabled();
+  });
+
+  it("ouvre la conversation et navigue vers le fil de discussion", async () => {
+    signInClient();
+    mocks.fetchRoomById.mockResolvedValue(makeRoom({ gerant: GERANT_VERIFIED }));
+    mocks.getOrCreateConversation.mockResolvedValue({ id: 'conv-9' });
+
+    await renderLoaded();
+    fireEvent.click(screen.getByRole('button', { name: /Message/ }));
+
+    expect(await screen.findByTestId('messages-thread')).toBeInTheDocument();
+    expect(mocks.getOrCreateConversation).toHaveBeenCalledWith('r1');
+  });
+
+  it("affiche une erreur quand l'ouverture de la discussion échoue", async () => {
+    signInClient();
+    mocks.fetchRoomById.mockResolvedValue(makeRoom({ gerant: GERANT_VERIFIED }));
+    mocks.getOrCreateConversation.mockRejectedValue(new Error('boom'));
+
+    await renderLoaded();
+    fireEvent.click(screen.getByRole('button', { name: /Message/ }));
+
+    expect(
+      await screen.findByText("Impossible d'ouvrir la discussion. Veuillez réessayer."),
+    ).toBeInTheDocument();
+    expect(mocks.getOrCreateConversation).toHaveBeenCalledTimes(1);
+  });
+
+  it("n'affiche pas le bouton Message pour un gérant connecté", async () => {
+    mocks.clerk = {
+      isLoaded: true,
+      isSignedIn: true,
+      user: {
+        firstName: 'Aya',
+        lastName: 'Kouassi',
+        primaryEmailAddress: { emailAddress: 'aya@test.com' },
+        emailAddresses: [],
+      },
+    };
+    mocks.me.mockResolvedValue({ role: 'gerant' });
+    mocks.fetchRoomById.mockResolvedValue(makeRoom({ gerant: GERANT_VERIFIED }));
+
+    await renderLoaded();
+
+    expect(screen.queryByRole('button', { name: /Message/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '+2250707070707' })).toBeInTheDocument();
   });
 });
 

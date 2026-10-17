@@ -619,4 +619,30 @@ describe('App — lazy, chrome et résilience', () => {
     expect(screen.queryByRole('banner')).not.toBeInTheDocument();
     expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
   });
+
+  it("masque le pied de page dans le fil de discussion client", async () => {
+    mocks.clerkSignedIn = true;
+
+    renderApp('/ci/messages/conv-1');
+
+    await screen.findByRole('main');
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/ci/messages/conv-1');
+    // Seul le pied de page part : l'en-tête de navigation reste.
+    expect(screen.getByRole('banner')).toBeInTheDocument();
+    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
+  });
+
+  it("masque le pied de page sur la boîte de réception des messages", async () => {
+    mocks.clerkSignedIn = true;
+
+    renderApp('/ci/messages');
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Messages' }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/ci/messages');
+    // La page ne défile pas : seul le pied de page part, l'en-tête reste.
+    expect(screen.getByRole('banner')).toBeInTheDocument();
+    expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
+  });
 });

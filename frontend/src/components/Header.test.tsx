@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   me: vi.fn<() => Promise<{ role: 'client' | 'gerant' }>>(),
   bootstrap: vi.fn<() => Promise<unknown>>(),
   setAuthTokenGetter: vi.fn<(getter: () => Promise<string | null>) => void>(),
+  getMe: vi.fn<() => Promise<unknown>>().mockRejectedValue(new Error('not a gerant')),
   user: null as unknown,
 }));
 
@@ -28,6 +29,7 @@ vi.mock('@clerk/clerk-react', () => ({
 vi.mock('../lib/api', () => ({
   apiAuth: { me: mocks.me, bootstrap: mocks.bootstrap },
   setAuthTokenGetter: mocks.setAuthTokenGetter,
+  apiGerants: { getMe: mocks.getMe },
 }));
 
 // Header défile vers une section au clic : jsdom n'implémente pas scrollIntoView.
@@ -365,6 +367,13 @@ describe('Header', () => {
 
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/ci/compte'));
     expect(mocks.me).toHaveBeenCalledTimes(1);
+  });
+
+  it("ne propose pas d'accès Messages : il vit dans le rail de Mon espace", () => {
+    mocks.isSignedIn = true;
+    renderHeader('/ci');
+
+    expect(screen.queryByRole('link', { name: /messages/i })).toBeNull();
   });
 
   it("n'affiche aucune action d'authentification dans la barre tant que Clerk n'a pas chargé", () => {
