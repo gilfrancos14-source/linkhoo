@@ -4,7 +4,7 @@ import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
 import { createRoom, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
-import { formatPrice, roomSubtitle } from '../../lib/roomDisplay';
+import { roomSubtitle } from '../../lib/roomDisplay';
 import { apiRooms, apiUpload } from '../../lib/api';
 import { containsPhoneNumber, PHONE_IN_TEXT_ERROR } from '../../utils/validators';
 
@@ -17,6 +17,10 @@ import {
 } from './ajouter-chambre/form';
 import AddRoomStepper from './ajouter-chambre/AddRoomStepper';
 import AddRoomSuccess from './ajouter-chambre/AddRoomSuccess';
+import IdentificationStep from './ajouter-chambre/IdentificationStep';
+import DetailsStep from './ajouter-chambre/DetailsStep';
+import PhotosStep from './ajouter-chambre/PhotosStep';
+import PreviewStep from './ajouter-chambre/PreviewStep';
 
 export default function AjouterChambre() {
   const { market } = useMarket();
@@ -203,274 +207,55 @@ export default function AjouterChambre() {
       <form className="add-room__form" onSubmit={(e) => e.preventDefault()}>
         {/* Step 1 — Identification */}
         {step === 1 && (
-          <>
-            <div className="form-grid">
-              <label className={`admin-field ${errors.title ? 'admin-field--error' : ''}`}>
-                <span>Titre *</span>
-                <input type="text" value={form.title} onChange={(e) => update('title', e.target.value)} placeholder="Ex: Appartement familial" />
-                {errors.title && <span className="field-error">{errors.title}</span>}
-              </label>
-
-              <label className={`admin-field ${errors.ville ? 'admin-field--error' : ''}`}>
-                <span>Ville *</span>
-                <input
-                  type="text"
-                  list="gerant-room-city-options"
-                  value={form.ville}
-                  onChange={(e) => update('ville', e.target.value)}
-                  placeholder="Ex: Cotonou"
-                />
-                <datalist id="gerant-room-city-options">
-                  {citySuggestions.map((city) => (
-                    <option key={city} value={city} />
-                  ))}
-                </datalist>
-                {errors.ville && <span className="field-error">{errors.ville}</span>}
-              </label>
-
-              <label className={`admin-field ${errors.quartier ? 'admin-field--error' : ''}`}>
-                <span>Quartier *</span>
-                <input type="text" value={form.quartier} onChange={(e) => update('quartier', e.target.value)} placeholder="Ex: Centre-ville" />
-                {errors.quartier && <span className="field-error">{errors.quartier}</span>}
-              </label>
-
-              <label className={`admin-field ${errors.category ? 'admin-field--error' : ''}`}>
-                <span>Catégorie *</span>
-                <select value={form.category} onChange={(e) => update('category', e.target.value)}>
-                  <option value="">Choisir une catégorie</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.title}</option>
-                  ))}
-                </select>
-                {errors.category && <span className="field-error">{errors.category}</span>}
-              </label>
-            </div>
-
-            <label className={`admin-field admin-field--full ${errors.description ? 'admin-field--error' : ''}`}>
-              <span>Description *</span>
-              <textarea rows={4} value={form.description} onChange={(e) => update('description', e.target.value)} placeholder="Décrivez l'appartement en détail : ambiance, équipements, points forts..." />
-              <small className="admin-field__hint">Pas de numéro de téléphone : les clients vous contactent via la messagerie.</small>
-              {errors.description && <span className="field-error">{errors.description}</span>}
-            </label>
-
-            <div className="form-nav">
-              <div className="form-nav__spacer" />
-              <button type="button" className="admin-btn admin-btn--primary" onClick={() => { if (validateStep1()) setStep(2); }}>
-                Étape suivante →
-              </button>
-            </div>
-          </>
+          <IdentificationStep
+            form={form}
+            errors={errors}
+            categories={categories}
+            citySuggestions={citySuggestions}
+            onUpdate={update}
+            onNext={() => { if (validateStep1()) setStep(2); }}
+          />
         )}
 
         {/* Step 2 — Détails */}
         {step === 2 && (
-          <>
-            <div className="form-grid">
-              <label className={`admin-field ${errors.priceNum ? 'admin-field--error' : ''}`}>
-                <span>Prix (FCFA) *</span>
-                <input type="number" min={1} value={form.priceNum || ''} onChange={(e) => update('priceNum', Number(e.target.value))} placeholder="660" />
-                {errors.priceNum && <span className="field-error">{errors.priceNum}</span>}
-              </label>
-
-              <label className="admin-field">
-                <span>Unité de prix</span>
-                <div className="radio-group">
-                  <label className={`radio-btn ${form.priceUnit === '/ mois' ? 'radio-btn--active' : ''}`}>
-                    <input type="radio" name="priceUnit" value="/ mois" checked={form.priceUnit === '/ mois'} onChange={() => update('priceUnit', '/ mois')} />
-                    <span>Par mois</span>
-                  </label>
-                  <label className={`radio-btn ${form.priceUnit === '/ nuit' ? 'radio-btn--active' : ''}`}>
-                    <input type="radio" name="priceUnit" value="/ nuit" checked={form.priceUnit === '/ nuit'} onChange={() => update('priceUnit', '/ nuit')} />
-                    <span>Par nuit</span>
-                  </label>
-                </div>
-              </label>
-
-              <label className="admin-field">
-                <span>Nombre de chambres</span>
-                <input type="number" min={1} max={20} value={form.chambres} onChange={(e) => update('chambres', Number(e.target.value))} />
-              </label>
-
-              <label className="admin-field">
-                <span>Nombre de douches</span>
-                <input type="number" min={1} max={10} value={form.douches} onChange={(e) => update('douches', Number(e.target.value))} />
-              </label>
-            </div>
-
-            <label className={`admin-field admin-field--full ${errors.conditions ? 'admin-field--error' : ''}`}>
-              <span>Conditions *</span>
-              <textarea rows={3} value={form.conditions} onChange={(e) => update('conditions', e.target.value)} placeholder="Ex: Caution 1 mois, durée min 6 mois, charges comprises..." />
-              <small className="admin-field__hint">Pas de numéro de téléphone : les clients vous contactent via la messagerie.</small>
-              {errors.conditions && <span className="field-error">{errors.conditions}</span>}
-            </label>
-
-            <label className="admin-field admin-field--full">
-              <span className="checkbox-label">
-                <input
-                  type="checkbox"
-                  checked={form.isPopular}
-                  onChange={(e) => update('isPopular', e.target.checked ? true : false)}
-                  style={{ width: 'auto', marginRight: '8px' }}
-                />
-                Marquer comme chambre populaire (affichée dans "Les plus louées")
-              </span>
-            </label>
-
-            <div className="form-nav">
-              <button type="button" className="admin-btn" onClick={() => setStep(1)}>
-                ← Étape précédente
-              </button>
-              <div className="form-nav__spacer" />
-              <button type="button" className="admin-btn admin-btn--primary" onClick={() => { if (validateStep2()) setStep(3); }}>
-                Étape suivante →
-              </button>
-            </div>
-          </>
+          <DetailsStep
+            form={form}
+            errors={errors}
+            onUpdate={update}
+            onPrev={() => setStep(1)}
+            onNext={() => { if (validateStep2()) setStep(3); }}
+          />
         )}
 
         {/* Step 3 — Photos */}
         {step === 3 && (
-          <>
-            <div className={`photo-section ${(errors.photos || photoError) ? 'photo-section--error' : ''}`}>
-              <div className="photo-section__head">
-                <span>Photos *</span>
-                <span>{photos.length} / {MAX_PHOTOS}</span>
-                {(errors.photos || photoError) && <span className="field-error">{errors.photos || photoError}</span>}
-              </div>
-
-              <div className="photo-grid">
-                {photos.map((photo, i) => (
-                  <div key={i} className={`photo-card ${i === mainPhotoIndex ? 'photo-card--main' : ''}`}>
-                    <img src={photo.preview} alt={`Photo ${i + 1}`} />
-                    <div className="photo-card__overlay">
-                      {i !== mainPhotoIndex && (
-                        <button type="button" className="photo-card__btn" onClick={() => setMain(i)} title="Définir comme principale">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                        </button>
-                      )}
-                      <button type="button" className="photo-card__btn photo-card__btn--danger" onClick={() => removePhoto(i)} title="Supprimer">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                      </button>
-                    </div>
-                    {i === mainPhotoIndex && <span className="photo-card__badge">Principale</span>}
-                  </div>
-                ))}
-
-                {photos.length < MAX_PHOTOS && (
-                  <button type="button" className="photo-add" onClick={() => fileInputRef.current?.click()}>
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    <span>Ajouter</span>
-                  </button>
-                )}
-              </div>
-
-              <input ref={fileInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handlePhotos} />
-
-              <p className="photo-hint">
-                Photos intérieures et extérieures de l'appartement uniquement, sans personne visible.
-              </p>
-            </div>
-
-            <div className="form-nav">
-              <button type="button" className="admin-btn" onClick={() => setStep(2)}>
-                ← Étape précédente
-              </button>
-              <div className="form-nav__spacer" />
-              <button type="button" className="admin-btn admin-btn--primary" onClick={() => { if (validateStep3()) setStep(4); }}>
-                Voir l'aperçu →
-              </button>
-            </div>
-          </>
+          <PhotosStep
+            photos={photos}
+            mainPhotoIndex={mainPhotoIndex}
+            errors={errors}
+            photoError={photoError}
+            fileInputRef={fileInputRef}
+            onPhotosChange={handlePhotos}
+            onRemovePhoto={removePhoto}
+            onSetMain={setMain}
+            onPrev={() => setStep(2)}
+            onNext={() => { if (validateStep3()) setStep(4); }}
+          />
         )}
 
         {/* Step 4 — Preview */}
         {step === 4 && (
-          <>
-            <div className="preview-banner">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              <span>Aperçu — voici comment le client verra votre annonce</span>
-            </div>
-
-            <div className="preview-card">
-              {/* Gallery */}
-              <div className="preview-gallery">
-                {photos.length > 0 && photos[previewImg] ? (
-                  <>
-                    <div className="preview-gallery__main">
-                      <img src={photos[previewImg].preview} alt={form.title} />
-                      {photos.length > 1 && (
-                        <>
-                          <button type="button" className="preview-arrow preview-arrow--prev" onClick={() => setPreviewImg(previewImg > 0 ? previewImg - 1 : photos.length - 1)}>
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-                          </button>
-                          <button type="button" className="preview-arrow preview-arrow--next" onClick={() => setPreviewImg(previewImg < photos.length - 1 ? previewImg + 1 : 0)}>
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-                          </button>
-                          <span className="preview-counter">{previewImg + 1} / {photos.length}</span>
-                        </>
-                      )}
-                    </div>
-                    {photos.length > 1 && (
-                      <div className="preview-thumbs">
-                        {photos.map((photo, i) => (
-                          <button key={i} type="button" className={`preview-thumb ${i === previewImg ? 'preview-thumb--active' : ''}`} onClick={() => setPreviewImg(i)}>
-                            <img src={photo.preview} alt="" />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="preview-gallery__empty">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                    <span>Aucune photo</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Info */}
-              <div className="preview-info">
-                <p className="preview-info__loc">{form.ville}{form.quartier ? `, ${form.quartier}` : ''}</p>
-                <h2 className="preview-info__title">{form.title || 'Titre de l\'appartement'}</h2>
-                <p className="preview-info__meta">{form.chambres} ch. · {form.douches} d.</p>
-
-                <div className="preview-info__price">
-                  <span className="preview-info__amount">{form.priceNum > 0 ? formatPrice(form.priceNum) : '—'}</span>
-                  <span className="preview-info__currency"> FCFA {form.priceUnit}</span>
-                </div>
-
-                {form.description && (
-                  <div className="preview-info__section">
-                    <h3>Description</h3>
-                    <p>{form.description}</p>
-                  </div>
-                )}
-
-                {form.conditions && (
-                  <div className="preview-info__section">
-                    <h3>Conditions de réservation</h3>
-                    <ul className="preview-conditions">
-                      {form.conditions.split(', ').map((c, i) => (
-                        <li key={i}>{c}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {submitError && <p className="field-error" role="alert">{submitError}</p>}
-
-            <div className="form-nav">
-              <button type="button" className="admin-btn" onClick={() => setStep(3)} disabled={submitting}>
-                ← Étape précédente
-              </button>
-              <div className="form-nav__spacer" />
-              <button type="button" className="admin-btn admin-btn--primary" onClick={handleSubmit} disabled={submitting}>
-                {submitting ? 'Enregistrement...' : "Enregistrer l'appartement"}
-              </button>
-            </div>
-          </>
+          <PreviewStep
+            photos={photos}
+            previewImg={previewImg}
+            form={form}
+            submitError={submitError}
+            submitting={submitting}
+            onSetPreviewImg={setPreviewImg}
+            onPrev={() => setStep(3)}
+            onSubmit={handleSubmit}
+          />
         )}
       </form>
     </div>
