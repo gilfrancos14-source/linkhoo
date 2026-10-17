@@ -15,7 +15,7 @@
 import type { MarketCode } from './config/markets';
 import { MARKETS } from './config/markets';
 
-export type RoomSeed = {
+type RoomSeed = {
   id: string;
   title: string;
   subtitle: string;
@@ -75,12 +75,6 @@ const NEW_MARKET_CODES = [
   'CD',
 ] as const;
 
-const NEW_MARKET_SET: readonly MarketCode[] = NEW_MARKET_CODES;
-
-export function isNewMarket(code: MarketCode): boolean {
-  return NEW_MARKET_SET.includes(code);
-}
-
 // ── Catégories : modèle CI, ids préfixés du slug ─────────────────────────
 
 const CI_CATEGORY_MODEL = [
@@ -93,7 +87,7 @@ const CI_CATEGORY_MODEL = [
 type CategoryKey = (typeof CI_CATEGORY_MODEL)[number]['key'];
 
 /** Ids de catégories d'un marché : `sn-appartements`, `sn-chambres-premium`, … */
-export function categoryIdsFor(slug: string): Record<CategoryKey, string> {
+function categoryIdsFor(slug: string): Record<CategoryKey, string> {
   return Object.fromEntries(
     CI_CATEGORY_MODEL.map((c) => [c.key, `${slug}-${c.key}`]),
   ) as Record<CategoryKey, string>;

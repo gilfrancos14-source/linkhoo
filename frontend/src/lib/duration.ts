@@ -18,10 +18,6 @@ export function maxDuree(unite: DureeUnite): number {
   return unite === 'mois' ? DUREE_MAX_MOIS : DUREE_MAX_NUIT;
 }
 
-export function unitFromPriceUnit(priceUnit: string): DureeUnite {
-  return priceUnit === '/ mois' ? 'mois' : 'nuit';
-}
-
 function toIsoDate(date: Date): string {
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');

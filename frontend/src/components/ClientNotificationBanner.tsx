@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { setAuthTokenGetter } from '../lib/api';
 import { getClientNotifications, markClientNotificationAsRead, type ClientNotification } from '../lib/notifications';
@@ -10,20 +10,32 @@ const POLL_INTERVAL_MS = 30_000;
 
 export default function ClientNotificationBanner() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
+  const getTokenRef = useRef(getToken);
+  getTokenRef.current = getToken;
   const [notifications, setNotifications] = useState<ClientNotification[]>([]);
   const [dismissed, setDismissed] = useState<string[]>([]);
 
   const enabled = clerkConfigured && isLoaded && isSignedIn;
 
+  // `load` reste stable (aucune dépendance) : le jeton est lu via une ref.
+  // Sans cela, une identité instable de `getToken` relancerait l'effet à chaque
+  // render et `setNotifications(<nouveau tableau>)` provoquerait une boucle de
+  // rendu (« Maximum update depth exceeded »). On ne remplace l'état que si la
+  // liste des notifications non lues a réellement changé.
   const load = useCallback(async () => {
-    setAuthTokenGetter(() => getToken());
+    setAuthTokenGetter(() => getTokenRef.current());
     try {
       const notifs = await getClientNotifications();
-      setNotifications(notifs.filter((n) => !n.read));
+      const unread = notifs.filter((n) => !n.read);
+      setNotifications((prev) =>
+        prev.length === unread.length && prev.every((p, i) => p.id === unread[i].id)
+          ? prev
+          : unread,
+      );
     } catch {
       // silencieux : le polling réessaiera
     }
-  }, [getToken]);
+  }, []);
 
   // Chargement puis polling : sans ça, une notification créée après le montage
   // (ex: réservation confirmée pendant la visite) n'apparaît jamais.

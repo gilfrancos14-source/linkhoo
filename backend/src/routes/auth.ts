@@ -16,7 +16,6 @@ async function getExistingRole(clerkUserId: string): Promise<AuthRole | null> {
     supabaseAdmin.from('gerants').select('id').eq('clerk_user_id', clerkUserId).maybeSingle(),
   ]);
 
-  if (client && gerant) return 'client';
   if (client) return 'client';
   if (gerant) return 'gerant';
   return null;

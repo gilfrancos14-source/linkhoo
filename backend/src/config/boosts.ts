@@ -34,8 +34,6 @@ export type BoostKind = 'click' | 'impression';
 
 // Fenêtre de dates : max 90 jours entre début et fin (décision produit).
 export const BOOST_MAX_DURATION_DAYS = 90;
-// Défauts de l'écran de création : aujourd'hui → +30 jours.
-export const BOOST_DEFAULT_DURATION_DAYS = 30;
 
 // Tolérance sur une date de début « passée » : autorise aujourd'hui dans
 // n'importe quel fuseau (le gérant en CI publie depuis UTC).
@@ -66,13 +64,4 @@ export function boostChargeAmount(mode: BoostMode, kind: BoostKind): number {
  */
 export function isValidBoostBudget(amount: number): boolean {
   return Number.isInteger(amount) && amount >= BOOST_ACCEPT_MIN_BUDGET && amount <= BOOST_ACCEPT_MAX_BUDGET;
-}
-
-/**
- * Pas de saisie d'un budget : le montant doit être un multiple du prix de
- * l'unité facturée par le mode choisi, sinon la campagne s'épuise en
- * laissant un reliquat non dépensable (50 F en cpc, 5 F en cpi).
- */
-export function boostBudgetStep(mode: BoostMode): number {
-  return mode === 'cpc' ? BOOST_PRICE_CPC : BOOST_PRICE_CPI;
 }

@@ -18,6 +18,8 @@ instruction.txt
 cle.txt
 opencode.json
 url.txt
+erreur.txt
+linkhoo-messagerie.html
 
 # Artefacts TypeScript
 *.tsbuildinfo
