@@ -1,16 +1,15 @@
-import { useState, useEffect, useCallback, type FormEvent, type CSSProperties } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUser, useAuth, useClerk } from '@clerk/clerk-react';
 import { useHomePath } from '../hooks/useHomePath';
 import { useClientUnread } from '../hooks/useClientUnread';
 import { setAuthTokenGetter, apiClients, apiReviews, type ClientMineReservationData, type ReviewData } from '../lib/api';
-import { getMyReservations, cancelMyReservation, statutLabels, statutColors } from '../lib/reservations';
-import { formatPrice } from '../lib/roomDisplay';
+import { getMyReservations, cancelMyReservation } from '../lib/reservations';
 
 import type { Tab, ReviewFormState } from './client-compte/types';
-import { formatStayDates } from './client-compte/stayDates';
-import Stars from './client-compte/Stars';
-import Glyph, { glyphCalendar, glyphStar, glyphUser } from './client-compte/Glyph';
+import CompteRail from './client-compte/CompteRail';
+import ReservationsPanel from './client-compte/ReservationsPanel';
+import ProfilePanel, { type ProfileFormState } from './client-compte/ProfilePanel';
 
 export default function ClientComptePage() {
   const homePath = useHomePath();
@@ -167,6 +166,14 @@ export default function ClientComptePage() {
     }
   };
 
+  const handleChangeReview = (patch: Partial<ReviewFormState>) => {
+    setReviewForm((prev) => (prev ? { ...prev, ...patch } : prev));
+  };
+
+  const handleProfileChange = (patch: Partial<ProfileFormState>) => {
+    setProfileForm((prev) => ({ ...prev, ...patch }));
+  };
+
   const handleSignOut = async () => {
     await signOut();
     navigate(homePath);
@@ -177,54 +184,18 @@ export default function ClientComptePage() {
       <div className="container">
         <div className="compte-shell">
 
-          <aside className="compte-rail" aria-label="Mon espace">
-            <div className="compte-rail__identity">
-              <span className="compte-rail__avatar" aria-hidden="true">{initials}</span>
-              <div className="compte-rail__id">
-                <p className="compte-rail__name">{displayName}</p>
-                {email && <p className="compte-rail__email">{email}</p>}
-              </div>
-            </div>
-
-            <nav className="compte-rail__nav" role="tablist" aria-label="Sections de mon espace">
-              {tabs.map((t) => {
-                const active = tab === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={active}
-                    aria-controls="cp-panel"
-                    className={`compte-rail__link${active ? ' is-active' : ''}`}
-                    onClick={() => setTab(t.id)}
-                  >
-                    {t.label}
-                    {t.count > 0 && <span className="compte-rail__pill">{t.count}</span>}
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* Hors tablist : ce n'est pas un onglet mais une page à part. */}
-            <Link to={`${homePath}/messages`} className="compte-rail__link">
-              Messages
-              {unreadMessages > 0 && (
-                <span className="compte-rail__pill" aria-label={`${unreadMessages} non lus`}>
-                  {unreadMessages > 99 ? '99+' : unreadMessages}
-                </span>
-              )}
-            </Link>
-
-            <div className="compte-rail__footer">
-              {memberSince && (
-                <span className="compte-rail__badge">Membre depuis {memberSince}</span>
-              )}
-              <button type="button" className="compte-rail__signout" onClick={handleSignOut}>
-                Se déconnecter
-              </button>
-            </div>
-          </aside>
+          <CompteRail
+            initials={initials}
+            displayName={displayName}
+            email={email}
+            tabs={tabs}
+            tab={tab}
+            unreadMessages={unreadMessages}
+            memberSince={memberSince}
+            homePath={homePath}
+            onSelectTab={setTab}
+            onSignOut={handleSignOut}
+          />
 
           <div className="compte-main">
             <div className="compte-main__head">
@@ -234,277 +205,38 @@ export default function ClientComptePage() {
 
             {error && <p className="client-compte__error" role="alert">{error}</p>}
 
-        {tab === 'reservations' && (
-          <section className="client-compte__panel" id="cp-panel" role="tabpanel">
-            {loading ? (
-              <div className="client-compte__loading">
-                <div className="auth-loading__spinner" />
-                <p>Chargement de vos réservations…</p>
-              </div>
-            ) : reservations.length === 0 ? (
-              <div className="client-compte__empty">
-                <span className="client-compte__empty-icon"><Glyph>{glyphCalendar}</Glyph></span>
-                <p className="client-compte__empty-title">Aucune réservation pour le moment</p>
-                <p className="client-compte__empty-note">
-                  Dès que vous réserverez un séjour, il apparaîtra ici avec son statut en temps réel.
-                </p>
-                <Link to={homePath} className="client-compte__btn client-compte__btn--primary">
-                  Parcourir les appartements
-                </Link>
-              </div>
-            ) : (
-              <div className="client-compte__list">
-                {reservations.map((r) => {
-                  const canReview = !reviewsError && reviewable.some((x) => x.id === r.id);
-                  const isReviewed = reviewedReservationIds.has(r.id);
-                  const statutColor = statutColors[r.statut] || 'var(--ink-soft)';
-                  return (
-                    <article key={r.id} className="client-compte__card client-compte__card--res">
-                      <div className="client-compte__card-media">
-                        {r.room?.img ? (
-                          <img
-                            src={r.room.img}
-                            alt={r.room.alt || r.room_title}
-                            loading="lazy"
-                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                          />
-                        ) : (
-                          <span className="client-compte__card-media-fallback" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                              <rect x="3" y="4.5" width="18" height="15" rx="2" />
-                              <circle cx="8.5" cy="10" r="1.5" />
-                              <path d="M21 15.5l-4.5-4.5L11 16.5l-2.5-2.5L3 19.5" />
-                            </svg>
-                          </span>
-                        )}
-                        <span
-                          className="client-compte__status"
-                          style={{ '--statut': statutColor } as CSSProperties}
-                        >
-                          <span className="client-compte__status-dot" />
-                          {statutLabels[r.statut] || r.statut}
-                        </span>
-                      </div>
-
-                      <div className="client-compte__card-body">
-                        <h3 className="client-compte__card-title">{r.room_title}</h3>
-
-                        {r.room?.description && (
-                          <p className="client-compte__card-desc">{r.room.description}</p>
-                        )}
-
-                        <div className="client-compte__card-meta">
-                          <span className="client-compte__meta">
-                            <Glyph>{glyphCalendar}</Glyph>
-                            {formatStayDates(r.date_debut, r.date_fin)}
-                          </span>
-                          {r.montant ? (
-                            <span className="client-compte__price">
-                              {formatPrice(r.montant)}
-                              <span className="client-compte__price-unit">
-                                FCFA / {r.duree_unite === 'mois' ? 'mois' : 'nuit'}
-                              </span>
-                            </span>
-                          ) : null}
-                        </div>
-
-                        <div className="client-compte__card-actions">
-                          {r.statut !== 'annulee' && (
-                            <button
-                              type="button"
-                              className="client-compte__btn client-compte__btn--danger"
-                              onClick={() => handleCancel(r.id)}
-                              disabled={cancellingId === r.id}
-                            >
-                              {cancellingId === r.id ? 'Annulation…' : 'Annuler'}
-                            </button>
-                          )}
-                          {canReview && (
-                            <button
-                              type="button"
-                              className="client-compte__btn client-compte__btn--primary"
-                              onClick={() => openReviewForm(r)}
-                            >
-                              Laisser un avis
-                            </button>
-                          )}
-                          {isReviewed && (
-                            <span className="client-compte__chip client-compte__chip--ok">Avis publié</span>
-                          )}
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
+            {tab === 'reservations' && (
+              <ReservationsPanel
+                homePath={homePath}
+                loading={loading}
+                reservations={reservations}
+                reviewsError={reviewsError}
+                reviewable={reviewable}
+                reviewedIds={reviewedReservationIds}
+                reviewSuccess={reviewSuccess}
+                reviewForm={reviewForm}
+                reviewError={reviewError}
+                reviewSubmitting={reviewSubmitting}
+                cancellingId={cancellingId}
+                onCancel={handleCancel}
+                onOpenReviewForm={openReviewForm}
+                onChangeReview={handleChangeReview}
+                onCloseReview={() => setReviewForm(null)}
+                onSubmitReview={handleReviewSubmit}
+              />
             )}
 
-            {reviewsError && (
-              <p className="client-compte__error" role="status">
-                Impossible de charger vos avis : le bouton « Laisser un avis » est masqué
-                pour éviter de publier deux fois le même séjour.
-              </p>
+            {tab === 'profil' && (
+              <ProfilePanel
+                profileForm={profileForm}
+                email={email}
+                saving={profileSaving}
+                error={profileError}
+                success={profileSuccess}
+                onChange={handleProfileChange}
+                onSubmit={handleProfileSubmit}
+              />
             )}
-
-            {!reviewsError && reviewable.length > 0 && !reviewForm && (
-              <div className="client-compte__hint">
-                <span className="client-compte__hint-icon"><Glyph>{glyphStar}</Glyph></span>
-                <p>Vous avez {reviewable.length} séjour(s) confirmé(s) que vous pouvez noter.</p>
-              </div>
-            )}
-
-            {reviewSuccess && tab === 'reservations' && (
-              <p className="client-compte__success" role="status">{reviewSuccess}</p>
-            )}
-
-            {reviewForm && (
-              <div className="review-form__overlay" role="dialog" aria-modal="true" aria-labelledby="review-form-title">
-                <form className="review-form" onSubmit={handleReviewSubmit}>
-                  <div className="review-form__head">
-                    <div>
-                      <p className="eyebrow">Nouvel avis</p>
-                      <h2 id="review-form-title">{reviewForm.roomTitle}</h2>
-                    </div>
-                    <button
-                      type="button"
-                      className="review-form__close"
-                      onClick={() => setReviewForm(null)}
-                      aria-label="Fermer"
-                    >
-                      ×
-                    </button>
-                  </div>
-
-                  <div className="review-form__field">
-                    <span className="review-form__label">Note de l'appartement</span>
-                    <Stars
-                      value={reviewForm.noteAppartement}
-                      onChange={(v) => setReviewForm({ ...reviewForm, noteAppartement: v })}
-                      label="Note de l'appartement"
-                    />
-                  </div>
-
-                  <div className="review-form__field">
-                    <span className="review-form__label">Note du gérant</span>
-                    <Stars
-                      value={reviewForm.noteGerant}
-                      onChange={(v) => setReviewForm({ ...reviewForm, noteGerant: v })}
-                      label="Note du gérant"
-                    />
-                  </div>
-
-                  <div className="review-form__field">
-                    <label className="review-form__label" htmlFor="review-comment">
-                      Votre expérience
-                    </label>
-                    <textarea
-                      id="review-comment"
-                      rows={4}
-                      maxLength={2000}
-                      placeholder="Racontez votre séjour..."
-                      value={reviewForm.commentaire}
-                      onChange={(e) => setReviewForm({ ...reviewForm, commentaire: e.target.value })}
-                    />
-                  </div>
-
-                  {reviewError && (
-                    <p className="client-compte__error" role="alert">{reviewError}</p>
-                  )}
-
-                  <div className="review-form__actions">
-                    <button
-                      type="button"
-                      className="client-compte__btn"
-                      onClick={() => setReviewForm(null)}
-                      disabled={reviewSubmitting}
-                    >
-                      Annuler
-                    </button>
-                    <button
-                      type="submit"
-                      className="client-compte__btn client-compte__btn--primary"
-                      disabled={reviewSubmitting}
-                    >
-                      {reviewSubmitting ? 'Envoi...' : 'Publier mon avis'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-          </section>
-        )}
-
-        {tab === 'profil' && (
-          <section className="client-compte__panel" id="cp-panel" role="tabpanel">
-            <div className="client-compte__profile">
-              <div className="client-compte__profile-head">
-                <span className="client-compte__profile-icon"><Glyph>{glyphUser}</Glyph></span>
-                <div>
-                  <p className="eyebrow">Informations personnelles</p>
-                  <h2>Modifier mon profil</h2>
-                  <p className="client-compte__profile-note">
-                    Ces informations servent à vous contacter au sujet de vos réservations.
-                  </p>
-                </div>
-              </div>
-
-              <form className="client-compte__profile-form" onSubmit={handleProfileSubmit}>
-                <div className="client-compte__fields">
-                  <div className="client-compte__field">
-                    <label htmlFor="cp-prenom">Prénom</label>
-                    <input
-                      id="cp-prenom"
-                      type="text"
-                      value={profileForm.prenom}
-                      onChange={(e) => setProfileForm({ ...profileForm, prenom: e.target.value })}
-                      autoComplete="given-name"
-                    />
-                  </div>
-                  <div className="client-compte__field">
-                    <label htmlFor="cp-nom">Nom</label>
-                    <input
-                      id="cp-nom"
-                      type="text"
-                      value={profileForm.nom}
-                      onChange={(e) => setProfileForm({ ...profileForm, nom: e.target.value })}
-                      autoComplete="family-name"
-                    />
-                  </div>
-                  <div className="client-compte__field">
-                    <label htmlFor="cp-tel">Téléphone</label>
-                    <input
-                      id="cp-tel"
-                      type="tel"
-                      value={profileForm.telephone}
-                      onChange={(e) => setProfileForm({ ...profileForm, telephone: e.target.value })}
-                      autoComplete="tel"
-                    />
-                  </div>
-                  <div className="client-compte__field">
-                    <label htmlFor="cp-email">
-                      Email
-                      <span className="client-compte__field-hint">Géré par votre compte</span>
-                    </label>
-                    <input id="cp-email" type="email" value={email} disabled />
-                  </div>
-                </div>
-
-                {profileError && <p className="client-compte__error" role="alert">{profileError}</p>}
-                {profileSuccess && <p className="client-compte__success" role="status">{profileSuccess}</p>}
-
-                <div className="client-compte__form-actions">
-                  <button
-                    type="submit"
-                    className="client-compte__btn client-compte__btn--primary"
-                    disabled={profileSaving}
-                  >
-                    {profileSaving ? 'Enregistrement…' : 'Enregistrer les modifications'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </section>
-        )}
           </div>
         </div>
       </div>
