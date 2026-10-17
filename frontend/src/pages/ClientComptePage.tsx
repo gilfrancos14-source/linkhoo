@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type FormEvent, type ReactNode, type CSSProperties } from 'react';
+import { useState, useEffect, useCallback, type FormEvent, type CSSProperties } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUser, useAuth, useClerk } from '@clerk/clerk-react';
 import { useHomePath } from '../hooks/useHomePath';
@@ -7,93 +7,10 @@ import { setAuthTokenGetter, apiClients, apiReviews, type ClientMineReservationD
 import { getMyReservations, cancelMyReservation, statutLabels, statutColors } from '../lib/reservations';
 import { formatPrice } from '../lib/roomDisplay';
 
-type Tab = 'reservations' | 'profil';
-
-function formatStayDates(from: string, to: string): string {
-  const parse = (s: string) => {
-    const [y, m, d] = s.split('-').map(Number);
-    return y && m && d ? new Date(y, m - 1, d) : null;
-  };
-  const d1 = parse(from);
-  const d2 = parse(to);
-  if (!d1 || !d2) return `${from} → ${to}`;
-  const sameYear = d1.getFullYear() === d2.getFullYear();
-  const a = d1.toLocaleDateString('fr-FR', {
-    day: '2-digit',
-    month: 'short',
-    ...(sameYear ? {} : { year: 'numeric' }),
-  });
-  const b = d2.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
-  return `${a} → ${b}`;
-}
-
-interface ReviewFormState {
-  reservationId: string;
-  roomTitle: string;
-  noteAppartement: number;
-  noteGerant: number;
-  commentaire: string;
-}
-
-function Stars({ value, onChange, label }: {
-  value: number;
-  onChange?: (v: number) => void;
-  label: string;
-}) {
-  return (
-    <div className="star-rating" role={onChange ? 'radiogroup' : 'img'} aria-label={`${label} : ${value} sur 5`}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <button
-          key={n}
-          type="button"
-          className={`star-rating__star${n <= value ? ' is-active' : ''}`}
-          onClick={onChange ? () => onChange(n) : undefined}
-          disabled={!onChange}
-          aria-label={`${n} étoile${n > 1 ? 's' : ''}`}
-          tabIndex={onChange ? 0 : -1}
-        >
-          ★
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function Glyph({ children }: { children: ReactNode }) {
-  return (
-    <svg
-      className="client-compte__glyph"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      {children}
-    </svg>
-  );
-}
-
-const glyphCalendar = (
-  <>
-    <rect x="3" y="5" width="18" height="16" rx="2.5" />
-    <path d="M8 3v4M16 3v4M3 10.5h18" />
-  </>
-);
-
-const glyphStar = (
-  <path d="M12 3.6l2.55 5.17 5.7.83-4.13 4.02.98 5.68L12 16.62 6.9 19.3l.98-5.68L3.75 9.6l5.7-.83z" />
-);
-
-const glyphUser = (
-  <>
-    <circle cx="12" cy="8" r="3.6" />
-    <path d="M4.8 20a7.2 7.2 0 0 1 14.4 0" />
-  </>
-);
+import type { Tab, ReviewFormState } from './client-compte/types';
+import { formatStayDates } from './client-compte/stayDates';
+import Stars from './client-compte/Stars';
+import Glyph, { glyphCalendar, glyphStar, glyphUser } from './client-compte/Glyph';
 
 export default function ClientComptePage() {
   const homePath = useHomePath();
