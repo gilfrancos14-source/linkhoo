@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { apiAdmin } from '../../lib/adminApi';
 import { apiRooms, type RoomData } from '../../lib/api';
 import { priceWithCurrency } from '../../lib/roomDisplay';
+import { formatDate } from '../../lib/formatDate';
 
 type PromoKey = 'promo_15' | 'promo_10' | 'promo_5';
 
@@ -212,10 +213,10 @@ export default function AdminPromotionsPage() {
                         </td>
                         <td style={{ fontSize: '13px' }}>{priceWithCurrency(room.price, room.price_unit)}</td>
                         <td style={{ fontSize: '13px' }}>
-                          {room.promo_start ? new Date(room.promo_start).toLocaleDateString('fr-FR') : '—'}
+                          {formatDate(room.promo_start) || '—'}
                         </td>
                         <td style={{ fontSize: '13px' }}>
-                          {room.promo_end ? new Date(room.promo_end).toLocaleDateString('fr-FR') : '—'}
+                          {formatDate(room.promo_end) || '—'}
                         </td>
                         <td>
                           {isExpired(room) ? (

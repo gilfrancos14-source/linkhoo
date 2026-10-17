@@ -4,6 +4,7 @@ import { useMarket } from '../../contexts/MarketContext';
 import { marketByCode } from '../../config/markets';
 import { apiGerants, type GerantData } from '../../lib/api';
 import { isPremiumActive } from '../../lib/premium';
+import { formatDateLong } from '../../lib/formatDate';
 
 export default function ProfilPage() {
   const { market } = useMarket();
@@ -327,7 +328,7 @@ export default function ProfilPage() {
                 <div>
                   <span className="profil-info__label">Inscrit le</span>
                   <span className="profil-info__value">
-                    {gerant?.created_at ? new Date(gerant.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+                    {gerant?.created_at ? formatDateLong(gerant.created_at) : '—'}
                   </span>
                 </div>
               </div>

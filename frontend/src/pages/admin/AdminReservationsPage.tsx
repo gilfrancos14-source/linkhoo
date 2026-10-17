@@ -4,6 +4,8 @@ import {
   type AdminReservation,
   type AdminReservationCounts,
 } from '../../lib/adminApi';
+import { priceWithCurrency } from '../../lib/roomDisplay';
+import { formatDate as formatDateFr } from '../../lib/formatDate';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -101,10 +103,7 @@ export default function AdminReservationsPage() {
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('fr-FR');
-  };
+  const formatDate = (dateStr: string) => formatDateFr(dateStr) || '—';
 
   if (!ready) {
     return (
@@ -210,7 +209,7 @@ export default function AdminReservationsPage() {
                   <span>{formatDate(res.date_debut)}</span>
                   <span> → {formatDate(res.date_fin)}</span>
                 </td>
-                <td className="admin-table__price">{res.montant?.toLocaleString()} FCFA</td>
+                <td className="admin-table__price">{priceWithCurrency(res.montant)}</td>
                 <td>
                   <span className={`admin-badge admin-badge--${res.statut === 'confirmee' ? 'success' : res.statut === 'annulee' ? 'danger' : 'warning'}`}>
                     <span className="badge-dot"></span>

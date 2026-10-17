@@ -5,6 +5,8 @@ import { getReservations, updateReservationStatut, checkDateConflict, statutLabe
 import { addClientNotification } from '../../lib/notifications';
 import { apiGerants, type GerantData } from '../../lib/api';
 import { isPremiumActive } from '../../lib/premium';
+import { priceWithCurrency } from '../../lib/roomDisplay';
+import { formatDate } from '../../lib/formatDate';
 
 interface VerifyState {
   reservation: Reservation;
@@ -158,7 +160,7 @@ export default function ReservationsPage() {
       <div className="admin-page__header">
         <h2>Gestion des réservations</h2>
         <span className="admin-page__subtitle">
-          Montant cumulé (confirmées) : <strong>{totalRevenu.toLocaleString()} FCFA</strong>
+          Montant cumulé (confirmées) : <strong>{priceWithCurrency(totalRevenu)}</strong>
         </span>
       </div>
 
@@ -200,14 +202,14 @@ export default function ReservationsPage() {
                 <td className="admin-table__dates">
                   {res.dateDebut ? (
                     <>
-                      <span>{new Date(res.dateDebut).toLocaleDateString('fr-FR')}</span>
-                      <span>→ {new Date(res.dateFin).toLocaleDateString('fr-FR')}</span>
+                      <span>{formatDate(res.dateDebut)}</span>
+                      <span>→ {formatDate(res.dateFin)}</span>
                     </>
                   ) : (
                     <span className="admin-table__pending">Dates à confirmer</span>
                   )}
                 </td>
-                <td className="admin-table__price">{res.montant.toLocaleString()} FCFA</td>
+                <td className="admin-table__price">{priceWithCurrency(res.montant)}</td>
                 <td>
                   <span className={`admin-badge admin-badge--${res.statut === 'confirmee' ? 'success' : res.statut === 'annulee' ? 'danger' : 'warning'}`}>
                     {statutLabels[res.statut]}

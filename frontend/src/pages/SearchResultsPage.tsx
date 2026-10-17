@@ -10,7 +10,7 @@ import {
   type Room,
 } from '../data/rooms';
 import { fetchCategoriesByMarket } from '../data/categories';
-import { roomMeta, roomSubtitle } from '../lib/roomDisplay';
+import { priceWithCurrency, roomMeta, roomSubtitle } from '../lib/roomDisplay';
 import StayCard from '../components/StayCard';
 import Pagination from '../components/Pagination';
 
@@ -316,7 +316,7 @@ export default function SearchResultsPage() {
                   </select>
                 </div>
                 <div className="search-page__filter-group">
-                  <label htmlFor="sp-prix">Prix max : {priceMax.toLocaleString('fr-FR')} FCFA</label>
+                  <label htmlFor="sp-prix">Prix max : {priceWithCurrency(priceMax)}</label>
                   <input
                     type="range"
                     id="sp-prix"

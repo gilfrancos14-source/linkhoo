@@ -23,6 +23,7 @@ import {
 } from '../lib/duration';
 import { apiReviews, apiMessages, apiAuth, type RoomReviewsResponse } from '../lib/api';
 import { priceWithCurrency, roomSubtitle } from '../lib/roomDisplay';
+import { formatDate } from '../lib/formatDate';
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkConfigured = Boolean(clerkKey && clerkKey.startsWith('pk_'));
@@ -507,7 +508,7 @@ export default function RoomDetailPage() {
                       <div className="room-reviews__item-top">
                         <strong>{rev.client_name}</strong>
                         <span className="room-reviews__item-date">
-                          {new Date(rev.created_at).toLocaleDateString('fr-FR')}
+                          {formatDate(rev.created_at)}
                         </span>
                       </div>
                       <div className="room-reviews__item-ratings">
@@ -685,7 +686,7 @@ export default function RoomDetailPage() {
                 {effectiveDateFin && estimatedMontant !== null && (
                   <p className="room-detail__field" style={{ margin: 0, fontSize: '14px', color: 'var(--ink-soft)' }}>
                     Du {formData.dateDebut} au {effectiveDateFin} · {pluralDuree(dureeNombre, unite)} — estimation :{' '}
-                    <strong>{estimatedMontant.toLocaleString('fr-FR')} FCFA</strong>
+                    <strong>{priceWithCurrency(estimatedMontant)}</strong>
                   </p>
                 )}
                 {submitError && (

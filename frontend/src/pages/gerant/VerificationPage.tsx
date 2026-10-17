@@ -7,6 +7,7 @@ import { useHomePath } from '../../hooks/useHomePath';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import { apiGerants, apiUpload, request, type GerantData, type VerificationDocument, type VerificationStatusResponse } from '../../lib/api';
 import PropertyMap from '../../components/PropertyMap';
+import { formatDate, formatDateLong } from '../../lib/formatDate';
 
 type DocType = 'id_card_front' | 'id_card_back';
 
@@ -348,13 +349,7 @@ export default function VerificationPage() {
   const showForm = status === 'none' || status === 'rejected';
 
   const approvedAt = gerant?.verified_at || verificationStatus?.verification_reviewed_at;
-  const verifiedDate = approvedAt
-    ? new Date(approvedAt).toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
-    : null;
+  const verifiedDate = approvedAt ? formatDateLong(approvedAt) : null;
 
   if (loading) {
     return (
@@ -577,7 +572,7 @@ export default function VerificationPage() {
                       <line x1="8" y1="2" x2="8" y2="6"/>
                       <line x1="3" y1="10" x2="21" y2="10"/>
                     </svg>
-                    Soumise le {new Date(verificationStatus.verification_submitted_at).toLocaleDateString('fr-FR')}
+                    Soumise le {formatDate(verificationStatus.verification_submitted_at)}
                   </span>
                 )}
               </div>

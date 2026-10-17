@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiAdmin, type AdminStats } from '../../lib/adminApi';
 import { MARKETS } from '../../config/markets';
+import { priceWithCurrency } from '../../lib/roomDisplay';
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -92,7 +93,7 @@ export default function AdminDashboardPage() {
         <div className="panel" style={{ padding: '20px' }}>
           <div style={{ fontSize: '13px', color: 'var(--admin-ink-soft)', marginBottom: '8px' }}>Revenu total</div>
           <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--admin-ink)' }}>
-            {(stats?.reservations?.totalRevenue || 0).toLocaleString('fr-FR')} FCFA
+            {priceWithCurrency(stats?.reservations?.totalRevenue || 0)}
           </div>
           <div style={{ fontSize: '12px', color: 'var(--admin-ink-soft)', marginTop: '4px' }}>
             Réservations confirmées

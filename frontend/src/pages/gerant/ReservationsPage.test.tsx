@@ -12,6 +12,7 @@ import { MarketProvider } from '../../contexts/MarketContext';
 import ReservationsPage from './ReservationsPage';
 import type { Reservation } from '../../lib/reservations';
 import type { GerantData } from '../../lib/api';
+import { formatPrice } from '../../lib/roomDisplay';
 
 const mocks = vi.hoisted(() => ({
   getReservations: vi.fn<() => Promise<Reservation[]>>(),
@@ -268,7 +269,7 @@ describe('ReservationsPage', () => {
     );
     expect(screen.getByText('Dates à confirmer')).toBeInTheDocument();
     expect(
-      screen.getByText(`${(75000).toLocaleString()} FCFA`),
+      screen.getByText(`${formatPrice(75000)} FCFA`),
     ).toBeInTheDocument();
   });
 
@@ -287,7 +288,7 @@ describe('ReservationsPage', () => {
       screen.getByText(`Montant cumulé (confirmées) :`),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(`${(75000 + 40000).toLocaleString()} FCFA`),
+      screen.getByText(`${formatPrice(75000 + 40000)} FCFA`),
     ).toBeInTheDocument();
   });
 

@@ -5,6 +5,7 @@ import { useHomePath } from '../hooks/useHomePath';
 import { useClientUnread } from '../hooks/useClientUnread';
 import { setAuthTokenGetter, apiClients, apiReviews, type ClientMineReservationData, type ReviewData } from '../lib/api';
 import { getMyReservations, cancelMyReservation, statutLabels, statutColors } from '../lib/reservations';
+import { formatPrice } from '../lib/roomDisplay';
 
 type Tab = 'reservations' | 'profil';
 
@@ -382,7 +383,7 @@ export default function ClientComptePage() {
                           </span>
                           {r.montant ? (
                             <span className="client-compte__price">
-                              {r.montant.toLocaleString('fr-FR')}
+                              {formatPrice(r.montant)}
                               <span className="client-compte__price-unit">
                                 FCFA / {r.duree_unite === 'mois' ? 'mois' : 'nuit'}
                               </span>

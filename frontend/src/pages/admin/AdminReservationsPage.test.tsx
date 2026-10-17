@@ -7,6 +7,7 @@ import type {
   AdminReservationCounts,
   AdminReservationsResponse,
 } from '../../lib/adminApi';
+import { formatPrice } from '../../lib/roomDisplay';
 
 interface PageParams {
   statut?: string;
@@ -48,8 +49,8 @@ function makeReservation(overrides: Partial<AdminReservation> = {}): AdminReserv
 
 const frDate = (iso: string) => new Date(iso).toLocaleDateString('fr-FR');
 
-/** Même normalisation que le texte de l'DOM (espaces insécables → espace ASCII). */
-const num = (n: number) => n.toLocaleString().replace(/\s+/g, ' ');
+/** Même formateur que l'écran (voir roomDisplay.formatPrice). */
+const num = (n: number) => formatPrice(n);
 
 function makeMany(count: number): AdminReservation[] {
   return Array.from({ length: count }, (_, i) =>

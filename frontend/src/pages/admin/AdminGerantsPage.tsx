@@ -3,6 +3,7 @@ import { MARKETS } from '../../config/markets';
 import { useState, useEffect, useMemo } from 'react';
 import { apiAdmin, type AdminGerant } from '../../lib/adminApi';
 import AdminGerantDrawer from '../../components/AdminGerantDrawer';
+import { formatDate } from '../../lib/formatDate';
 
 type StatusTab = 'all' | 'pending_verification' | 'under_review' | 'verified' | 'rejected';
 
@@ -224,12 +225,12 @@ export default function AdminGerantsPage() {
                           </span>
                         </td>
                         <td style={{ fontSize: '13px', color: 'var(--admin-ink-soft)' }}>
-                          {new Date(gerant.created_at).toLocaleDateString('fr-FR')}
+                          {formatDate(gerant.created_at)}
                         </td>
                         <td>{renderStatus(gerant)}</td>
                         <td style={{ fontSize: '13px', color: 'var(--admin-ink-soft)' }}>
                           {gerant.verification_submitted_at
-                            ? new Date(gerant.verification_submitted_at).toLocaleDateString('fr-FR')
+                            ? formatDate(gerant.verification_submitted_at)
                             : '—'}
                         </td>
                         <td>{renderActions(gerant)}</td>
@@ -279,7 +280,7 @@ export default function AdminGerantsPage() {
                       {gerant.market}
                     </span>
                     <span className="gerant-card__date">
-                      Inscrit le {new Date(gerant.created_at).toLocaleDateString('fr-FR')}
+                      Inscrit le {formatDate(gerant.created_at)}
                     </span>
                   </div>
                   <div className="gerant-card__actions">

@@ -3,6 +3,7 @@ import { useAuth } from '@clerk/clerk-react';
 import { useMarket } from '../../contexts/MarketContext';
 import { apiPremium, apiGerants, type GerantData } from '../../lib/api';
 import { isPremiumActive } from '../../lib/premium';
+import { formatDateLong } from '../../lib/formatDate';
 
 const PERKS = [
   {
@@ -114,7 +115,7 @@ export default function PremiumPage() {
             <h3>Compte Premium actif</h3>
             <p>
               {expiresAt
-                ? `Votre abonnement expire le ${expiresAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}.`
+                ? `Votre abonnement expire le ${formatDateLong(expiresAt)}.`
                 : 'Votre abonnement est actif.'}
             </p>
             <span className="premium-active__chip">
