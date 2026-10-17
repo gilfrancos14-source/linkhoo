@@ -8,46 +8,15 @@ import { formatPrice, roomSubtitle } from '../../lib/roomDisplay';
 import { apiRooms, apiUpload } from '../../lib/api';
 import { containsPhoneNumber, PHONE_IN_TEXT_ERROR } from '../../utils/validators';
 
-interface PhotoItem {
-  file: File;
-  preview: string;
-}
-
-/** Nombre maximum de photos par appartement. */
-const MAX_PHOTOS = 3;
-
-interface FormData {
-  title: string;
-  description: string;
-  ville: string;
-  quartier: string;
-  priceNum: number;
-  priceUnit: '/ mois' | '/ nuit';
-  conditions: string;
-  chambres: number;
-  douches: number;
-  category: string;
-  isPopular: boolean;
-}
-
-const emptyForm: FormData = {
-  title: '',
-  description: '',
-  ville: '',
-  quartier: '',
-  priceNum: 0,
-  priceUnit: '/ mois',
-  conditions: '',
-  chambres: 1,
-  douches: 1,
-  category: '',
-  isPopular: false,
-};
-
-const marketPays: Record<string, string> = {
-  CI: 'Côte d\'Ivoire',
-  BJ: 'Bénin',
-};
+import {
+  MAX_PHOTOS,
+  emptyForm,
+  marketPays,
+  type FormData,
+  type PhotoItem,
+} from './ajouter-chambre/form';
+import AddRoomStepper from './ajouter-chambre/AddRoomStepper';
+import AddRoomSuccess from './ajouter-chambre/AddRoomSuccess';
 
 export default function AjouterChambre() {
   const { market } = useMarket();
@@ -211,21 +180,11 @@ export default function AjouterChambre() {
 
   if (saved) {
     return (
-      <div className="form-success">
-        <div className="form-success__icon">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0F9D6B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        </div>
-        <h2>Appartement enregistré !</h2>
-        <p>{form.title} a été ajouté avec succès.</p>
-        <div className="form-success__actions">
-          <button className="admin-btn admin-btn--primary" onClick={() => { setForm({ ...emptyForm }); setPhotos([]); setMainPhotoIndex(0); setStep(1); setSaved(false); }}>
-            Ajouter un autre
-          </button>
-          <button className="admin-btn" onClick={() => navigate(`${gerantPath}/chambres`)}>
-            Retour à la liste
-          </button>
-        </div>
-      </div>
+      <AddRoomSuccess
+        title={form.title}
+        onAddAnother={() => { setForm({ ...emptyForm }); setPhotos([]); setMainPhotoIndex(0); setStep(1); setSaved(false); }}
+        onBackToList={() => navigate(`${gerantPath}/chambres`)}
+      />
     );
   }
 
@@ -239,25 +198,7 @@ export default function AjouterChambre() {
         <button className="admin-btn" onClick={() => navigate(`${gerantPath}/chambres`)}>← Retour</button>
       </div>
 
-      {/* Steps */}
-      <div className="steps">
-        <div className={`step ${step === 1 ? 'step--active' : ''} ${step > 1 ? 'step--done' : ''}`}>
-          <span className="step__num">{step > 1 ? '' : '1'}</span>
-          <span className="step__label">Identification</span>
-        </div>
-        <div className={`step ${step === 2 ? 'step--active' : ''} ${step > 2 ? 'step--done' : ''}`}>
-          <span className="step__num">{step > 2 ? '' : '2'}</span>
-          <span className="step__label">Détails</span>
-        </div>
-        <div className={`step ${step === 3 ? 'step--active' : ''} ${step > 3 ? 'step--done' : ''}`}>
-          <span className="step__num">{step > 3 ? '' : '3'}</span>
-          <span className="step__label">Photos</span>
-        </div>
-        <div className={`step ${step === 4 ? 'step--active' : ''}`}>
-          <span className="step__num">4</span>
-          <span className="step__label">Aperçu</span>
-        </div>
-      </div>
+      <AddRoomStepper step={step} />
 
       <form className="add-room__form" onSubmit={(e) => e.preventDefault()}>
         {/* Step 1 — Identification */}
