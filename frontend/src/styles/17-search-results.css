@@ -1,0 +1,400 @@
+/* ==========================================================================
+   SEARCH RESULTS PAGE
+   ========================================================================== */
+.search-page {
+  background: var(--mist);
+  padding: calc(var(--header-h) + 2rem) 0 4rem;
+  min-height: 80vh;
+}
+
+.search-page .container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Breadcrumb */
+.search-page__breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  margin-bottom: 1.2rem;
+}
+
+.search-page__breadcrumb a {
+  color: var(--sky-dark);
+  font-weight: 600;
+  transition: color 0.25s var(--ease);
+}
+
+.search-page__breadcrumb a:hover {
+  color: var(--sky);
+}
+
+.search-page__breadcrumb span[aria-hidden] {
+  color: var(--ink-soft);
+  opacity: 0.5;
+}
+
+
+
+
+
+/* Header */
+.search-page__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 1.6rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.search-page__title {
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.search-page__title em {
+  font-style: normal;
+  color: var(--sky);
+}
+
+.search-page__count {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.search-page__dates-summary {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.search-page__dates-change {
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--sky-dark);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.25s var(--ease), color 0.25s var(--ease);
+}
+
+.search-page__dates-change:hover {
+  background: var(--sky);
+  color: var(--white);
+}
+
+/* Layout */
+.search-page__layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+/* Filters */
+.search-page__filters {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.4rem;
+  position: sticky;
+  top: calc(var(--header-h) + 1rem);
+}
+
+.search-page__filter-title {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1.2rem;
+}
+
+.search-page__filter-group {
+  margin-bottom: 1rem;
+}
+
+.search-page__filter-group label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.3rem;
+}
+
+.search-page__filter-group select {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background: var(--mist);
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.search-page__filter-group select:focus {
+  outline: none;
+  border-color: var(--sky);
+}
+
+.search-page__filter-reset {
+  width: 100%;
+  margin-top: 0.4rem;
+  padding: 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--mist);
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background-color 0.25s, color 0.25s;
+}
+
+.search-page__filter-reset:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--white);
+}
+
+/* Results grid */
+.search-page__results {
+  min-width: 0;
+}
+
+.search-page__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+/* Empty state */
+.search-page__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 4rem 1rem;
+}
+
+.search-page__empty-title {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-top: 1rem;
+  color: var(--ink);
+}
+
+.search-page__empty-desc {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  margin-top: 0.4rem;
+  max-width: 36ch;
+}
+
+/* Pagination */
+.search-page__pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 2rem;
+}
+
+.search-page__pagination__btn {
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background-color 0.25s, color 0.25s;
+}
+
+.search-page__pagination__btn:hover:not(:disabled) {
+  background: var(--sky);
+  border-color: var(--sky);
+  color: var(--white);
+}
+
+.search-page__pagination__btn.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--white);
+}
+
+.search-page__pagination__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .search-page__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .search-page__filters {
+    position: static;
+  }
+
+  .search-page__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search-page__title {
+    font-size: 1.4rem;
+  }
+
+  .search-page__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .search-page__dates-summary {
+    font-size: 0.82rem;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .search-page__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ---------- Dates panel ---------- */
+.search-page__dates-panel {
+  display: flex;
+  justify-content: center;
+  padding: 4rem 0 2rem;
+}
+
+.search-page__dates-panel-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 520px;
+  width: 100%;
+}
+
+.search-page__dates-title {
+  font-family: var(--font-serif);
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 700;
+  margin-top: 1.2rem;
+  line-height: 1.2;
+}
+
+.search-page__dates-title em {
+  font-style: normal;
+  color: var(--sky);
+}
+
+.search-page__dates-desc {
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  margin-top: 0.6rem;
+  max-width: 40ch;
+}
+
+.search-page__dates-form {
+  margin-top: 2rem;
+  width: 100%;
+}
+
+.search-page__dates-fields {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+.search-page__dates-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.8rem 1rem;
+  transition: border-color 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+
+.search-page__dates-field:focus-within {
+  border-color: var(--sky);
+  box-shadow: 0 0 0 3px rgba(61, 158, 219, 0.14);
+}
+
+.search-page__dates-field label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 0.25rem;
+}
+
+.search-page__dates-field input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+.search-page__dates-field input::-webkit-calendar-picker-indicator {
+  opacity: 0.5;
+  cursor: pointer;
+}
+
+.search-page__dates-error {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #b3402f;
+}
+
+.search-page__dates-btn {
+  margin-top: 1.4rem;
+  padding: 0.85rem 2.2rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--gradient-primary);
+  color: var(--white);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--sky) 35%, transparent);
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+
+.search-page__dates-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--sky) 45%, transparent);
+}
+
+@media (max-width: 560px) {
+  .search-page__dates-fields {
+    flex-direction: column;
+  }
+}
+

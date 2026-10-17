@@ -1,0 +1,251 @@
+/* ---------- Carte de séjour (StayCard) ---------- */
+.stay-card {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--mist);
+  transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
+}
+
+.stay-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card);
+}
+
+.stay-card__link {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.stay-card__media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--mist-2);
+}
+
+.stay-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.7s var(--ease);
+}
+
+.stay-card:hover .stay-card__media img {
+  transform: scale(1.04);
+}
+
+.stay-card__media img.is-hidden {
+  visibility: hidden;
+}
+
+.stay-card__tag,
+.stay-card__badge {
+  position: absolute;
+  top: 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+}
+
+.stay-card__tag {
+  left: 0.9rem;
+  background: rgba(245, 250, 253, 0.92);
+  color: var(--ink);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.stay-card__badge {
+  right: 0.9rem;
+  background: var(--sun);
+  color: var(--ink);
+}
+
+.stay-card__badge--unavailable {
+  background: #e74c3c;
+  color: var(--white);
+}
+
+/* Or « premium » : volontairement fixe (pas var(--sun), vert en thème sombre). */
+.stay-card__badge--premium {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: var(--ink);
+}
+
+/* Annonce sponsorisée de la landing : indigo fixe, lisble sur photo. */
+.stay-card__badge--sponsored {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff;
+}
+
+.stay-card__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 1.3rem 1.3rem 1.4rem;
+}
+
+.stay-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.stay-card__title {
+  font-family: var(--font-serif);
+  font-size: 1.28rem;
+  font-weight: 600;
+}
+
+.stay-card__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.stay-card__rating svg {
+  color: var(--sun);
+}
+
+.stay-card__rating--loc svg {
+  color: var(--sky);
+}
+
+.stay-card__desc {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  flex-grow: 1;
+}
+
+.stay-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.9rem;
+}
+
+.stay-card__meta li {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-2);
+  background: var(--white);
+  border: 1px solid var(--line);
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+}
+
+.stay-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.stay-card__price {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.stay-card__price strong {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.stay-card__arrow {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  transition: background-color 0.3s var(--ease), color 0.3s var(--ease),
+    transform 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+
+.stay-card:hover .stay-card__arrow {
+  background: var(--sky-dark);
+  border-color: var(--sky-dark);
+  color: var(--white);
+  transform: translateX(3px);
+}
+
+/* Surcharge commune aux grilles de listing (catégorie + recherche) */
+:is(.cat-page__grid, .search-page__grid) .stay-card__media {
+  aspect-ratio: 2 / 1;
+}
+
+:is(.cat-page__grid, .search-page__grid) .stay-card__body {
+  padding: 0.8rem;
+}
+
+:is(.cat-page__grid, .search-page__grid) .stay-card__title {
+  font-size: 0.95rem;
+}
+
+:is(.cat-page__grid, .search-page__grid) .stay-card__desc {
+  font-size: 0.78rem;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .stay-card__body {
+    padding: 1rem;
+  }
+
+  .stay-card__title {
+    font-size: 1.1rem;
+  }
+
+  .stay-card__price strong {
+    font-size: 1.15rem;
+  }
+
+  .stay-card__arrow {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stay-card__body {
+    padding: 0.9rem;
+  }
+
+  .stay-card__title {
+    font-size: 1.02rem;
+  }
+
+  .stay-card__desc {
+    font-size: 0.85rem;
+  }
+
+  .stay-card__meta {
+    margin-top: 0.7rem;
+  }
+
+  .stay-card__foot {
+    margin-top: 0.9rem;
+    padding-top: 0.8rem;
+  }
+}
+
+

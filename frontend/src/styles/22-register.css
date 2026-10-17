@@ -1,0 +1,318 @@
+/* ==========================================================================
+   Register — 2 colonnes : infos à gauche, formulaire à droite
+   ========================================================================== */
+
+.register-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding-top: 0;
+  background: var(--white);
+}
+
+.register-page__inner {
+  width: 100%;
+  max-width: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+/* ── Colonne gauche : infos ── */
+.register-page__info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2.5rem 3rem 2.5rem 1.5rem;
+  background:
+    radial-gradient(ellipse 80% 60% at 0% 0%, rgba(37, 99, 235, 0.12), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 100% 100%, rgba(245, 158, 11, 0.1), transparent 50%),
+    linear-gradient(165deg, #f0f7ff 0%, var(--white) 70%);
+  border-right: 1.5px solid var(--line);
+}
+
+.register-page__logo {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  align-self: flex-start;
+}
+
+.register-page__logo img {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  object-fit: cover;
+  box-shadow: var(--shadow-card);
+}
+
+.register-page__badge {
+  display: none;
+}
+
+.register-page__title {
+  margin: 0 0 0.5rem;
+  color: var(--ink);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.register-page__subtitle {
+  margin: 0 0 1.5rem;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  max-width: 420px;
+}
+
+/* ── 2 boutons de rôle ── */
+.register-page__roles {
+  display: inline-flex;
+  gap: 0.35rem;
+  padding: 0.3rem;
+  margin-bottom: 1.75rem;
+  align-self: flex-start;
+  background: var(--mist-2);
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+}
+
+.register-page__role {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.05rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.register-page__role:hover {
+  color: var(--ink);
+}
+
+.register-page__role.is-active {
+  background: var(--gradient-primary);
+  color: var(--white);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--sky) 30%, transparent);
+}
+
+.register-page__role:nth-child(2).is-active {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+}
+
+/* ── Liste bénéfices ── */
+.register-page__benefits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 440px;
+}
+
+.register-page__benefit {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+}
+
+.register-page__benefit-icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--sky-pale);
+  color: var(--sky);
+  border: 1px solid color-mix(in srgb, var(--sky) 18%, transparent);
+}
+
+.register-page__benefit strong {
+  display: block;
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+
+.register-page__benefit p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+/* ── Colonne droite : formulaire ── */
+.register-page__form-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  background: var(--mist);
+}
+
+.register-page__form {
+  width: 100%;
+  max-width: 400px;
+}
+
+.register-page__form .cl-card,
+.register-page__form .cl-cardBox,
+.register-page__form .cl-internalCardBox {
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.register-page__form .cl-header {
+  padding-bottom: 0.65rem;
+  margin-bottom: 0;
+}
+
+.register-page__form .cl-headerTitle {
+  font-size: 1.15rem;
+  color: var(--ink);
+}
+
+.register-page__form .cl-headerSubtitle {
+  display: none;
+}
+
+.register-page__form .cl-internalRootBox {
+  gap: 0.75rem;
+}
+
+.register-page__form .cl-formFieldRow {
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.register-page__form .cl-formField {
+  margin-bottom: 0.7rem;
+}
+
+.register-page__form .cl-dividerLine {
+  margin: 0.75rem 0;
+}
+
+.register-page__form .cl-socialButtonsBlockButton {
+  border-radius: 10px;
+  border: 1.5px solid var(--line);
+  min-height: 38px;
+  font-size: 0.85rem;
+}
+
+.register-page__form .cl-socialButtonsGroup {
+  gap: 0.45rem;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.register-page__form .cl-footer {
+  background: transparent;
+  padding: 0.6rem 0 0;
+}
+
+.register-page__form .cl-footerAction {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  margin-top: 0.4rem;
+}
+
+.register-page__form .cl-identityPreviewEditButton,
+.register-page__form .cl-backButton {
+  font-size: 0.8rem;
+  min-height: 32px;
+}
+
+.register-page__form .cl-alert {
+  font-size: 0.8rem;
+  padding: 0.5rem 0.65rem;
+}
+
+.register-page__switch {
+  margin: 1.15rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.register-page__switch a {
+  color: var(--sky);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.register-page__switch a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+  .register-page__inner {
+    grid-template-columns: 1fr;
+  }
+
+  .register-page__info {
+    border-right: none;
+    border-bottom: 1.5px solid var(--line);
+    padding: 2rem 1.5rem;
+    align-items: center;
+    text-align: center;
+  }
+
+  .register-page__logo,
+  .register-page__badge,
+  .register-page__roles {
+    align-self: center;
+  }
+
+  .register-page__benefits {
+    max-width: 480px;
+  }
+
+  .register-page__benefit {
+    text-align: left;
+  }
+
+  .register-page__form-side {
+    padding: 2rem 1.25rem 2.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-page__info {
+    padding: 1.5rem 1rem;
+  }
+
+  .register-page__role {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .register-page__form {
+    max-width: 100%;
+  }
+
+  .register-page__form .cl-card,
+  .register-page__form .cl-cardBox,
+  .register-page__form .cl-internalCardBox {
+    padding: 0 !important;
+  }
+}
+

@@ -1,0 +1,247 @@
+/* ==========================================================================
+   RESPONSIVE
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+  .categories__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* grid-template-columns est ignoré sur un conteneur flex : c'est la
+     largeur des cartes qu'il faut changer. */
+  .event-card {
+    flex-basis: calc((100% - 1.6rem) / 2 - 1px);
+  }
+
+  .promos__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .signature__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .signature__media {
+    max-width: 620px;
+    margin-inline: auto;
+  }
+
+  .signature__card {
+    left: auto;
+    right: -0.5rem;
+  }
+
+  .site-footer__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .site-footer__brand {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .header-btn__label {
+    display: none;
+  }
+
+  /* Grids */
+  .experiences__grid {
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+  }
+
+  /* Le détail d'événement passe en pile : image au-dessus, texte en dessous. */
+  .event-slide {
+    grid-template-columns: 1fr;
+  }
+
+  .event-detail__head {
+    padding-right: 2.6rem;
+  }
+
+  .exp-card {
+    aspect-ratio: 16 / 9;
+  }
+
+  .reviews__grid {
+    grid-template-columns: 1fr;
+    max-width: 560px;
+    margin-inline: auto;
+  }
+
+  .section-head--row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hero {
+    min-height: 70svh;
+    min-height: 70vh;
+  }
+
+  .hero__content {
+    padding-top: calc(var(--header-h) + 3rem);
+    padding-bottom: 3rem;
+  }
+
+  /* Carrousel promo : juste défiler au doigt, pas de flèches ni dots */
+  .promo-carousel__arrow,
+  .promo-carousel__dots {
+    display: none;
+  }
+
+  .promo-carousel {
+    gap: 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .promo-detail__rooms {
+    flex: 0 0 100%;
+    gap: 0.75rem;
+    padding-inline: 0;
+  }
+
+  .promo-room {
+    flex: 0 0 min(280px, 75%);
+    min-width: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .container {
+    width: min(100% - 1.5rem, var(--container));
+  }
+
+  .promos__grid,
+  .categories__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .event-card {
+    flex-basis: 100%;
+  }
+
+  /* En 1 colonne, 6 cartes déborderaient du panneau (overflow hidden) :
+     on n'en affiche que 4 — le lien « Voir tous » donne accès au reste. */
+  .event-detail__stays-grid > *:nth-child(n + 5) {
+    display: none;
+  }
+
+  /* 1 colonne : la carte passe en ligne (vignette carrée à gauche) —
+     quatre cartes verticales empilées noieraient le panneau sous l'image. */
+  .event-detail__stays-grid .stay-card__link {
+    flex-direction: row;
+  }
+
+  .event-detail__stays-grid .stay-card__media {
+    flex: 0 0 104px;
+    aspect-ratio: 1 / 1;
+  }
+
+  .site-footer__grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .site-footer__bottom {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .hero__actions .btn {
+    width: 100%;
+  }
+
+  .cta__actions .btn {
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   PRÉVENTION DU DÉFILEMENT QUAND LE MENU MOBILE EST OUVERT
+   ========================================================================== */
+
+/* ==========================================================================
+   PAGES LÉGALES
+   ========================================================================== */
+.page-legal {
+  padding: calc(var(--header-h) + 2rem) 0 4rem;
+  min-height: 100vh;
+}
+
+.page-legal__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--sky-dark);
+  margin-bottom: 2rem;
+  transition: color 0.25s var(--ease);
+}
+
+.page-legal__back:hover {
+  color: var(--sky);
+}
+
+.page-legal__title {
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.page-legal__update {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  margin-bottom: 2.5rem;
+}
+
+.page-legal__section {
+  margin-bottom: 2rem;
+}
+
+.page-legal__section h2 {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.8rem;
+  color: var(--ink);
+}
+
+.page-legal__section p {
+  color: var(--ink-soft);
+  margin-bottom: 0.8rem;
+  max-width: 70ch;
+  line-height: 1.7;
+}
+
+.page-legal__section ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.page-legal__section li {
+  color: var(--ink-soft);
+  margin-bottom: 0.4rem;
+  line-height: 1.6;
+}
+
+.page-legal__section li strong {
+  color: var(--ink);
+}
+
+.page-legal__section a {
+  color: var(--sky-dark);
+  font-weight: 600;
+  transition: color 0.25s var(--ease);
+}
+
+.page-legal__section a:hover {
+  color: var(--sky);
+}
+

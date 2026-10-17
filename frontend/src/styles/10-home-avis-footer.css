@@ -1,0 +1,272 @@
+/* ---------- Avis ---------- */
+.reviews {
+  background: var(--white);
+  padding: calc(var(--space-section) * 0.5) 0 var(--space-section);
+}
+
+.reviews__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.6rem;
+}
+
+.review {
+  background: var(--mist);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.9rem 1.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease);
+}
+
+.review:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card);
+}
+
+.review__stars {
+  display: inline-flex;
+  gap: 0.15rem;
+  color: var(--sun);
+}
+
+.review__quote {
+  font-family: var(--font-serif);
+  font-size: 1.04rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+  flex-grow: 1;
+}
+
+.review__author {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.review__avatar {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--sky-pale);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.review__author strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.review__author small {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+/* ---------- CTA ---------- */
+/* ---------- Contact ---------- */
+/* ---------- Footer ---------- */
+.site-footer {
+  background: var(--white);
+  color: var(--ink-2);
+  padding: clamp(3rem, 6vw, 4.5rem) 0 2rem;
+}
+
+.site-footer__grid {
+  display: grid;
+  grid-template-columns: 1.4fr 0.8fr 0.9fr 0.9fr 1.1fr;
+  gap: 2.5rem;
+  padding-bottom: 2.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.site-footer__about {
+  margin-top: 1.1rem;
+  font-size: 0.9rem;
+  max-width: 34ch;
+  color: var(--ink-soft);
+}
+
+.site-footer__title {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 1.1rem;
+}
+
+.site-footer__col ul {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.site-footer__col a {
+  font-size: 0.9rem;
+  transition: color 0.25s var(--ease);
+}
+
+.site-footer__col a:hover {
+  color: var(--sky-dark);
+}
+
+.newsletter {
+  display: flex;
+  background: var(--mist);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.3rem;
+  transition: border-color 0.25s var(--ease);
+}
+
+.newsletter:focus-within {
+  border-color: var(--sky);
+}
+
+.newsletter__input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0.5rem 0.9rem;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.newsletter__input::placeholder {
+  color: var(--ink-soft);
+}
+
+.newsletter__btn {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  background: var(--gradient-primary);
+  color: var(--white);
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--sky) 30%, transparent);
+  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
+}
+
+.newsletter__btn:hover:not(:disabled) {
+  transform: translateX(2px) scale(1.05);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--sky) 40%, transparent);
+}
+
+.newsletter__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.newsletter__note {
+  margin-top: 0.7rem;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.newsletter__error {
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+  color: #dc2626;
+}
+
+.error-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  padding: calc(var(--header-h) + 2rem) 1.5rem 2rem;
+}
+
+.error-page h1 {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.error-page p {
+  color: var(--ink-soft);
+  margin-bottom: 1.5rem;
+}
+
+.error-page__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--sky);
+  color: var(--white);
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.error-page__link:hover {
+  background: var(--sky-dark);
+}
+
+.site-footer__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 1.8rem;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+/* ---------- Animations d'apparition ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* `.reveal` est déclaré après les cartes, à spécificité égale : il écrase
+   leur `transition`, et `.reveal.is-visible` écrase le `transform` de
+   `:hover` (la carte ne se soulève plus). On redonne ici son survol à la
+   carte d'événement. */
+.event-card.reveal {
+  transition: transform 0.4s var(--ease), box-shadow 0.4s var(--ease), opacity 0.7s var(--ease);
+}
+
+.event-card.reveal.is-visible:hover {
+  transform: translateY(-8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
