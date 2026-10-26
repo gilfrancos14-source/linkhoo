@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Preflight Tailwind est désactivé globalement pour ne pas toucher au reste du
+ * site. Les composants de la maquette ont donc besoin d'un reset local des
+ * contrôles natifs (sinon boutons et champs gardent le chrome du navigateur).
+ * `:where()` garde une spécificité nulle : les utilitaires Tailwind reprennent
+ * la main dès qu'ils sont présents.
+ */
+:where(.maquette-home) :where(button, input, select, textarea) {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+:where(.maquette-home) :where(button) {
+  cursor: pointer;
+}
+
+:where(.maquette-home) :where(button:disabled) {
+  cursor: default;
+}
+
+:where(.maquette-home) :where(input[type='date']) {
+  appearance: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.bg-hero-gradient {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.45) 0%, rgba(15, 23, 42, 0.65) 100%);
+}
+
+/* Tailwind est chargé sans preflight pour ne pas casser les styles historiques.
+   On rétablit donc localement les remises à zéro des contrôles natifs. */
+:where(.maquette-home) :where(button) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+:where(.maquette-home) :where(input) {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}

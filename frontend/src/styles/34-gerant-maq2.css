@@ -1,0 +1,362 @@
+/* ==========================================================================
+   ESPACE GÉRANT — Mes chambres (reproduction de maquette/maq2.html)
+   La page embarque sa propre sidebar et son propre topbar : l'AdminLayout
+   masque son chrome sur cette route (classe .admin--blank).
+   ========================================================================== */
+
+.gerant-maq2 {
+  background: #f5f8fc;
+  color: #0f2a5c;
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Preflight Tailwind est désactivé globalement : on rétablit un reset scopé
+   pour obtenir exactement le même rendu que maq2.html (bordures, boutons,
+   champs, tableaux, SVG, interlignes). */
+.gerant-maq2 *,
+.gerant-maq2 *::before,
+.gerant-maq2 *::after {
+  box-sizing: border-box;
+  border-width: 0;
+  border-style: solid;
+  border-color: #e5e7eb;
+}
+
+.gerant-maq2 svg {
+  display: block;
+  vertical-align: middle;
+}
+
+.gerant-maq2 :where(h1, h2, h3, h4, h5, h6) {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.gerant-maq2 button,
+.gerant-maq2 [role='button'] {
+  cursor: pointer;
+}
+
+.gerant-maq2 :disabled {
+  cursor: default;
+}
+
+.gerant-maq2 table {
+  border-collapse: collapse;
+  text-indent: 0;
+  border-color: inherit;
+}
+
+.gerant-maq2 button,
+.gerant-maq2 [type='button'] {
+  -webkit-appearance: button;
+  background-color: transparent;
+  background-image: none;
+}
+
+.gerant-maq2 input,
+.gerant-maq2 select {
+  margin: 0;
+  font-family: inherit;
+  font-size: 100%;
+  line-height: inherit;
+  color: inherit;
+}
+
+.gerant-maq2 select {
+  border: 0;
+  background-color: transparent;
+}
+
+.gerant-maq2 [type='search'] {
+  -webkit-appearance: textfield;
+  outline-offset: -2px;
+}
+
+.gerant-maq2 ::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
+/* Le site ajoute une barre d'accent fixe sur <html> : maq2 n'en a pas. */
+html:has(.gerant-maq2)::before {
+  display: none;
+}
+
+/* Le site force overflow:hidden sur <main> : maq2 ne le fait pas. */
+.gerant-maq2 main {
+  overflow: visible;
+}
+
+/* ---------- Composants de la maquette ---------- */
+.gerant-maq2 .i {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.gerant-maq2 .card {
+  background: #fff;
+  border-radius: 1rem;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 2px 12px rgba(15, 42, 92, 0.05);
+}
+
+.gerant-maq2 .grp {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+  color: #0f2a5c;
+}
+
+.gerant-maq2 .grp svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.gerant-maq2 .sub {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #64748b;
+}
+
+.gerant-maq2 .sub:hover {
+  color: #0f2a5c;
+}
+
+.gerant-maq2 .sub svg {
+  width: 1rem;
+  height: 1rem;
+  color: #94a3b8;
+}
+
+.gerant-maq2 .sub.on {
+  color: #ea580c;
+}
+
+.gerant-maq2 .sub.on svg {
+  color: #f97316;
+}
+
+.gerant-maq2 .badge {
+  margin-left: auto;
+  display: grid;
+  height: 1.25rem;
+  width: 1.25rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: #f97316;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.gerant-maq2 .avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 9999px;
+  background: linear-gradient(to bottom right, #cbd5e1, #64748b);
+  font-weight: 700;
+  color: #fff;
+}
+
+.gerant-maq2 .field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: #475569;
+}
+
+.gerant-maq2 .field select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  padding: 0.75rem 2.25rem 0.75rem 1rem;
+  outline: none;
+}
+
+.gerant-maq2 .field > svg {
+  pointer-events: none;
+  position: absolute;
+  right: 0.75rem;
+  width: 1rem;
+  height: 1rem;
+  color: #64748b;
+}
+
+.gerant-maq2 .st {
+  position: absolute;
+  left: 0.625rem;
+  top: 0.625rem;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.gerant-maq2 .hb {
+  position: absolute;
+  right: 0.625rem;
+  top: 0.625rem;
+  display: grid;
+  height: 2rem;
+  width: 2rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #0f2a5c;
+}
+
+.gerant-maq2 .tag {
+  display: inline-block;
+  border-radius: 0.25rem;
+  background: #ffedd5;
+  padding: 0.125rem 0.5rem;
+  font-size: 11px;
+  font-weight: 500;
+  color: #ea580c;
+}
+
+.gerant-maq2 .meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #64748b;
+}
+
+.gerant-maq2 .meta svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  color: #94a3b8;
+}
+
+.gerant-maq2 .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 600;
+}
+
+.gerant-maq2 .btn:hover {
+  background: #f8fafc;
+}
+
+.gerant-maq2 .tg {
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.gerant-maq2 .tg:has(:checked) {
+  border-color: #e0f2fe;
+  background: #f0f9ff;
+  color: #0f2a5c;
+}
+
+.gerant-maq2 .sw {
+  position: relative;
+  width: 2.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: #94a3b8;
+  transition: 0.2s;
+}
+
+.gerant-maq2 .sw::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  background: #fff;
+  transition: 0.2s;
+}
+
+.gerant-maq2 input:checked + .sw {
+  background: #10b981;
+}
+
+.gerant-maq2 input:checked + .sw::after {
+  transform: translateX(1rem);
+}
+
+.gerant-maq2 .tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid #f1f5f9;
+  padding: 1rem;
+}
+
+.gerant-maq2 .row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+}
+
+.gerant-maq2 .row > span:last-child {
+  margin-left: auto;
+  color: #64748b;
+}
+
+.gerant-maq2 .ico {
+  display: grid;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 9999px;
+}
+
+.gerant-maq2 .ico svg {
+  height: 1.25rem;
+  width: 1.25rem;
+}

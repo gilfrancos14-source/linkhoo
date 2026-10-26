@@ -43,10 +43,9 @@ const validGerant = {
 };
 
 const validDoc = {
-  document_type: 'id_card_front',
-  file_url: 'https://storage.test/verification-docs/front.webp',
-  file_path: 'verification-docs/front.webp',
-  original_filename: 'recto.png',
+  document_type: 'national_id',
+  file_path: 'user_1/front.webp',
+  original_filename: 'identite.png',
   mime_type: 'image/png',
   file_size: 12345,
 };
@@ -186,6 +185,19 @@ describe('PATCH /api/gerants/me', () => {
     expect(res.status).toBe(400);
   });
 
+  it('400 : le marché est immuable côté gérant', async () => {
+    gerants = fakeChain({ data: { id: 'g1' }, error: null });
+    stubTables({});
+
+    const res = await request(app)
+      .patch('/api/gerants/me')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ market: 'BJ' });
+
+    expect(res.status).toBe(400);
+    expect((gerants as FakeChain).update).not.toHaveBeenCalled();
+  });
+
   it('404 si le profil disparaît entre les deux lectures', async () => {
     const profileCheck = fakeChain({ data: { id: 'g1' }, error: null });
     stubTables({ gerants: [profileCheck, fakeChain({ data: null, error: null })] });
@@ -292,7 +304,7 @@ describe('POST /api/gerants/:id/documents', () => {
     const res = await request(app)
       .post('/api/gerants/g1/documents')
       .set('Authorization', clerkBearer('user_1'))
-      .send({ document_type: 'id_card_front' });
+      .send({ document_type: 'national_id' });
     expect(res.status).toBe(400);
   });
 
@@ -308,6 +320,22 @@ describe('POST /api/gerants/:id/documents', () => {
       .set('Authorization', clerkBearer('user_1'))
       .send({ ...validDoc, document_type: 'passeport' });
     expect(res.status).toBe(400);
+  });
+
+  it('403 si le chemin storage appartient à un autre utilisateur', async () => {
+    gerants = fakeChain({
+      data: { clerk_user_id: 'user_1', verification_status: 'none' },
+      error: null,
+    });
+    stubTables({});
+
+    const res = await request(app)
+      .post('/api/gerants/g1/documents')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ ...validDoc, file_path: 'autre_user/front.webp' });
+
+    expect(res.status).toBe(403);
+    expect((documents as FakeChain).insert).not.toHaveBeenCalled();
   });
 
   it('409 si un document du même type existe déjà', async () => {
@@ -340,8 +368,53 @@ describe('POST /api/gerants/:id/documents', () => {
 
     expect(res.status).toBe(201);
     expect(createdDoc.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ gerant_id: 'g1', document_type: 'id_card_front' }),
+      expect.objectContaining({
+        gerant_id: 'g1',
+        document_type: 'national_id',
+        file_path: 'user_1/front.webp',
+        // Le client ne peut pas imposer une URL (ni un chemin externe).
+        file_url: null,
+      }),
     );
+    expect(supabaseStorage().createSignedUrl).toHaveBeenCalledWith('user_1/front.webp', 3600);
+    expect(res.body.file_url).toBe('https://storage.test/signed/fichier-test');
+  });
+
+  it('201 : remplace un document existant quand replace=true', async () => {
+    gerants = fakeChain({
+      data: { clerk_user_id: 'user_1', verification_status: 'rejected' },
+      error: null,
+    });
+    const existing = fakeChain({
+      data: { id: 'doc-1', file_path: 'user_1/ancien.webp' },
+      error: null,
+    });
+    const updated = fakeChain({
+      data: { id: 'doc-1', file_path: 'user_1/nouveau.webp' },
+      error: null,
+    });
+    stubTables({ verification_documents: [existing, updated] });
+
+    const res = await request(app)
+      .post('/api/gerants/g1/documents')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({
+        ...validDoc,
+        document_type: 'national_id',
+        file_path: 'user_1/nouveau.webp',
+        replace: true,
+      });
+
+    expect(res.status).toBe(201);
+    expect(updated.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        document_type: 'national_id',
+        file_path: 'user_1/nouveau.webp',
+        status: 'pending',
+        rejection_reason: null,
+      }),
+    );
+    expect(supabaseStorage().remove).toHaveBeenCalledWith(['user_1/ancien.webp']);
   });
 });
 
@@ -359,7 +432,7 @@ describe('GET /api/gerants/:id/documents', () => {
   it('200 : renouvelle les URL signées', async () => {
     gerants = fakeChain({ data: { clerk_user_id: 'user_1' }, error: null });
     documents = fakeChain({
-      data: [{ id: 'doc-1', file_path: 'verification-docs/front.webp', file_url: 'ancienne' }],
+      data: [{ id: 'doc-1', file_path: 'user_1/front.webp', file_url: 'https://evil.test/leak.png' }],
       error: null,
     });
     stubTables({});
@@ -370,10 +443,67 @@ describe('GET /api/gerants/:id/documents', () => {
 
     expect(res.status).toBe(200);
     expect(supabaseStorage().createSignedUrl).toHaveBeenCalledWith(
-      'verification-docs/front.webp',
+      'user_1/front.webp',
       3600,
     );
     expect(res.body[0].file_url).toBe('https://storage.test/signed/fichier-test');
+  });
+
+  it("ne signe pas un chemin hérité appartenant à un autre gérant", async () => {
+    gerants = fakeChain({ data: { clerk_user_id: 'user_1' }, error: null });
+    documents = fakeChain({
+      data: [{ id: 'doc-1', file_path: 'user_2/front.webp' }],
+      error: null,
+    });
+    stubTables({});
+
+    const res = await request(app)
+      .get('/api/gerants/g1/documents')
+      .set('Authorization', clerkBearer('user_1'));
+
+    expect(res.status).toBe(200);
+    expect(supabaseStorage().createSignedUrl).not.toHaveBeenCalled();
+    expect(res.body[0].file_url).toBeNull();
+  });
+
+  it('continue de signer les anciens chemins plats (uuid.ext)', async () => {
+    gerants = fakeChain({ data: { clerk_user_id: 'user_1' }, error: null });
+    documents = fakeChain({
+      data: [{ id: 'doc-1', file_path: '0f8fad5b-d9cb-469f-a165-70867728950e.webp' }],
+      error: null,
+    });
+    stubTables({});
+
+    const res = await request(app)
+      .get('/api/gerants/g1/documents')
+      .set('Authorization', clerkBearer('user_1'));
+
+    expect(res.status).toBe(200);
+    expect(supabaseStorage().createSignedUrl).toHaveBeenCalledWith(
+      '0f8fad5b-d9cb-469f-a165-70867728950e.webp',
+      3600,
+    );
+    expect(res.body[0].file_url).toBe('https://storage.test/signed/fichier-test');
+  });
+
+  it('ne retombe jamais sur file_url quand la signature échoue', async () => {
+    gerants = fakeChain({ data: { clerk_user_id: 'user_1' }, error: null });
+    documents = fakeChain({
+      data: [{ id: 'doc-1', file_path: 'user_1/front.webp', file_url: 'https://evil.test/leak.png' }],
+      error: null,
+    });
+    stubTables({});
+    vi.mocked(supabaseStorage().createSignedUrl).mockResolvedValueOnce({
+      data: null,
+      error: { message: 'introuvable' },
+    });
+
+    const res = await request(app)
+      .get('/api/gerants/g1/documents')
+      .set('Authorization', clerkBearer('user_1'));
+
+    expect(res.status).toBe(200);
+    expect(res.body[0].file_url).toBeNull();
   });
 });
 
@@ -398,7 +528,7 @@ describe('DELETE /api/gerants/:id/documents/:docId', () => {
       error: null,
     });
     const foundDoc = fakeChain({
-      data: { id: 'doc-1', file_path: 'verification-docs/front.webp' },
+      data: { id: 'doc-1', file_path: 'user_1/front.webp' },
       error: null,
     });
     const deleteResult = fakeChain({ data: null, error: null });
@@ -409,7 +539,7 @@ describe('DELETE /api/gerants/:id/documents/:docId', () => {
       .set('Authorization', clerkBearer('user_1'));
 
     expect(res.status).toBe(204);
-    expect(supabaseStorage().remove).toHaveBeenCalledWith(['verification-docs/front.webp']);
+    expect(supabaseStorage().remove).toHaveBeenCalledWith(['user_1/front.webp']);
     expect(deleteResult.delete).toHaveBeenCalled();
   });
 });
@@ -471,6 +601,71 @@ describe('PATCH /api/gerants/:id/property-address', () => {
     expect(updated.update).toHaveBeenCalledWith(
       expect.objectContaining({ property_lat: 5.35, property_lng: 4.01 }),
     );
+    expect(updated.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        property_maps_url: 'https://www.google.com/maps/place/Test/@5.35,4.01,17z',
+      }),
+    );
+  });
+
+  it('200 : ajoute le schéma manquant à un lien Google Maps', async () => {
+    const fetched = fakeChain({
+      data: { clerk_user_id: 'user_1', verification_status: 'none' },
+      error: null,
+    });
+    const updated = fakeChain({ data: { id: 'g1' }, error: null });
+    stubTables({ gerants: [fetched, updated] });
+
+    const res = await request(app)
+      .patch('/api/gerants/g1/property-address')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ maps_url: 'www.google.com/maps/place/Test/@5.35,4.01,17z' });
+
+    expect(res.status).toBe(200);
+    expect(updated.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        property_maps_url: 'https://www.google.com/maps/place/Test/@5.35,4.01,17z',
+      }),
+    );
+  });
+
+  it('200 : reconstruit une URL canonique si la saisie nest pas un lien Maps', async () => {
+    const fetched = fakeChain({
+      data: { clerk_user_id: 'user_1', verification_status: 'none' },
+      error: null,
+    });
+    const updated = fakeChain({
+      data: { id: 'g1', property_lat: 5.35, property_lng: 4.01 },
+      error: null,
+    });
+    stubTables({ gerants: [fetched, updated] });
+
+    const res = await request(app)
+      .patch('/api/gerants/g1/property-address')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ maps_url: 'https://exemple.com/ma-maison', lat: 5.35, lng: 4.01 });
+
+    expect(res.status).toBe(200);
+    expect(updated.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        property_maps_url: 'https://www.google.com/maps?q=5.35,4.01',
+      }),
+    );
+  });
+
+  it('400 : refuse un pseudo schéma javascript dans maps_url', async () => {
+    gerants = fakeChain({
+      data: { clerk_user_id: 'user_1', verification_status: 'none' },
+      error: null,
+    });
+    stubTables({});
+
+    const res = await request(app)
+      .patch('/api/gerants/g1/property-address')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ maps_url: 'javascript:alert(1)' });
+
+    expect(res.status).toBe(400);
   });
 });
 
@@ -478,6 +673,12 @@ describe('POST /api/gerants/:id/submit-verification', () => {
   const readyGerant = {
     clerk_user_id: 'user_1',
     email: 'gerant@example.ci',
+    nom: 'Koné',
+    prenom: 'Aya',
+    phone: '+225070102030',
+    address: 'Cocody, Abidjan',
+    date_of_birth: '1995-03-12',
+    nationality: 'Ivoirienne',
     verification_status: 'none',
     market: 'CI',
     property_lat: 5.3,
@@ -496,7 +697,7 @@ describe('POST /api/gerants/:id/submit-verification', () => {
     expect(res.status).toBe(403);
   });
 
-  it('400 sans les deux faces de la pièce didentité', async () => {
+  it('400 sans les trois documents obligatoires', async () => {
     gerants = fakeChain({ data: readyGerant, error: null });
     documents = fakeChain({ data: [{ document_type: 'selfie' }], error: null });
     stubTables({});
@@ -507,14 +708,10 @@ describe('POST /api/gerants/:id/submit-verification', () => {
       .send({});
     expect(res.status).toBe(400);
   });
-
-  it('400 sans adresse Google Maps', async () => {
-    gerants = fakeChain({
-      data: { ...readyGerant, property_lat: null, property_lng: null, property_maps_url: null },
-      error: null,
-    });
+  it('400 sans justificatif de domicile pour le nouveau parcours', async () => {
+    gerants = fakeChain({ data: readyGerant, error: null });
     documents = fakeChain({
-      data: [{ document_type: 'id_card_front' }, { document_type: 'id_card_back' }],
+      data: [{ document_type: 'national_id' }],
       error: null,
     });
     stubTables({});
@@ -523,13 +720,70 @@ describe('POST /api/gerants/:id/submit-verification', () => {
       .post('/api/gerants/g1/submit-verification')
       .set('Authorization', clerkBearer('user_1'))
       .send({});
+
     expect(res.status).toBe(400);
+    expect((gerants as FakeChain).update).not.toHaveBeenCalled();
+  });
+
+  it('400 sans informations personnelles complètes', async () => {
+    gerants = fakeChain({
+      data: { ...readyGerant, date_of_birth: null },
+      error: null,
+    });
+    documents = fakeChain({
+      data: [
+        { document_type: 'national_id' },
+        { document_type: 'proof_of_address' },
+        { document_type: 'selfie' },
+      ],
+      error: null,
+    });
+    stubTables({});
+
+    const res = await request(app)
+      .post('/api/gerants/g1/submit-verification')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('informations personnelles');
+    expect((gerants as FakeChain).update).not.toHaveBeenCalled();
+  });
+
+  it('200 : soumet le nouveau dossier sans adresse Google Maps', async () => {
+    gerants = fakeChain({
+      data: { ...readyGerant, property_lat: null, property_lng: null, property_maps_url: null },
+      error: null,
+    });
+    documents = fakeChain({
+      data: [
+        { document_type: 'national_id' },
+        { document_type: 'proof_of_address' },
+        { document_type: 'selfie' },
+      ],
+      error: null,
+    });
+    stubTables({});
+
+    const res = await request(app)
+      .post('/api/gerants/g1/submit-verification')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect((documents as FakeChain).update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'pending', rejection_reason: null }),
+    );
   });
 
   it('400 quand une demande de vérification est déjà en cours', async () => {
     gerants = fakeChain({ data: { ...readyGerant, verification_status: 'pending' }, error: null });
     documents = fakeChain({
-      data: [{ document_type: 'id_card_front' }, { document_type: 'id_card_back' }],
+      data: [
+        { document_type: 'national_id' },
+        { document_type: 'proof_of_address' },
+        { document_type: 'selfie' },
+      ],
       error: null,
     });
     stubTables({});
@@ -547,7 +801,11 @@ describe('POST /api/gerants/:id/submit-verification', () => {
   it('200 : soumet le dossier sans paiement, le passe en attente et notifie admin', async () => {
     gerants = fakeChain({ data: readyGerant, error: null });
     documents = fakeChain({
-      data: [{ document_type: 'id_card_front' }, { document_type: 'id_card_back' }],
+      data: [
+        { document_type: 'national_id' },
+        { document_type: 'proof_of_address' },
+        { document_type: 'selfie' },
+      ],
       error: null,
     });
     stubTables({});
@@ -579,7 +837,11 @@ describe('POST /api/gerants/:id/submit-verification', () => {
   it('200 : na besoin ni demail ni de paiement pour soumettre', async () => {
     gerants = fakeChain({ data: { ...readyGerant, email: null }, error: null });
     documents = fakeChain({
-      data: [{ document_type: 'id_card_front' }, { document_type: 'id_card_back' }],
+      data: [
+        { document_type: 'national_id' },
+        { document_type: 'proof_of_address' },
+        { document_type: 'selfie' },
+      ],
       error: null,
     });
     stubTables({});
@@ -665,7 +927,7 @@ describe('GET /api/gerants/:id/verification-status', () => {
       },
       error: null,
     });
-    documents = fakeChain({ data: [{ id: 'doc-1', document_type: 'id_card_front' }], error: null });
+    documents = fakeChain({ data: [{ id: 'doc-1', document_type: 'national_id' }], error: null });
     stubTables({});
 
     const res = await request(app)

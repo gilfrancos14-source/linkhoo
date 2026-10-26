@@ -4,14 +4,16 @@ import type { VerificationDocument, VerificationDocType } from '../lib/api';
 import PropertyMap from './PropertyMap';
 
 const DOC_LABELS: Record<VerificationDocType, string> = {
-  id_card_front: 'Carte d\'identité — Recto',
-  id_card_back: 'Carte d\'identité — Verso',
   national_id: 'Pièce d\'identité',
+  proof_of_address: 'Justificatif de domicile',
   selfie: 'Selfie',
 };
 
-const NEW_DOC_ORDER: VerificationDocType[] = ['id_card_front', 'id_card_back'];
-const LEGACY_DOC_ORDER: VerificationDocType[] = ['national_id', 'selfie'];
+const REQUIRED_DOC_ORDER: VerificationDocType[] = [
+  'national_id',
+  'proof_of_address',
+  'selfie',
+];
 
 interface AdminGerantDrawerProps {
   gerant: AdminGerant;
@@ -105,24 +107,17 @@ export default function AdminGerantDrawer({ gerant, onClose, onUpdated }: AdminG
     }
   };
 
-  const frontDoc = documents.find((d) => d.document_type === 'id_card_front');
-  const backDoc = documents.find((d) => d.document_type === 'id_card_back');
-  const legacyIdDoc = documents.find((d) => d.document_type === 'national_id');
-  const legacySelfieDoc = documents.find((d) => d.document_type === 'selfie');
-  const hasNewPair = Boolean(frontDoc && backDoc);
-  const hasLegacyPair = Boolean(legacyIdDoc && legacySelfieDoc);
-  const allApproved = hasNewPair
-    ? frontDoc!.status === 'approved' && backDoc!.status === 'approved'
-    : hasLegacyPair
-      ? legacyIdDoc!.status === 'approved' && legacySelfieDoc!.status === 'approved'
-      : false;
+  const requiredDocs = REQUIRED_DOC_ORDER.map((type) =>
+    documents.find((doc) => doc.document_type === type),
+  ).filter((doc): doc is VerificationDocument => Boolean(doc));
+  const allApproved =
+    requiredDocs.length === REQUIRED_DOC_ORDER.length &&
+    requiredDocs.every((doc) => doc.status === 'approved');
   const hasPending = gerant.verification_status === 'pending' || gerant.verification_status === 'under_review';
   const hasAddress = gerant.property_lat != null && gerant.property_lng != null && Boolean(gerant.property_maps_url);
-  const orderedDocs = hasNewPair
-    ? NEW_DOC_ORDER.map((t) => documents.find((d) => d.document_type === t)).filter(Boolean) as VerificationDocument[]
-    : hasLegacyPair
-      ? LEGACY_DOC_ORDER.map((t) => documents.find((d) => d.document_type === t)).filter(Boolean) as VerificationDocument[]
-      : documents;
+  const orderedDocs = REQUIRED_DOC_ORDER.map((type) =>
+    documents.find((doc) => doc.document_type === type),
+  ).filter((doc): doc is VerificationDocument => Boolean(doc));
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, pointerEvents: visible ? 'auto' : 'none' }}>
@@ -161,6 +156,28 @@ export default function AdminGerantDrawer({ gerant, onClose, onUpdated }: AdminG
 
         <div style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
           {error && <div className="auth-error" style={{ marginBottom: '12px' }}>{error}</div>}
+
+          <div style={{ border: '1px solid var(--admin-line)', borderRadius: '10px', padding: '16px', marginBottom: '16px' }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: 600 }}>Informations personnelles</h3>
+            <dl style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '8px 12px', margin: 0, fontSize: '13px' }}>
+              <dt style={{ color: 'var(--admin-ink-soft)' }}>Nom complet</dt>
+              <dd style={{ margin: 0 }}>{`${gerant.prenom} ${gerant.nom}`.trim() || '—'}</dd>
+              <dt style={{ color: 'var(--admin-ink-soft)' }}>Email</dt>
+              <dd style={{ margin: 0 }}>{gerant.email || '—'}</dd>
+              <dt style={{ color: 'var(--admin-ink-soft)' }}>Téléphone</dt>
+              <dd style={{ margin: 0 }}>{gerant.phone || '—'}</dd>
+              <dt style={{ color: 'var(--admin-ink-soft)' }}>Date de naissance</dt>
+              <dd style={{ margin: 0 }}>
+                {gerant.date_of_birth
+                  ? new Date(`${gerant.date_of_birth}T00:00:00`).toLocaleDateString('fr-FR')
+                  : '—'}
+              </dd>
+              <dt style={{ color: 'var(--admin-ink-soft)' }}>Nationalité</dt>
+              <dd style={{ margin: 0 }}>{gerant.nationality || '—'}</dd>
+              <dt style={{ color: 'var(--admin-ink-soft)' }}>Adresse</dt>
+              <dd style={{ margin: 0 }}>{gerant.address || '—'}</dd>
+            </dl>
+          </div>
 
           <div style={{ border: '1px solid var(--admin-line)', borderRadius: '10px', padding: '16px', marginBottom: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -228,7 +245,7 @@ export default function AdminGerantDrawer({ gerant, onClose, onUpdated }: AdminG
                   </div>
 
                   <div style={{ borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--admin-line)', marginBottom: '12px' }}>
-                    {doc.mime_type?.startsWith('image/') ? (
+                    {doc.file_url && doc.mime_type?.startsWith('image/') ? (
                       <img src={doc.file_url} alt={doc.document_type} style={{ width: '100%', maxHeight: '300px', objectFit: 'contain', background: '#f8fafc' }} />
                     ) : (
                       <div style={{ height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', color: '#64748b', fontSize: '13px' }}>
@@ -291,8 +308,8 @@ export default function AdminGerantDrawer({ gerant, onClose, onUpdated }: AdminG
                     {actionLoading === 'start-review' ? '...' : 'Commencer la révision'}
                   </button>
                 )}
-                <button className="admin-btn admin-btn--success" onClick={handleApprove} disabled={!allApproved || !hasAddress || actionLoading === 'approve'}
-                  title={!hasAddress ? 'Adresse Google Maps manquante' : !allApproved ? 'Les 2 documents doivent être approuvés' : undefined}>
+                <button className="admin-btn admin-btn--success" onClick={handleApprove} disabled={!allApproved || actionLoading === 'approve'}
+                  title={!allApproved ? 'Les 3 documents doivent être approuvés' : undefined}>
                   {actionLoading === 'approve' ? '...' : 'Approuver'}
                 </button>
                 <button className="admin-btn admin-btn--danger" onClick={() => setShowRejectInput(true)}>

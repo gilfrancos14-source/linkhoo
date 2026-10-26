@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Contact – Linkhoo</title>
+
+  <!-- Polices -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@500;600&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS (CDN : adapté à la démo / au prototypage) -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            script: ['Caveat', 'cursive'],
+          },
+          colors: {
+            brand: { DEFAULT: '#6b2fe0', dark: '#4c1fb0', deep: '#3a1c93', soft: '#ede9fe', pale: '#f6f3ff' },
+            ink: '#1b1740',
+            navy: '#0e0f2e',
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Icônes Lucide -->
+  <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+</head>
+
+<body class="bg-white font-sans text-ink antialiased">
+
+  <!-- ================= SPRITE SVG (logo + réseaux sociaux) ================= -->
+  <svg width="0" height="0" class="absolute" aria-hidden="true">
+    <defs>
+      <symbol id="logo" viewBox="0 0 32 32">
+        <path d="M16 2.2 3 12.6V28a2 2 0 0 0 2 2h22a2 2 0 0 0 2-2V12.6z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+        <path d="M10.5 23.5v-7.2L16 12l5.5 4.3v7.2z" fill="none" stroke="var(--inner,#fff)" stroke-width="1.8" stroke-linejoin="round" />
+        <path d="M14 23.5v-3.8h4v3.8" fill="none" stroke="var(--inner,#fff)" stroke-width="1.8" stroke-linejoin="round" />
+      </symbol>
+      <symbol id="s-fb" viewBox="0 0 24 24"><path d="M14 8h3V4h-3a4 4 0 0 0-4 4v2H7v4h3v8h4v-8h3l1-4h-4V8z" fill="currentColor" /></symbol>
+      <symbol id="s-x" viewBox="0 0 24 24"><path d="M18.9 2H22l-7.2 8.2L23 22h-6.4l-5-6.5L5.8 22H2.7l7.7-8.8L2 2h6.5l4.5 6zM17.8 20h1.7L7.3 3.9H5.5z" fill="currentColor" /></symbol>
+      <symbol id="s-ig" viewBox="0 0 24 24">
+        <rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2" />
+        <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2" />
+        <circle cx="17.3" cy="6.7" r="1.2" fill="currentColor" />
+      </symbol>
+      <symbol id="s-yt" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M22 8.5a3 3 0 0 0-2.1-2.1C18 6 12 6 12 6s-6 0-7.9.4A3 3 0 0 0 2 8.5 31 31 0 0 0 1.6 12c0 1.2.1 2.3.4 3.5a3 3 0 0 0 2.1 2.1C6 18 12 18 12 18s6 0 7.9-.4a3 3 0 0 0 2.1-2.1c.3-1.2.4-2.3.4-3.5s-.1-2.3-.4-3.5zM10 15V9l5 3z" fill="currentColor" /></symbol>
+      <symbol id="s-in" viewBox="0 0 24 24"><path d="M5 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9.5h4v12H3zM9.5 9.5h3.8v1.7c.6-1 1.9-2 3.9-2 4 0 4.8 2.6 4.8 6v6.3h-4v-5.6c0-1.4 0-3.1-1.9-3.1s-2.2 1.5-2.2 3v5.7h-4z" fill="currentColor" /></symbol>
+      <symbol id="s-tt" viewBox="0 0 24 24"><path d="M16.6 2h-3.2v13.2a2.9 2.9 0 1 1-2.9-2.9c.3 0 .6 0 .9.1V9.1a6.1 6.1 0 1 0 5.2 6V8.6a7.4 7.4 0 0 0 4.3 1.4V6.8a4.3 4.3 0 0 1-4.3-4.3z" fill="currentColor" /></symbol>
+    </defs>
+  </svg>
+
+  <!-- ================= BARRE D'ANNONCE ================= -->
+  <div id="announce" class="bg-[#6b2fe0] text-white">
+    <div class="mx-auto flex h-8 max-w-[1180px] items-center justify-between px-4 sm:px-10 lg:px-[78px]">
+      <p class="flex items-center gap-2 text-[10px] font-medium">
+        <i data-lucide="megaphone" class="h-3 w-3"></i>
+        <span>Louez en toute confiance, partout en Afrique de l'Ouest !</span>
+      </p>
+      <div class="flex items-center gap-3">
+        <span class="hidden items-center gap-1.5 rounded-full bg-white/15 px-3 py-[3px] text-[9.5px] font-medium sm:inline-flex">
+          <i data-lucide="globe" class="h-3 w-3"></i> 12 pays disponibles
+        </span>
+        <button id="announceClose" type="button" aria-label="Fermer" class="text-white/90 transition hover:text-white">
+          <i data-lucide="x" class="h-3.5 w-3.5"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= HEADER ================= -->
+  <header class="relative border-b border-[#ece9f6] bg-white">
+    <div class="mx-auto flex h-[52px] max-w-[1180px] items-center justify-between px-4 sm:px-10 lg:px-[78px]">
+      <!-- Logo -->
+      <a href="#" class="flex items-center gap-2">
+        <svg class="h-8 w-8 text-brand"><use href="#logo" /></svg>
+        <span class="text-[24px] font-extrabold leading-none tracking-tight text-brand-deep">Link<span class="text-brand">hoo</span></span>
+      </a>
+
+      <!-- Navigation -->
+      <nav class="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 text-[11px] font-medium text-ink md:flex lg:left-[calc(50%-24px)]">
+        <a href="#" class="transition hover:text-brand">Accueil</a>
+        <a href="#" class="transition hover:text-brand">À propos</a>
+        <a href="#" class="relative py-[17px] font-semibold text-brand after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:bg-brand">Contact</a>
+      </nav>
+
+      <!-- Actions -->
+      <div class="flex items-center gap-5">
+        <div class="relative hidden sm:block">
+          <button id="countryBtn" type="button" class="flex h-[30px] items-center gap-2 rounded-lg border border-[#e6e3f2] bg-white px-2.5 text-[10.5px] font-medium text-ink shadow-sm">
+            <span id="flag" class="flex h-[15px] w-[15px] overflow-hidden rounded-full">
+              <span class="h-full flex-1 bg-[#f77f00]"></span><span class="h-full flex-1 bg-white"></span><span class="h-full flex-1 bg-[#009e60]"></span>
+            </span>
+            <span id="countryLabel">Côte d'Ivoire</span>
+            <i data-lucide="chevron-down" class="ml-2 h-3 w-3 text-ink"></i>
+          </button>
+          <ul id="countryMenu" class="absolute right-0 top-[34px] z-30 hidden w-[150px] overflow-hidden rounded-lg border border-[#e6e3f2] bg-white py-1 text-[11px] shadow-lg">
+            <li><button type="button" data-c="Sénégal" data-k="#00853f,#fdef42,#e31b23" class="w-full px-3 py-1.5 text-left hover:bg-brand-pale">Sénégal</button></li>
+            <li><button type="button" data-c="Côte d'Ivoire" data-k="#f77f00,#ffffff,#009e60" class="w-full px-3 py-1.5 text-left hover:bg-brand-pale">Côte d'Ivoire</button></li>
+            <li><button type="button" data-c="Bénin" data-k="#008751,#fcd116,#e8112d" class="w-full px-3 py-1.5 text-left hover:bg-brand-pale">Bénin</button></li>
+            <li><button type="button" data-c="Mali" data-k="#14b53a,#fcd116,#ce1126" class="w-full px-3 py-1.5 text-left hover:bg-brand-pale">Mali</button></li>
+          </ul>
+        </div>
+        <button type="button" aria-label="Rechercher" class="text-ink transition hover:text-brand"><i data-lucide="search" class="h-[18px] w-[18px]"></i></button>
+        <button id="menuBtn" type="button" aria-label="Menu" class="text-ink transition hover:text-brand"><i data-lucide="menu" class="h-[20px] w-[20px]"></i></button>
+      </div>
+    </div>
+
+    <!-- Menu déroulant (mobile / hamburger) -->
+    <div id="mobileMenu" class="absolute inset-x-0 top-full z-30 hidden border-b border-[#ece9f6] bg-white shadow-lg">
+      <div class="mx-auto flex max-w-[1180px] flex-col px-4 py-2 text-[13px] font-medium sm:px-10 lg:px-[78px]">
+        <a href="#" class="py-2.5 hover:text-brand">Accueil</a>
+        <a href="#" class="py-2.5 hover:text-brand">À propos</a>
+        <a href="#" class="py-2.5 font-semibold text-brand">Contact</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ================= HERO ================= -->
+    <section class="bg-gradient-to-b from-[#f7f4ff] to-[#f3effd]">
+      <div class="mx-auto grid max-w-[1180px] gap-8 px-4 pb-8 pt-8 sm:px-10 lg:grid-cols-[1fr_416px] lg:gap-10 lg:px-[75px] lg:pb-[20px] lg:pt-[31px]">
+
+        <!-- Texte -->
+        <div>
+          <span class="inline-flex h-[22px] items-center gap-1.5 rounded-full bg-[#e9e3fb] px-2.5 text-[10.5px] font-semibold text-brand">
+            <i data-lucide="send" class="h-[11px] w-[11px]"></i> Nous contacter
+          </span>
+
+          <h1 class="mt-3.5 text-[29px] font-extrabold leading-[32px] tracking-tight text-ink">
+            Une question ?<br />
+            <span class="text-[#7a2ee6]">Nous sommes là pour vous !</span>
+          </h1>
+
+          <p class="mt-[17px] max-w-[360px] text-[12px] leading-[17.5px] text-[#4b4f6b]">
+            Notre équipe est à votre écoute pour répondre à toutes vos questions, vous accompagner et vous aider à profiter pleinement de Linkhoo. Que ce soit pour une demande d'information, un souci technique ou une suggestion, n'hésitez pas à nous écrire !
+          </p>
+
+          <div class="mt-[22px] grid grid-cols-1 gap-5 sm:grid-cols-3 sm:gap-x-0">
+            <div class="sm:w-[142px]">
+              <span class="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-[#e9e3fb] text-brand"><i data-lucide="badge-check" class="h-[18px] w-[18px]"></i></span>
+              <h3 class="mt-3 text-[11.5px] font-semibold text-ink">Réponse rapide</h3>
+              <p class="mt-1 text-[10.5px] leading-[15px] text-[#7a7d96]">Sous 24h, en général</p>
+            </div>
+            <div class="sm:w-[142px]">
+              <span class="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-[#e9e3fb] text-brand"><i data-lucide="user-round" class="h-[18px] w-[18px]"></i></span>
+              <h3 class="mt-3 text-[11.5px] font-semibold text-ink">Équipe disponible</h3>
+              <p class="mt-1 text-[10.5px] leading-[15px] text-[#7a7d96]">7j/7, de 8h à 22h</p>
+            </div>
+            <div class="sm:w-[142px]">
+              <span class="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-[#e9e3fb] text-brand"><i data-lucide="shield-check" class="h-[18px] w-[18px]"></i></span>
+              <h3 class="mt-3 text-[11.5px] font-semibold text-ink">Aide personnalisée</h3>
+              <p class="mt-1 text-[10.5px] leading-[15px] text-[#7a7d96]">Par email, téléphone<br class="hidden sm:block" /> ou via le formulaire</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visuel -->
+        <div class="relative h-[307px] w-full overflow-hidden rounded-[14px] bg-gradient-to-br from-[#6b35d9] via-[#4f22bd] to-[#2d1380] shadow-[0_8px_24px_rgba(80,40,180,0.18)]">
+          <!-- Remplacement provisoire (silhouette) – masqué si la photo existe -->
+          <svg class="absolute bottom-0 left-[28%] h-[88%] text-[#2a1275]/70" viewBox="0 0 200 240" fill="currentColor" aria-hidden="true">
+            <circle cx="100" cy="70" r="42" />
+            <path d="M20 240c0-52 36-84 80-84s80 32 80 84z" />
+          </svg>
+          <!-- PHOTO À FOURNIR : remplace le chemin ci-dessous -->
+          <img src="images/hero-support.jpg" alt="Conseillère Linkhoo avec casque, sourire" class="absolute inset-0 h-full w-full object-cover object-top" onerror="this.style.display='none'" />
+
+          <!-- Texte manuscrit -->
+          <div class="pointer-events-none absolute right-[18px] top-[18px] w-[160px] -rotate-[9deg] text-right text-white">
+            <p class="font-script text-[24px] font-medium italic leading-[24px]">Votre satisfaction<br />est notre priorité</p>
+            <svg class="ml-auto mt-0.5 h-[14px] w-[110px]" viewBox="0 0 110 14" fill="none" aria-hidden="true">
+              <path d="M2 12C30 4 70 3 108 3" stroke="white" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+          </div>
+
+          <!-- Petit badge maison -->
+          <span class="absolute left-[218px] top-[230px] hidden h-[32px] w-[32px] items-center justify-center rounded-[9px] bg-white/95 text-brand shadow-md sm:flex">
+            <svg class="h-[22px] w-[22px]"><use href="#logo" /></svg>
+          </span>
+
+          <!-- Carte flottante -->
+          <div class="absolute bottom-[5px] right-[7px] flex h-[46px] w-[146px] items-center gap-2 rounded-[10px] bg-white p-[7px] shadow-[0_6px_18px_rgba(40,20,120,0.25)]">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-white"><i data-lucide="messages-square" class="h-4 w-4"></i></span>
+            <p class="text-[10.5px] font-semibold leading-[14px] text-ink">Nous répondons<br />en moins de 24h</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= FORMULAIRE + COORDONNÉES ================= -->
+    <section class="mx-auto max-w-[1180px] px-4 pt-[22px] sm:px-10 lg:px-[75px]">
+      <div class="grid gap-[22px] lg:grid-cols-[539fr_319fr]">
+
+        <!-- Formulaire -->
+        <div class="rounded-[10px] border border-[#ece8f5] bg-white p-[18px] shadow-[0_1px_8px_rgba(80,60,160,0.05)]">
+          <div class="flex items-start gap-3.5">
+            <span class="mt-px flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand text-white"><i data-lucide="house" class="h-[14px] w-[14px]"></i></span>
+            <div>
+              <h2 class="text-[16px] font-bold leading-[20px] text-ink">Envoyez-nous un message</h2>
+              <p class="mt-[7px] text-[11.5px] text-[#5b5f8a]">Remplissez le formulaire ci-dessous et nous vous répondrons rapidement.</p>
+            </div>
+          </div>
+
+          <form id="contactForm" class="mt-[19px]" novalidate>
+            <div class="grid gap-x-[19px] gap-y-[17px] sm:grid-cols-2">
+              <div>
+                <label for="nom" class="mb-[7px] block text-[10px] font-medium text-ink">Nom complet <span class="text-red-500">*</span></label>
+                <input id="nom" type="text" required placeholder="Votre nom complet" class="h-[33px] w-full rounded-md border border-[#e5e7f0] bg-[#fafafd] px-3 text-[10px] text-ink outline-none transition placeholder:text-[#a7aabf] focus:border-brand focus:ring-2 focus:ring-brand/15" />
+              </div>
+              <div>
+                <label for="email" class="mb-[7px] block text-[10px] font-medium text-ink">Email <span class="text-red-500">*</span></label>
+                <input id="email" type="email" required placeholder="votre@email.com" class="h-[33px] w-full rounded-md border border-[#e5e7f0] bg-[#fafafd] px-3 text-[10px] text-ink outline-none transition placeholder:text-[#7b7f99] focus:border-brand focus:ring-2 focus:ring-brand/15" />
+              </div>
+              <div>
+                <label for="objet" class="mb-[7px] block text-[10px] font-medium text-ink">Objet <span class="text-red-500">*</span></label>
+                <div class="relative">
+                  <select id="objet" required class="h-[33px] w-full appearance-none rounded-md border border-[#e5e7f0] bg-[#fafafd] px-3 pr-8 text-[10px] text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15">
+                    <option value="">Choisissez un sujet</option>
+                    <option>Question générale</option>
+                    <option>Publier une annonce</option>
+                    <option>Problème technique</option>
+                    <option>Paiement</option>
+                    <option>Suggestion</option>
+                  </select>
+                  <i data-lucide="chevron-down" class="pointer-events-none absolute right-3 top-1/2 h-3 w-3 -translate-y-1/2 text-ink"></i>
+                </div>
+              </div>
+              <div>
+                <label for="tel" class="mb-[7px] block text-[10px] font-medium text-ink">Téléphone <span class="font-normal text-[#6b6f8a]">(optionnel)</span></label>
+                <input id="tel" type="tel" placeholder="Votre numéro de téléphone" class="h-[33px] w-full rounded-md border border-[#e5e7f0] bg-[#fafafd] px-3 text-[10px] text-ink outline-none transition placeholder:text-[#a7aabf] focus:border-brand focus:ring-2 focus:ring-brand/15" />
+              </div>
+            </div>
+
+            <div class="mt-[17px]">
+              <label for="msg" class="mb-[7px] block text-[10px] font-medium text-ink">Votre message <span class="text-red-500">*</span></label>
+              <textarea id="msg" required placeholder="Écrivez votre message ici..." class="h-[93px] w-full resize-y rounded-md border border-[#e5e7f0] bg-[#fafafd] px-3 py-2.5 text-[10px] text-ink outline-none transition placeholder:text-[#a7aabf] focus:border-brand focus:ring-2 focus:ring-brand/15"></textarea>
+            </div>
+
+            <button id="submitBtn" type="submit" class="mt-[19px] flex h-[34px] w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-[#5b25db] to-[#6b35e8] text-[11px] font-bold text-white shadow-[0_4px_10px_rgba(91,37,219,0.25)] transition hover:brightness-110">
+              <i data-lucide="send" class="h-[13px] w-[13px]"></i>
+              <span id="submitLabel">Envoyer le message</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Coordonnées -->
+        <aside class="rounded-[10px] border border-[#ece8f5] bg-[#faf8ff] p-[18px]">
+          <h2 class="mt-[3px] text-[17px] font-bold leading-[22px] text-ink">Nos coordonnées</h2>
+          <p class="mt-[9px] text-[11.5px] leading-[16px] text-[#5b5f8a]">Vous pouvez aussi nous contacter directement via les informations ci-dessous.</p>
+
+          <ul class="mt-[19px] space-y-[18px]">
+            <li class="flex items-start gap-[13px]">
+              <span class="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-brand text-white"><i data-lucide="mail" class="h-[14px] w-[14px]"></i></span>
+              <div class="-mt-0.5">
+                <p class="text-[11px] font-medium leading-[15px] text-ink">Email</p>
+                <p class="text-[11.5px] leading-[17px] text-ink">contact@linkhoo.com</p>
+                <p class="mt-[3px] text-[9.5px] text-[#7d7fb0]">Réponse sous 24h</p>
+              </div>
+            </li>
+            <li class="flex items-start gap-[13px]">
+              <span class="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-brand text-white"><i data-lucide="phone" class="h-[14px] w-[14px]"></i></span>
+              <div class="-mt-0.5">
+                <p class="text-[11px] font-medium leading-[15px] text-ink">Téléphone</p>
+                <p class="text-[11.5px] leading-[17px] text-ink">+229 01 60 00 00 00</p>
+                <p class="mt-[3px] text-[9.5px] text-[#7d7fb0]">Lun - Ven : 8h - 22h</p>
+              </div>
+            </li>
+            <li class="flex items-start gap-[13px]">
+              <span class="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-brand text-white"><i data-lucide="map-pin" class="h-[14px] w-[14px]"></i></span>
+              <div class="-mt-0.5">
+                <p class="text-[11px] font-medium leading-[15px] text-ink">Adresse</p>
+                <p class="text-[11.5px] leading-[17px] text-ink">Cotonou, Bénin</p>
+                <p class="mt-[3px] text-[9.5px] text-[#7d7fb0]">Siège social de Linkhoo</p>
+              </div>
+            </li>
+          </ul>
+
+          <div class="mt-[30px]">
+            <h3 class="text-[11px] font-bold text-ink">Suivez-nous</h3>
+            <p class="mt-[5px] text-[10px] text-[#6b6f8a]">Restez connecté avec nous sur les réseaux sociaux.</p>
+            <div class="mt-[13px] flex items-center gap-2">
+              <a href="#" aria-label="Facebook" class="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-brand text-white transition hover:bg-brand-dark"><svg class="h-[11px] w-[11px]"><use href="#s-fb" /></svg></a>
+              <a href="#" aria-label="X" class="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-brand text-white transition hover:bg-brand-dark"><svg class="h-[10px] w-[10px]"><use href="#s-x" /></svg></a>
+              <a href="#" aria-label="Instagram" class="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-brand text-white transition hover:bg-brand-dark"><svg class="h-[11px] w-[11px]"><use href="#s-ig" /></svg></a>
+              <a href="#" aria-label="YouTube" class="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-brand text-white transition hover:bg-brand-dark"><svg class="h-[12px] w-[12px]"><use href="#s-yt" /></svg></a>
+              <a href="#" aria-label="LinkedIn" class="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-brand text-white transition hover:bg-brand-dark"><svg class="h-[11px] w-[11px]"><use href="#s-in" /></svg></a>
+              <a href="#" aria-label="TikTok" class="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-brand text-white transition hover:bg-brand-dark"><svg class="h-[11px] w-[11px]"><use href="#s-tt" /></svg></a>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ================= LOCALISATION + FAQ ================= -->
+    <section class="mx-auto max-w-[1180px] px-4 pt-[22px] sm:px-10 lg:px-[75px]">
+      <div class="grid gap-[22px] lg:grid-cols-[439fr_419fr]">
+
+        <!-- Localisation -->
+        <div class="rounded-[10px] border border-[#ece8f5] bg-[#fdfcff] p-4 shadow-[0_1px_8px_rgba(80,60,160,0.04)]">
+          <div class="flex items-start gap-3">
+            <span class="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-brand text-white"><i data-lucide="map-pin" class="h-3 w-3"></i></span>
+            <div>
+              <h2 class="text-[13px] font-bold leading-[18px] text-ink">Notre localisation</h2>
+              <p class="mt-[3px] text-[10px] text-[#6b6f9a]">Nous sommes basés à Cotonou, au Bénin. N'hésitez pas à venir nous rendre visite !</p>
+            </div>
+          </div>
+
+          <!-- Carte -->
+          <div class="relative mt-[13px] h-[232px] overflow-hidden rounded-[10px] border border-[#ece8f5] bg-[#f5f2ec]">
+            <svg class="absolute inset-0 h-full w-full" viewBox="0 0 406 232" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <rect width="406" height="232" fill="#f6f3ed" />
+              <!-- Quartiers -->
+              <rect x="0" y="0" width="406" height="40" fill="#f1ede4" />
+              <rect x="250" y="60" width="156" height="60" fill="#f2efe6" />
+              <!-- Routes -->
+              <g stroke="#ffffff" stroke-width="7" stroke-linecap="round" fill="none">
+                <path d="M-10 40 L150 60 L300 90 L420 120" />
+                <path d="M60 -10 L90 100 L110 200" />
+                <path d="M250 -10 L240 80 L270 170" />
+                <path d="M-10 118 L420 78" />
+                <path d="M150 20 L330 -10" />
+                <path d="M30 150 L400 150" />
+              </g>
+              <g stroke="#f9e7b0" stroke-width="2.5" stroke-linecap="round" fill="none">
+                <path d="M-10 40 L150 60 L300 90 L420 120" />
+                <path d="M-10 118 L420 78" />
+                <path d="M250 -10 L240 80 L270 170" />
+                <path d="M60 -10 L90 100 L110 200" />
+              </g>
+              <g stroke="#ece7dc" stroke-width="1.5" fill="none">
+                <path d="M120 0 L135 80" /><path d="M200 60 L190 150" /><path d="M330 40 L350 130" />
+                <path d="M0 80 L130 90" /><path d="M300 100 L406 90" />
+              </g>
+              <!-- Lagune / voie d'eau -->
+              <path d="M135 0 C138 20 142 40 134 70" stroke="#cfe3f5" stroke-width="3" fill="none" />
+              <!-- Océan -->
+              <path d="M0 162 C70 156 150 150 250 154 S 360 142 406 138 V232 H0Z" fill="#bfdcf6" />
+              <path d="M0 162 C70 156 150 150 250 154 S 360 142 406 138" stroke="#e9dcb8" stroke-width="3" fill="none" />
+              <path d="M120 188 C180 180 260 186 330 176" stroke="#d6e9fa" stroke-width="2" fill="none" />
+            </svg>
+
+            <span class="absolute left-[59px] top-[16px] text-[10px] font-medium text-[#b5886a]/80">Dilapa</span>
+            <span class="absolute left-[327px] top-[68px] text-[11px] font-medium text-[#8a8070]">Dantokpa</span>
+            <span class="absolute left-[53px] top-[127px] text-[11px] font-medium text-[#6e675c]">Tokpa</span>
+            <span class="absolute left-[177px] top-[126px] text-[13px] font-semibold text-[#14141f]">Cotonou</span>
+            <span class="absolute left-[182px] top-[198px] text-[10px] font-medium italic text-[#4d8fd6]">Océan Atlantique</span>
+
+            <!-- Repère Linkhoo -->
+            <div class="absolute left-[150px] top-[66px] flex h-[34px] items-center gap-2 rounded-[9px] bg-white px-2 shadow-[0_4px_12px_rgba(60,40,140,0.2)]">
+              <span class="flex h-5 w-5 items-center justify-center rounded-full bg-brand-soft text-brand"><i data-lucide="map-pin" class="h-3 w-3"></i></span>
+              <div class="leading-none">
+                <p class="text-[11px] font-bold text-brand">Linkhoo</p>
+                <p class="mt-[2px] text-[7.5px] text-brand/80">Cotonou, Bénin</p>
+              </div>
+            </div>
+
+            <!-- Bouton Google Maps -->
+            <a href="https://www.google.com/maps/place/Cotonou" target="_blank" rel="noopener" class="absolute bottom-[9px] left-[11px] flex h-[25px] items-center gap-1.5 rounded-full bg-white px-3 text-[9.5px] font-semibold text-brand shadow-[0_3px_10px_rgba(60,40,140,0.18)] transition hover:bg-brand-pale">
+              <i data-lucide="map" class="h-[11px] w-[11px]"></i> Voir sur Google Maps
+            </a>
+          </div>
+        </div>
+
+        <!-- FAQ -->
+        <div class="rounded-[10px] border border-[#ece8f5] bg-[#fdfcff] p-4 shadow-[0_1px_8px_rgba(80,60,160,0.04)]">
+          <div class="flex items-start gap-3">
+            <span class="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-brand text-white"><i data-lucide="shield-question" class="h-3 w-3"></i></span>
+            <div>
+              <h2 class="text-[13px] font-bold leading-[18px] text-ink">Questions fréquentes</h2>
+              <p class="mt-[3px] text-[10px] text-[#6b6f9a]">Vous avez une question ? Voici les réponses aux questions les plus courantes.</p>
+            </div>
+          </div>
+
+          <div id="faq" class="mt-[13px] space-y-[7px]">
+            <details class="group rounded-md border border-[#e6e3f2] bg-white">
+              <summary class="flex h-[31px] cursor-pointer list-none items-center justify-between px-3 text-[10px] font-medium text-ink [&::-webkit-details-marker]:hidden">
+                Comment publier une annonce sur Linkhoo ?
+                <i data-lucide="chevron-right" class="h-3 w-3 text-[#6b6f8a] transition group-open:rotate-90"></i>
+              </summary>
+              <p class="px-3 pb-3 text-[10px] leading-[15px] text-[#5b5f8a]">Créez un compte, cliquez sur « Publier une annonce », renseignez les informations et photos de votre logement, puis validez.</p>
+            </details>
+            <details class="group rounded-md border border-[#e6e3f2] bg-white">
+              <summary class="flex h-[31px] cursor-pointer list-none items-center justify-between px-3 text-[10px] font-medium text-ink [&::-webkit-details-marker]:hidden">
+                Comment fonctionne la location directe ?
+                <i data-lucide="chevron-right" class="h-3 w-3 text-[#6b6f8a] transition group-open:rotate-90"></i>
+              </summary>
+              <p class="px-3 pb-3 text-[10px] leading-[15px] text-[#5b5f8a]">Vous échangez directement avec le propriétaire, sans intermédiaire, pour visiter et conclure la location.</p>
+            </details>
+            <details class="group rounded-md border border-[#e6e3f2] bg-white">
+              <summary class="flex h-[31px] cursor-pointer list-none items-center justify-between px-3 text-[10px] font-medium text-ink [&::-webkit-details-marker]:hidden">
+                Quels sont les moyens de paiement acceptés ?
+                <i data-lucide="chevron-right" class="h-3 w-3 text-[#6b6f8a] transition group-open:rotate-90"></i>
+              </summary>
+              <p class="px-3 pb-3 text-[10px] leading-[15px] text-[#5b5f8a]">Les moyens de paiement disponibles dépendent de votre pays. Consultez la page d'aide pour le détail.</p>
+            </details>
+            <details class="group rounded-md border border-[#e6e3f2] bg-white">
+              <summary class="flex h-[31px] cursor-pointer list-none items-center justify-between px-3 text-[10px] font-medium text-ink [&::-webkit-details-marker]:hidden">
+                Comment signaler un problème avec une annonce ?
+                <i data-lucide="chevron-right" class="h-3 w-3 text-[#6b6f8a] transition group-open:rotate-90"></i>
+              </summary>
+              <p class="px-3 pb-3 text-[10px] leading-[15px] text-[#5b5f8a]">Utilisez le bouton « Signaler » sur la fiche de l'annonce ou écrivez-nous via le formulaire ci-dessus.</p>
+            </details>
+            <details class="group rounded-md border border-[#e6e3f2] bg-white">
+              <summary class="flex h-[31px] cursor-pointer list-none items-center justify-between px-3 text-[10px] font-medium text-ink [&::-webkit-details-marker]:hidden">
+                Puis-je contacter un propriétaire directement ?
+                <i data-lucide="chevron-right" class="h-3 w-3 text-[#6b6f8a] transition group-open:rotate-90"></i>
+              </summary>
+              <p class="px-3 pb-3 text-[10px] leading-[15px] text-[#5b5f8a]">Oui, les coordonnées du propriétaire sont accessibles depuis chaque annonce.</p>
+            </details>
+            <details class="group rounded-md border border-[#e6e3f2] bg-white">
+              <summary class="flex h-[31px] cursor-pointer list-none items-center justify-between px-3 text-[10px] font-medium text-ink [&::-webkit-details-marker]:hidden">
+                Linkhoo est-il disponible dans tous les pays d'Afrique de l'Ouest ?
+                <i data-lucide="chevron-right" class="h-3 w-3 shrink-0 text-[#6b6f8a] transition group-open:rotate-90"></i>
+              </summary>
+              <p class="px-3 pb-3 text-[10px] leading-[15px] text-[#5b5f8a]">Linkhoo est disponible dans 12 pays d'Afrique de l'Ouest. Utilisez le sélecteur de pays en haut de page.</p>
+            </details>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= BANDEAU CTA ================= -->
+    <section class="mx-auto max-w-[1180px] px-4 pb-[22px] pt-[22px] sm:px-10 lg:px-[75px]">
+      <div class="relative flex flex-col items-start justify-between gap-4 overflow-hidden rounded-[10px] bg-gradient-to-r from-[#6a2ee0] via-[#7a3ff0] to-[#8e5cf6] px-6 py-5 sm:flex-row sm:items-center sm:py-0 lg:h-[84px] lg:px-[24px]">
+        <!-- Décor -->
+        <svg class="pointer-events-none absolute -bottom-6 right-[170px] hidden h-[110px] w-[110px] text-white/10 md:block"><use href="#logo" /></svg>
+        <svg class="pointer-events-none absolute -bottom-3 right-[60px] hidden h-[80px] w-[80px] text-white/10 md:block"><use href="#logo" /></svg>
+
+        <div class="relative flex items-center gap-4">
+          <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/20 text-white ring-1 ring-white/25"><i data-lucide="send" class="h-[22px] w-[22px]"></i></span>
+          <div>
+            <h2 class="text-[20px] font-bold leading-[24px] text-white">Encore une question ?</h2>
+            <p class="mt-px text-[13.5px] text-white/90">Notre équipe est toujours disponible pour vous aider.</p>
+          </div>
+        </div>
+
+        <a href="#contactForm" class="relative flex h-[38px] w-[131px] shrink-0 items-center justify-center gap-2 rounded-md bg-white text-[11px] font-bold text-brand shadow-md transition hover:bg-brand-pale sm:mr-[27px]">
+          Nous contacter <i data-lucide="arrow-right" class="h-[14px] w-[14px]"></i>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="bg-navy text-white">
+    <div class="mx-auto max-w-[1180px] px-5 pb-10 pt-5 sm:px-10 lg:px-[82px]">
+      <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-[221px_108px_154px_200px_1fr] lg:gap-0">
+
+        <!-- Marque -->
+        <div>
+          <a href="#" class="flex items-center gap-2">
+            <svg class="h-[26px] w-[26px] text-white" style="--inner:#0e0f2e"><use href="#logo" /></svg>
+            <span class="text-[18px] font-bold leading-none tracking-tight">Linkhoo</span>
+          </a>
+          <p class="mt-3 text-[9.5px] leading-[13.5px] text-[#b9bad3]">La location directe en Afrique de l'Ouest.<br />Des milliers de logements, une seule plateforme.</p>
+          <div class="mt-[14px] flex items-center gap-2">
+            <a href="#" aria-label="Facebook" class="flex h-6 w-6 items-center justify-center rounded-full bg-[#23245a] text-white transition hover:bg-brand"><svg class="h-3 w-3"><use href="#s-fb" /></svg></a>
+            <a href="#" aria-label="X" class="flex h-6 w-6 items-center justify-center rounded-full bg-[#23245a] text-white transition hover:bg-brand"><svg class="h-[11px] w-[11px]"><use href="#s-x" /></svg></a>
+            <a href="#" aria-label="Instagram" class="flex h-6 w-6 items-center justify-center rounded-full bg-[#23245a] text-white transition hover:bg-brand"><svg class="h-3 w-3"><use href="#s-ig" /></svg></a>
+            <a href="#" aria-label="YouTube" class="flex h-6 w-6 items-center justify-center rounded-full bg-[#23245a] text-white transition hover:bg-brand"><svg class="h-[13px] w-[13px]"><use href="#s-yt" /></svg></a>
+            <a href="#" aria-label="LinkedIn" class="flex h-6 w-6 items-center justify-center rounded-full bg-[#23245a] text-white transition hover:bg-brand"><svg class="h-3 w-3"><use href="#s-in" /></svg></a>
+            <a href="#" aria-label="TikTok" class="flex h-6 w-6 items-center justify-center rounded-full bg-[#23245a] text-white transition hover:bg-brand"><svg class="h-3 w-3"><use href="#s-tt" /></svg></a>
+          </div>
+        </div>
+
+        <!-- Liens utiles -->
+        <div>
+          <h4 class="text-[10px] font-bold">Liens utiles</h4>
+          <ul class="mt-3 space-y-[6px] text-[9.5px] text-[#b9bad3]">
+            <li><a href="#" class="transition hover:text-white">Accueil</a></li>
+            <li><a href="#" class="transition hover:text-white">À propos</a></li>
+            <li><a href="#" class="transition hover:text-white">Contact</a></li>
+            <li><a href="#" class="transition hover:text-white">FAQ</a></li>
+          </ul>
+        </div>
+
+        <!-- Marchés -->
+        <div>
+          <h4 class="text-[10px] font-bold">Nos marchés</h4>
+          <ul class="mt-3 space-y-[6px] text-[9.5px] text-[#b9bad3]">
+            <li><a href="#" class="transition hover:text-white">Sénégal</a></li>
+            <li><a href="#" class="transition hover:text-white">Côte d'Ivoire</a></li>
+            <li><a href="#" class="transition hover:text-white">Bénin</a></li>
+            <li><a href="#" class="transition hover:text-white">Mali</a></li>
+            <li><a href="#" class="transition hover:text-white">+ 7 autres pays</a></li>
+          </ul>
+        </div>
+
+        <!-- Application mobile -->
+        <div>
+          <h4 class="text-[10px] font-bold">Application mobile</h4>
+          <p class="mt-2.5 text-[9.5px] leading-[13.5px] text-[#b9bad3]">Téléchargez notre application<br />pour une meilleure expérience.</p>
+          <div class="mt-[9px] flex items-center gap-2">
+            <a href="#" class="flex h-[27px] w-[78px] items-center gap-1.5 rounded-md border border-white/40 bg-black px-1.5 transition hover:border-white">
+              <i data-lucide="apple" class="h-[14px] w-[14px] fill-white text-white"></i>
+              <span class="leading-none"><span class="block text-[4.5px] text-white/80">Télécharger sur</span><span class="block text-[10px] font-semibold">App Store</span></span>
+            </a>
+            <a href="#" class="flex h-[27px] w-[84px] items-center gap-1.5 rounded-md border border-white/40 bg-black px-1.5 transition hover:border-white">
+              <svg class="h-[14px] w-[14px]" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3.6 2.2 13 12l-9.4 9.8c-.4-.2-.6-.6-.6-1.1V3.3c0-.5.2-.9.6-1.1z" fill="#00a0ff" />
+                <path d="M13 12 4.8 2.1l11.5 6.6z" fill="#00e676" />
+                <path d="m16.3 8.7 3.7 2.1c.9.5.9 1.9 0 2.4l-3.7 2.1L13 12z" fill="#ffd600" />
+                <path d="m13 12 3.3 3.3L4.8 21.9z" fill="#ff3d00" />
+              </svg>
+              <span class="leading-none"><span class="block text-[4.5px] text-white/80">Disponible sur</span><span class="block text-[10px] font-semibold">Google Play</span></span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Newsletter -->
+        <div>
+          <h4 class="text-[10px] font-bold">Newsletter</h4>
+          <p class="mt-2.5 text-[9.5px] leading-[13.5px] text-[#b9bad3]">Restez informé de nos nouveautés<br />et offres exclusives.</p>
+          <form id="newsForm" class="mt-[9px] flex h-[25px] max-w-[182px]">
+            <input type="email" required placeholder="Votre adresse e-mail" class="min-w-0 flex-1 rounded-l-md border-0 bg-[#f4f4fb] px-2.5 text-[9px] text-ink outline-none placeholder:text-[#8b8da8] focus:ring-2 focus:ring-brand" />
+            <button type="submit" aria-label="S'abonner" class="flex w-[34px] items-center justify-center rounded-r-md bg-brand text-white transition hover:bg-[#7b45f0]"><i data-lucide="send" class="h-3 w-3"></i></button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Bas de page -->
+      <div class="mt-[26px] border-t border-white/10 pt-[14px]">
+        <div class="flex flex-col gap-3 text-[9.5px] text-[#b9bad3] md:flex-row md:items-center md:justify-between">
+          <p>© 2025 Linkhoo. Tous droits réservés.</p>
+          <ul class="flex flex-wrap items-center gap-y-1">
+            <li class="border-r border-white/25 px-3 leading-3"><a href="#" class="transition hover:text-white">Mentions légales</a></li>
+            <li class="border-r border-white/25 px-3 leading-3"><a href="#" class="transition hover:text-white">Conditions d'utilisation</a></li>
+            <li class="border-r border-white/25 px-3 leading-3"><a href="#" class="transition hover:text-white">Politique de confidentialité</a></li>
+            <li class="pl-3 leading-3"><a href="#" class="transition hover:text-white">Aide</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bouton retour en haut -->
+  <button id="toTop" type="button" aria-label="Retour en haut" class="fixed bottom-5 right-4 z-40 flex h-[34px] w-[34px] items-center justify-center rounded-full bg-brand text-white shadow-[0_6px_16px_rgba(107,47,224,0.4)] transition hover:bg-brand-dark sm:right-5">
+    <i data-lucide="arrow-up" class="h-4 w-4"></i>
+  </button>
+
+  <!-- ================= SCRIPTS ================= -->
+  <script>
+    lucide.createIcons();
+
+    // Barre d'annonce
+    document.getElementById('announceClose').addEventListener('click', () => {
+      document.getElementById('announce').remove();
+    });
+
+    // Menu hamburger
+    const menuBtn = document.getElementById('menuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    menuBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      mobileMenu.classList.toggle('hidden');
+    });
+
+    // Sélecteur de pays
+    const countryBtn = document.getElementById('countryBtn');
+    const countryMenu = document.getElementById('countryMenu');
+    const flag = document.getElementById('flag');
+    const countryLabel = document.getElementById('countryLabel');
+    countryBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      countryMenu.classList.toggle('hidden');
+    });
+    countryMenu.querySelectorAll('button').forEach((b) => {
+      b.addEventListener('click', () => {
+        countryLabel.textContent = b.dataset.c;
+        const colors = b.dataset.k.split(',');
+        [...flag.children].forEach((s, i) => (s.style.backgroundColor = colors[i]));
+        countryMenu.classList.add('hidden');
+      });
+    });
+    document.addEventListener('click', () => {
+      countryMenu.classList.add('hidden');
+      mobileMenu.classList.add('hidden');
+    });
+
+    // Formulaire de contact (simulation locale, sans backend)
+    const form = document.getElementById('contactForm');
+    const label = document.getElementById('submitLabel');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fields = form.querySelectorAll('[required]');
+      let ok = true;
+      fields.forEach((f) => {
+        const valid = f.checkValidity();
+        f.classList.toggle('!border-red-400', !valid);
+        if (!valid) ok = false;
+      });
+      if (!ok) {
+        label.textContent = 'Veuillez remplir les champs obligatoires';
+        setTimeout(() => (label.textContent = 'Envoyer le message'), 2200);
+        return;
+      }
+      label.textContent = 'Message envoyé ✓';
+      form.reset();
+      setTimeout(() => (label.textContent = 'Envoyer le message'), 2500);
+    });
+
+    // Newsletter (simulation locale)
+    document.getElementById('newsForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      e.target.reset();
+    });
+
+    // Retour en haut
+    document.getElementById('toTop').addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  </script>
+</body>
+</html>

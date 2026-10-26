@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HabiCI – Vérification</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            brand: { DEFAULT: '#F26B1D', dark: '#E05A0C', soft: '#FFF2EA', line: '#FDE2D0' },
+            ink: '#0F2150',
+            steel: '#5F7396',
+            mist: '#8A99B5',
+            page: '#F5F7FB',
+            ok: { DEFAULT: '#27B585', soft: '#E5F6EE', text: '#2E9E78' },
+            info: '#2F5FC4',
+          },
+        },
+      },
+    };
+  </script>
+  <style type="text/tailwindcss">
+    @layer components {
+      /* Icônes « outline » du sprite SVG */
+      .ic { @apply fill-none stroke-current; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    }
+  </style>
+</head>
+
+<body class="bg-page font-sans text-ink antialiased">
+
+  <!-- ====================== SPRITE D'ICÔNES ====================== -->
+  <svg aria-hidden="true" class="absolute h-0 w-0 overflow-hidden">
+    <defs>
+      <!-- Portrait de substitution (à remplacer par de vraies photos <img>) -->
+      <g id="portrait">
+        <rect width="100" height="100" fill="#E4E5E8"/>
+        <path d="M6 100c2-22 20-28 44-28s42 6 44 28z" fill="#17171A"/>
+        <path d="M41 56h18v20c-4 5-14 5-18 0z" fill="#5A3827"/>
+        <ellipse cx="50" cy="42" rx="17" ry="21" fill="#6B4430"/>
+        <path d="M32.5 38c-1-15 7-22 17.5-22s18.5 7 17.5 22c-3-7-9-10-17.5-10s-14.5 3-17.5 10z" fill="#111"/>
+        <ellipse cx="43" cy="42" rx="1.6" ry="1.2" fill="#1B120D"/>
+        <ellipse cx="57" cy="42" rx="1.6" ry="1.2" fill="#1B120D"/>
+        <path d="M47 45q3 3 6 0" stroke="#4E2F20" fill="none" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M42 51q8 8 16 0z" fill="#fff"/>
+      </g>
+    </defs>
+
+    <!-- Pastille verte « validé » -->
+    <symbol id="i-ok" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="12" fill="#27B585"/>
+      <path d="m7 12.5 3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+    <symbol id="i-bed" viewBox="0 0 24 24"><path d="M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8"/><path d="M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"/><path d="M12 4v6"/><path d="M2 18h20"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M8 10h8"/><path d="M8 14h5"/></symbol>
+    <symbol id="i-chat-plus" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M8 12h8"/><path d="M12 8v8"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+    <symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-user-check" viewBox="0 0 24 24"><path d="m16 11 2 2 4-4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></symbol>
+    <symbol id="i-crown" viewBox="0 0 24 24"><path d="M11.56 3.27a.5.5 0 0 1 .88 0l2.95 5.6a1 1 0 0 0 1.52.29L21.18 5.5a.5.5 0 0 1 .8.52l-2.83 10.25a1 1 0 0 1-.96.73H5.81a1 1 0 0 1-.96-.73L2.02 6.02a.5.5 0 0 1 .8-.52l4.27 3.67a1 1 0 0 0 1.52-.29z"/><path d="M5.5 21h13"/></symbol>
+    <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M3 5h.01M3 12h.01M3 19h.01M8 5h13M8 12h13M8 19h13"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.42l8.7 8.7a2.43 2.43 0 0 0 3.42 0l6.58-6.58a2.43 2.43 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+    <symbol id="i-lock-user" viewBox="0 0 24 24"><rect width="16" height="11" x="4" y="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/></symbol>
+    <symbol id="i-id" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2.5"/><circle cx="8.5" cy="10.5" r="2"/><path d="M5 16.5c.6-1.8 1.8-2.5 3.5-2.5s2.9.7 3.5 2.5"/><path d="M14.5 9.5H19"/><path d="M14.5 13H19"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h8"/><path d="M8 17h8"/><path d="M8 9h2"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></symbol>
+    <symbol id="i-headset" viewBox="0 0 24 24"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+    <symbol id="i-chev-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-chev-up" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  </svg>
+
+  <div class="flex min-h-screen">
+
+    <!-- ============================ SIDEBAR ============================ -->
+    <aside class="sticky top-0 hidden h-screen w-[252px] shrink-0 overflow-y-auto border-r border-[#EEF2F8] bg-[#FBFCFE] pb-8 lg:block">
+
+      <!-- Logo -->
+      <a href="#" class="ml-[42px] mt-[15px] flex h-[35px] items-center gap-[9px]">
+        <svg viewBox="0 0 36 36" class="h-[35px] w-[35px]" aria-hidden="true">
+          <path d="M18 2.5c1.2 0 2.3.4 3.2 1.2l11 9.2c1.1.9 1.8 2.3 1.8 3.8V30a4.5 4.5 0 0 1-4.5 4.5h-23A4.5 4.5 0 0 1 2 30V16.7c0-1.5.7-2.9 1.8-3.8l11-9.2c.9-.8 2-1.2 3.2-1.2z" fill="#F26B1D"/>
+          <path d="M18 12.5 10 19.2V28h16v-8.8z" fill="#fff"/>
+          <rect x="15" y="20.5" width="6" height="7.5" rx="1.2" fill="#F26B1D"/>
+        </svg>
+        <span class="text-[28px] font-extrabold leading-none tracking-[-0.02em] text-ink">Habi<span class="text-brand">CI</span></span>
+      </a>
+
+      <nav class="mt-[26px] text-ink">
+
+        <!-- Aperçu -->
+        <a href="#" class="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
+          <svg class="ic h-[19px] w-[19px] shrink-0"><use href="#i-home"/></svg>Aperçu
+        </a>
+
+        <!-- Chambres -->
+        <div class="mt-[11px]">
+          <a href="#" class="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
+            <svg class="ic h-[19px] w-[19px] shrink-0"><use href="#i-bed"/></svg>Chambres
+            <svg class="ic ml-auto h-[13px] w-[13px] stroke-[2.2]"><use href="#i-chev-up"/></svg>
+          </a>
+          <div class="mt-[5px]">
+            <a href="#" class="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-steel"><svg class="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-list"/></svg>Toutes les chambres</a>
+            <a href="#" class="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-steel"><svg class="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-plus"/></svg>Ajouter une chambre</a>
+            <a href="#" class="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-steel"><svg class="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-tag"/></svg>Catégories</a>
+          </div>
+        </div>
+
+        <!-- Réservations -->
+        <div class="mt-[18px]">
+          <a href="#" class="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
+            <svg class="ic h-[19px] w-[19px] shrink-0"><use href="#i-calendar"/></svg>Réservations
+            <span class="-mr-2.5 ml-auto grid h-4 w-4 place-items-center rounded-full bg-[#FFE4D2] text-[10px] font-bold text-brand">3</span>
+          </a>
+          <div class="mt-[5px]">
+            <a href="#" class="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-steel"><svg class="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-lock-user"/></svg>Demandes</a>
+            <a href="#" class="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-steel"><svg class="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-calendar"/></svg>Calendrier</a>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="mt-[18px]">
+          <a href="#" class="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
+            <svg class="ic h-[19px] w-[19px] shrink-0"><use href="#i-chat"/></svg>Messages
+            <span class="-mr-2.5 ml-auto grid h-4 w-4 place-items-center rounded-full bg-[#FFE4D2] text-[10px] font-bold text-brand">2</span>
+          </a>
+          <div class="mt-[5px]">
+            <a href="#" class="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-steel"><svg class="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-inbox"/></svg>Boîte de réception</a>
+            <a href="#" class="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-steel"><svg class="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-chat-plus"/></svg>Nouveau message</a>
+          </div>
+        </div>
+
+        <!-- Vérification (actif) -->
+        <div class="mt-[18px]">
+          <a href="#" aria-current="page" class="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg bg-[#FDEDE2] px-[11px] text-[12.5px] font-bold text-brand">
+            <svg viewBox="0 0 24 24" class="h-[19px] w-[19px] shrink-0" aria-hidden="true">
+              <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" fill="#F26B1D" stroke="#F26B1D" stroke-width="2" stroke-linejoin="round"/>
+              <path d="m9 12 2 2 4-4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>Vérification
+          </a>
+          <div class="mt-[5px]">
+            <a href="#" class="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-steel"><svg class="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-file-text"/></svg>Mes documents</a>
+            <a href="#" class="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-steel"><svg class="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-user-check"/></svg>Suivi de vérification</a>
+          </div>
+        </div>
+
+        <!-- Profil -->
+        <div class="mt-[18px]">
+          <a href="#" class="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
+            <svg class="ic h-[19px] w-[19px] shrink-0"><use href="#i-user"/></svg>Profil
+          </a>
+          <div class="mt-[5px]">
+            <a href="#" class="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-steel"><svg class="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-user"/></svg>Mes informations</a>
+          </div>
+        </div>
+
+        <!-- Premium -->
+        <div class="mt-[18px]">
+          <a href="#" class="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
+            <svg class="ic h-[19px] w-[19px] shrink-0 fill-brand text-brand"><use href="#i-crown"/></svg>Premium
+          </a>
+          <div class="mt-[5px]">
+            <a href="#" class="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-steel"><svg class="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-calendar"/></svg>Mon abonnement</a>
+          </div>
+        </div>
+
+        <!-- Booster -->
+        <div class="mt-[18px]">
+          <a href="#" class="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
+            <svg class="ic h-[19px] w-[19px] shrink-0"><use href="#i-megaphone"/></svg>Booster
+          </a>
+          <div class="mt-[5px]">
+            <a href="#" class="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-steel"><svg class="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-megaphone"/></svg>Campagnes</a>
+            <a href="#" class="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-steel"><svg class="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-user-check"/></svg>Créer une campagne</a>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Carte Premium -->
+      <div class="ml-[19px] mr-[16px] mt-[41px] h-[118px] rounded-xl border border-[#FEE3D1] bg-brand-soft px-[17px] pt-[14px]">
+        <div class="flex items-center gap-[11px]">
+          <svg class="ic h-[20px] w-[20px] fill-brand text-brand"><use href="#i-crown"/></svg>
+          <p class="text-[11.5px] font-bold">Passez au Premium</p>
+        </div>
+        <p class="mt-[9px] text-[10px] leading-4 text-steel">Plus de visibilité, plus de réservations !</p>
+        <a href="#" class="mt-[11px] flex h-[28px] items-center justify-center rounded-lg bg-brand text-[11px] font-bold text-white shadow-sm transition hover:bg-brand-dark">Voir les avantages</a>
+      </div>
+    </aside>
+
+    <!-- ============================ CONTENU ============================ -->
+    <div class="min-w-0 flex-1">
+
+      <!-- Barre du haut -->
+      <header class="flex h-[64px] items-center justify-between pl-[17px] pr-[26px]">
+        <label class="flex h-9 w-full max-w-[590px] items-center gap-[15px] rounded-lg bg-white pl-6 pr-4 shadow-[0_1px_6px_rgba(20,40,90,0.05)] ring-1 ring-[#EEF2F8]">
+          <svg class="ic h-[17px] w-[17px] shrink-0 text-ink"><use href="#i-search"/></svg>
+          <input type="search" placeholder="Rechercher une chambre, une catégorie..." class="w-full bg-transparent text-[11.5px] text-ink placeholder:text-mist focus:outline-none">
+        </label>
+
+        <div class="flex items-center gap-[28px]">
+          <button type="button" aria-label="Notifications" class="relative text-ink">
+            <svg class="ic h-[20px] w-[20px]"><use href="#i-bell"/></svg>
+            <span class="absolute -right-[9px] -top-[8px] grid h-[15px] w-[15px] place-items-center rounded-full bg-brand text-[9px] font-bold text-white">2</span>
+          </button>
+
+          <button type="button" class="flex h-[46px] w-[190px] items-center rounded-xl bg-white pl-[7px] pr-[17px] text-left shadow-[0_1px_6px_rgba(20,40,90,0.06)] ring-1 ring-[#EEF2F8]">
+            <span class="h-10 w-10 shrink-0 overflow-hidden rounded-full">
+              <svg viewBox="0 0 100 100" class="h-full w-full"><use href="#portrait"/></svg>
+            </span>
+            <span class="ml-[11px] leading-none">
+              <span class="block text-[12px] font-bold">Koffi Mensah</span>
+              <span class="mt-[7px] block text-[11px] text-mist">Gérant</span>
+            </span>
+            <svg class="ic ml-auto h-[14px] w-[14px] text-ink"><use href="#i-chev-down"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="pb-10 pl-[23px] pr-[25px]">
+
+        <!-- Retour + titre -->
+        <a href="#" class="ml-[5px] mt-[14px] inline-flex items-center gap-[10px] text-[12.5px] font-bold">
+          <svg class="ic h-[13px] w-[13px] stroke-[2.4]"><use href="#i-arrow-left"/></svg>Retour
+        </a>
+        <h1 class="mt-px text-[31px] font-extrabold leading-[36px] tracking-[-0.01em] text-[#0D2150]">Vérification</h1>
+        <p class="mt-px text-[15px] leading-5 text-steel">Vérifiez votre identité pour publier vos annonces et gagner la confiance des voyageurs.</p>
+
+        <!-- Stepper -->
+        <ol class="mt-[21px] flex h-[74px] items-center overflow-hidden rounded-xl border border-[#EEF2F8] bg-white px-[23px] shadow-[0_2px_10px_rgba(20,40,90,0.04)]">
+          <li class="flex shrink-0 items-center gap-[14px]">
+            <span class="grid h-[33px] w-[33px] place-items-center rounded-full border-[1.5px] border-[#D9E4F8] text-[13px] font-bold text-[#2D4C8A]">1</span>
+            <div>
+              <p class="text-[12.5px] font-bold leading-4 text-[#37588F]">Identification</p>
+              <p class="mt-[3px] text-[11px] leading-4 text-mist">Type et catégorie</p>
+            </div>
+          </li>
+          <li aria-hidden="true" class="mx-4 h-px w-[127px] shrink bg-[#E6ECF6]"></li>
+
+          <li class="flex shrink-0 items-center gap-[14px]">
+            <span class="grid h-[33px] w-[33px] place-items-center rounded-full border-[1.5px] border-[#D9E4F8] text-[13px] font-bold text-[#2D4C8A]">2</span>
+            <div>
+              <p class="text-[12.5px] font-bold leading-4 text-[#37588F]">Détails</p>
+              <p class="mt-[3px] text-[11px] leading-4 text-mist">Description et équipements</p>
+            </div>
+          </li>
+          <li aria-hidden="true" class="mx-4 h-px w-[87px] shrink bg-[#E6ECF6]"></li>
+
+          <li class="flex shrink-0 items-center gap-[14px]">
+            <span class="grid h-[33px] w-[33px] place-items-center rounded-full border-[1.5px] border-[#D9E4F8] text-[13px] font-bold text-[#2D4C8A]">3</span>
+            <div>
+              <p class="text-[12.5px] font-bold leading-4 text-[#37588F]">Photos</p>
+              <p class="mt-[3px] text-[11px] leading-4 text-mist">Ajoutez vos photos</p>
+            </div>
+          </li>
+          <li aria-hidden="true" class="mx-4 h-px w-[87px] shrink bg-[#E6ECF6]"></li>
+
+          <li class="flex shrink-0 items-center gap-[14px]" aria-current="step">
+            <span class="grid h-[33px] w-[33px] place-items-center rounded-full bg-brand text-[13px] font-bold text-white">4</span>
+            <div>
+              <p class="text-[12.5px] font-bold leading-4 text-brand">Vérification</p>
+              <p class="mt-[3px] text-[11px] leading-4 text-brand">Votre identité et documents</p>
+            </div>
+          </li>
+        </ol>
+
+        <!-- Grille principale -->
+        <div class="mt-[18px] grid items-start gap-[22px] xl:grid-cols-[minmax(0,1fr)_426px]">
+
+          <!-- ======================= CARTE PRINCIPALE ======================= -->
+          <section class="rounded-xl border border-[#EEF2F8] bg-white p-[17px] shadow-[0_2px_10px_rgba(20,40,90,0.04)]">
+
+            <!-- En-tête -->
+            <div class="flex items-center gap-[13px]">
+              <span class="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-full bg-brand">
+                <svg class="ic h-[22px] w-[22px] stroke-white stroke-[2.2]"><use href="#i-shield"/></svg>
+              </span>
+              <div>
+                <h2 class="text-[18px] font-bold leading-[24px]">Vérification de votre compte</h2>
+                <p class="mt-px text-[12.5px] leading-[18px] text-steel">Téléchargez les documents nécessaires pour confirmer votre identité et devenir un hôte de confiance.</p>
+              </div>
+            </div>
+
+            <!-- 1 · Pièce d'identité -->
+            <article class="relative mt-5 h-[176px] rounded-lg border border-[#E8EDF6] bg-white">
+              <span class="absolute left-[12px] top-[13px] grid h-[30px] w-[30px] place-items-center rounded-full bg-[#EAF1FD] text-[12.5px] font-bold text-[#3563C8]">1</span>
+              <div class="pl-[57px] pt-[13px]">
+                <h3 class="text-[13px] font-bold leading-5">Pièce d'identité</h3>
+                <p class="mt-[2px] text-[10.5px] leading-4 text-steel">Téléchargez une photo claire de votre pièce d'identité (carte nationale, passeport ou permis de conduire).</p>
+              </div>
+              <label class="ml-[57px] mr-[183px] mt-[13px] flex h-[96px] cursor-pointer items-center rounded-lg border-[1.5px] border-dashed border-[#D3DDEE] bg-white pl-[31px] transition hover:border-brand/60 hover:bg-brand-soft/40">
+                <input type="file" accept=".jpg,.jpeg,.png,.pdf" class="sr-only">
+                <svg class="ic h-[42px] w-[42px] shrink-0 stroke-[1.5] text-[#1F3C88]"><use href="#i-id"/></svg>
+                <span class="ml-[29px]">
+                  <span class="block text-[12px] font-medium text-[#3F5683]">Glissez votre fichier ici ou <b class="font-bold text-[#1F3C7A]">cliquez pour parcourir</b></span>
+                  <span class="mt-[7px] block text-[10px] text-mist">Formats acceptés : JPG, PNG, PDF <span class="mx-1.5">•</span> Taille max : 5 Mo</span>
+                </span>
+              </label>
+
+              <!-- Aperçu ajouté (remplacez le SVG par <img src="..." class="h-full w-full object-cover">) -->
+              <div class="absolute right-[29px] top-[63px] h-[94px] w-[130px] rounded-lg border border-[#E6ECF5] bg-white p-2 shadow-sm">
+                <div class="h-[56px] overflow-hidden rounded-md">
+                  <svg viewBox="0 0 114 56" preserveAspectRatio="xMidYMid slice" class="h-full w-full" aria-label="Aperçu de la pièce d'identité">
+                    <defs><linearGradient id="g-id" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D9E0EF"/><stop offset="1" stop-color="#A9B7D6"/></linearGradient></defs>
+                    <rect width="114" height="56" fill="url(#g-id)"/>
+                    <rect x="6" y="4" width="64" height="4" rx="1" fill="#4E5F8A" opacity=".65"/>
+                    <rect x="8" y="13" width="30" height="38" rx="2" fill="#EDEFF5"/>
+                    <circle cx="23" cy="26" r="7" fill="#7A6860"/>
+                    <path d="M11 51c1-9 6-12 12-12s11 3 12 12z" fill="#55607C"/>
+                    <g fill="#6F80A6" opacity=".55">
+                      <rect x="44" y="15" width="60" height="2.2" rx="1"/><rect x="44" y="21" width="48" height="2.2" rx="1"/>
+                      <rect x="44" y="27" width="56" height="2.2" rx="1"/><rect x="44" y="33" width="40" height="2.2" rx="1"/>
+                      <rect x="44" y="39" width="52" height="2.2" rx="1"/><rect x="44" y="45" width="34" height="2.2" rx="1"/>
+                    </g>
+                  </svg>
+                </div>
+                <p class="mt-2 flex items-center gap-1.5 text-[10px] font-semibold leading-[14px] text-ok-text">
+                  <svg class="h-3 w-3"><use href="#i-ok"/></svg>Ajouté
+                </p>
+              </div>
+            </article>
+
+            <!-- 2 · Justificatif de domicile -->
+            <article class="relative mt-3 h-[177px] rounded-lg border border-[#E8EDF6] bg-white">
+              <span class="absolute left-[12px] top-[13px] grid h-[30px] w-[30px] place-items-center rounded-full bg-[#EAF1FD] text-[12.5px] font-bold text-[#3563C8]">2</span>
+              <div class="pl-[57px] pt-[13px]">
+                <h3 class="text-[13px] font-bold leading-5">Justificatif de domicile</h3>
+                <p class="mt-[2px] text-[10.5px] leading-4 text-steel">Téléchargez une facture récente (électricité, eau, internet) ou un document officiel à votre nom.</p>
+              </div>
+              <label class="ml-[57px] mr-[183px] mt-[13px] flex h-[96px] cursor-pointer items-center rounded-lg border-[1.5px] border-dashed border-[#D3DDEE] bg-white pl-[31px] transition hover:border-brand/60 hover:bg-brand-soft/40">
+                <input type="file" accept=".jpg,.jpeg,.png,.pdf" class="sr-only">
+                <svg class="ic h-[42px] w-[42px] shrink-0 stroke-[1.5] text-[#1F3C88]"><use href="#i-doc"/></svg>
+                <span class="ml-[29px]">
+                  <span class="block text-[12px] font-medium text-[#3F5683]">Glissez votre fichier ici ou <b class="font-bold text-[#1F3C7A]">cliquez pour parcourir</b></span>
+                  <span class="mt-[7px] block text-[10px] text-mist">Formats acceptés : JPG, PNG, PDF <span class="mx-1.5">•</span> Taille max : 5 Mo</span>
+                </span>
+              </label>
+
+              <div class="absolute right-[29px] top-[63px] h-[94px] w-[130px] rounded-lg border border-[#E6ECF5] bg-white p-2 shadow-sm">
+                <div class="h-[56px] overflow-hidden rounded-md">
+                  <svg viewBox="0 0 114 56" preserveAspectRatio="xMidYMid slice" class="h-full w-full" aria-label="Aperçu du justificatif">
+                    <rect width="114" height="56" fill="#E9EDF4"/>
+                    <rect x="4" y="0" width="106" height="56" fill="#fff"/>
+                    <rect x="8" y="5" width="16" height="6" rx="1" fill="#7C8DB3"/>
+                    <rect x="74" y="5" width="30" height="3" rx="1" fill="#9AA7C4"/>
+                    <rect x="74" y="10" width="22" height="3" rx="1" fill="#C4CCDD"/>
+                    <g fill="#B8C1D6">
+                      <rect x="8" y="18" width="52" height="2" rx="1"/><rect x="8" y="23" width="44" height="2" rx="1"/>
+                      <rect x="8" y="28" width="56" height="2" rx="1"/><rect x="8" y="33" width="38" height="2" rx="1"/>
+                    </g>
+                    <g fill="#CDD4E3">
+                      <rect x="70" y="20" width="34" height="14" rx="1"/>
+                      <rect x="8" y="40" width="96" height="2" rx="1"/><rect x="8" y="45" width="96" height="2" rx="1"/><rect x="8" y="50" width="70" height="2" rx="1"/>
+                    </g>
+                  </svg>
+                </div>
+                <p class="mt-2 flex items-center gap-1.5 text-[10px] font-semibold leading-[14px] text-ok-text">
+                  <svg class="h-3 w-3"><use href="#i-ok"/></svg>Ajouté
+                </p>
+              </div>
+            </article>
+
+            <!-- 3 · Photo de vous -->
+            <article class="relative mt-[13px] h-[153px] rounded-lg border border-[#E8EDF6] bg-white">
+              <span class="absolute left-[12px] top-[13px] grid h-[30px] w-[30px] place-items-center rounded-full bg-[#EAF1FD] text-[12.5px] font-bold text-[#3563C8]">3</span>
+              <div class="pl-[57px] pt-[13px]">
+                <h3 class="text-[13px] font-bold leading-5">Photo de vous</h3>
+                <p class="mt-[2px] text-[10.5px] leading-4 text-steel">Prenez un selfie clair pour confirmer que vous êtes bien le propriétaire du compte.</p>
+              </div>
+              <label class="ml-[57px] mr-[183px] mt-[13px] flex h-[80px] cursor-pointer items-center rounded-lg border-[1.5px] border-dashed border-[#D3DDEE] bg-white pl-[31px] transition hover:border-brand/60 hover:bg-brand-soft/40">
+                <input type="file" accept=".jpg,.jpeg,.png" class="sr-only">
+                <svg class="ic h-[42px] w-[42px] shrink-0 stroke-[1.5] text-[#1F3C88]"><use href="#i-camera"/></svg>
+                <span class="ml-[29px]">
+                  <span class="block text-[12px] font-medium text-[#3F5683]">Glissez votre fichier ici ou <b class="font-bold text-[#1F3C7A]">cliquez pour parcourir</b></span>
+                  <span class="mt-[7px] block text-[10px] text-mist">Formats acceptés : JPG, PNG <span class="mx-1.5">•</span> Taille max : 5 Mo</span>
+                </span>
+              </label>
+
+              <div class="absolute right-[29px] top-[38px] h-[105px] w-[130px] rounded-lg border border-[#E6ECF5] bg-white p-2 pb-[7px] shadow-sm">
+                <div class="h-[70px] overflow-hidden rounded-md">
+                  <svg viewBox="0 14 100 61" preserveAspectRatio="xMidYMid slice" class="h-full w-full" aria-label="Aperçu du selfie"><use href="#portrait"/></svg>
+                </div>
+                <p class="mt-[6px] flex items-center gap-1.5 text-[10px] font-semibold leading-[14px] text-ok-text">
+                  <svg class="h-3 w-3"><use href="#i-ok"/></svg>Ajouté
+                </p>
+              </div>
+            </article>
+
+            <!-- Conseils + bouton -->
+            <div class="relative mt-3 h-[82px] rounded-lg border border-brand-line bg-brand-soft">
+              <svg class="ic absolute left-[14px] top-[12px] h-[20px] w-[20px] stroke-[1.75] text-brand"><use href="#i-bulb"/></svg>
+              <div class="pl-[45px] pt-[10px]">
+                <p class="text-[11px] font-bold leading-[14px] text-brand">Conseils pour une validation rapide</p>
+                <ul class="mt-[5px] space-y-0 text-[10px] leading-[15px] text-[#4A5878]">
+                  <li class="flex items-center gap-[5px]"><svg class="ic h-[9px] w-[9px] stroke-[3.2] text-brand"><use href="#i-check"/></svg>Utilisez des documents lisibles et non flous</li>
+                  <li class="flex items-center gap-[5px]"><svg class="ic h-[9px] w-[9px] stroke-[3.2] text-brand"><use href="#i-check"/></svg>Assurez-vous que vos informations sont à jour</li>
+                  <li class="flex items-center gap-[5px]"><svg class="ic h-[9px] w-[9px] stroke-[3.2] text-brand"><use href="#i-check"/></svg>La vérification peut prendre entre 24 et 48 heures</li>
+                </ul>
+              </div>
+              <button type="button" class="absolute right-[10px] top-[23px] flex h-[35px] w-[181px] items-center justify-center gap-2 rounded-lg bg-brand text-[11px] font-bold text-white shadow-[0_4px_10px_rgba(242,107,29,0.25)] transition hover:bg-brand-dark">
+                Soumettez pour vérification
+                <svg class="ic h-[12px] w-[12px] stroke-[2.6]"><use href="#i-arrow-right"/></svg>
+              </button>
+            </div>
+          </section>
+
+          <!-- ======================= COLONNE DROITE ======================= -->
+          <aside class="space-y-[14.5px] rounded-xl border border-[#EEF2F8] bg-white px-[13px] pb-[15px] pt-[14px] shadow-[0_2px_10px_rgba(20,40,90,0.04)]">
+
+            <!-- Pourquoi cette vérification ? -->
+            <section class="h-[239px] rounded-xl border border-[#E3EAF6] bg-[#F5F8FE] px-[19px] pt-[12px]">
+              <div class="flex items-start gap-[15px]">
+                <svg class="ic mt-[1px] h-[24px] w-[24px] shrink-0 stroke-[1.75] text-info"><use href="#i-shield-check"/></svg>
+                <div>
+                  <h3 class="text-[13.5px] font-bold leading-5">Pourquoi cette vérification ?</h3>
+                  <p class="mt-2 text-[11.5px] leading-5 text-steel">La vérification permet de sécuriser la plateforme, de protéger les<br>voyageurs et de vous offrir plus de visibilité.</p>
+                </div>
+              </div>
+              <ul class="mt-[13px] pl-[10px] text-[11px] text-[#3D4F73]">
+                <li class="flex h-[33px] items-center gap-[15px]"><svg class="h-[14px] w-[14px]"><use href="#i-ok"/></svg>Confiance des voyageurs</li>
+                <li class="flex h-[33px] items-center gap-[15px]"><svg class="h-[14px] w-[14px]"><use href="#i-ok"/></svg>Moins de risques de fraude</li>
+                <li class="flex h-[33px] items-center gap-[15px]"><svg class="h-[14px] w-[14px]"><use href="#i-ok"/></svg>Accès aux fonctionnalités Premium</li>
+                <li class="flex h-[33px] items-center gap-[15px]"><svg class="h-[14px] w-[14px]"><use href="#i-ok"/></svg>Meilleure visibilité de vos annonces</li>
+              </ul>
+            </section>
+
+            <!-- Statut de vérification -->
+            <section class="h-[273px] overflow-hidden rounded-xl border border-[#E8EDF6] bg-white">
+              <header class="flex h-[47px] items-center justify-between border-b border-[#EEF2F8] pl-[20px] pr-[19px]">
+                <h3 class="text-[15px] font-bold">Statut de vérification</h3>
+                <span class="rounded-full bg-ok-soft px-[9px] py-[2px] text-[10px] font-medium leading-[14px] text-[#35A57A]">En attente</span>
+              </header>
+              <ul>
+                <li class="flex h-[56px] items-start border-b border-[#EEF2F8] pl-[25px] pr-[19px] pt-[9px]">
+                  <svg class="mt-[1px] h-[18px] w-[18px] shrink-0"><use href="#i-ok"/></svg>
+                  <div class="ml-[14px]">
+                    <p class="text-[11px] font-bold leading-4">Identification</p>
+                    <p class="mt-[7px] text-[10.5px] leading-[14px] text-mist">Validé</p>
+                  </div>
+                  <span class="ml-auto mt-[8px] rounded-full bg-ok-soft px-[8px] py-[2px] text-[10px] font-medium leading-[14px] text-[#2FA67B]">Validé</span>
+                </li>
+                <li class="flex h-[56px] items-start border-b border-[#EEF2F8] pl-[25px] pr-[19px] pt-[9px]">
+                  <svg class="mt-[1px] h-[18px] w-[18px] shrink-0"><use href="#i-ok"/></svg>
+                  <div class="ml-[14px]">
+                    <p class="text-[11px] font-bold leading-4">Justificatif de domicile</p>
+                    <p class="mt-[7px] text-[10.5px] leading-[14px] text-mist">Validé</p>
+                  </div>
+                  <span class="ml-auto mt-[8px] rounded-full bg-ok-soft px-[8px] py-[2px] text-[10px] font-medium leading-[14px] text-[#2FA67B]">Validé</span>
+                </li>
+                <li class="flex h-[56px] items-start border-b border-[#EEF2F8] pl-[25px] pr-[19px] pt-[9px]">
+                  <span class="mt-[1px] grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-brand"><span class="h-2 w-2 rounded-full border-[1.5px] border-white"></span></span>
+                  <div class="ml-[14px]">
+                    <p class="text-[11px] font-bold leading-4">Photo de vous</p>
+                    <p class="mt-[7px] text-[10.5px] leading-[14px] text-mist">En cours</p>
+                  </div>
+                  <span class="ml-auto mt-[4px] rounded-full bg-[#FDEBDD] px-[9px] py-[2px] text-[10px] font-medium leading-[14px] text-brand">En cours</span>
+                </li>
+                <li class="flex h-[56px] items-start pl-[25px] pr-[19px] pt-[9px]">
+                  <span class="mt-[1px] grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full bg-[#C9D2E4]"><span class="h-2 w-2 rounded-full border-[1.5px] border-white"></span></span>
+                  <div class="ml-[14px]">
+                    <p class="text-[11px] font-bold leading-4">Validation finale</p>
+                  </div>
+                  <span class="ml-auto mt-[4px] rounded-full bg-[#EDF1F8] px-[9px] py-[2px] text-[10px] font-medium leading-[14px] text-[#8393B0]">En attente</span>
+                </li>
+              </ul>
+            </section>
+
+            <!-- Besoin d'aide ? -->
+            <section class="h-[133px] rounded-xl border border-[#E3EAF6] bg-[#F5F8FE] pl-[19px] pr-[20px] pt-[13px]">
+              <div class="flex items-start gap-[17px]">
+                <svg class="ic mt-[3px] h-[26px] w-[26px] shrink-0 stroke-[1.75] text-info"><use href="#i-headset"/></svg>
+                <div>
+                  <h3 class="text-[12px] font-bold leading-4">Besoin d'aide ?</h3>
+                  <p class="mt-[3px] text-[11px] leading-[19px] text-steel">Notre équipe est disponible pour vous accompagner dans votre<br>vérification.</p>
+                </div>
+              </div>
+              <a href="#" class="ml-[45px] mt-[10px] flex h-[35px] w-[174px] items-center gap-[9px] rounded-lg border border-[#E1E8F4] bg-white pl-[18px] text-[11px] font-bold text-info shadow-sm transition hover:border-info/40">
+                <svg class="ic h-[15px] w-[15px] stroke-[1.75]"><use href="#i-camera"/></svg>Contacter le support
+              </a>
+            </section>
+          </aside>
+        </div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

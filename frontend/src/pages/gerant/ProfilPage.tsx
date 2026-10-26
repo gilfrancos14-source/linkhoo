@@ -98,12 +98,25 @@ export default function ProfilPage() {
         <div className="profil-hero__glow" aria-hidden="true" />
         <div className="profil-hero__pattern" aria-hidden="true" />
         <div className="profil-hero__content">
-          <div className="profil-avatar">
-            {initials ? <span>{initials}</span> : (
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
+          <div className="profil-avatar-wrap">
+            <div className="profil-avatar">
+              {initials ? <span>{initials}</span> : (
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              )}
+            </div>
+            {verified && (
+              <span
+                className="profil-badge profil-badge--verified profil-avatar__badge"
+                title="Gérant vérifié"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M5 12l5 5L20 7"/>
+                </svg>
+                <span className="sr-only">Vérifié</span>
+              </span>
             )}
           </div>
           <div className="profil-hero__main">
@@ -134,14 +147,6 @@ export default function ProfilPage() {
             </div>
           </div>
           <div className="profil-hero__badges">
-            {verified && (
-              <span className="profil-badge profil-badge--verified">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M5 12l5 5L20 7"/>
-                </svg>
-                Vérifié
-              </span>
-            )}
             {premium && (
               <span className="profil-badge profil-badge--premium">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

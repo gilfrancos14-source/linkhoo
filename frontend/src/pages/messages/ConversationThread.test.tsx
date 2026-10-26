@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import ConversationThread from './ConversationThread';
 import type { Conversation, Message } from '../../lib/api';
@@ -68,7 +68,10 @@ beforeEach(() => {
   mocks.markRead.mockResolvedValue({ updated: 0 });
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 describe('ConversationThread', () => {
   it("affiche les messages reçus et envoyés avec le titre de la chambre", async () => {
@@ -162,6 +165,67 @@ describe('ConversationThread', () => {
 
     expect(await screen.findByText('Très ancien')).toBeInTheDocument();
     expect(mocks.listMessages).toHaveBeenNthCalledWith(2, 'conv-1', 2);
+  });
+
+  it('recharge le fil toutes les 12 secondes', async () => {
+    const initial = msg({ id: 'm1', body: 'Bonjour', sender_role: 'client' });
+    const newer = msg({
+      id: 'm2',
+      body: 'Nouveau message',
+      sender_role: 'client',
+      created_at: '2026-02-01T10:05:00Z',
+    });
+    mocks.listMessages.mockResolvedValueOnce([initial]).mockResolvedValue([newer, initial]);
+
+    vi.useFakeTimers();
+    renderThread('client');
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(screen.getByText('Bonjour')).toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(12_000);
+    });
+
+    expect(screen.getByText('Nouveau message')).toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it('conserve la position de lecture quand on charge des messages plus anciens', async () => {
+    let scrollHeight = 1000;
+    const many = Array.from({ length: 50 }, (_, i) =>
+      msg({
+        id: `m${i}`,
+        body: `Message ${i}`,
+        sender_role: 'client',
+        created_at: `2026-02-01T10:00:${String(i).padStart(2, '0')}Z`,
+      }),
+    );
+    mocks.listMessages.mockImplementation(async (_id, page) => {
+      if (page === 2) {
+        scrollHeight = 1500;
+        return [msg({ id: 'm-old', body: 'Très ancien', sender_role: 'client' })];
+      }
+      return many;
+    });
+
+    renderThread('client');
+
+    expect(await screen.findByText('Message 0')).toBeInTheDocument();
+    const scroll = document.querySelector('.messages-thread__scroll') as HTMLDivElement;
+    Object.defineProperty(scroll, 'scrollHeight', {
+      configurable: true,
+      get: () => scrollHeight,
+    });
+    Object.defineProperty(scroll, 'clientHeight', { configurable: true, value: 400 });
+    scroll.scrollTop = 400;
+
+    fireEvent.click(screen.getByRole('button', { name: /plus anciens/ }));
+
+    expect(await screen.findByText('Très ancien')).toBeInTheDocument();
+    expect(scroll.scrollTop).toBe(900);
   });
 
   it("affiche « Conversation introuvable » quand le chargement échoue", async () => {

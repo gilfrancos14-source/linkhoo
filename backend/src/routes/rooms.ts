@@ -15,6 +15,7 @@ import { fetchAllRows } from '../utils/fetchAll';
 import { normalizeCity } from '../utils/city';
 import { isPremiumActive } from '../utils/premium';
 import { interleaveRooms, rankWindowRows } from '../utils/rankRooms';
+import { ROOM_COLUMNS } from '../utils/selects';
 
 const router = Router();
 
@@ -140,7 +141,7 @@ router.get('/popular', async (req: Request, res: Response, next: NextFunction) =
       await Promise.all([
         supabasePublic
           .from('rooms')
-          .select('*')
+          .select(ROOM_COLUMNS)
           .eq('market', market)
           .order('created_at', { ascending: false }),
         supabaseAdmin
@@ -189,7 +190,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         const query = applyRoomFilters(
           supabasePublic
             .from('rooms')
-            .select('*')
+            .select(ROOM_COLUMNS)
             .order('created_at', { ascending: false })
             .order('id', { ascending: true }),
           filters,
@@ -220,7 +221,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const rowsQuery = applyRoomFilters(
       supabasePublic
         .from('rooms')
-        .select('*')
+        .select(ROOM_COLUMNS)
         .order('created_at', { ascending: false })
         .order('id', { ascending: true }),
       filters,
@@ -274,7 +275,7 @@ router.get('/available', async (req: Request, res: Response, next: NextFunction)
     const roomsPromise = fetchAllRows<any>((from, to) => {
       let query = supabasePublic
         .from('rooms')
-        .select('*')
+        .select(ROOM_COLUMNS)
         .eq('disponible', true)
         .order('created_at', { ascending: false })
         .order('id', { ascending: true });
@@ -392,7 +393,7 @@ router.get('/mine', requireClerkAuth, async (req: Request, res: Response, next: 
 
     const { data, error } = await supabaseAdmin
       .from('rooms')
-      .select('*')
+      .select(ROOM_COLUMNS)
       .eq('gerant_id', authUserId)
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -411,7 +412,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
     const { data, error } = await supabaseAdmin
       .from('rooms')
-      .select('*')
+      .select(ROOM_COLUMNS)
       .eq('id', parsedParams.data.id)
       .maybeSingle();
     if (error) throw error;
@@ -451,7 +452,7 @@ router.post('/', requireClerkAuth, async (req: Request, res: Response, next: Nex
     const { data, error } = await supabaseAdmin
       .from('rooms')
       .insert({ id: randomUUID(), ...parsedBody.data, gerant_id: gerantInfo.userId })
-      .select()
+      .select(ROOM_COLUMNS)
       .single();
     if (error) throw error;
     res.status(201).json(data);
@@ -486,7 +487,7 @@ router.put('/:id', requireClerkAuth, async (req: Request, res: Response, next: N
       .from('rooms')
       .update(parsedBody.data)
       .eq('id', parsedParams.data.id)
-      .select()
+      .select(ROOM_COLUMNS)
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Chambre introuvable' });
@@ -567,7 +568,7 @@ router.patch('/:id/toggle', requireClerkAuth, async (req: Request, res: Response
       .from('rooms')
       .update({ disponible: !room.disponible })
       .eq('id', parsedParams.data.id)
-      .select()
+      .select(ROOM_COLUMNS)
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Chambre introuvable' });

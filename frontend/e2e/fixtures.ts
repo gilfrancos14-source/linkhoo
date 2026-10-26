@@ -177,6 +177,8 @@ export interface MockApiOptions {
   rooms?: Record<string, unknown>[];
   /** Catégories servies quel que soit le marché demandé. */
   categories?: Record<string, unknown>[];
+  /** Bannières servies par GET /banners (filtrées par marché et section). */
+  banners?: Record<string, unknown>[];
   /** Rôle renvoyé par POST /auth/bootstrap (garde client/gérant). */
   role?: 'client' | 'gerant';
   /** POST /admin/login répond 401 au lieu de délivrer un jeton. */
@@ -323,7 +325,15 @@ export async function mockApi(page: Page, options: MockApiOptions = {}): Promise
       return respond(route, room ?? {}, room ? 200 : 404);
     }
     if (path === '/categories') return respond(route, categories);
-    if (path === '/banners') return respond(route, []);
+    if (path === '/banners') {
+      const section = url.searchParams.get('section');
+      const banners = (options.banners ?? []).filter(
+        (banner) =>
+          (!marketParam || banner.market === marketParam) &&
+          (!section || banner.section === section),
+      );
+      return respond(route, banners);
+    }
     if (path === '/events') return respond(route, []);
     if (path === '/reservations/mine' || path === '/reservations/client') {
       return respond(route, []);

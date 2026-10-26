@@ -1,0 +1,114 @@
+/* ==========================================================================
+   FICHE ANNONCE — reproduction de la maquette habici-annonce.html
+   Les utilitaires viennent de Tailwind ; ce fichier ne déclare que les
+   composants de la maquette et le reset local (preflight est désactivé).
+   `:where()` garde une spécificité basse : les utilitaires Tailwind, chargés
+   ensuite, peuvent surcharger chaque propriété.
+   ========================================================================== */
+
+/* La maquette n'affiche pas la barre d'accent marché. */
+html.room-detail-route[data-market]::before {
+  display: none;
+}
+
+.habici-annonce {
+  overflow: visible;
+}
+
+.habici-annonce main {
+  overflow: visible;
+}
+
+/* Reset local des contrôles natifs (preflight Tailwind est globalement off). */
+.habici-annonce :where(button, input, select, textarea) {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.habici-annonce :where(button) {
+  cursor: pointer;
+}
+
+.habici-annonce :where(button:disabled) {
+  cursor: default;
+}
+
+.habici-annonce :where(input[type='date']) {
+  appearance: none;
+}
+
+/* Icônes (style Lucide) */
+.habici-annonce :where(.ic) {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.habici-annonce :where(.card) {
+  background: #fff;
+  border: 1px solid #e3e9f4;
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px rgba(18, 40, 75, 0.05);
+}
+
+.habici-annonce :where(.field) {
+  height: 44px;
+  border: 1px solid #e3e9f4;
+  border-radius: 0.75rem;
+  background: #fff;
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+  color: #16294b;
+}
+
+.habici-annonce :where(.field)::placeholder {
+  color: #94a3b8;
+}
+
+.habici-annonce :where(.field):focus {
+  outline: none;
+  border-color: #f85f13;
+  box-shadow: 0 0 0 2px rgba(248, 95, 19, 0.4);
+}
+
+.habici-annonce :where(.field)[aria-invalid='true'] {
+  border-color: #f87171;
+  background: #fef2f2;
+}
+
+.habici-annonce :where(.err) {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: #dc2626;
+}
+
+.habici-annonce :where(.lbl) {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.habici-annonce :where(.sec-title) {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-weight: 700;
+}
+
+.habici-annonce :where(.sec-ico) {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid #e3e9f4;
+  border-radius: 0.5rem;
+  color: #16294b;
+}

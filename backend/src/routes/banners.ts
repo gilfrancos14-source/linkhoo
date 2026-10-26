@@ -5,6 +5,7 @@ import { requireAdminAuth } from '../middleware/requireAdminAuth';
 import { requirePermission, requireSuperadmin } from '../middleware/adminPermissions';
 import { idParamsSchema, marketQuerySchema } from '../validations/common';
 import { bannerCreateSchema, bannerUpdateSchema } from '../validations/banner';
+import { BANNER_COLUMNS } from '../utils/selects';
 
 const router = Router();
 const validSections = ['popular', 'promos', 'categories', 'events'] as const;
@@ -16,7 +17,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       return res.status(400).json({ error: 'Paramètres invalides' });
     }
 
-    let query = supabasePublic.from('banners').select('*').order('order', { ascending: true });
+    let query = supabasePublic.from('banners').select(BANNER_COLUMNS).order('order', { ascending: true });
     if (parsedQuery.data.market) {
       query = query.eq('market', parsedQuery.data.market);
     }
@@ -47,7 +48,7 @@ router.post('/', requireAdminAuth, requirePermission('bannieres'), async (req: R
     const { data, error } = await supabaseAdmin
       .from('banners')
       .insert({ id: randomUUID(), ...parsedBody.data })
-      .select()
+      .select(BANNER_COLUMNS)
       .single();
     if (error) throw error;
     res.status(201).json(data);
@@ -68,7 +69,7 @@ router.put('/:id', requireAdminAuth, requirePermission('bannieres'), async (req:
       .from('banners')
       .update(parsedBody.data)
       .eq('id', parsedParams.data.id)
-      .select()
+      .select(BANNER_COLUMNS)
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Bannière introuvable' });

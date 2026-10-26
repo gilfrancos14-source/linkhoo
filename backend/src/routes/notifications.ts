@@ -10,6 +10,7 @@ import { clientReservationQuerySchema } from '../validations/reservation';
 import { fetchAllRows } from '../utils/fetchAll';
 import { isQualifiedGerantUser } from '../utils/gerantAccess';
 import { maskClientIdentity } from '../utils/clientIdentity';
+import { CLIENT_NOTIFICATION_COLUMNS, NOTIFICATION_COLUMNS } from '../utils/selects';
 
 const router = Router();
 const notificationsLimiter = createClientLimiter({ prefix: 'notifications' });
@@ -42,7 +43,7 @@ router.get('/', requireClerkAuth, async (req: Request, res: Response, next: Next
       fetchAllRows<NotificationRow>((from, to) =>
         supabaseAdmin
           .from('notifications')
-          .select('*')
+          .select(NOTIFICATION_COLUMNS)
           .eq('gerant_id', authUserId)
           .order('date', { ascending: false })
           .order('id', { ascending: true })
@@ -53,7 +54,7 @@ router.get('/', requireClerkAuth, async (req: Request, res: Response, next: Next
         fetchAllRows<NotificationRow>((from, to) =>
           supabaseAdmin
             .from('notifications')
-            .select('*')
+            .select(NOTIFICATION_COLUMNS)
             .in('room_id', ids)
             .order('date', { ascending: false })
             .order('id', { ascending: true })
@@ -133,7 +134,7 @@ router.patch('/:id/read', requireClerkAuth, async (req: Request, res: Response, 
       .from('notifications')
       .update({ read: true })
       .eq('id', parsedParams.data.id)
-      .select()
+      .select(NOTIFICATION_COLUMNS)
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Notification introuvable' });
@@ -169,7 +170,7 @@ router.get('/client', requireClerkAuth, notificationsLimiter, async (req: Reques
     const data = await fetchAllRows<any>((from, to) =>
       supabaseAdmin
         .from('client_notifications')
-        .select('id, type, room_title, message, date, read')
+        .select(CLIENT_NOTIFICATION_COLUMNS)
         .eq('client_email', client.email)
         .order('date', { ascending: false })
         .order('id', { ascending: true })
@@ -230,7 +231,7 @@ router.post('/client', requireClerkAuth, async (req: Request, res: Response, nex
     const { data, error } = await supabaseAdmin
       .from('client_notifications')
       .insert(notification)
-      .select()
+      .select(CLIENT_NOTIFICATION_COLUMNS)
       .single();
     if (error) throw error;
     void publishNotificationChanged('client');
@@ -272,7 +273,7 @@ router.patch('/client/:id/read', requireClerkAuth, notificationsLimiter, async (
       .from('client_notifications')
       .update({ read: true })
       .eq('id', parsedParams.data.id)
-      .select()
+      .select(CLIENT_NOTIFICATION_COLUMNS)
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Notification introuvable' });

@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HabiCI – Mes chambres</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: { extend: {
+    fontFamily: { sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+    colors: { navy: '#0f2a5c', brand: { DEFAULT: '#f97316', dark: '#ea580c', soft: '#fff1e6' } }
+  } }
+}
+</script>
+<style type="text/tailwindcss">
+@layer components {
+  .i { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .card { @apply bg-white rounded-2xl border border-slate-100 shadow-[0_2px_12px_rgba(15,42,92,.05)]; }
+  .grp { @apply flex items-center gap-3 px-3 py-2 text-sm font-semibold text-navy; }
+  .grp svg { @apply w-5 h-5; }
+  .sub { @apply flex items-center gap-3 py-2 text-xs text-slate-500 hover:text-navy; }
+  .sub svg { @apply w-4 h-4 text-slate-400; }
+  .sub.on { @apply text-brand-dark; }
+  .sub.on svg { @apply text-brand; }
+  .badge { @apply ml-auto grid h-5 w-5 place-items-center rounded-full bg-brand text-[11px] font-bold text-white; }
+  .avatar { @apply grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-slate-300 to-slate-500 font-bold text-white; }
+  .field { @apply relative flex items-center rounded-xl border border-slate-200 bg-white text-sm text-slate-600; }
+  .field select { @apply w-full appearance-none bg-transparent py-3 pl-4 pr-9 outline-none; }
+  .field > svg { @apply pointer-events-none absolute right-3 h-4 w-4 text-slate-500; }
+  .st { @apply absolute left-2.5 top-2.5 rounded-full px-3 py-1 text-xs font-semibold text-white; }
+  .hb { @apply absolute right-2.5 top-2.5 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-navy; }
+  .tag { @apply inline-block rounded bg-orange-100 px-2 py-0.5 text-[11px] font-medium text-brand-dark; }
+  .meta { @apply flex items-center gap-2 text-xs text-slate-500; }
+  .meta svg { @apply h-3.5 w-3.5 text-slate-400; }
+  .btn { @apply flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold hover:bg-slate-50; }
+  .tg { @apply flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-medium text-slate-500; }
+  .tg:has(:checked) { @apply border-sky-100 bg-sky-50 text-navy; }
+  .sw { position: relative; width: 2.25rem; height: 1.25rem; border-radius: 9999px; background: #94a3b8; transition: .2s; }
+  .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 1rem; height: 1rem; border-radius: 9999px; background: #fff; transition: .2s; }
+  input:checked + .sw { background: #10b981; }
+  input:checked + .sw::after { transform: translateX(1rem); }
+  .tile { @apply flex items-center justify-center gap-3 rounded-xl border border-slate-100 p-4; }
+  .row { @apply flex items-center gap-3 py-2.5 text-xs font-medium; }
+  .row > span:last-child { @apply ml-auto text-slate-500; }
+  .ico { @apply grid h-9 w-9 shrink-0 place-items-center rounded-full; }
+  .ico svg { @apply h-5 w-5; }
+}
+</style>
+</head>
+
+<body class="bg-[#f5f8fc] font-sans text-navy antialiased">
+
+<!-- Icônes (sprite SVG) -->
+<svg class="absolute h-0 w-0" aria-hidden="true">
+  <symbol id="home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-5h4v5"/></symbol>
+  <symbol id="bed" viewBox="0 0 24 24"><path d="M3 20V5M3 16h18v4M21 16v-4a3 3 0 0 0-3-3h-7v7"/><circle cx="7" cy="11" r="1.5"/></symbol>
+  <symbol id="cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-5.4A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4"/></symbol>
+  <symbol id="shieldf" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" fill="currentColor"/><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2"/></symbol>
+  <symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
+  <symbol id="crown" viewBox="0 0 24 24"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5z" fill="currentColor"/></symbol>
+  <symbol id="mega" viewBox="0 0 24 24"><path d="M3 11v3l12 5V6zM15 9a3 3 0 0 1 0 6M6 15l1 5h3l-1-4"/></symbol>
+  <symbol id="down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="pc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
+  <symbol id="tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></symbol>
+  <symbol id="doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM9 13h6M9 17h6"/></symbol>
+  <symbol id="mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+  <symbol id="build" viewBox="0 0 24 24"><path d="M5 21V4h10v17M15 9h4v12M9 8h2M9 12h2M9 16h2M3 21h18"/></symbol>
+  <symbol id="list" viewBox="0 0 24 24"><path d="M4 6h2M4 12h2M4 18h2M9 6h11M9 12h11M9 18h11"/></symbol>
+  <symbol id="dots" viewBox="0 0 24 24"><g fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></g></symbol>
+  <symbol id="pin" viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="heart" viewBox="0 0 24 24"><path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.5A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z"/></symbol>
+  <symbol id="star" viewBox="0 0 24 24"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1 6.2-5.5-3-5.5 3 1-6.2L3 9.7l6.2-.9z"/></symbol>
+  <symbol id="drop" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></symbol>
+  <symbol id="filter" viewBox="0 0 24 24"><path d="M4 7h16M7 12h10M10 17h4"/></symbol>
+</svg>
+
+<div class="flex min-h-screen">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white px-4 py-5 lg:flex">
+    <a href="#" class="mb-6 flex items-center gap-2.5 px-2">
+      <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand text-white"><svg class="i h-5 w-5"><use href="#home"/></svg></span>
+      <span class="text-2xl font-extrabold">Habi<span class="text-brand">CI</span></span>
+    </a>
+
+    <nav class="space-y-3">
+      <a href="#" class="grp"><svg class="i"><use href="#home"/></svg>Aperçu</a>
+
+      <div>
+        <a href="#" class="grp rounded-xl bg-brand-soft text-brand-dark"><svg class="i"><use href="#bed"/></svg>Chambres</a>
+        <div class="pl-3">
+          <a href="#" class="sub on"><svg class="i"><use href="#list"/></svg>Toutes les chambres<span class="ml-auto h-1.5 w-1.5 rounded-full bg-brand"></span></a>
+          <a href="#" class="sub"><svg class="i"><use href="#plus"/></svg>Ajouter une chambre</a>
+          <a href="#" class="sub"><svg class="i"><use href="#tag"/></svg>Catégories</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="grp"><svg class="i"><use href="#cal"/></svg>Réservations<span class="badge">3</span></div>
+        <div class="pl-3">
+          <a href="#" class="sub"><svg class="i"><use href="#user"/></svg>Demandes</a>
+          <a href="#" class="sub"><svg class="i"><use href="#cal"/></svg>Calendrier</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="grp"><svg class="i"><use href="#chat"/></svg>Messages<span class="badge">2</span></div>
+        <div class="pl-3">
+          <a href="#" class="sub"><svg class="i"><use href="#mail"/></svg>Boîte de réception</a>
+          <a href="#" class="sub"><svg class="i"><use href="#chat"/></svg>Nouveau message</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="grp justify-between"><span class="flex items-center gap-3"><svg class="i"><use href="#shield"/></svg>Vérification</span><svg class="i !h-4 !w-4"><use href="#down"/></svg></div>
+        <div class="pl-3">
+          <a href="#" class="sub"><svg class="i"><use href="#doc"/></svg>Mes documents</a>
+          <a href="#" class="sub"><svg class="i"><use href="#doc"/></svg>Suivi de vérification</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="grp"><svg class="i"><use href="#user"/></svg>Profil</div>
+        <div class="pl-3"><a href="#" class="sub"><svg class="i"><use href="#user"/></svg>Mes informations</a></div>
+      </div>
+
+      <div>
+        <div class="grp"><svg class="i text-brand"><use href="#crown"/></svg>Premium</div>
+        <div class="pl-3"><a href="#" class="sub"><svg class="i"><use href="#cal"/></svg>Mon abonnement</a></div>
+      </div>
+
+      <div>
+        <div class="grp"><svg class="i"><use href="#mega"/></svg>Booster</div>
+        <div class="pl-3">
+          <a href="#" class="sub"><svg class="i"><use href="#mega"/></svg>Campagnes</a>
+          <a href="#" class="sub"><svg class="i"><use href="#mega"/></svg>Créer une campagne</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="mt-auto rounded-2xl border border-orange-100 bg-brand-soft p-4 pt-5">
+      <p class="flex items-center gap-2 text-sm font-bold"><svg class="i h-5 w-5 text-brand"><use href="#crown"/></svg>Passez au Premium</p>
+      <p class="mt-2 text-[11px] text-slate-500">Plus de visibilité, plus de réservations !</p>
+      <a href="#" class="mt-3 block rounded-lg bg-brand py-2 text-center text-xs font-semibold text-white hover:bg-brand-dark">Voir les avantages</a>
+    </div>
+  </aside>
+
+  <!-- ============ CONTENU ============ -->
+  <main class="min-w-0 flex-1 px-4 py-4 lg:px-7">
+
+    <!-- Barre du haut -->
+    <header class="flex items-center gap-4">
+      <label class="card flex max-w-3xl flex-1 items-center gap-3 px-5 py-3 text-slate-400">
+        <svg class="i h-5 w-5"><use href="#search"/></svg>
+        <input type="search" placeholder="Rechercher une chambre, une catégorie…" class="w-full bg-transparent text-sm outline-none placeholder:text-slate-400">
+      </label>
+      <button class="relative ml-auto p-2 text-navy" aria-label="Notifications">
+        <svg class="i h-6 w-6"><use href="#bell"/></svg>
+        <span class="absolute right-0.5 top-0 grid h-4 w-4 place-items-center rounded-full bg-brand text-[10px] font-bold text-white">2</span>
+      </button>
+      <div class="card flex items-center gap-3 py-2 pl-2 pr-4">
+        <span class="avatar h-10 w-10 text-xs">KM</span>
+        <div class="hidden text-xs sm:block"><p class="font-semibold">Koffi Mensah</p><p class="text-slate-400">Gérant</p></div>
+        <svg class="i h-4 w-4"><use href="#down"/></svg>
+      </div>
+    </header>
+
+    <!-- Titre -->
+    <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-extrabold">Mes chambres</h1>
+        <p class="mt-1 text-sm text-slate-500">Gérez toutes vos chambres et suivez leur disponibilité.</p>
+      </div>
+      <a href="#" class="inline-flex items-center gap-3 rounded-lg bg-brand px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 hover:bg-brand-dark"><svg class="i h-5 w-5"><use href="#pc"/></svg>Ajouter une chambre</a>
+    </div>
+
+    <div class="mt-5 grid items-start gap-5 xl:grid-cols-[1fr_300px]">
+
+      <!-- ===== Liste ===== -->
+      <div class="min-w-0">
+
+        <!-- Filtres -->
+        <form class="card grid items-end gap-4 p-4 md:grid-cols-[1.5fr_1fr_1fr_auto]" onsubmit="return false">
+          <label class="field !rounded-xl !py-0">
+            <svg class="i !static ml-4 !h-5 !w-5 !text-slate-500"><use href="#search"/></svg>
+            <input type="search" placeholder="Rechercher une chambre..." class="w-full bg-transparent px-3 py-3.5 outline-none placeholder:text-slate-400">
+          </label>
+          <label class="block text-xs font-medium">Catégorie
+            <span class="field mt-1.5">
+              <select><option>Toutes les catégories</option><option>Appartements</option><option>Studios</option><option>Chambres privées</option><option>Villas</option></select>
+              <svg class="i"><use href="#down"/></svg>
+            </span>
+          </label>
+          <label class="block text-xs font-medium">Statut
+            <span class="field mt-1.5">
+              <select><option>Tous les statuts</option><option>Disponible</option><option>Occupée</option></select>
+              <svg class="i"><use href="#down"/></svg>
+            </span>
+          </label>
+          <button class="btn !px-6 !py-3.5 !text-sm"><svg class="i h-5 w-5"><use href="#filter"/></svg>Filtres</button>
+        </form>
+
+        <div class="my-4 flex items-center justify-between px-1 text-xs">
+          <p class="font-semibold">6 chambres trouvées</p>
+          <label class="flex items-center gap-2 text-slate-500">Trier par :
+            <span class="field !text-xs"><select class="!py-2 !pl-3 !pr-8"><option>Plus récent</option><option>Prix croissant</option><option>Prix décroissant</option></select><svg class="i"><use href="#down"/></svg></span>
+          </label>
+        </div>
+
+        <!-- Cartes (remplacez les dégradés par : <img src="..." alt="" class="h-full w-full rounded-xl object-cover">) -->
+        <div class="grid gap-5 sm:grid-cols-2 2xl:grid-cols-3">
+
+          <article class="card p-2.5">
+            <div class="relative h-36 rounded-xl bg-gradient-to-br from-sky-300 to-amber-200">
+              <span class="st bg-emerald-500">Disponible</span>
+              <button class="hb" aria-label="Ajouter aux favoris"><svg class="i h-4 w-4"><use href="#heart"/></svg></button>
+            </div>
+            <div class="px-1.5 pb-1 pt-3">
+              <span class="tag">Appartement</span>
+              <h3 class="mt-2 text-sm font-bold">Appartement lumineux avec vue sur la lagune</h3>
+              <p class="meta mt-2"><svg class="i"><use href="#pin"/></svg>Cocody, Abidjan</p>
+              <div class="mt-2 flex gap-5"><span class="meta"><svg class="i"><use href="#bed"/></svg>2 chambres</span><span class="meta"><svg class="i"><use href="#drop"/></svg>1 salle d’eau</span></div>
+              <p class="mt-3 text-sm font-bold text-brand-dark">75 000 FCFA / nuit</p>
+              <div class="mt-3 flex items-center gap-2">
+                <label class="tg"><input type="checkbox" class="sr-only"><span class="sw"></span>Désactiver</label>
+                <button class="btn flex-1 text-blue-700"><svg class="i h-4 w-4"><use href="#star"/></svg>Populaire</button>
+                <button class="btn" aria-label="Plus d’actions"><svg class="i h-4 w-4"><use href="#dots"/></svg></button>
+              </div>
+            </div>
+          </article>
+
+          <article class="card p-2.5">
+            <div class="relative h-36 rounded-xl bg-gradient-to-br from-amber-200 to-orange-400">
+              <span class="st bg-slate-500/80">Occupée</span>
+              <button class="hb" aria-label="Ajouter aux favoris"><svg class="i h-4 w-4"><use href="#heart"/></svg></button>
+            </div>
+            <div class="px-1.5 pb-1 pt-3">
+              <span class="tag">Chambre privée</span>
+              <h3 class="mt-2 text-sm font-bold">Chambre moderne au Plateau</h3>
+              <p class="meta mt-2"><svg class="i"><use href="#pin"/></svg>Le Plateau, Abidjan</p>
+              <div class="mt-2 flex gap-5"><span class="meta"><svg class="i"><use href="#bed"/></svg>1 chambre</span><span class="meta"><svg class="i"><use href="#drop"/></svg>1 salle d’eau</span></div>
+              <p class="mt-3 text-sm font-bold text-brand-dark">45 000 FCFA / nuit</p>
+              <div class="mt-3 flex items-center gap-2">
+                <label class="tg"><input type="checkbox" class="sr-only" checked><span class="sw"></span>Activer</label>
+                <button class="btn flex-1 text-blue-700"><svg class="i h-4 w-4"><use href="#star"/></svg>Populaire</button>
+                <button class="btn" aria-label="Plus d’actions"><svg class="i h-4 w-4"><use href="#dots"/></svg></button>
+              </div>
+            </div>
+          </article>
+
+          <article class="card p-2.5">
+            <div class="relative h-36 rounded-xl bg-gradient-to-br from-emerald-500 to-sky-300">
+              <span class="st bg-emerald-500">Disponible</span>
+              <button class="hb" aria-label="Ajouter aux favoris"><svg class="i h-4 w-4"><use href="#heart"/></svg></button>
+            </div>
+            <div class="px-1.5 pb-1 pt-3">
+              <span class="tag">Villa</span>
+              <h3 class="mt-2 text-sm font-bold">Villa avec piscine</h3>
+              <p class="meta mt-2"><svg class="i"><use href="#pin"/></svg>Grand-Bassam</p>
+              <div class="mt-2 flex gap-5"><span class="meta"><svg class="i"><use href="#bed"/></svg>3 chambres</span><span class="meta"><svg class="i"><use href="#drop"/></svg>2 salles d’eau</span></div>
+              <p class="mt-3 text-sm font-bold text-brand-dark">120 000 FCFA / nuit</p>
+              <div class="mt-3 flex items-center gap-2">
+                <label class="tg"><input type="checkbox" class="sr-only"><span class="sw"></span>Désactiver</label>
+                <button class="btn flex-1 text-blue-700"><svg class="i h-4 w-4"><use href="#star"/></svg>Populaire</button>
+                <button class="btn" aria-label="Plus d’actions"><svg class="i h-4 w-4"><use href="#dots"/></svg></button>
+              </div>
+            </div>
+          </article>
+
+          <article class="card p-2.5">
+            <div class="relative h-36 rounded-xl bg-gradient-to-br from-stone-300 to-orange-300">
+              <span class="st bg-slate-500/80">Occupée</span>
+              <button class="hb" aria-label="Ajouter aux favoris"><svg class="i h-4 w-4"><use href="#heart"/></svg></button>
+            </div>
+            <div class="px-1.5 pb-1 pt-3">
+              <span class="tag">Studio</span>
+              <h3 class="mt-2 text-sm font-bold">Studio cosy à Marcory</h3>
+              <p class="meta mt-2"><svg class="i"><use href="#pin"/></svg>Marcory, Abidjan</p>
+              <div class="mt-2 flex gap-5"><span class="meta"><svg class="i"><use href="#bed"/></svg>1 chambre</span><span class="meta"><svg class="i"><use href="#drop"/></svg>1 salle d’eau</span></div>
+              <p class="mt-3 text-sm font-bold text-brand-dark">35 000 FCFA / nuit</p>
+              <div class="mt-3 flex items-center gap-2">
+                <label class="tg"><input type="checkbox" class="sr-only" checked><span class="sw"></span>Activer</label>
+                <button class="btn flex-1 text-blue-700"><svg class="i h-4 w-4"><use href="#star"/></svg>Populaire</button>
+                <button class="btn" aria-label="Plus d’actions"><svg class="i h-4 w-4"><use href="#dots"/></svg></button>
+              </div>
+            </div>
+          </article>
+
+          <article class="card p-2.5">
+            <div class="relative h-36 rounded-xl bg-gradient-to-br from-slate-400 to-sky-700">
+              <span class="st bg-emerald-500">Disponible</span>
+              <button class="hb" aria-label="Ajouter aux favoris"><svg class="i h-4 w-4"><use href="#heart"/></svg></button>
+            </div>
+            <div class="px-1.5 pb-1 pt-3">
+              <span class="tag">Chambre privée</span>
+              <h3 class="mt-2 text-sm font-bold">Chambre avec balcon</h3>
+              <p class="meta mt-2"><svg class="i"><use href="#pin"/></svg>Riviera, Abidjan</p>
+              <div class="mt-2 flex gap-5"><span class="meta"><svg class="i"><use href="#bed"/></svg>1 chambre</span><span class="meta"><svg class="i"><use href="#drop"/></svg>1 salle d’eau</span></div>
+              <p class="mt-3 text-sm font-bold text-brand-dark">40 000 FCFA / nuit</p>
+              <div class="mt-3 flex items-center gap-2">
+                <label class="tg"><input type="checkbox" class="sr-only"><span class="sw"></span>Désactiver</label>
+                <button class="btn flex-1 text-blue-700"><svg class="i h-4 w-4"><use href="#star"/></svg>Populaire</button>
+                <button class="btn" aria-label="Plus d’actions"><svg class="i h-4 w-4"><use href="#dots"/></svg></button>
+              </div>
+            </div>
+          </article>
+
+          <article class="card p-2.5">
+            <div class="relative h-36 rounded-xl bg-gradient-to-br from-sky-400 to-amber-100">
+              <span class="st bg-emerald-500">Disponible</span>
+              <button class="hb" aria-label="Ajouter aux favoris"><svg class="i h-4 w-4"><use href="#heart"/></svg></button>
+            </div>
+            <div class="px-1.5 pb-1 pt-3">
+              <span class="tag">Appartement</span>
+              <h3 class="mt-2 text-sm font-bold">Appartement moderne à Cocody</h3>
+              <p class="meta mt-2"><svg class="i"><use href="#pin"/></svg>Cocody, Abidjan</p>
+              <div class="mt-2 flex gap-5"><span class="meta"><svg class="i"><use href="#bed"/></svg>2 chambres</span><span class="meta"><svg class="i"><use href="#drop"/></svg>2 salles d’eau</span></div>
+              <p class="mt-3 text-sm font-bold text-brand-dark">90 000 FCFA / nuit</p>
+              <div class="mt-3 flex items-center gap-2">
+                <label class="tg"><input type="checkbox" class="sr-only" checked><span class="sw"></span>Activer</label>
+                <button class="btn flex-1 text-blue-700"><svg class="i h-4 w-4"><use href="#star"/></svg>Populaire</button>
+                <button class="btn" aria-label="Plus d’actions"><svg class="i h-4 w-4"><use href="#dots"/></svg></button>
+              </div>
+            </div>
+          </article>
+
+        </div>
+      </div>
+
+      <!-- ===== Panneau latéral ===== -->
+      <aside class="space-y-5">
+
+        <section class="card p-5">
+          <h2 class="mb-4 font-bold">Aperçu de vos chambres</h2>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="tile"><svg class="i h-6 w-6 text-slate-500"><use href="#bed"/></svg><div class="text-center"><p class="text-2xl font-bold">6</p><p class="text-xs text-slate-500">Total</p></div></div>
+            <div class="tile"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span><div class="text-center"><p class="text-2xl font-bold">4</p><p class="text-xs text-slate-500">Disponibles</p></div></div>
+            <div class="tile"><span class="h-2.5 w-2.5 rounded-full bg-brand"></span><div class="text-center"><p class="text-2xl font-bold">2</p><p class="text-xs text-slate-500">Occupées</p></div></div>
+            <div class="tile"><svg class="i h-5 w-5 text-brand"><use href="#star"/></svg><div class="text-center"><p class="text-2xl font-bold">2</p><p class="text-xs text-slate-500">Populaires</p></div></div>
+          </div>
+        </section>
+
+        <section class="card p-5">
+          <h2 class="mb-2 font-bold">Catégories</h2>
+          <ul class="divide-y divide-slate-100">
+            <li class="row"><span class="ico bg-sky-100 text-sky-500"><svg class="i"><use href="#build"/></svg></span><span class="!ml-0 !text-navy">Appartements</span><span>3</span></li>
+            <li class="row"><span class="ico bg-amber-100 text-amber-500"><svg class="i"><use href="#cal"/></svg></span><span class="!ml-0 !text-navy">Studios</span><span>1</span></li>
+            <li class="row"><span class="ico bg-pink-100 text-pink-500"><svg class="i"><use href="#chat"/></svg></span><span class="!ml-0 !text-navy">Chambres privées</span><span>2</span></li>
+            <li class="row"><span class="ico bg-violet-100 text-violet-500"><svg class="i"><use href="#home"/></svg></span><span class="!ml-0 !text-navy">Villas</span><span>1</span></li>
+          </ul>
+        </section>
+
+        <section class="card space-y-3 p-5">
+          <h2 class="font-bold">Statut de vérification</h2>
+          <a href="#" class="flex items-center gap-3 rounded-xl border border-slate-100 px-3 py-3 text-sm font-medium">
+            <svg class="i h-6 w-6 text-navy"><use href="#shieldf"/></svg>Vérifié
+            <span class="ml-auto rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600">● Oui</span>
+            <svg class="i h-4 w-4"><use href="#right"/></svg>
+          </a>
+          <a href="#" class="flex items-center gap-3 rounded-xl border border-slate-100 px-3 py-3 text-sm font-medium">
+            <svg class="i h-6 w-6 text-brand"><use href="#crown"/></svg>Premium
+            <span class="ml-auto rounded-full bg-orange-100 px-2.5 py-0.5 text-[11px] font-semibold text-brand-dark">● Actif</span>
+            <svg class="i h-4 w-4"><use href="#right"/></svg>
+          </a>
+        </section>
+
+        <section class="flex gap-3 rounded-2xl border border-sky-100 bg-sky-50 p-4">
+          <svg class="i h-5 w-5 shrink-0 text-sky-500"><use href="#bulb"/></svg>
+          <div><p class="text-xs font-semibold">Astuce</p><p class="mt-1.5 text-xs leading-relaxed text-slate-600">Une chambre populaire attire plus de réservations. Mettez en avant vos meilleures annonces !</p></div>
+        </section>
+      </aside>
+
+    </div>
+  </main>
+</div>
+</body>
+</html>

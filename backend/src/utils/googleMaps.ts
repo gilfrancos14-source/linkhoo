@@ -65,6 +65,32 @@ function isGoogleMapsLikeUrl(url: URL): boolean {
   return /\/maps\b/i.test(url.pathname) || url.pathname === '/maps' || Boolean(url.searchParams.get('q') || url.searchParams.get('query'));
 }
 
+/**
+ * Vrai si l'entrée est un lien Google Maps naviguable : schéma `http(s)` et
+ * hôte Google. Utilisé AVANT persistance pour refuser toute URL arbitraire
+ * (`javascript:`, `data:`, site de hameçonnage, etc.) que le navigateur
+ * rechargerait plus tard dans un `<a href>`.
+ */
+export function isGoogleMapsUrl(input: string): boolean {
+  const trimmed = input.trim();
+  if (!trimmed) return false;
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    try {
+      url = new URL(`https://${trimmed}`);
+    } catch {
+      return false;
+    }
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+  const host = url.hostname.toLowerCase();
+  if (!isGoogleHost(host)) return false;
+  if (SHORT_HOSTS.has(host)) return true;
+  return isGoogleMapsLikeUrl(url);
+}
+
 async function fetchWithManualRedirects(startUrl: string): Promise<URL | null> {
   let current = startUrl;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {

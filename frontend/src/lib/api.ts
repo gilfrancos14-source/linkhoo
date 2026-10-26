@@ -494,6 +494,8 @@ export interface GerantData {
   phone: string | null;
   /** Adresse de domicile saisie à l'étape 1 de la vérification. */
   address?: string | null;
+  date_of_birth?: string | null;
+  nationality?: string | null;
   market: MarketCode;
   is_verified: boolean;
   verified_at: string | null;
@@ -510,13 +512,13 @@ export interface GerantData {
   created_at: string;
 }
 
-export type VerificationDocType = 'national_id' | 'selfie' | 'id_card_front' | 'id_card_back';
+export type VerificationDocType = 'national_id' | 'proof_of_address' | 'selfie';
 
 export interface VerificationDocument {
   id: string;
   gerant_id: string;
   document_type: VerificationDocType;
-  file_url: string;
+  file_url: string | null;
   file_path: string;
   original_filename: string | null;
   mime_type: string | null;
@@ -546,10 +548,33 @@ export const apiGerants = {
   getMe: () => {
     return request<GerantData>('/gerants/me');
   },
-  updateMe: (data: { nom?: string; prenom?: string; phone?: string; address?: string }) =>
-    request<GerantData>('/gerants/me', { method: 'PATCH', body: JSON.stringify(data) }),
+  updateMe: (data: {
+    nom?: string;
+    prenom?: string;
+    phone?: string;
+    address?: string;
+    date_of_birth?: string;
+    nationality?: string;
+  }) => request<GerantData>('/gerants/me', { method: 'PATCH', body: JSON.stringify(data) }),
   deleteDocument: (id: string, docId: string) =>
     request<void>(`/gerants/${id}/documents/${docId}`, { method: 'DELETE' }),
+  getDocuments: (id: string) =>
+    request<VerificationDocument[]>(`/gerants/${id}/documents`),
+  addDocument: (
+    id: string,
+    data: {
+      document_type: VerificationDocType;
+      file_path: string;
+      original_filename?: string;
+      mime_type?: string;
+      file_size?: number;
+      replace?: boolean;
+    },
+  ) =>
+    request<VerificationDocument>(`/gerants/${id}/documents`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   submitVerification: (id: string) =>
     request<{ success: boolean; gerant: GerantData }>(`/gerants/${id}/submit-verification`, { method: 'POST' }),
   setPropertyAddress: (id: string, mapsUrl: string, lat?: number, lng?: number) =>
@@ -618,6 +643,8 @@ export interface BoostData {
   display_status: BoostDisplayStatus;
   budget_total: number;
   spent: number;
+  clicks_count: number;
+  impressions_count: number;
   remaining: number;
   starts_at: string;
   ends_at: string;
@@ -638,6 +665,9 @@ export interface BoostFeaturedItem {
   ville: string | null;
   quartier: string | null;
   category: string | null;
+  /** Moyenne des avis de la chambre (null si aucun avis). */
+  rating: number | null;
+  reviews_count: number;
 }
 
 export interface BoostConfig {
@@ -690,7 +720,11 @@ export const apiBoosts = {
   config: () => cachedGet<BoostConfig>('/boosts/config'),
   // Cache mémoire 300 s : la rotation aléatoire serveur reste vivante sans
   // re-faire un tour complet de la base à chaque navigation.
-  featured: () => cachedGet<BoostFeaturedResponse>('/boosts/featured', 300_000),
+  featured: (market?: string) =>
+    cachedGet<BoostFeaturedResponse>(
+      `/boosts/featured${market ? `?market=${encodeURIComponent(market)}` : ''}`,
+      300_000,
+    ),
   impression: (boostId: string, visitorId: string) =>
     trackEvent('/boosts/impression', boostId, visitorId),
   click: (boostId: string, visitorId: string) =>
@@ -790,7 +824,9 @@ export interface FeaturedReviewData {
   note_appartement: number;
   commentaire: string;
   created_at: string;
-  room: { title: string | null } | null;
+  room: { title: string | null; ville: string | null; market: string | null } | null;
+  /** Moyenne de tous les avis de la chambre (null si aucun avis). */
+  room_avg: number | null;
 }
 
 export const apiReviews = {

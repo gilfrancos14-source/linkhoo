@@ -13,6 +13,7 @@ interface StayCardProps {
   href?: string;
   ariaLabel?: string;
   tag?: string;
+  eyebrow?: string;
   badge?: string;
   badgeVariant?: 'default' | 'unavailable' | 'premium' | 'sponsored';
   meta?: string[];
@@ -30,6 +31,7 @@ export default function StayCard({
   href = '/',
   ariaLabel,
   tag,
+  eyebrow,
   badge,
   badgeVariant = 'default',
   meta,
@@ -72,6 +74,7 @@ export default function StayCard({
           )}
         </div>
         <div className="stay-card__body">
+          {eyebrow && <p className="stay-card__eyebrow">{eyebrow}</p>}
           <div className="stay-card__head">
             <h3 className="stay-card__title">{title}</h3>
             {rating && (

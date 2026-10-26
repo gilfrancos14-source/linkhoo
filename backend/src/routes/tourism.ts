@@ -10,6 +10,7 @@ import {
   destinationUpdateSchema,
 } from '../validations/tourism';
 import { partitionDestinations, upcomingEventCities, upcomingWindow } from '../utils/tourism';
+import { TOURISM_COLUMNS } from '../utils/selects';
 
 const router = Router();
 
@@ -41,7 +42,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         .lte('event_date', to),
       supabasePublic
         .from('tourism_destinations')
-        .select('*')
+        .select(TOURISM_COLUMNS)
         .eq('market', market),
     ]);
     if (eventsResult.error) throw eventsResult.error;
@@ -65,7 +66,7 @@ router.post('/', requireAdminAuth, requirePermission('destinations'), async (req
     const { data, error } = await supabaseAdmin
       .from('tourism_destinations')
       .insert({ id: randomUUID(), ...parsedBody.data })
-      .select()
+      .select(TOURISM_COLUMNS)
       .single();
     if (error) throw error;
     res.status(201).json(data);
@@ -86,7 +87,7 @@ router.put('/:id', requireAdminAuth, requirePermission('destinations'), async (r
       .from('tourism_destinations')
       .update(parsedBody.data)
       .eq('id', parsedParams.data.id)
-      .select()
+      .select(TOURISM_COLUMNS)
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Destination introuvable' });

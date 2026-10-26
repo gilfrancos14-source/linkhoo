@@ -36,3 +36,46 @@ export const glyphUser = (
     <path d="M4.8 20a7.2 7.2 0 0 1 14.4 0" />
   </>
 );
+
+export const glyphClock = (
+  <>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 7.5V12l3 2" />
+  </>
+);
+
+export const glyphCheck = (
+  <>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M8.5 12.2l2.4 2.4 4.6-4.8" />
+  </>
+);
+
+export const glyphGrid = (
+  <>
+    <rect x="3.5" y="3.5" width="7" height="7" rx="2" />
+    <rect x="13.5" y="3.5" width="7" height="7" rx="2" />
+    <rect x="3.5" y="13.5" width="7" height="7" rx="2" />
+    <rect x="13.5" y="13.5" width="7" height="7" rx="2" />
+  </>
+);
+
+export const glyphChat = (
+  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+);
+
+export const glyphHome = (
+  <>
+    <path d="M3.5 10.5 12 3.5l8.5 7" />
+    <path d="M5.5 9.5V20h13V9.5" />
+    <path d="M9.5 20v-5.5h5V20" />
+  </>
+);
+
+export const glyphLogout = (
+  <>
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <path d="M16 17l5-5-5-5" />
+    <path d="M21 12H9" />
+  </>
+);

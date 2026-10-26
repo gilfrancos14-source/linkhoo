@@ -212,6 +212,7 @@ describe('structure de la barre latérale', () => {
     // Laisse le gérant se charger : le lien doit rester absent ensuite.
     expect(await screen.findByText('Gérant immobilier')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Réservations' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Demandes' })).toBeNull();
     expect(mocks.getMe).toHaveBeenCalledTimes(1);
   });
 
@@ -246,6 +247,15 @@ describe('structure de la barre latérale', () => {
     expect(mocks.fetchMyRooms).toHaveBeenCalledTimes(1);
   });
 
+  it('affiche Demandes pour un gerant qualifie', async () => {
+    mocks.getMe.mockResolvedValue(gerantQualifie);
+
+    renderLayout();
+
+    const link = await screen.findByRole('link', { name: 'Demandes' });
+    expect(link).toHaveAttribute('href', '/ci/gerant/reservations/demandes');
+  });
+
   it('rend le contenu de la route enfant dans la zone principale', async () => {
     renderLayout();
 
@@ -268,7 +278,7 @@ describe('badge messages', () => {
     renderLayout();
 
     const link = await screen.findByRole('link', { name: /Messages/ });
-    expect(link).toHaveAttribute('href', '/ci/gerant/messages');
+    expect(link).toHaveAttribute('href', '/ci/gerant/messages/boite-reception');
     await waitFor(() => expect(within(link).getByText('2')).toBeInTheDocument());
     expect(mocks.gerantUnread).toHaveBeenCalled();
   });

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HabiCI – Boîte de réception</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+tailwind.config = { theme: { extend: {
+  fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] },
+  colors: { brand: '#F26A21', ink: '#1E2A44', sky: '#EAF0F8', peach: '#FDEBDF' }
+}}}
+</script>
+<style type="text/tailwindcss">
+  .ico { @apply w-5 h-5 shrink-0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .card { @apply bg-white rounded-xl border border-slate-100 shadow-sm; }
+  .nav { @apply flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold text-ink hover:bg-slate-50; }
+  .sub { @apply flex items-center gap-3 pl-9 pr-3 py-1.5 rounded-lg text-xs text-slate-500 hover:bg-orange-50; }
+  .sub.on { @apply bg-orange-50 text-brand font-semibold; }
+  .badge { @apply grid place-items-center min-w-5 h-5 px-1.5 rounded-full bg-brand text-white text-[11px] font-bold; }
+  .tab { @apply flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-ink; }
+  .tab .badge { @apply bg-orange-100 text-brand; }
+  .tab.on { @apply bg-brand text-white; }
+  .tab.on .badge { @apply bg-white text-brand; }
+  .av { @apply relative shrink-0 w-11 h-11 rounded-full grid place-items-center text-sm font-bold; }
+  .av.on::after { content: ""; @apply absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-white; }
+  .conv { @apply flex gap-3 p-4 border-b border-slate-100 text-left w-full; }
+  .conv.on { @apply bg-orange-50 border-l-2 border-l-brand; }
+  .conv .t { @apply text-xs text-slate-400; }
+  .bub { @apply max-w-[75%] rounded-xl px-4 py-3 text-sm leading-relaxed text-ink; }
+  .bub time { @apply block mt-2 text-[11px] text-slate-400; }
+  .side-btn { @apply flex items-center gap-3 w-full px-4 py-3 rounded-lg border border-slate-200 text-sm font-semibold text-ink hover:bg-slate-50; }
+  .side-btn .ico { @apply text-brand; }
+</style>
+</head>
+<body class="bg-[#F7F9FC] font-sans text-ink antialiased">
+
+<!-- Icônes -->
+<svg class="hidden">
+  <symbol id="home" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></symbol>
+  <symbol id="bed" viewBox="0 0 24 24"><path d="M2 20v-9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v9M2 16h20M6 9V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3"/></symbol>
+  <symbol id="cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="msg" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+  <symbol id="crown" viewBox="0 0 24 24"><path d="M2 18l2-11 5 5 3-8 3 8 5-5 2 11z"/></symbol>
+  <symbol id="mega" viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h3l8 5V5L7 10H4a1 1 0 0 0-1 1zM19 9a4 4 0 0 1 0 6"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="send" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+  <symbol id="clip" viewBox="0 0 24 24"><path d="M21.4 11l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></symbol>
+  <symbol id="pin" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="x" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+  <symbol id="share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></symbol>
+  <symbol id="ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/></symbol>
+  <symbol id="sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+  <symbol id="file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="tag" viewBox="0 0 24 24"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1"/></symbol>
+  <symbol id="drop" viewBox="0 0 24 24"><path d="M12 2.7l5.7 5.6a8 8 0 1 1-11.4 0z"/></symbol>
+  <symbol id="bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></symbol>
+  <symbol id="checks" viewBox="0 0 24 24"><path d="M2 12l5 5L17 7M12 16l1 1L22 7"/></symbol>
+</svg>
+
+<div class="flex min-h-screen">
+
+  <!-- ===== Sidebar ===== -->
+  <aside class="hidden lg:flex flex-col w-64 shrink-0 bg-white border-r border-slate-100 p-4 gap-1 sticky top-0 h-screen overflow-y-auto">
+    <a href="#" class="flex items-center gap-2 px-2 pb-5 pt-1">
+      <span class="grid place-items-center w-10 h-10 rounded-xl bg-brand text-white"><svg class="ico"><use href="#home"/></svg></span>
+      <span class="text-2xl font-extrabold">Habi<span class="text-brand">CI</span></span>
+    </a>
+
+    <a href="#" class="nav"><svg class="ico"><use href="#home"/></svg>Aperçu</a>
+
+    <a href="#" class="nav"><svg class="ico"><use href="#bed"/></svg>Chambres<svg class="ico ml-auto w-4 h-4 rotate-180"><use href="#down"/></svg></a>
+    <a href="#" class="sub"><svg class="ico w-4 h-4"><use href="#bed"/></svg>Toutes les chambres</a>
+    <a href="#" class="sub"><svg class="ico w-4 h-4"><use href="#plus"/></svg>Ajouter une chambre</a>
+    <a href="#" class="sub"><svg class="ico w-4 h-4"><use href="#tag"/></svg>Catégories</a>
+
+    <a href="#" class="nav mt-1"><svg class="ico"><use href="#cal"/></svg>Réservations<span class="badge ml-auto">3</span></a>
+    <a href="#" class="sub"><svg class="ico w-4 h-4"><use href="#file"/></svg>Demandes</a>
+    <a href="#" class="sub"><svg class="ico w-4 h-4"><use href="#cal"/></svg>Calendrier</a>
+
+    <a href="#" class="nav mt-1"><svg class="ico"><use href="#msg"/></svg>Messages<span class="badge ml-auto">2</span></a>
+    <a href="#" class="sub on"><svg class="ico w-4 h-4"><use href="#msg"/></svg>Boîte de réception</a>
+    <a href="#" class="sub"><svg class="ico w-4 h-4"><use href="#plus"/></svg>Nouveau message</a>
+
+    <a href="#" class="nav mt-1"><svg class="ico"><use href="#shield"/></svg>Vérification<svg class="ico ml-auto w-4 h-4"><use href="#down"/></svg></a>
+    <a href="#" class="sub"><svg class="ico w-4 h-4"><use href="#file"/></svg>Mes documents</a>
+    <a href="#" class="sub"><svg class="ico w-4 h-4"><use href="#shield"/></svg>Suivi de vérification</a>
+
+    <a href="#" class="nav mt-1"><svg class="ico"><use href="#user"/></svg>Profil<svg class="ico ml-auto w-4 h-4"><use href="#down"/></svg></a>
+    <a href="#" class="sub"><svg class="ico w-4 h-4"><use href="#user"/></svg>Mes informations</a>
+
+    <a href="#" class="nav mt-1"><svg class="ico text-brand"><use href="#crown"/></svg>Premium</a>
+    <a href="#" class="sub"><svg class="ico w-4 h-4"><use href="#cal"/></svg>Mon abonnement</a>
+
+    <a href="#" class="nav mt-1"><svg class="ico"><use href="#mega"/></svg>Booster<svg class="ico ml-auto w-4 h-4"><use href="#down"/></svg></a>
+    <a href="#" class="sub"><svg class="ico w-4 h-4"><use href="#mega"/></svg>Campagnes</a>
+    <a href="#" class="sub"><svg class="ico w-4 h-4"><use href="#plus"/></svg>Créer une campagne</a>
+
+    <div class="mt-auto pt-4">
+      <div class="rounded-xl bg-peach border border-orange-100 p-4">
+        <p class="flex items-center gap-2 text-sm font-bold"><svg class="ico text-brand"><use href="#crown"/></svg>Passez au Premium</p>
+        <p class="mt-2 text-xs text-slate-500">Plus de visibilité, plus de réservations !</p>
+        <a href="#" class="mt-3 block rounded-lg bg-brand py-2 text-center text-xs font-bold text-white hover:bg-orange-600">Voir les avantages</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===== Contenu ===== -->
+  <div class="flex-1 min-w-0">
+
+    <!-- Barre du haut -->
+    <header class="flex items-center justify-between gap-4 px-6 lg:px-8 py-4">
+      <label class="flex items-center gap-3 w-full max-w-xl card px-5 py-3 text-sm text-slate-400">
+        <svg class="ico w-5 h-5"><use href="#search"/></svg>
+        <input type="search" placeholder="Rechercher une chambre, une catégorie..." class="w-full bg-transparent outline-none placeholder:text-slate-400 text-ink">
+      </label>
+      <div class="flex items-center gap-5">
+        <button class="relative" aria-label="Notifications">
+          <svg class="ico w-6 h-6 text-ink"><use href="#bell"/></svg>
+          <span class="absolute -top-2 -right-2 grid place-items-center w-4 h-4 rounded-full bg-brand text-[10px] font-bold text-white">3</span>
+        </button>
+        <button class="card flex items-center gap-3 pl-2 pr-4 py-2 text-left">
+          <span class="grid place-items-center w-10 h-10 rounded-full bg-amber-200 text-sm font-bold text-amber-800">KM</span>
+          <span class="hidden sm:block leading-tight"><span class="block text-sm font-bold">Koffi Mensah</span><span class="text-xs text-slate-500">Gérant</span></span>
+          <svg class="ico w-4 h-4 ml-4"><use href="#down"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="px-6 lg:px-8 pb-10">
+      <h1 class="text-3xl font-extrabold">Boîte de réception</h1>
+      <p class="mt-1 text-sm text-slate-500">Consultez et gérez tous vos messages en un seul endroit.</p>
+
+      <div class="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
+
+        <!-- Colonne principale -->
+        <div class="min-w-0 space-y-3">
+
+          <!-- Onglets + recherche -->
+          <div class="card flex flex-wrap items-center gap-3 p-3">
+            <nav class="flex flex-wrap gap-1">
+              <button class="tab on">Tous <span class="badge">12</span></button>
+              <button class="tab">Non lus <span class="badge">2</span></button>
+              <button class="tab">Clients <span class="badge">9</span></button>
+              <button class="tab">Système <span class="badge">1</span></button>
+            </nav>
+            <label class="ml-auto flex items-center gap-3 w-full sm:w-72 rounded-lg border border-slate-200 px-4 py-2.5 text-sm">
+              <svg class="ico w-4 h-4 text-ink"><use href="#search"/></svg>
+              <input type="search" placeholder="Rechercher dans vos messages..." class="w-full bg-transparent outline-none placeholder:text-slate-400">
+            </label>
+            <button class="flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold"><svg class="ico w-4 h-4"><use href="#sliders"/></svg>Filtres</button>
+          </div>
+
+          <div class="grid gap-3 md:grid-cols-[320px_minmax(0,1fr)]">
+
+            <!-- Liste des conversations -->
+            <section class="card overflow-hidden">
+              <button class="conv on">
+                <span class="av on bg-rose-200 text-rose-800">AD</span>
+                <span class="min-w-0 flex-1">
+                  <span class="flex justify-between"><b class="text-sm">Aïcha Diallo</b><span class="t">10:24</span></span>
+                  <span class="flex items-center justify-between gap-2 text-xs text-ink"><span class="truncate">Appartement lumineux avec vue...</span><span class="badge">2</span></span>
+                  <span class="block truncate text-xs text-slate-400">Bonjour, est-ce que la chambre est encore ...</span>
+                </span>
+              </button>
+              <button class="conv">
+                <span class="av on bg-sky-200 text-sky-800">YK</span>
+                <span class="min-w-0 flex-1">
+                  <span class="flex justify-between"><b class="text-sm">Yao Kouassi</b><span class="t">09:48</span></span>
+                  <span class="flex items-center justify-between gap-2 text-xs text-ink"><span class="truncate">Studio moderne au Plateau</span><span class="badge">1</span></span>
+                  <span class="block truncate text-xs text-slate-400">Merci pour votre réponse !</span>
+                </span>
+              </button>
+              <button class="conv">
+                <span class="av on bg-amber-200 text-amber-800">FK</span>
+                <span class="min-w-0 flex-1">
+                  <span class="flex justify-between"><b class="text-sm">Fatou Koné</b><span class="t">Hier</span></span>
+                  <span class="flex items-center justify-between gap-2 text-xs text-ink"><span class="truncate">Villa avec piscine</span><i class="w-1.5 h-1.5 rounded-full bg-green-500"></i></span>
+                  <span class="block truncate text-xs text-slate-400">Nous serons 2 adultes et 1 enfant.</span>
+                </span>
+              </button>
+              <button class="conv">
+                <span class="av on bg-emerald-200 text-emerald-800">MT</span>
+                <span class="min-w-0 flex-1">
+                  <span class="flex justify-between"><b class="text-sm">Mamadou Traoré</b><span class="t">Hier</span></span>
+                  <span class="flex items-center justify-between gap-2 text-xs text-ink"><span class="truncate">Résidence Les Palmiers</span><i class="w-1.5 h-1.5 rounded-full bg-green-500"></i></span>
+                  <span class="block truncate text-xs text-slate-400">Est-il possible d'avoir plus de photos ?</span>
+                </span>
+              </button>
+              <button class="conv">
+                <span class="av on bg-violet-200 text-violet-800">SL</span>
+                <span class="min-w-0 flex-1">
+                  <span class="flex justify-between"><b class="text-sm">Sophie Lambert</b><span class="t">Lun</span></span>
+                  <span class="flex items-center justify-between gap-2 text-xs text-ink"><span class="truncate">Bungalow forêt</span><i class="w-1.5 h-1.5 rounded-full bg-green-500"></i></span>
+                  <span class="block truncate text-xs text-slate-400">Merci beaucoup, c'est parfait !</span>
+                </span>
+              </button>
+              <button class="conv">
+                <span class="av on bg-orange-200 text-orange-800">CB</span>
+                <span class="min-w-0 flex-1">
+                  <span class="flex justify-between"><b class="text-sm">Charles Bamba</b><span class="t">Lun</span></span>
+                  <span class="flex items-center justify-between gap-2 text-xs text-ink"><span class="truncate">Chalet en bois</span><i class="w-1.5 h-1.5 rounded-full bg-green-500"></i></span>
+                  <span class="block truncate text-xs text-slate-400">Je souhaite réserver pour le week-end.</span>
+                </span>
+              </button>
+              <button class="conv">
+                <span class="av on bg-pink-200 text-pink-800">MA</span>
+                <span class="min-w-0 flex-1">
+                  <span class="flex justify-between"><b class="text-sm">Marie Ange</b><span class="t">Dim</span></span>
+                  <span class="flex items-center justify-between gap-2 text-xs text-ink"><span class="truncate">Chambre moderne</span><i class="w-1.5 h-1.5 rounded-full bg-green-500"></i></span>
+                  <span class="block truncate text-xs text-slate-400">Quelles sont les conditions d'annulation ?</span>
+                </span>
+              </button>
+              <button class="conv border-b-0">
+                <span class="av bg-slate-200 text-slate-500"><svg class="ico"><use href="#user"/></svg></span>
+                <span class="min-w-0 flex-1">
+                  <span class="flex justify-between"><b class="text-sm">Client Anonyme</b><span class="t">Dim</span></span>
+                  <span class="flex items-center justify-between gap-2 text-xs text-ink"><span class="truncate">Demande d'information</span><i class="w-1.5 h-1.5 rounded-full bg-green-500"></i></span>
+                  <span class="block truncate text-xs text-slate-400">Je voudrais des informations sur vos tarifs.</span>
+                </span>
+              </button>
+            </section>
+
+            <!-- Fil de discussion -->
+            <section class="card flex flex-col min-h-[560px]">
+              <header class="flex items-center gap-4 border-b border-slate-100 p-4">
+                <span class="av bg-rose-200 text-rose-800">AD</span>
+                <div class="leading-tight"><p class="text-sm font-bold">Aïcha Diallo</p><p class="text-xs text-slate-500">aicha@gmail.com</p></div>
+                <div class="ml-4 flex min-w-0 items-center gap-3">
+                  <span class="h-11 w-14 shrink-0 rounded-md bg-gradient-to-br from-sky-300 to-amber-200"></span>
+                  <div class="min-w-0 leading-tight"><p class="truncate text-sm font-bold">Appartement lumineux avec vue sur la lagune</p><p class="text-xs text-slate-500">Cocody, Abidjan · 2 chambres</p></div>
+                </div>
+                <button class="ml-auto text-xl leading-none text-slate-500" aria-label="Plus d'options">⋯</button>
+              </header>
+
+              <div class="flex-1 space-y-5 overflow-y-auto p-5">
+                <div class="flex items-start gap-3">
+                  <span class="av w-9 h-9 text-xs bg-rose-200 text-rose-800">AD</span>
+                  <p class="bub bg-sky">Bonjour, est-ce que la chambre est encore disponible pour les dates du 15 au 18 novembre ?<time>10:24</time></p>
+                </div>
+                <div class="flex justify-end">
+                  <p class="bub bg-peach">Bonjour Aïcha,<br>Oui, la chambre est disponible pour vos dates.<br>Souhaitez-vous que je vous envoie les détails et le prix ?
+                    <time class="flex items-center justify-end gap-1">10:28<svg class="ico w-4 h-4 text-brand"><use href="#checks"/></svg></time></p>
+                </div>
+                <div class="flex items-start gap-3">
+                  <span class="av w-9 h-9 text-xs bg-rose-200 text-rose-800">AD</span>
+                  <p class="bub bg-sky">Oui, merci beaucoup !<br>Et est-ce qu'il y a le wifi ?<time>10:32</time></p>
+                </div>
+                <div class="flex justify-end">
+                  <div class="bub bg-peach">
+                    <p>Oui, il y a le wifi haut débit.<br>Voici les détails complets de l'annonce :</p>
+                    <ul class="my-3 list-disc space-y-1 pl-5"><li>2 chambres</li><li>1 salle d'eau</li><li>Cuisine équipée</li><li>Vue sur la lagune</li></ul>
+                    <p>N'hésitez pas si vous avez d'autres questions 😊</p>
+                    <time class="flex items-center justify-end gap-1">10:36<svg class="ico w-4 h-4 text-brand"><use href="#checks"/></svg></time>
+                  </div>
+                </div>
+              </div>
+
+              <form class="flex items-center gap-3 border-t border-slate-100 p-4" onsubmit="return false">
+                <label class="flex flex-1 items-center gap-3 rounded-lg border border-slate-200 px-4 py-3">
+                  <svg class="ico text-ink"><use href="#clip"/></svg>
+                  <input type="text" placeholder="Écrivez votre message..." class="w-full bg-transparent text-sm outline-none placeholder:text-slate-400">
+                </label>
+                <button class="grid h-12 w-12 place-items-center rounded-xl bg-brand text-white hover:bg-orange-600" aria-label="Envoyer"><svg class="ico"><use href="#send"/></svg></button>
+              </form>
+            </section>
+          </div>
+        </div>
+
+        <!-- Colonne latérale -->
+        <aside class="hidden xl:block space-y-4">
+          <div class="card p-3">
+            <div class="relative h-28 rounded-lg bg-gradient-to-br from-sky-300 via-amber-100 to-orange-200">
+              <span class="absolute left-2 top-2 rounded-full bg-green-500 px-3 py-0.5 text-xs font-bold text-white">Disponible</span>
+            </div>
+            <p class="mt-3 text-sm font-bold leading-snug">Appartement lumineux avec vue sur la lagune</p>
+            <p class="mt-2 flex items-center gap-2 text-xs text-slate-500"><svg class="ico w-4 h-4"><use href="#pin"/></svg>Cocody, Abidjan</p>
+            <p class="mt-2 flex gap-5 text-xs text-slate-500">
+              <span class="flex items-center gap-2"><svg class="ico w-4 h-4"><use href="#bed"/></svg>2 chambres</span>
+              <span class="flex items-center gap-2"><svg class="ico w-4 h-4"><use href="#drop"/></svg>1 salle d'eau</span>
+            </p>
+            <p class="mt-3 text-sm font-bold text-brand">75 000 FCFA / nuit</p>
+          </div>
+
+          <div class="card p-4">
+            <h2 class="text-sm font-bold">Actions rapides</h2>
+            <div class="mt-3 space-y-2">
+              <a href="#" class="side-btn"><svg class="ico w-4 h-4"><use href="#cal"/></svg>Voir la réservation</a>
+              <a href="#" class="side-btn"><svg class="ico w-4 h-4"><use href="#share"/></svg>Partager l'annonce</a>
+              <a href="#" class="side-btn"><svg class="ico w-4 h-4"><use href="#ban"/></svg>Bloquer l'utilisateur</a>
+            </div>
+          </div>
+
+          <div class="card p-4">
+            <h2 class="text-sm font-bold">Informations du client</h2>
+            <div class="mt-3 flex items-center gap-3">
+              <span class="av bg-rose-200 text-rose-800">AD</span>
+              <div class="min-w-0 flex-1 text-xs leading-snug">
+                <p class="flex items-center justify-between gap-2"><b class="text-sm">Aïcha Diallo</b><span class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">Client fiable</span></p>
+                <p class="text-slate-500">aicha@gmail.com</p>
+                <p class="text-slate-500">+229 61 23 45 67</p>
+              </div>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <a href="#" class="rounded-lg border border-slate-200 py-2 text-center text-xs font-semibold text-brand">Voir le profil</a>
+              <a href="#" class="rounded-lg border border-slate-200 py-2 text-center text-xs font-semibold text-brand">Ajouter une note</a>
+            </div>
+          </div>
+
+          <div class="card p-4">
+            <div class="flex items-center justify-between">
+              <h2 class="flex items-center gap-2 text-sm font-bold"><svg class="ico text-brand"><use href="#bulb"/></svg>Infos utiles</h2>
+              <button aria-label="Fermer"><svg class="ico w-4 h-4"><use href="#x"/></svg></button>
+            </div>
+            <p class="mt-3 rounded-lg bg-slate-50 p-3 text-xs leading-relaxed text-slate-500">Répondez rapidement aux messages pour augmenter vos chances de réservation et améliorer votre note.</p>
+          </div>
+        </aside>
+
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

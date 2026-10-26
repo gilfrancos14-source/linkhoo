@@ -37,6 +37,10 @@ import {
   ensureTrackVisitor,
   issueTrackCookieIfMissing,
 } from '../utils/trackVisitor';
+import {
+  fetchRoomReviewStats,
+  type RoomReviewStats,
+} from '../services/reviewStats';
 import { flagPaidWithoutCampaign } from '../utils/boostAlerts';
 import {
   mapFedaPayStatus,
@@ -224,13 +228,25 @@ router.get('/featured', async (req: Request, res: Response, next: NextFunction) 
     // C1 : pose l'identité visiteur (cookie signé) avant les événements de
     // tracking — sans elle, impression/click répondraient visitor_issued.
     issueTrackCookieIfMissing(req, res);
+
+    // La landing filtre les emplacements sur le pays sélectionné. Sans
+    // paramètre, on conserve la rotation globale (compatibilité).
+    const marketParam =
+      typeof req.query.market === 'string' ? req.query.market.trim().toUpperCase() : '';
+    if (marketParam && !isMarketCode(marketParam)) {
+      res.status(400).json({ error: 'Marché invalide' });
+      return;
+    }
+
     const nowIso = new Date().toISOString();
-    const { data, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('boosts')
       .select(`id, market, mode, room_id, ${BOOST_ROOM_EMBED}`)
       .eq('status', 'active')
       .lte('starts_at', nowIso)
-      .gte('ends_at', nowIso)
+      .gte('ends_at', nowIso);
+    if (marketParam) query = query.eq('market', marketParam);
+    const { data, error } = await query
       .order('created_at', { ascending: false })
       .limit(30);
     if (error) throw error;
@@ -247,7 +263,7 @@ router.get('/featured', async (req: Request, res: Response, next: NextFunction) 
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
 
-    const items = shuffled
+    const selected = shuffled
       .filter((row) => row.room && row.room.disponible !== false)
       .slice(0, 6)
       .map((row) => ({
@@ -263,6 +279,21 @@ router.get('/featured', async (req: Request, res: Response, next: NextFunction) 
         quartier: row.room.quartier ?? null,
         category: row.room.category ?? null,
       }));
+
+    // Note moyenne + volume d'avis par chambre : requête unique sur les
+    // chambres effectivement affichées. En cas d'échec, la landing reste
+    // servie avec des notes nulles plutôt que de tomber.
+    const reviewStats = await fetchRoomReviewStats(selected.map((item) => item.room_id)).catch(
+      () => new Map<string, RoomReviewStats>(),
+    );
+    const items = selected.map((item) => {
+      const stats = reviewStats.get(item.room_id);
+      return {
+        ...item,
+        rating: stats?.rating ?? null,
+        reviews_count: stats?.count ?? 0,
+      };
+    });
 
     res.json({
       items,

@@ -5,6 +5,7 @@ import { requireAdminAuth } from '../middleware/requireAdminAuth';
 import { requirePermission, requireSuperadmin } from '../middleware/adminPermissions';
 import { idParamsSchema } from '../validations/common';
 import { eventQuerySchema, eventCreateSchema, eventUpdateSchema } from '../validations/event';
+import { EVENT_COLUMNS } from '../utils/selects';
 
 const router = Router();
 
@@ -40,7 +41,7 @@ router.get('/', requireAdminForPast, async (req: Request, res: Response, next: N
       return res.status(400).json({ error: 'Paramètres invalides' });
     }
 
-    let query = supabasePublic.from('events').select('*');
+    let query = supabasePublic.from('events').select(EVENT_COLUMNS);
     // Marché omis (back-office avec include_past=1) : on renvoie TOUS les
     // marchés en une seule requête, sinon on filtre sur le marché demandé.
     if (parsedQuery.data.market) {
@@ -69,7 +70,7 @@ router.post('/', requireAdminAuth, requirePermission('evenements'), async (req: 
     const { data, error } = await supabaseAdmin
       .from('events')
       .insert({ id: randomUUID(), ...parsedBody.data })
-      .select()
+      .select(EVENT_COLUMNS)
       .single();
     if (error) throw error;
     res.status(201).json(data);
@@ -90,7 +91,7 @@ router.put('/:id', requireAdminAuth, requirePermission('evenements'), async (req
       .from('events')
       .update(parsedBody.data)
       .eq('id', parsedParams.data.id)
-      .select()
+      .select(EVENT_COLUMNS)
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Événement introuvable' });

@@ -1,17 +1,19 @@
 import { useParams } from 'react-router-dom';
 import { useHomePath } from '../../hooks/useHomePath';
-import ConversationThread from './ConversationThread';
-import MessagesInbox from './MessagesInbox';
+import ClientAccountLayout from '../../components/ClientAccountLayout';
+import MessagesWorkspace from './MessagesWorkspace';
 
-/** Espace messages du client : boîte de réception, ou fil si un id est fourni. */
+/** Espace messages du client : liste des conversations + fil sélectionné. */
 export default function ClientMessagesPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const homePath = useHomePath();
   const basePath = `${homePath}/messages`;
 
-  return conversationId ? (
-    <ConversationThread conversationId={conversationId} role="client" basePath={basePath} />
-  ) : (
-    <MessagesInbox side="client" basePath={basePath} />
+  return (
+    <ClientAccountLayout active="messages">
+      <div className="admin-content">
+        <MessagesWorkspace side="client" basePath={basePath} conversationId={conversationId} />
+      </div>
+    </ClientAccountLayout>
   );
 }

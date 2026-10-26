@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Linkhoo | Évasion tropicale au Bénin</title>
+<!-- Font Awesome Icons -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<!-- Google Fonts: Plus Jakarta Sans & Caveat -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Custom Configuration -->
+<script data-purpose="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              500: '#f97316',
+              600: '#ea580c',
+              primary: '#FF5E1E',
+              dark: '#1E293B',
+              navy: '#0b132b'
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            handwriting: ['Caveat', 'cursive']
+          }
+        }
+      }
+    };
+  </script>
+<style data-purpose="custom-utilities">
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .bg-hero-gradient {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.45) 0%, rgba(15, 23, 42, 0.65) 100%);
+    }
+  </style>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 font-sans antialiased selection:bg-orange-500 selection:text-white">
+
+<!-- BEGIN: HeroSection -->
+<section class="relative min-h-[350px] bg-slate-900 text-white flex flex-col justify-center overflow-hidden" data-purpose="hero-section">
+<!-- Hero Background Image with Overlay -->
+<div class="absolute inset-0 z-0">
+<img alt="Monument de l'Amazone et côte tropicale" class="w-full h-full object-cover object-center filter brightness-[0.78]" src="/images/hero-city.jpg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#0E1A2D] via-black/40 to-black/30"></div>
+</div>
+<div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 w-full">
+<!-- Location Tag & Hero Content -->
+<div class="max-w-3xl">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-semibold mb-4">
+<i class="fa-solid fa-location-dot text-[#FF5E1E]"></i>
+<span>Bénin</span>
+</div>
+<h1 class="text-3xl sm:text-4xl lg:text-[2.6rem] font-extrabold leading-[1.15] tracking-tight">
+          Trouvez le lieu idéal pour votre <span class="text-[#FF7A00]">prochain séjour</span>
+</h1>
+<p class="mt-4 text-base sm:text-lg text-slate-200 font-normal leading-relaxed max-w-2xl">
+          Appartements, maisons, villas et bien plus encore. Découvrez les meilleures offres de location au Bénin et réservez en toute confiance.
+        </p>
+</div>
+<!-- Artistic Handwritten Catchphrase -->
+<div class="absolute right-8 top-16 hidden lg:block text-right select-none pointer-events-none transform -rotate-6">
+<p class="font-handwriting text-3xl sm:text-4xl text-white font-bold drop-shadow-lg tracking-wide">
+          Le Bénin,<br/>
+<span class="text-2xl text-amber-200">une terre d'émotions</span>
+</p>
+</div>
+<!-- Search Bar Component -->
+<div class="mt-5" data-purpose="hero-search-tabs">
+<!-- Tabs -->
+<div class="inline-flex rounded-t-xl overflow-hidden shadow-sm">
+<button class="bg-[#FF5E1E] text-white px-6 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-2">
+<i class="fa-solid fa-umbrella-beach"></i>
+<span>Séjour</span>
+</button>
+<button class="bg-white/95 hover:bg-white text-slate-700 px-6 py-2.5 text-xs sm:text-sm font-semibold flex items-center gap-2 transition backdrop-blur-sm">
+<i class="fa-solid fa-car"></i>
+<span>Voiture de location</span>
+</button>
+</div>
+<!-- Search Inputs Container -->
+<div class="bg-white rounded-b-2xl rounded-tr-2xl p-3 sm:p-4 shadow-2xl text-slate-800 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+<!-- Destination Field -->
+<div class="md:col-span-4 flex items-center gap-3 px-4 py-2.5 border-b md:border-b-0 md:border-r border-slate-200">
+<i class="fa-solid fa-magnifying-glass text-slate-400 text-lg"></i>
+<div class="w-full">
+<label class="block text-xs font-bold text-slate-800 leading-none mb-1">Où voulez-vous aller ?</label>
+<input class="w-full p-0 text-xs text-slate-600 font-medium placeholder-slate-400 border-none focus:ring-0" placeholder="Ville, quartier, hôtel, etc." type="text"/>
+</div>
+</div>
+<!-- Check-in Field -->
+<div class="md:col-span-3 flex items-center gap-3 px-4 py-2.5 border-b md:border-b-0 md:border-r border-slate-200">
+<i class="fa-regular fa-calendar-days text-slate-400 text-lg"></i>
+<div class="w-full">
+<label class="block text-xs font-bold text-slate-800 leading-none mb-1">Arrivée</label>
+<span class="block text-xs text-slate-500 font-medium cursor-pointer">Choisir une date</span>
+</div>
+</div>
+<!-- Check-out Field -->
+<div class="md:col-span-3 flex items-center gap-3 px-4 py-2.5 border-b md:border-b-0 md:border-r border-slate-200">
+<i class="fa-regular fa-calendar-days text-slate-400 text-lg"></i>
+<div class="w-full">
+<label class="block text-xs font-bold text-slate-800 leading-none mb-1">Départ</label>
+<span class="block text-xs text-slate-500 font-medium cursor-pointer">Choisir une date</span>
+</div>
+</div>
+<!-- Submit Button -->
+<div class="md:col-span-2">
+<button class="w-full h-12 bg-[#FF5E1E] hover:bg-[#ea4f11] text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm shadow-md shadow-orange-500/30 transition">
+<i class="fa-solid fa-magnifying-glass"></i>
+<span>Rechercher</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: HeroSection -->
+<!-- BEGIN: PopularListings -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" data-purpose="popular-listings">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+<span class="text-orange-500"><i class="fa-solid fa-fire"></i></span>
+          Nos biens les plus demandés
+        </h2>
+<p class="text-xs sm:text-sm text-slate-500 mt-1">Les logements les plus réservés par nos voyageurs cette semaine.</p>
+</div>
+<a class="text-xs sm:text-sm font-bold text-slate-800 hover:text-[#FF5E1E] flex items-center gap-1 group" href="#">
+<span>Voir tous les biens</span>
+<i class="fa-solid fa-arrow-right text-xs group-hover:translate-x-0.5 transition"></i>
+</a>
+</div>
+<!-- Cards Slider Wrapper -->
+<div class="relative">
+<!-- Nav Arrow Left -->
+<button class="absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white shadow-md border border-slate-200 hidden md:flex items-center justify-center text-slate-600 hover:bg-slate-50">
+<i class="fa-solid fa-chevron-left text-xs"></i>
+</button>
+<!-- Grid of Popular Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+<!-- Card 1 -->
+<article class="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition group">
+<div class="relative h-40 overflow-hidden">
+<img alt="Appartement moderne Cotonou Fidjrossé" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeokBHjqF7GWU2H1Zx3KuS_aBCUC9pjsXbFC_B5YFSK56A4rm2Ypsk41OZxvGb_D0gXIAbI3s11v3GPdWSA1rTrHmiItrztzQXiKvemSqCgNslmX1ppWQ0Xm5YwJqKCqqj6u_VPfM85fh-wU_CIxLEznlcffAPjqGnESqgmm52Prg89U34uvP9Ykk-RrYr1S3CNTLI2hDu9htkx234oYMgR8Z5L5MMK6aKlp1CcJ_QzNGUJ2QVaHsJxQ"/>
+<span class="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">Populaire</span>
+<button class="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-slate-700 flex items-center justify-center transition">
+<i class="fa-regular fa-heart text-xs"></i>
+</button>
+</div>
+<div class="p-3">
+<div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium mb-1">
+<i class="fa-solid fa-location-dot text-slate-400"></i>
+<span>Cotonou - Fidjrossé</span>
+</div>
+<h3 class="text-xs font-bold text-slate-900 truncate">Appartement moderne</h3>
+<div class="flex items-center gap-2 text-[10px] text-slate-500 mt-2">
+<span><i class="fa-solid fa-bed mr-0.5"></i> 2 chambres</span>
+<span><i class="fa-solid fa-couch mr-0.5"></i> 1 salon</span>
+<span><i class="fa-solid fa-wifi mr-0.5"></i> Wifi</span>
+</div>
+<div class="mt-3 pt-2 border-t border-slate-100 flex items-baseline">
+<span class="text-xs font-extrabold text-slate-900">25 000 FCFA</span>
+<span class="text-[10px] text-slate-500 ml-1">/nuit</span>
+</div>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition group">
+<div class="relative h-40 overflow-hidden">
+<img alt="Villa avec piscine Cotonou Aïga" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqvj5Ct4_mmWMNfRKdwldG_BTJ2S-C4TLc7Matvynze6kC6F6___mUs3cuSLF6jLBky_SOUuyCJNk6--3eFir2ble4jVuqv-7HaXzaqZgxbzZ9vdcm_be08v-U-0ozIf8Ky-3iKn5vA9luxSeDC4nSUX4GNFzH8h8qo-JIeRNA45_ebyHgiPOeEfEu0WxWI8L3krhcpKQYBCYgZAlEc1w_vzF_gm6_wbWQN0OBaFicM8AJA7FKLc7ZBA"/>
+<span class="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">Populaire</span>
+<button class="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-slate-700 flex items-center justify-center transition">
+<i class="fa-regular fa-heart text-xs"></i>
+</button>
+</div>
+<div class="p-3">
+<div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium mb-1">
+<i class="fa-solid fa-location-dot text-slate-400"></i>
+<span>Cotonou - Aïga</span>
+</div>
+<h3 class="text-xs font-bold text-slate-900 truncate">Villa, avec piscine</h3>
+<div class="flex items-center gap-2 text-[10px] text-slate-500 mt-2">
+<span><i class="fa-solid fa-bed mr-0.5"></i> 6 chambres</span>
+<span><i class="fa-solid fa-person-swimming mr-0.5"></i> Piscine</span>
+<span><i class="fa-solid fa-wifi mr-0.5"></i> Wifi</span>
+</div>
+<div class="mt-3 pt-2 border-t border-slate-100 flex items-baseline">
+<span class="text-xs font-extrabold text-slate-900">75 000 FCFA</span>
+<span class="text-[10px] text-slate-500 ml-1">/nuit</span>
+</div>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition group">
+<div class="relative h-40 overflow-hidden">
+<img alt="Chambre privée climatisée Cotonou Akpakpa" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYglef8LymqxqUxEdiPiCjUfjJVTy_tArMn15wo5hBwLdqM6aVOcnGkBVIKvGFu7E_hBslw8HV7Y62WhjGoon8XDeFaI_xFM7hsrft2WOtZUrQ95CFJ08exBhLTQMeWr24vjT9de3_gZIcLMNKanpZtNhLFELwUVcSuslIsi_iPM1rL3N26LX4qcFMCaN6viwnPeioPuewuIDGtoIujaAoAeRZttGzb45cAiR4Ng4ihE1owGaXzREHWQ"/>
+<span class="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">Populaire</span>
+<button class="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-slate-700 flex items-center justify-center transition">
+<i class="fa-regular fa-heart text-xs"></i>
+</button>
+</div>
+<div class="p-3">
+<div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium mb-1">
+<i class="fa-solid fa-location-dot text-slate-400"></i>
+<span>Cotonou - Akpakpa</span>
+</div>
+<h3 class="text-xs font-bold text-slate-900 truncate">Chambre privée climatisée</h3>
+<div class="flex items-center gap-2 text-[10px] text-slate-500 mt-2">
+<span><i class="fa-solid fa-bed mr-0.5"></i> 1 chambre</span>
+<span><i class="fa-solid fa-wifi mr-0.5"></i> Wifi</span>
+</div>
+<div class="mt-3 pt-2 border-t border-slate-100 flex items-baseline">
+<span class="text-xs font-extrabold text-slate-900">18 000 FCFA</span>
+<span class="text-[10px] text-slate-500 ml-1">/nuit</span>
+</div>
+</div>
+</article>
+<!-- Card 4 -->
+<article class="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition group">
+<div class="relative h-40 overflow-hidden">
+<img alt="Studio Cosy Grand-Popo" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1G7VmdTnBSE4l1FBo_hL93_0b362zfcear_Oz1kk2egKKPZUfT47U5hDJHrYxXLOGQgNP5qOy5okrcMxK7XbU33XdilKIJmees1akThV4IAJIeWNtcP_5k9kdErE8aM6V5BQp3Gu0a1p1f9P1Ybmfc6JoGPnb3-KMEn99GlKB1Bkczd-dE10LdHAy2tvdzr9NVlG0Alf0sP5DMYC63gqXS8aQhodgX8YND8TPT0VOJZfgXS1TCUwIpg"/>
+<span class="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">Populaire</span>
+<button class="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-slate-700 flex items-center justify-center transition">
+<i class="fa-regular fa-heart text-xs"></i>
+</button>
+</div>
+<div class="p-3">
+<div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium mb-1">
+<i class="fa-solid fa-location-dot text-slate-400"></i>
+<span>Grand-Popo - Centre</span>
+</div>
+<h3 class="text-xs font-bold text-slate-900 truncate">Studio Cosy</h3>
+<div class="flex items-center gap-2 text-[10px] text-slate-500 mt-2">
+<span><i class="fa-solid fa-bed mr-0.5"></i> 1 chambre</span>
+<span><i class="fa-solid fa-wifi mr-0.5"></i> Wifi</span>
+</div>
+<div class="mt-3 pt-2 border-t border-slate-100 flex items-baseline">
+<span class="text-xs font-extrabold text-slate-900">22 000 FCFA</span>
+<span class="text-[10px] text-slate-500 ml-1">/nuit</span>
+</div>
+</div>
+</article>
+<!-- Card 5 -->
+<article class="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm hover:shadow-md transition group">
+<div class="relative h-40 overflow-hidden">
+<img alt="Villa à louer Ouidah" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYDxCVDIgK_usDZQ5mq53rgTzWYXqWd9W56mFDvPSutW5uj85kMaZ2H4v8QfKy2oymJckcEm12j7BYjdU2etDDIxKOgrictHkrMyts-LUUqz590GZgodkP6SP0c7I2yI9ri1uWqbtziT1IuHlX9HGGi-3vcTwJgm7pewBS60_iahArhZcLeq61DRnY_0p5oAwhvWHD8BT0I0GSbxz4E3mdFELYI83x-M0qabvoXTAmwzy599P8mdjRtA"/>
+<span class="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">Populaire</span>
+<button class="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-slate-700 flex items-center justify-center transition">
+<i class="fa-regular fa-heart text-xs"></i>
+</button>
+</div>
+<div class="p-3">
+<div class="flex items-center gap-1 text-[11px] text-slate-500 font-medium mb-1">
+<i class="fa-solid fa-location-dot text-slate-400"></i>
+<span>Ouidah - Sékélé</span>
+</div>
+<h3 class="text-xs font-bold text-slate-900 truncate">Villa à louer</h3>
+<div class="flex items-center gap-2 text-[10px] text-slate-500 mt-2">
+<span><i class="fa-solid fa-bed mr-0.5"></i> 6 chambres</span>
+<span><i class="fa-solid fa-person-swimming mr-0.5"></i> Piscine</span>
+<span><i class="fa-solid fa-wifi mr-0.5"></i> Wifi</span>
+</div>
+<div class="mt-3 pt-2 border-t border-slate-100 flex items-baseline">
+<span class="text-xs font-extrabold text-slate-900">120 000 FCFA</span>
+<span class="text-[10px] text-slate-500 ml-1">/nuit</span>
+</div>
+</div>
+</article>
+</div>
+<!-- Nav Arrow Right -->
+<button class="absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white shadow-md border border-slate-200 hidden md:flex items-center justify-center text-slate-600 hover:bg-slate-50">
+<i class="fa-solid fa-chevron-right text-xs"></i>
+</button>
+</div>
+</section>
+<!-- END: PopularListings -->
+<!-- BEGIN: PromotionalOffers -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" data-purpose="promotional-offers">
+<!-- Header with Tag -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+<div>
+<h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+<span class="text-orange-500"><i class="fa-solid fa-tags"></i></span>
+          Offres promotionnelles
+        </h2>
+<p class="text-xs sm:text-sm text-slate-500 mt-1">Des réductions incroyables sur une sélection de biens.</p>
+</div>
+<!-- Promotional Callout Pill -->
+<div class="flex items-center gap-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 px-4 py-2 rounded-2xl max-w-md shadow-sm">
+<div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center text-lg flex-shrink-0">
+<i class="fa-solid fa-gift"></i>
+</div>
+<div class="text-xs">
+<p class="font-bold text-slate-900">Jusqu'à -30% sur certains logements</p>
+<p class="text-slate-500">Ne manquez pas cette opportunité !</p>
+</div>
+</div>
+</div>
+<!-- Promo Cards Row -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Promo 1: -15% -->
+<div class="lg:col-span-3 bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm flex flex-col justify-between group">
+<div class="relative h-40 overflow-hidden">
+<img alt="Séjour de rêve" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRoEsALCkgOHc7E4QxQ8YLC_dhB7z035CVbFXuHNYg3qbwmQ-taHwhh-qdPiaBPJkNXSget5P_SFg7lhg_YS6UH0vsApG192u7XGOiPr0vHG8uco2KCaSzMVoWHFpxelr-qR3i9-cNR-On6XyAJ9PYiZuPTYLUUjCgsQQZPflqtjBEcvTRKH0ZdQsvIO07fgK1Q3HvQaoSB7aZG2CdkqOr0gbXXu71COHHU4Lmhs14P-hRAU2686BXEg"/>
+<span class="absolute top-2.5 left-2.5 bg-[#FF5E1E] text-white text-xs font-bold px-2 py-0.5 rounded-md">-15%</span>
+</div>
+<div class="p-4 flex-1 flex flex-col justify-between">
+<div>
+<h3 class="text-sm font-bold text-slate-900">Séjour de rêve</h3>
+<p class="text-xs text-slate-500 mt-1">Villas, appartements, maisons...</p>
+</div>
+<button class="mt-4 w-full py-2 bg-slate-900 hover:bg-[#FF5E1E] text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition">
+<span>Voir les biens</span>
+<i class="fa-solid fa-arrow-right text-[10px]"></i>
+</button>
+</div>
+</div>
+<!-- Promo 2: -10% -->
+<div class="lg:col-span-3 bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm flex flex-col justify-between group">
+<div class="relative h-40 overflow-hidden">
+<img alt="Escapades en famille" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHIk_7p2-N5l5XxlK8tZumpW_cX48rg7BDPHnJ_Jhki32N02KD1yftA7QuydOzApYA5a0zRLWqXStyAgKuMr-gMi0TZtaBibEMYCEde4RN0QIGLdFKroQ0tN-2abYExPoV-9mNIHOQmWPZ6JCGVXpSF8LAvCW4UO1xAndVK3WEfyJxdhhqDy4NFzsooD61H-awQZU-_ncUgShBrpuKqmlQ05OwJyr8wIk2TrYGgjkMDkt91rLE0F8OqQ"/>
+<span class="absolute top-2.5 left-2.5 bg-emerald-600 text-white text-xs font-bold px-2 py-0.5 rounded-md">-10%</span>
+</div>
+<div class="p-4 flex-1 flex flex-col justify-between">
+<div>
+<h3 class="text-sm font-bold text-slate-900">Escapades en famille</h3>
+<p class="text-xs text-slate-500 mt-1">Résidences et villas confortables</p>
+</div>
+<button class="mt-4 w-full py-2 bg-slate-900 hover:bg-[#FF5E1E] text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition">
+<span>Voir les biens</span>
+<i class="fa-solid fa-arrow-right text-[10px]"></i>
+</button>
+</div>
+</div>
+<!-- Promo 3: -5% -->
+<div class="lg:col-span-2 bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm flex flex-col justify-between group">
+<div class="relative h-40 overflow-hidden">
+<img alt="Dernière minute" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRk1hckRei7DeQP9b3zw5EPF4v8VAuFXYOzNZ_uVU6iDCc2FTa4CbdPgDdQ7bHZtO4DoYQx9JmpXGLti38dxhxrLh_529L2CHQld0Y8tp6mphf2Xj2KmvqitVgx6FIyOhgZRF1KaLhUgzVcfMJs-1d89dgBq3SKWt0p28JP6ceq1vk-bP0Xa-_NghSkNhd5NIBbk_NIGBIMwbc37GUn08Ol5ErO3r5WRv8xrNI_fKS7UUNbMOrbyhirw"/>
+<span class="absolute top-2.5 left-2.5 bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-md">-5%</span>
+</div>
+<div class="p-4 flex-1 flex flex-col justify-between">
+<div>
+<h3 class="text-sm font-bold text-slate-900">Dernière minute</h3>
+<p class="text-xs text-slate-500 mt-1">Réservez maintenant, partez bientôt !</p>
+</div>
+<button class="mt-4 w-full py-2 bg-slate-900 hover:bg-[#FF5E1E] text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition">
+<span>Voir les biens</span>
+<i class="fa-solid fa-arrow-right text-[10px]"></i>
+</button>
+</div>
+</div>
+<!-- Right Interactive Promo Card (Séjour en famille -10%) -->
+<div class="lg:col-span-4 bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between pb-3 border-b border-slate-100">
+<div>
+<span class="text-xs font-bold text-slate-900">Séjour en famille <span class="text-emerald-600">-10%</span></span>
+<p class="text-[10px] text-slate-500">Profitez de -10% sur une sélection de villas et appartements parfaits pour partir en famille !</p>
+</div>
+<button class="text-slate-400 hover:text-slate-600 text-xs">
+<i class="fa-solid fa-xmark"></i>
+</button>
+</div>
+<!-- Mini items carousel -->
+<div class="grid grid-cols-3 gap-2 my-3">
+<!-- Mini 1 -->
+<div class="space-y-1">
+<img alt="Résidence Le Palmier" class="w-full h-16 object-cover rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDy9cg-0ezCaXwxxha6kWsLNx_M-1duRkieXS-5_vm67olrRa7VRG04i6EcHtFYvvYDPW_BDgVixFV3cC_MSwQQ5xREgxJXgOst_-l8_wHJFGGfTFso5KG9A9WtE31O4ybvcsRuOM-ZLW1gZr6tKkXg6WOlnK7qCjv-2njhVCc_AZHaFst-b_oUZrOAlGc9PoM6ljO_oYSSYX9js_Wb8R2GtMpIPe-L9eF2TYysiX8a11xCcWdKrfRVmg"/>
+<p class="text-[10px] font-bold text-slate-800 truncate">Résidence Le Palmier</p>
+<p class="text-[9px] font-extrabold text-[#FF5E1E]">60 000 FCFA <span class="text-slate-400 font-normal">/nuit</span></p>
+</div>
+<!-- Mini 2 -->
+<div class="space-y-1">
+<img alt="Villa Oasis" class="w-full h-16 object-cover rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2FceN4HDsb0HRhIYqmFUWF6hNEXOQf223CX6Ir_gP_c-5NtEUdjmWdZoZWaOcX24SnsshELtKnMlQLiqlzV0LE18CmMlY0v5AG0RQJJa_9BZOWvMQHd5vOFPe6suOwJ_SeungS81jXhTE9Xx0F9xaIO53-xgzsC_7HyGvLAzyZ35XYVx2zdOaaC3q23HPJKZVca3F7unw6nBY6I7fzN9vnz9vK4ILz5joweHc4ibDcSSjwaDaSp3qew"/>
+<p class="text-[10px] font-bold text-slate-800 truncate">Villa Oasis</p>
+<p class="text-[9px] font-extrabold text-[#FF5E1E]">70 000 FCFA <span class="text-slate-400 font-normal">/nuit</span></p>
+</div>
+<!-- Mini 3 -->
+<div class="space-y-1">
+<img alt="Appartement Zenith" class="w-full h-16 object-cover rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgvaIMxSNp8rAABQitw1V4kWd7TuneT2poWDdtZrLPpo1tzSvdVfJhXISBfx8gaWLyNW7qF5IJlhcwmVLwLvOc4suWA0rLZGztSQ-zduY7rodNi0akUMqv6Oan_cQkdZ4p6yxRHUgEzoCtDS-tTK4b3rTdq6a_rap409uWJ8FdAwwPiPMNFVgvI3QJMDlmoIOd5I_2EuyvjGZh14Q-SvaVVJkH6O4DQGleOPJdvNTnpeBkqVwcslOQ_A"/>
+<p class="text-[10px] font-bold text-slate-800 truncate">Appartement Zenith</p>
+<p class="text-[9px] font-extrabold text-[#FF5E1E]">45 000 FCFA <span class="text-slate-400 font-normal">/nuit</span></p>
+</div>
+</div>
+<!-- Carousel Pagination Dots -->
+<div class="flex items-center justify-center gap-1.5 pt-2">
+<span class="w-1.5 h-1.5 rounded-full bg-[#FF5E1E]"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+<span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+</div>
+</div>
+</div>
+</section>
+<!-- END: PromotionalOffers -->
+<!-- BEGIN: CategoriesSection -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" data-purpose="categories-section">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+<span class="text-orange-500"><i class="fa-solid fa-shapes"></i></span>
+          Catégories
+        </h2>
+<p class="text-xs sm:text-sm text-slate-500 mt-1">Trouvez facilement le type de logement qui vous correspond.</p>
+</div>
+<a class="text-xs sm:text-sm font-bold text-slate-800 hover:text-[#FF5E1E] flex items-center gap-1 group" href="#">
+<span>Voir toutes les catégories</span>
+<i class="fa-solid fa-arrow-right text-xs group-hover:translate-x-0.5 transition"></i>
+</a>
+</div>
+<!-- Category Cards Grid -->
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+<!-- Cat 1 -->
+<a class="bg-white rounded-2xl p-2 border border-slate-100 shadow-sm hover:shadow-md transition text-center group" href="#">
+<div class="relative h-24 rounded-xl overflow-hidden mb-2">
+<img alt="Appartements" class="w-full h-full object-cover group-hover:scale-105 transition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuChaWkTT4pBII-WEMHj9Bn4ehucRJDJ1aDfd7E5edRZNfdn9vo0rM5-CTW7cyZIV54r8Y9TSeZQeyPbOCmFWPCHclti5dUB-yFjlw3byXKrfGYtG8nX38Kkmd4gsiTzE463Ey2ia7UzpeB7T0HGBOiG6Lmi2wKHQ04bfRADjNIYRlZhUI_q2NRykOTjz3Rs6HjcVTE6h1YAR08-klKJN-UcNziboHAKh5BLPr_M3zTSKMDjWWyLpehG7g"/>
+<span class="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-[#FF5E1E] text-white text-[10px] flex items-center justify-center">
+<i class="fa-solid fa-building"></i>
+</span>
+</div>
+<p class="text-xs font-bold text-slate-900">Appartements</p>
+<p class="text-[10px] text-slate-400">245 biens</p>
+</a>
+<!-- Cat 2 -->
+<a class="bg-white rounded-2xl p-2 border border-slate-100 shadow-sm hover:shadow-md transition text-center group" href="#">
+<div class="relative h-24 rounded-xl overflow-hidden mb-2">
+<img alt="Villas" class="w-full h-full object-cover group-hover:scale-105 transition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9uNwQVtLEh8gv4d1r9EwmzUgiQLHYZb4g1mRpfoWuHEHu1aNS4rldVH1_VZZGWFy9r2wUyt8VmvSLeCgYjXWwLVoMZbVxI3gj_x0Gn9LxHMPxRXINp7nObeu_JQXkspqXWgSzONGNVeHnWRyY14U8_Ht60hSBEP5z4YFeTD1XSTWUSwcqC7PncturvjQ1FoYVWF_G6FFhtuTJx7X3FavjkjnID0Fx2Xzpt2bhwsjo7RElv3eXGvT9Iw"/>
+<span class="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-cyan-600 text-white text-[10px] flex items-center justify-center">
+<i class="fa-solid fa-tree-city"></i>
+</span>
+</div>
+<p class="text-xs font-bold text-slate-900">Villas</p>
+<p class="text-[10px] text-slate-400">112 biens</p>
+</a>
+<!-- Cat 3 -->
+<a class="bg-white rounded-2xl p-2 border border-slate-100 shadow-sm hover:shadow-md transition text-center group" href="#">
+<div class="relative h-24 rounded-xl overflow-hidden mb-2">
+<img alt="Maisons" class="w-full h-full object-cover group-hover:scale-105 transition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0WwQ1LjlVNexGsA5X50MulGfsRAQ8hSaTTKxtPfSwkedNb7M8nsJRatactx_BgoXkqWg7qu5Zn18Uz3bMOABgoqf3k5x-aAjXsGgy_c47s57rUtAyUk-ajpqau9eQFgj27KNQIth0T31dgIc6u6dRDEilHswgGAeHgqM3IIqmFNAb4erH9RP96TrpnVoQlESxu3PVmsOnqVuHNl5KwVu9j8i2zb820w_g6amvFEVLhcb1Zbeg5PZQQw"/>
+<span class="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-amber-500 text-white text-[10px] flex items-center justify-center">
+<i class="fa-solid fa-house"></i>
+</span>
+</div>
+<p class="text-xs font-bold text-slate-900">Maisons</p>
+<p class="text-[10px] text-slate-400">96 biens</p>
+</a>
+<!-- Cat 4 -->
+<a class="bg-white rounded-2xl p-2 border border-slate-100 shadow-sm hover:shadow-md transition text-center group" href="#">
+<div class="relative h-24 rounded-xl overflow-hidden mb-2">
+<img alt="Chambres" class="w-full h-full object-cover group-hover:scale-105 transition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPMlDeVXWFM4To8M6E90bjiIitCabW7HkJEnd4gwFJ0RlH57NiMXBgdo-F6Oxz_VycOJqzKUBewHoAKh2A2r8cHZRHJxjtwgwosfnEOKklK2kHeoEvuXbO9_6TaL5yUqCvkKC-X3Zgt_e-T7eb3n2nl0LJgKB5flyd-1O6jMzO8aeFXTMcPVhUEC78hvsExNSEE4kua8kux2miSanVcKjyGFA98kON72_MV1_-R3CyUBFTpijkcXM6Vw"/>
+<span class="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center">
+<i class="fa-solid fa-bed"></i>
+</span>
+</div>
+<p class="text-xs font-bold text-slate-900">Chambres</p>
+<p class="text-[10px] text-slate-400">166 biens</p>
+</a>
+<!-- Cat 5 -->
+<a class="bg-white rounded-2xl p-2 border border-slate-100 shadow-sm hover:shadow-md transition text-center group" href="#">
+<div class="relative h-24 rounded-xl overflow-hidden mb-2">
+<img alt="Studios" class="w-full h-full object-cover group-hover:scale-105 transition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7srdIMoN7IHYIEDgsHr_fvpWaqlvXSJrDN8Os1cQwaKSvCCq8zsycajIpZUyYOLJD-8XhUnlsViz2kf0K-3livdeFro5TZnFePwV4BMJmh1o-nqR59fynb4CqHMAUAmHgCwb_qylNMwxMgmThasF_V6w7QI9g4fcPvEKsf5QzKs5pe77iyv6Lsc1kZJ0se5vrHtTaPir-ObbKmnMrdJLaNUs9rXR_gHDOqbrXfPajp7lgUsjqDvK5rw"/>
+<span class="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-emerald-600 text-white text-[10px] flex items-center justify-center">
+<i class="fa-solid fa-door-open"></i>
+</span>
+</div>
+<p class="text-xs font-bold text-slate-900">Studios</p>
+<p class="text-[10px] text-slate-400">87 biens</p>
+</a>
+<!-- Cat 6 -->
+<a class="bg-white rounded-2xl p-2 border border-slate-100 shadow-sm hover:shadow-md transition text-center group" href="#">
+<div class="relative h-24 rounded-xl overflow-hidden mb-2">
+<img alt="Résidences" class="w-full h-full object-cover group-hover:scale-105 transition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuABabMy8-xqw-wXcJnOAMVWNB58cSgABboh0Kh4KB9fGGmzOw1ddHEHlR0M6SN4mzAOpPJ07-piBbRCzCBlCe0dpxPI0pKho9OFJG8TTzipsqYUILJrKPAKJIGT-baBqWHhyW2ZJoS1NLdXNM9cYh7ssA82lloCjY94r1WUfinfA5QZEBBdHV2jNaUatLUZK-lc2ORqMscnLwooKnyPyH9OaxjjBMQwT93Jr0hVIgT7ahhpSwznwQ29pQ"/>
+<span class="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-teal-600 text-white text-[10px] flex items-center justify-center">
+<i class="fa-solid fa-city"></i>
+</span>
+</div>
+<p class="text-xs font-bold text-slate-900">Résidences</p>
+<p class="text-[10px] text-slate-400">64 biens</p>
+</a>
+</div>
+</section>
+<!-- END: CategoriesSection -->
+<!-- BEGIN: EventsSection -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" data-purpose="events-section">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+<span class="text-orange-500"><i class="fa-regular fa-calendar"></i></span>
+          Événements
+        </h2>
+<p class="text-xs sm:text-sm text-slate-500 mt-1">Ne manquez pas les événements incontournables de votre région.</p>
+</div>
+<a class="text-xs sm:text-sm font-bold text-slate-800 hover:text-[#FF5E1E] flex items-center gap-1 group" href="#">
+<span>Voir tous les événements</span>
+<i class="fa-solid fa-arrow-right text-xs group-hover:translate-x-0.5 transition"></i>
+</a>
+</div>
+<!-- Event Cards & Feature Box -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+<!-- Small City Event Cards -->
+<div class="lg:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-3">
+<!-- Cotonou -->
+<div class="bg-white rounded-2xl p-2 border border-slate-100 shadow-sm group">
+<div class="relative h-28 rounded-xl overflow-hidden mb-2">
+<img alt="Cotonou événements" class="w-full h-full object-cover group-hover:scale-105 transition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDVrzIjp2RBKdQT4fqkytB0Y5EPsJCioWdgBVCZFZ5JnFogxAXX51XNTQKqXBCYgbZg2notdslYJVskFHOGzsmV5k5ffppjeTOnlHZRk2xWl7BiMyzkvs0EOhSadfAvOGy-TCast1kHv0PtlPkwWmpzBdP72MWfyMQYtV9svlMn_k9wH0emr75AbdazpD_Wiq-aMlMu7r8zKoA7h9oSWvMC4zv72kI7zgWKnLtGzwSQN_iwHeo-AQdCbw"/>
+<span class="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-[#FF5E1E] text-white text-[10px] flex items-center justify-center">
+<i class="fa-solid fa-location-dot"></i>
+</span>
+</div>
+<p class="text-xs font-bold text-slate-900">Cotonou</p>
+<p class="text-[10px] text-slate-400">15 événements</p>
+</div>
+<!-- Ouidah -->
+<div class="bg-white rounded-2xl p-2 border border-slate-100 shadow-sm group">
+<div class="relative h-28 rounded-xl overflow-hidden mb-2">
+<img alt="Ouidah événements" class="w-full h-full object-cover group-hover:scale-105 transition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDacCL1lU-B4f88KtTue48iB6FxXH1xZyircDCYBaAqEvQoCXmH7xfRcZ1BqzKTWOhy9Jk89sOmmBeq1RCN7x0LE7b4p2vVcWncTQ7u-Vb_qsCzB6O9ypTB-IM4TXLaJbqOeSmnWKSsq3IwRGi-r6Q2pi0DsjDl198cTlT2pTQ0yVCznoWPUT-bXRIkr4RboI98iTJNS4ctZOEY35vUaCd7Px9sAblBosCd4WmvDA4JD75rlSDg3ck_YQ"/>
+<span class="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-amber-500 text-white text-[10px] flex items-center justify-center">
+<i class="fa-solid fa-masks-theater"></i>
+</span>
+</div>
+<p class="text-xs font-bold text-slate-900">Ouidah</p>
+<p class="text-[10px] text-slate-400">6 événements</p>
+</div>
+<!-- Porto-Novo -->
+<div class="bg-white rounded-2xl p-2 border border-slate-100 shadow-sm group">
+<div class="relative h-28 rounded-xl overflow-hidden mb-2">
+<img alt="Porto-Novo événements" class="w-full h-full object-cover group-hover:scale-105 transition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9U-N57ErFUxK66WDjvjKFOt5LpXXsJBQ5ujippf1m9PUxFImKILCneOQR2g8cQHyRzi3INqytw4TPOnF5Thdwu3S0iy3La6dRRCYbyMZUf4vxlip1KgrfFnA4WD8bO5bOKWLD1-yWKn62UzWmm9sctCfRrl_Oa2Seyk7IxbmyQ4SXD9_mjlCuc1mPSIBJ0G-iUsGNdJdks7GlQpjC7Vl63sJlfzEXu6p1cnNL3ew8239SLAdXj9pjZQ"/>
+<span class="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-orange-600 text-white text-[10px] flex items-center justify-center">
+<i class="fa-solid fa-landmark"></i>
+</span>
+</div>
+<p class="text-xs font-bold text-slate-900">Porto-Novo</p>
+<p class="text-[10px] text-slate-400">8 événements</p>
+</div>
+<!-- Abomey-Calavi -->
+<div class="bg-white rounded-2xl p-2 border border-slate-100 shadow-sm group">
+<div class="relative h-28 rounded-xl overflow-hidden mb-2">
+<img alt="Abomey-Calavi événements" class="w-full h-full object-cover group-hover:scale-105 transition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGyHmym8vN0ImoNIAlwtwddU7ReChOhIGlQm15Nhxt-EbNLI7RXfQtXroYAJYjJui52fgNzHsBw1JtsBYJkKBOthtYlxIXTRCu-P6OSGZ6mvx2wzbfDF0SM6LVW2m_3dt2h7kohxWcHmRKAafl_y-nOATIDcj3d7E_YDsmTftmxfD722AojRrGyh1lhLI48VyyFqGPiSWtN-GQlhvIbav77s1FsRxjQf_6qC7JdhVC6QoYA44NIabJ1A"/>
+<span class="absolute bottom-1.5 left-1.5 w-6 h-6 rounded-full bg-[#FF5E1E] text-white text-[10px] flex items-center justify-center">
+<i class="fa-solid fa-water"></i>
+</span>
+</div>
+<p class="text-xs font-bold text-slate-900">Abomey-Calavi</p>
+<p class="text-[10px] text-slate-400">5 événements</p>
+</div>
+</div>
+<!-- Featured Event Card -->
+<div class="lg:col-span-5 bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex flex-col sm:flex-row gap-4 items-center">
+<!-- Event Image -->
+<div class="w-full sm:w-48 h-36 rounded-xl overflow-hidden flex-shrink-0">
+<img alt="Festival des Masques Bénin" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDd9XBT3vuEp9o3bsIydrTAMIOLFQnxhRIx_g4oCmXwi-td3Nv5qt0DkJ5Zel3AIdNfaGqZ3I9Z7S9Ps8m3MRpMpWIgZMsJ1MCFzDozCA0cGjYZTAksO78LqMoSylW_6mxhwkuMoMnHJ4aZdysaDQpPF2oxw1z6PBOJH2LhFaS91SUgVDgiGXmW9ue0CC0hZ_4AwkI61m9ZhsMJllMgGsAE4FeBhuCZpMEdmHlTRD_oBVC_gUrW_lNhow"/>
+</div>
+<!-- Event Details -->
+<div class="flex-1 flex flex-col justify-between h-full w-full py-1">
+<div>
+<div class="flex items-center justify-between text-[11px] text-slate-500 mb-1">
+<span class="font-bold text-slate-900 text-sm">Festival des Masques – Cotonou</span>
+<button class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+</div>
+<div class="flex items-center gap-1.5 text-[11px] text-[#FF5E1E] font-semibold mb-1">
+<i class="fa-regular fa-clock"></i>
+<span>12 - 16 déc. 2025</span>
+</div>
+<p class="text-[11px] text-slate-500 line-clamp-2">Plongez dans la richesse culturelle béninoise avec le festival des masques traditionnels.</p>
+</div>
+<div class="mt-3 flex items-center justify-between">
+<button class="px-3 py-1.5 bg-[#0E1A2D] hover:bg-[#FF5E1E] text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition">
+<span>Voir les événements</span>
+<i class="fa-solid fa-arrow-right text-[10px]"></i>
+</button>
+<div class="flex items-center gap-2 text-xs font-bold text-slate-400">
+<button class="text-slate-300 hover:text-slate-600"><i class="fa-solid fa-chevron-left text-[10px]"></i></button>
+<span>01 / 05</span>
+<button class="text-slate-600 hover:text-slate-900"><i class="fa-solid fa-chevron-right text-[10px]"></i></button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: EventsSection -->
+<!-- BEGIN: TourismSection -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" data-purpose="tourism-section">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+<span class="text-orange-500"><i class="fa-solid fa-compass"></i></span>
+          Tourisme
+        </h2>
+<p class="text-xs sm:text-sm text-slate-500 mt-1">Découvrez les trésors du Bénin : nature, culture, histoire et bien plus encore.</p>
+</div>
+<a class="text-xs sm:text-sm font-bold text-slate-800 hover:text-[#FF5E1E] flex items-center gap-1 group" href="#">
+<span>Voir tous les lieux</span>
+<i class="fa-solid fa-arrow-right text-xs group-hover:translate-x-0.5 transition"></i>
+</a>
+</div>
+<!-- Tourism Showcase Row -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+<!-- Big Banner: Explorez le Bénin -->
+<div class="lg:col-span-7 rounded-3xl overflow-hidden relative shadow-lg min-h-[300px] flex flex-col justify-end p-6 sm:p-8 text-white">
+<!-- Background -->
+<img alt="Plage et aventure au Bénin" class="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8BjmBjNjr_DUN4uA5d5Jx5G870KaRE-FH-4lluY4eP1sFbzpBz8BJx0SXIog1zP4cn4_wjbZqVNrUd5jBvtlXYPezLYznk4JZ5kF7qlcGaqojJ5U6xN0yxnKFlUEIJifwtynzHI-hRO5a3KyJrGPb_Y29EkqHmi0JN1HsBrvgHwUZf3QzVYFrbk7a3cL3zFrCiRgQPWKWbnjdX493gqMFsYL17MrjfI0pTw0Dz8rbP0NZencVUq5tew"/>
+<div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/40 to-transparent"></div>
+<div class="relative z-10 max-w-xl">
+<span class="inline-block px-2.5 py-0.5 bg-[#FF5E1E] text-white text-[10px] font-bold uppercase tracking-wider rounded-md mb-2">Expériences Uniques</span>
+<h3 class="text-2xl sm:text-3xl font-extrabold leading-tight">Explorez le Bénin,<br/>une terre de culture et d'aventure.</h3>
+<p class="text-xs sm:text-sm text-slate-200 mt-2">Des plages paradisiaques, des sites historiques et une culture riche vous attendent pour un séjour inoubliable.</p>
+<p class="font-handwriting text-xl text-amber-300 mt-1">Le Bénin vous inspire !</p>
+<!-- Badges inside hero banner -->
+<div class="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/20 text-center sm:text-left">
+<div class="flex items-center gap-2">
+<i class="fa-solid fa-umbrella-beach text-[#FF5E1E] text-lg"></i>
+<span class="text-[10px] font-medium text-slate-200">Plages paradisiaques et nature préservée</span>
+</div>
+<div class="flex items-center gap-2">
+<i class="fa-solid fa-monument text-[#FF5E1E] text-lg"></i>
+<span class="text-[10px] font-medium text-slate-200">Culture et histoire exceptionnelles</span>
+</div>
+<div class="flex items-center gap-2">
+<i class="fa-solid fa-utensils text-[#FF5E1E] text-lg"></i>
+<span class="text-[10px] font-medium text-slate-200">Gastronomie locale savoureuse</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Tourism Destinations Mini Grid -->
+<div class="lg:col-span-5 flex flex-col justify-between gap-4">
+<!-- Highlighted Destination (Ouidah) -->
+<div class="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex items-center gap-4 group">
+<img alt="Porte du Non-Retour Ouidah" class="w-28 h-20 rounded-xl object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIaWbYhwRq2dUfdU6E-7KjWPxGIdptLPBKGFcxli3l5rpzgHM__BFG8s-S3F1zQO-wkF2f15tmfL17n0gxYDrfdWc0qkATERV_0pu60aK2VClAiwflnryoTbhxxiW6Wb2xfpuRf7mB_N1MysO95qTp3qfYyxsyxh6TZDzynOaAJvMhqzSQGrrdfIii2d53NubGLJkizgyloZIXKSLoWJBIf0LZg8EyHSL9xXLp-rzW4B0N0wYs9NG0DQ"/>
+<div class="flex-1">
+<h4 class="text-sm font-bold text-slate-900">Ouidah</h4>
+<p class="text-xs text-slate-400">210 biens</p>
+<p class="text-[11px] text-slate-500 mt-1 line-clamp-1">Ville historique du vaudou et de la Route des Esclaves.</p>
+</div>
+<button class="w-8 h-8 rounded-full bg-slate-100 group-hover:bg-[#FF5E1E] group-hover:text-white flex items-center justify-center transition">
+<i class="fa-solid fa-arrow-right text-xs"></i>
+</button>
+</div>
+<!-- 4 Grid Destinations (Cotonou, Abomey, Parakou, Natitingou) -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+<div class="bg-white rounded-xl p-2 border border-slate-100 text-center">
+<img alt="Cotonou" class="w-full h-14 object-cover rounded-lg mb-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfumIFEYZv2ytCJMTe2afhAJAxrQ28j09Bz_wAyuQ6vlCmzuUqDXKSMAiXMHHSz1czxxlKv_2mMY01ePvIJERyjppg-9PrKaV4nlaGqt_B5skqhDbBctU9bFNkzm1fn34CVlP5swsoPkVhcbnct7zScF0jZhWeuGgLS1ND_ChgWDdY8NwMbYrM42022J81x-C4ujsRV0wWU_0HmNwN3FcIk7RiOYOejM6yQ9vKpZ97jVTrNhBHWJJiEw"/>
+<p class="text-[11px] font-bold text-slate-900">Cotonou</p>
+<p class="text-[9px] text-slate-400">206 biens</p>
+</div>
+<div class="bg-white rounded-xl p-2 border border-slate-100 text-center">
+<img alt="Abomey" class="w-full h-14 object-cover rounded-lg mb-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB381Q82j0fynVOanCNjY6CDwa8MrFF5hd-qBrzo1l7VK0YL47vZqJe2-Ve1q28csIQfn_vLSYbNW7c1jAOtlo1klnp4pN1AZJq3OIsF84B9v1pzyD5taDtpzgQ-2ETlo6yz9qdduxxaV2-Cm_mlhAcVMQCFSmQbGT60z6QZ0MASFwlW4--ujCSVNb9bYIvnHVZzAFz6Eq_aejkuIkIAsblc1MDpA8UxrZfNPVADzn3XKPUEeZ4_eQYkg"/>
+<p class="text-[11px] font-bold text-slate-900">Abomey</p>
+<p class="text-[9px] text-slate-400">112 biens</p>
+</div>
+<div class="bg-white rounded-xl p-2 border border-slate-100 text-center">
+<img alt="Parakou" class="w-full h-14 object-cover rounded-lg mb-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB172USjRsVa6udjGFZ3fPELxjuDRQjp36sqhIvkfi2ruM7TqUjHekb_b6A4ilKKROp5pznzpTtGbhsdftbVKr2zHpao5MmUjcJkYKCpSqmxJ_TvByfzxCIrLht7f9-5SEsgvj7ClKijMvvCRM-REAhtGoI1eT0MAJT06xqO78M6dcyhApXiDUZzZbUi9WRquYHaF8AcQue2-4GunUtgFXs52DZAUsycsS1_YmsDaQqKTuVgU6v52tp4g"/>
+<p class="text-[11px] font-bold text-slate-900">Parakou</p>
+<p class="text-[9px] text-slate-400">96 biens</p>
+</div>
+<div class="bg-white rounded-xl p-2 border border-slate-100 text-center">
+<img alt="Natitingou" class="w-full h-14 object-cover rounded-lg mb-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQ-uy5bwfjggCix1lcDgYO1EJhN3MvH2M92SyxfmNErNmw1U2KYf4HU21chk5c3Qai-MVHuNcU6LMlseOTr-a1HMNafjTYfwPXhaTbEfAKBzOn_xV1Lhgr4i28EIumcTJMGfC1hNJ7utNUP6H9nfSpDsk2tHV7ScbT2O78uT2uYSEreqAxzyXTtXG02m_tUqsLwgBzM71MUC9iQSkSSzL8FXeyHsqJ997uyxN3BX0zFLLymvpg9hNzvQ"/>
+<p class="text-[11px] font-bold text-slate-900">Natitingou</p>
+<p class="text-[9px] text-slate-400">78 biens</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: TourismSection -->
+<!-- BEGIN: WeekendEscapes -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" data-purpose="weekend-escapes">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+<span class="text-orange-500"><i class="fa-solid fa-suitcase-rolling"></i></span>
+          Escapades weekend
+        </h2>
+<p class="text-xs sm:text-sm text-slate-500 mt-1">Des idées de séjours pour vous évader le temps d'un week-end.</p>
+</div>
+<a class="text-xs sm:text-sm font-bold text-slate-800 hover:text-[#FF5E1E] flex items-center gap-1 group" href="#">
+<span>Voir toutes les escapades</span>
+<i class="fa-solid fa-arrow-right text-xs group-hover:translate-x-0.5 transition"></i>
+</a>
+</div>
+<!-- Escapes Carousel Row -->
+<div class="relative">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Escape 1: Ouidah -->
+<div class="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm group">
+<div class="relative h-28 overflow-hidden">
+<img alt="Week-end à Ouidah" class="w-full h-full object-cover group-hover:scale-105 transition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0CNRAZpDpYoh5yNHp4VsCLBL6tRwZrUXDG5thCkGDhXAgfW-tXDOffg9wggawbKhWNwxWh2lKB88j6NPEiSgly7IhNTffRQB4QNf67BOEXDD3EIPVu192dNv-71mwTJ-45ZbYX8Tq3bTg50j6p8V72PvH4F5RFvwbAQbYA9GhJduXnPvnRuTpfZpdg3zsfD_G2gHU2YMZFIgqsbJytd7OtdWWrSstKKArc8qhqiiM9r_TVdHpTklG6Q"/>
+</div>
+<div class="p-3">
+<h4 class="text-xs font-bold text-slate-900">Week-end à Ouidah</h4>
+<p class="text-[10px] text-slate-500 mt-0.5">Ouidah • 4 activités</p>
+</div>
+</div>
+<!-- Escape 2: Grand-Popo -->
+<div class="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm group">
+<div class="relative h-28 overflow-hidden">
+<img alt="Escapade à Grand-Popo" class="w-full h-full object-cover group-hover:scale-105 transition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAki-9ZOI6tVBG6iXH8MnK9FYz_W74tTONACX_SFqxWcROlMQv_OkmZor_gFMZoyQI3qWYneGxTq1d98vNpXWIjYwOnv3FAJjA3Lv6Whn_tirwvy30h3yFWNRiBPH3i2zikFf4-HbdZ3UJUGSXljt-IUz23UCvjs6S4U5EYh3Hr0b8U1gwMNoYWdzelGeHfeAfbEeax-VpkDnX8G4MTrT-ajTZo1qoMW1ESzRctFqaTeU3L5qo4BXtJyQ"/>
+</div>
+<div class="p-3">
+<h4 class="text-xs font-bold text-slate-900">Escapade à Grand-Popo</h4>
+<p class="text-[10px] text-slate-500 mt-0.5">Plage • 6 détentes</p>
+</div>
+</div>
+<!-- Escape 3: Savalou -->
+<div class="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm group">
+<div class="relative h-28 overflow-hidden">
+<img alt="Week-end à Savalou" class="w-full h-full object-cover group-hover:scale-105 transition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3oAZbJGfzTC8a7h5zEV4dnvh3ve33bzFDGoNPT1fLOS5W2hQhIzLOrG0d1bxCCXl-DBegdTee-Zp6_YML_TCWHqqGMfkQSwgfuS7bdBHMYdmuKWontKcD42iEbrNwLG2P5b4rtEJJRtdBiiq6BBjvUVlp9iNIcH863sQwF6z6ehAhiwTcRyO87G3VJdWZ2wHlEpLnF-6RZqx7qgr2MTD8hvOjLhDWD2brBZOvC4DEnwiANxmFcQyOGA"/>
+</div>
+<div class="p-3">
+<h4 class="text-xs font-bold text-slate-900">Week-end à Savalou</h4>
+<p class="text-[10px] text-slate-500 mt-0.5">Sources • 6 découvertes</p>
+</div>
+</div>
+<!-- Escape 4: Natitingou -->
+<div class="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm group">
+<div class="relative h-28 overflow-hidden">
+<img alt="Week-end à Natitingou" class="w-full h-full object-cover group-hover:scale-105 transition" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8GK3HD1Xpqn6BYPzhmu4yndLAW8-fjD5uaughLv0zWDkdVgYsVHirZ_I5ii9g4yY8wPZPfsr0VJQSc2Kf8wmSUa2wvsRuwmh1A1NSsQgNv0nstAHJvtKd3XMeSyhHqEAbLbht4hgLLEvgqo-1VTnuwrjjMqWZxPwPQcOMguQxE3hpnYPJ40nCw7DNjoNc-U2lryDkDeAW0KRpdZ_CPcf1aKtyaRFG0KSiWTzP2Z0DUSD0-emwe5_cNw"/>
+</div>
+<div class="p-3">
+<h4 class="text-xs font-bold text-slate-900">Week-end à Natitingou</h4>
+<p class="text-[10px] text-slate-500 mt-0.5">Natitingou • 4 découvertes</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- END: WeekendEscapes -->
+<!-- BEGIN: TestimonialsSection -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" data-purpose="testimonials">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
+<span class="text-amber-500"><i class="fa-solid fa-star"></i></span>
+          Avis
+        </h2>
+<p class="text-xs sm:text-sm text-slate-500 mt-1">Ce que nos voyageurs disent de leur expérience.</p>
+</div>
+<a class="text-xs sm:text-sm font-bold text-slate-800 hover:text-[#FF5E1E] flex items-center gap-1 group" href="#">
+<span>Voir tous les avis</span>
+<i class="fa-solid fa-arrow-right text-xs group-hover:translate-x-0.5 transition"></i>
+</a>
+</div>
+<!-- Testimonial Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+<!-- Review 1 -->
+<article class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-start gap-4">
+<div class="w-11 h-11 rounded-full bg-[#0E1A2D] text-white font-bold text-sm flex items-center justify-center flex-shrink-0">
+          AD
+        </div>
+<div class="flex-1">
+<div class="flex items-center text-amber-400 text-xs gap-1 mb-1.5">
+<i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+</div>
+<p class="text-xs text-slate-600 italic">"Séjour parfait ! L'appartement était propre, bien situé et le propriétaire très accueillant. Je recommande !"</p>
+<div class="mt-3">
+<h5 class="text-xs font-bold text-slate-900 leading-none">Adam Dallo</h5>
+<span class="text-[10px] text-slate-400">Séjour à Cotonou • 3 nuits</span>
+</div>
+</div>
+</article>
+<!-- Review 2 -->
+<article class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-start gap-4">
+<div class="w-11 h-11 rounded-full bg-[#0E1A2D] text-white font-bold text-sm flex items-center justify-center flex-shrink-0">
+          MK
+        </div>
+<div class="flex-1">
+<div class="flex items-center text-amber-400 text-xs gap-1 mb-1.5">
+<i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+</div>
+<p class="text-xs text-slate-600 italic">"Une expérience exceptionnelle. Tout était conforme aux photos. Merci Linkhoo !"</p>
+<div class="mt-3">
+<h5 class="text-xs font-bold text-slate-900 leading-none">Mariam Kordi</h5>
+<span class="text-[10px] text-slate-400">Séjour à Ouidah • 2 nuits</span>
+</div>
+</div>
+</article>
+<!-- Review 3 -->
+<article class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-start gap-4">
+<div class="w-11 h-11 rounded-full bg-[#0E1A2D] text-white font-bold text-sm flex items-center justify-center flex-shrink-0">
+          BT
+        </div>
+<div class="flex-1">
+<div class="flex items-center text-amber-400 text-xs gap-1 mb-1.5">
+<i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+</div>
+<p class="text-xs text-slate-600 italic">"Très bon accueil et logement confortable. Je recommande sans hésiter."</p>
+<div class="mt-3">
+<h5 class="text-xs font-bold text-slate-900 leading-none">Brice Tchabone</h5>
+<span class="text-[10px] text-slate-400">Séjour à Porto-Novo • 4 nuits</span>
+</div>
+</div>
+</article>
+</div>
+</section>
+<!-- END: TestimonialsSection -->
+</body></html>

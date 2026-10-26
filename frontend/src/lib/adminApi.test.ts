@@ -34,6 +34,7 @@ const admin: AdminData = {
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  sessionStorage.clear();
   setAdminToken(null);
   fetchMock.mockReset();
   fetchMock.mockImplementation(() => Promise.resolve(jsonResponse({})));
@@ -45,19 +46,26 @@ afterEach(() => {
   vi.resetModules();
 });
 
-describe("état initial du jeton admin", () => {
-  it("lit admin_token depuis localStorage au chargement du module", async () => {
-    localStorage.setItem('admin_token', 'token-initial');
+describe("état initial de l'indice de session admin", () => {
+  it('vaut "1" quand un indice de session est stocké', async () => {
+    sessionStorage.setItem('admin_session', '1');
     vi.resetModules();
 
     const fresh = await import('./adminApi');
 
-    expect(fresh.getAdminToken()).toBe('token-initial');
-    localStorage.removeItem('admin_token');
+    expect(fresh.getAdminToken()).toBe('1');
   });
 
-  it("vaut null quand aucun jeton n'est stocké", async () => {
-    localStorage.removeItem('admin_token');
+  it("vaut '1' pour un ancien jeton persisté (session probable à vérifier)", async () => {
+    localStorage.setItem('admin_token', 'token-historique');
+    vi.resetModules();
+
+    const fresh = await import('./adminApi');
+
+    expect(fresh.getAdminToken()).toBe('1');
+  });
+
+  it("vaut null quand aucun indice n'est stocké", async () => {
     vi.resetModules();
 
     const fresh = await import('./adminApi');
@@ -67,17 +75,20 @@ describe("état initial du jeton admin", () => {
 });
 
 describe('setAdminToken / getAdminToken', () => {
-  it('persiste le jeton dans localStorage', () => {
-    setAdminToken('jwt-abc');
+  it('stocke un indice non sensible et purge tout ancien jeton', () => {
+    setAdminToken('session');
 
-    expect(localStorage.getItem('admin_token')).toBe('jwt-abc');
-    expect(getAdminToken()).toBe('jwt-abc');
+    expect(sessionStorage.getItem('admin_session')).toBe('1');
+    expect(sessionStorage.getItem('admin_token')).toBeNull();
+    expect(localStorage.getItem('admin_token')).toBeNull();
+    expect(getAdminToken()).toBe('1');
   });
 
-  it('supprime la clé quand on déconnecte', () => {
-    setAdminToken('jwt-abc');
+  it("supprime l'indice quand on déconnecte", () => {
+    setAdminToken('session');
     setAdminToken(null);
 
+    expect(sessionStorage.getItem('admin_session')).toBeNull();
     expect(localStorage.getItem('admin_token')).toBeNull();
     expect(getAdminToken()).toBeNull();
   });
@@ -85,7 +96,7 @@ describe('setAdminToken / getAdminToken', () => {
 
 describe('apiAdmin.login', () => {
   it('envoie les credentials en JSON sur /api/admin/login', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ token: 'jwt-abc', admin }));
+    fetchMock.mockResolvedValueOnce(jsonResponse({ admin }));
 
     const result = await apiAdmin.login('admin@ilehya.ci', 'secret');
 
@@ -95,33 +106,32 @@ describe('apiAdmin.login', () => {
     expect(init.method).toBe('POST');
     expect(init.body).toBe(JSON.stringify({ email: 'admin@ilehya.ci', password: 'secret' }));
     expect(init.headers).toMatchObject({ 'Content-Type': 'application/json' });
-    expect(result).toEqual({ token: 'jwt-abc', admin });
+    expect(result).toEqual({ admin });
   });
 
-  it("n'ajoute pas d'en-tête Authorization sans jeton", async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ token: 'jwt-abc', admin }));
+  it("s'authentifie par cookie : credentials include et aucun Bearer", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ admin }));
 
     await apiAdmin.login('admin@ilehya.ci', 'secret');
 
     const { init } = firstCall();
     const headers = (init.headers ?? {}) as Record<string, string>;
     expect(headers.Authorization).toBeUndefined();
+    expect(init.credentials).toBe('include');
   });
 });
 
-describe('en-tête Authorization', () => {
-  it('envoie le jeton stocké sur les requêtes suivantes', async () => {
-    setAdminToken('jwt-admin');
+describe('authentification par cookie', () => {
+  it('envoie credentials include et aucun en-tête sur les requêtes admin', async () => {
+    setAdminToken('session');
     fetchMock.mockResolvedValueOnce(jsonResponse(admin));
 
     await apiAdmin.getMe();
 
     const { url, init } = firstCall();
     expect(url).toBe('/api/admin/me');
-    expect((init.headers ?? {}) as Record<string, string>).toMatchObject({
-      Authorization: 'Bearer jwt-admin',
-      'Content-Type': 'application/json',
-    });
+    expect(init.credentials).toBe('include');
+    expect((init.headers ?? {}) as Record<string, string>).not.toHaveProperty('Authorization');
   });
 });
 
@@ -494,7 +504,7 @@ describe('apiAdmin — endpoints back-office', () => {
 
 describe('apiAdmin.uploadFile', () => {
   it('envoie le fichier en FormData et renvoie url + path', async () => {
-    setAdminToken('jwt-admin');
+    setAdminToken('session');
     fetchMock.mockResolvedValueOnce(jsonResponse({ url: '/uploads/doc.pdf', path: 'doc.pdf' }));
     const file = new File(['contenu'], 'doc.pdf', { type: 'application/pdf' });
 
@@ -504,9 +514,8 @@ describe('apiAdmin.uploadFile', () => {
     expect(url).toBe('/api/upload');
     expect(init.method).toBe('POST');
     expect(init.body).toBeInstanceOf(FormData);
-    expect((init.headers ?? {}) as Record<string, string>).toMatchObject({
-      Authorization: 'Bearer jwt-admin',
-    });
+    expect(init.credentials).toBe('include');
+    expect((init.headers ?? {}) as Record<string, string>).not.toHaveProperty('Authorization');
     expect(result).toEqual({ url: '/uploads/doc.pdf', path: 'doc.pdf' });
   });
 

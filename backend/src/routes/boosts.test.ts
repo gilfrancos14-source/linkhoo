@@ -1,5 +1,9 @@
 import request from 'supertest';
 import { verifyToken } from '@clerk/backend';
+
+vi.hoisted(() => {
+  process.env.BOOST_TRACK_SECRET = 'boost-track-secret-de-test';
+});
 import { Transaction } from 'fedapay';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import boostsRouter from './boosts';
@@ -61,6 +65,7 @@ function stubTables(
     gerants: FakeChain | FakeChain[];
     rooms: FakeChain | FakeChain[];
     boosts: FakeChain | FakeChain[];
+    reviews: FakeChain | FakeChain[];
     premium_transactions: FakeChain | FakeChain[];
     notifications: FakeChain | FakeChain[];
   }> = {}
@@ -99,6 +104,8 @@ const activeBoostRow = {
   status: 'active',
   budget_total: 1000,
   spent: 100,
+  clicks_count: 12,
+  impressions_count: 340,
   starts_at: new Date(Date.now() - 3600_000).toISOString(),
   ends_at: FUTURE,
   activated_at: new Date().toISOString(),
@@ -208,6 +215,57 @@ describe('GET /api/boosts/featured', () => {
     const ids = res.body.items.map((item: { room_id: string }) => item.room_id);
     expect(ids).not.toContain('room-7');
     expect(res.body.items[0]).toMatchObject({ title: expect.any(String), ville: 'Abidjan' });
+  });
+
+  it('filtre les campagnes sur le marché demandé', async () => {
+    const list = fakeChain({ data: [], error: null });
+    stubTables({ boosts: list, reviews: fakeChain({ data: [], error: null }) });
+
+    const res = await request(app).get('/api/boosts/featured?market=SN');
+
+    expect(res.status).toBe(200);
+    expect(list.eq).toHaveBeenCalledWith('market', 'SN');
+  });
+
+  it('400 sur un marché inconnu', async () => {
+    const res = await request(app).get('/api/boosts/featured?market=XX');
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Marché invalide');
+  });
+
+  it('expose la note moyenne et le nombre d\'avis par chambre', async () => {
+    const row = {
+      id: 'boost-0',
+      room_id: 'room-0',
+      market: 'CI',
+      mode: 'cpc',
+      room: {
+        id: 'room-0',
+        title: 'Chambre 0',
+        price: '50 000',
+        price_num: 50000,
+        img: '/img/0.webp',
+        ville: 'Abidjan',
+        quartier: 'Cocody',
+        category: 'Studio',
+        disponible: true,
+      },
+    };
+    stubTables({
+      boosts: fakeChain({ data: [row], error: null }),
+      reviews: fakeChain({
+        data: [
+          { room_id: 'room-0', note_appartement: 5 },
+          { room_id: 'room-0', note_appartement: 4 },
+        ],
+        error: null,
+      }),
+    });
+
+    const res = await request(app).get('/api/boosts/featured?market=CI');
+    const item = res.body.items.find((value: { room_id: string }) => value.room_id === 'room-0');
+
+    expect(item).toMatchObject({ rating: 4.5, reviews_count: 2 });
   });
 });
 
@@ -731,6 +789,8 @@ describe('GET /api/boosts/mine', () => {
       display_status: 'live',
       remaining: 900,
       status: 'active',
+      clicks_count: 12,
+      impressions_count: 340,
     });
     expect(Transaction.retrieve).not.toHaveBeenCalled();
   });

@@ -59,6 +59,9 @@ const pendingGerant: AdminGerant = {
   nom: 'Koné',
   prenom: 'Awa',
   phone: '+225070102030',
+  address: 'Cocody, Abidjan',
+  date_of_birth: '1995-03-12',
+  nationality: 'Ivoirienne',
   market: 'CI',
   is_verified: false,
   verified_at: null,
@@ -84,12 +87,12 @@ const noAddressGerant: AdminGerant = {
 
 function makeDoc(overrides: Partial<VerificationDocument>): VerificationDocument {
   return {
-    id: 'd-front',
+    id: 'd-id',
     gerant_id: 'g-1',
-    document_type: 'id_card_front',
-    file_url: '/uploads/front.png',
-    file_path: 'uploads/front.png',
-    original_filename: 'cni-recto.jpg',
+    document_type: 'national_id',
+    file_url: '/uploads/id.png',
+    file_path: 'uploads/id.png',
+    original_filename: 'identite.jpg',
     mime_type: 'image/jpeg',
     file_size: 2048,
     status: 'pending',
@@ -101,14 +104,22 @@ function makeDoc(overrides: Partial<VerificationDocument>): VerificationDocument
   };
 }
 
-const frontDoc = makeDoc({ id: 'd-front', document_type: 'id_card_front' });
-const backDoc = makeDoc({
-  id: 'd-back',
-  document_type: 'id_card_back',
-  file_url: '/uploads/back.png',
-  original_filename: 'cni-verso.jpg',
+const idDoc = makeDoc({ id: 'd-id', document_type: 'national_id' });
+const proofDoc = makeDoc({
+  id: 'd-proof',
+  document_type: 'proof_of_address',
+  file_url: '/uploads/proof.png',
+  file_path: 'uploads/proof.png',
+  original_filename: 'facture.jpg',
 });
-const twoDocs: VerificationDocument[] = [frontDoc, backDoc];
+const selfieDoc = makeDoc({
+  id: 'd-selfie',
+  document_type: 'selfie',
+  file_url: '/uploads/selfie.png',
+  file_path: 'uploads/selfie.png',
+  original_filename: 'selfie.jpg',
+});
+const threeDocs: VerificationDocument[] = [idDoc, proofDoc, selfieDoc];
 
 /** Attend l'ouverture animée du drawer (requestAnimationFrame → pointer-events auto). */
 async function renderDrawer(gerant: AdminGerant = pendingGerant) {
@@ -127,7 +138,7 @@ async function renderDrawer(gerant: AdminGerant = pendingGerant) {
   return { ...utils, onClosed, onUpdated };
 }
 
-/** Carte d'un document identifié par son titre (Recto / Verso / Selfie...). */
+/** Carte d'un document identifié par son titre. */
 function docCard(titlePattern: RegExp) {
   const heading = screen.getByRole('heading', { level: 3, name: titlePattern });
   const headerRow = heading.parentElement;
@@ -156,7 +167,7 @@ function closeButton() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.getVerificationDocuments.mockResolvedValue(twoDocs);
+  mocks.getVerificationDocuments.mockResolvedValue(threeDocs);
   mocks.startGerantReview.mockResolvedValue({
     ...pendingGerant,
     verification_status: 'under_review',
@@ -171,7 +182,7 @@ beforeEach(() => {
     verification_status: 'rejected',
   });
   mocks.reviewDocument.mockImplementation(async (docId, status) => {
-    const base = docId === 'd-front' ? frontDoc : backDoc;
+    const base = threeDocs.find((doc) => doc.id === docId) ?? idDoc;
     return { ...base, status };
   });
 });
@@ -193,6 +204,16 @@ describe('AdminGerantDrawer', () => {
     expect(within(headerInfo).getByText('En attente')).toBeInTheDocument();
   });
 
+  it('affiche les informations personnelles pour la vérification manuelle', async () => {
+    await renderDrawer();
+
+    expect(screen.getByRole('heading', { name: 'Informations personnelles' })).toBeInTheDocument();
+    expect(screen.getByText('12/03/1995')).toBeInTheDocument();
+    expect(screen.getByText('Ivoirienne')).toBeInTheDocument();
+    expect(screen.getByText('Cocody, Abidjan')).toBeInTheDocument();
+    expect(screen.getByText('+225070102030')).toBeInTheDocument();
+  });
+
   it("affiche « Chargement... » puis charge les documents du gérant", async () => {
     let resolveDocs: ((docs: VerificationDocument[]) => void) | null = null;
     mocks.getVerificationDocuments.mockImplementation(
@@ -207,13 +228,24 @@ describe('AdminGerantDrawer', () => {
     expect(screen.getByText('Chargement...')).toBeInTheDocument();
 
     await act(async () => {
-      resolveDocs?.(twoDocs);
+      resolveDocs?.(threeDocs);
     });
 
     expect(
-      await screen.findByRole('heading', { level: 3, name: /Recto/ }),
+      await screen.findByRole('heading', { level: 3, name: /Pièce d'identité/ }),
     ).toBeInTheDocument();
     expect(mocks.getVerificationDocuments).toHaveBeenCalledWith('g-1');
+  });
+
+  it("affiche le nom du fichier quand l'URL signée est absente", async () => {
+    mocks.getVerificationDocuments.mockResolvedValue([makeDoc({ file_url: null })]);
+
+    await renderDrawer();
+    await screen.findByRole('heading', { level: 3, name: /Pièce d'identité/ });
+
+    const card = docCard(/Pièce d'identité/);
+    expect(card.queryByRole('img')).toBeNull();
+    expect(card.getByText('identite.jpg')).toBeInTheDocument();
   });
 
   it('affiche « Aucun document soumis. » quand la liste est vide', async () => {
@@ -238,7 +270,7 @@ describe('AdminGerantDrawer', () => {
 
   it('ferme via la croix de l’en-tête (après l’animation de 300 ms)', async () => {
     const { onClosed, onUpdated } = await renderDrawer();
-    await screen.findByRole('heading', { level: 3, name: /Recto/ });
+    await screen.findByRole('heading', { level: 3, name: /Pièce d'identité/ });
 
     await userEvent.click(closeButton());
 
@@ -264,7 +296,7 @@ describe('AdminGerantDrawer', () => {
 
   it('« Commencer la révision » appelle l’API et notifie onUpdated', async () => {
     const { onUpdated } = await renderDrawer();
-    await screen.findByRole('heading', { level: 3, name: /Recto/ });
+    await screen.findByRole('heading', { level: 3, name: /Pièce d'identité/ });
 
     await userEvent.click(
       screen.getByRole('button', { name: 'Commencer la révision' }),
@@ -278,9 +310,30 @@ describe('AdminGerantDrawer', () => {
     );
   });
 
+  it('affiche les trois documents du nouveau parcours dans l’ordre', async () => {
+    mocks.getVerificationDocuments.mockResolvedValue([
+      makeDoc({ id: 'd-selfie', document_type: 'selfie' }),
+      makeDoc({ id: 'd-id', document_type: 'national_id' }),
+      makeDoc({ id: 'd-address', document_type: 'proof_of_address' }),
+    ]);
+
+    await renderDrawer();
+    await screen.findByRole('heading', { level: 3, name: /Pièce d'identité/ });
+
+    const headings = screen
+      .getAllByRole('heading', { level: 3 })
+      .map((heading) => heading.textContent)
+      .filter((label) => ['Pièce d\'identité', 'Justificatif de domicile', 'Selfie'].includes(label ?? ''));
+
+    expect(headings).toEqual(['Pièce d\'identité', 'Justificatif de domicile', 'Selfie']);
+    expect(
+      within(footerInner()).getByRole('button', { name: 'Approuver' }),
+    ).toHaveAttribute('title', 'Les 3 documents doivent être approuvés');
+  });
+
   it('désactive « Approuver » tant que les documents ne sont pas tous approuvés', async () => {
     await renderDrawer();
-    await screen.findByRole('heading', { level: 3, name: /Recto/ });
+    await screen.findByRole('heading', { level: 3, name: /Pièce d'identité/ });
 
     const footerApprove = within(
       footerInner(),
@@ -289,38 +342,43 @@ describe('AdminGerantDrawer', () => {
     expect(footerApprove).toBeDisabled();
     expect(footerApprove).toHaveAttribute(
       'title',
-      'Les 2 documents doivent être approuvés',
+      'Les 3 documents doivent être approuvés',
     );
     expect(mocks.approveGerantVerification).not.toHaveBeenCalled();
   });
 
   it('approuve chaque document puis valide la demande complète', async () => {
     const { onClosed, onUpdated } = await renderDrawer();
-    await screen.findByRole('heading', { level: 3, name: /Recto/ });
+    await screen.findByRole('heading', { level: 3, name: /Pièce d'identité/ });
 
-    // 1. Approuve le recto (bouton dans la carte du document).
-    await userEvent.click(docCard(/Recto/).getByRole('button', { name: 'Approuver' }));
+    // 1. Approuve la pièce d'identité.
+    await userEvent.click(
+      docCard(/Pièce d'identité/).getByRole('button', { name: 'Approuver' }),
+    );
     await waitFor(() =>
-      expect(mocks.reviewDocument).toHaveBeenCalledWith(
-        'd-front',
-        'approved',
-        undefined,
-      ),
+      expect(mocks.reviewDocument).toHaveBeenCalledWith('d-id', 'approved', undefined),
     );
     expect(await screen.findAllByText('Approuvé')).toHaveLength(1);
 
-    // 2. Approuve le verso.
-    await userEvent.click(docCard(/Verso/).getByRole('button', { name: 'Approuver' }));
+    // 2. Approuve le justificatif de domicile.
+    await userEvent.click(
+      docCard(/Justificatif de domicile/).getByRole('button', { name: 'Approuver' }),
+    );
     await waitFor(() =>
-      expect(mocks.reviewDocument).toHaveBeenCalledWith(
-        'd-back',
-        'approved',
-        undefined,
-      ),
+      expect(mocks.reviewDocument).toHaveBeenCalledWith('d-proof', 'approved', undefined),
     );
     expect(await screen.findAllByText('Approuvé')).toHaveLength(2);
 
-    // 3. Le bouton du pied devient actif : validation finale.
+    // 3. Approuve le selfie.
+    await userEvent.click(
+      docCard(/Selfie/).getByRole('button', { name: 'Approuver' }),
+    );
+    await waitFor(() =>
+      expect(mocks.reviewDocument).toHaveBeenCalledWith('d-selfie', 'approved', undefined),
+    );
+    expect(await screen.findAllByText('Approuvé')).toHaveLength(3);
+
+    // 4. Le bouton du pied devient actif : validation finale.
     const footerApprove = screen.getByRole('button', { name: 'Approuver' });
     expect(footerApprove).toBeEnabled();
     await userEvent.click(footerApprove);
@@ -339,16 +397,18 @@ describe('AdminGerantDrawer', () => {
   it("rejette un document individuellement avec un motif", async () => {
     mocks.reviewDocument.mockResolvedValue(
       makeDoc({
-        id: 'd-front',
-        document_type: 'id_card_front',
+        id: 'd-id',
+        document_type: 'national_id',
         status: 'rejected',
         rejection_reason: 'Photo illisible',
       }),
     );
     await renderDrawer();
-    await screen.findByRole('heading', { level: 3, name: /Recto/ });
+    await screen.findByRole('heading', { level: 3, name: /Pièce d'identité/ });
 
-    await userEvent.click(docCard(/Recto/).getByRole('button', { name: 'Rejeter' }));
+    await userEvent.click(
+      docCard(/Pièce d'identité/).getByRole('button', { name: 'Rejeter' }),
+    );
 
     const input = screen.getByPlaceholderText('Raison du rejet...');
     const confirm = screen.getByRole('button', { name: 'Confirmer' });
@@ -359,19 +419,21 @@ describe('AdminGerantDrawer', () => {
 
     await waitFor(() =>
       expect(mocks.reviewDocument).toHaveBeenCalledWith(
-        'd-front',
+        'd-id',
         'rejected',
         'Photo illisible',
       ),
     );
-    expect(await docCard(/Recto/).findByText('Rejeté')).toBeInTheDocument();
+    expect(await docCard(/Pièce d'identité/).findByText('Rejeté')).toBeInTheDocument();
   });
 
   it("annule la saisie du motif de rejet d'un document", async () => {
     await renderDrawer();
-    await screen.findByRole('heading', { level: 3, name: /Recto/ });
+    await screen.findByRole('heading', { level: 3, name: /Pièce d'identité/ });
 
-    await userEvent.click(docCard(/Recto/).getByRole('button', { name: 'Rejeter' }));
+    await userEvent.click(
+      docCard(/Pièce d'identité/).getByRole('button', { name: 'Rejeter' }),
+    );
     expect(screen.getByPlaceholderText('Raison du rejet...')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Annuler' }));
@@ -380,13 +442,13 @@ describe('AdminGerantDrawer', () => {
     expect(mocks.reviewDocument).not.toHaveBeenCalled();
     // Les boutons d'actions du document réapparaissent.
     expect(
-      docCard(/Recto/).getByRole('button', { name: 'Rejeter' }),
+      docCard(/Pièce d'identité/).getByRole('button', { name: 'Rejeter' }),
     ).toBeInTheDocument();
   });
 
   it('rejette la demande globalement avec un motif', async () => {
     const { onClosed, onUpdated } = await renderDrawer();
-    await screen.findByRole('heading', { level: 3, name: /Recto/ });
+    await screen.findByRole('heading', { level: 3, name: /Pièce d'identité/ });
 
     await userEvent.click(
       within(footerInner()).getByRole('button', { name: 'Rejeter' }),
@@ -416,9 +478,9 @@ describe('AdminGerantDrawer', () => {
     });
   });
 
-  it("signale l'adresse absente et bloque la validation", async () => {
+  it("signale l'adresse absente sans la rendre obligatoire", async () => {
     await renderDrawer(noAddressGerant);
-    await screen.findByRole('heading', { level: 3, name: /Recto/ });
+    await screen.findByRole('heading', { level: 3, name: /Pièce d'identité/ });
 
     expect(screen.getByText('Absente')).toBeInTheDocument();
     expect(
@@ -432,13 +494,24 @@ describe('AdminGerantDrawer', () => {
     expect(footerApprove).toBeDisabled();
     expect(footerApprove).toHaveAttribute(
       'title',
-      'Adresse Google Maps manquante',
+      'Les 3 documents doivent être approuvés',
     );
+  });
+
+  it("autorise la validation sans adresse quand les documents sont approuvés", async () => {
+    mocks.getVerificationDocuments.mockResolvedValue(
+      threeDocs.map((doc) => ({ ...doc, status: 'approved' as const })),
+    );
+
+    await renderDrawer(noAddressGerant);
+    await screen.findByRole('heading', { level: 3, name: /Pièce d'identité/ });
+
+    expect(within(footerInner()).getByRole('button', { name: 'Approuver' })).toBeEnabled();
   });
 
   it("affiche la carte, les coordonnées et le lien Google Maps quand l'adresse est fournie", async () => {
     await renderDrawer();
-    await screen.findByRole('heading', { level: 3, name: /Recto/ });
+    await screen.findByRole('heading', { level: 3, name: /Pièce d'identité/ });
 
     expect(screen.getByText('Fournie')).toBeInTheDocument();
     const map = screen.getByTestId('property-map');
@@ -468,7 +541,7 @@ describe('AdminGerantDrawer', () => {
     };
 
     await renderDrawer(gerant);
-    await screen.findByRole('heading', { level: 3, name: /Recto/ });
+    await screen.findByRole('heading', { level: 3, name: /Pièce d'identité/ });
 
     expect(
       screen.queryByRole('button', { name: 'Commencer la révision' }),
@@ -482,9 +555,11 @@ describe('AdminGerantDrawer', () => {
   it("affiche l'erreur renvoyée par l'API lors de la validation d'un document", async () => {
     mocks.reviewDocument.mockRejectedValue(new Error('Réseau indisponible'));
     await renderDrawer();
-    await screen.findByRole('heading', { level: 3, name: /Recto/ });
+    await screen.findByRole('heading', { level: 3, name: /Pièce d'identité/ });
 
-    await userEvent.click(docCard(/Recto/).getByRole('button', { name: 'Approuver' }));
+    await userEvent.click(
+      docCard(/Pièce d'identité/).getByRole('button', { name: 'Approuver' }),
+    );
 
     expect(await screen.findByText('Réseau indisponible')).toBeInTheDocument();
   });

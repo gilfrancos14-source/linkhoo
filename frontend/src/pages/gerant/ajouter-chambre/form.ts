@@ -38,3 +38,10 @@ export const marketPays: Record<string, string> = {
   CI: 'Côte d\'Ivoire',
   BJ: 'Bénin',
 };
+
+export interface PreviewSnapshot {
+  form: FormData;
+  photos: PhotoItem[];
+  mainPhotoIndex: number;
+  categoryTitle: string;
+}

@@ -3,22 +3,55 @@ import type { MarketCode } from '../config/markets';
 import { API_BASE, REQUEST_TIMEOUT_MS, parseJsonBody, clearApiCache } from './api';
 import type { BoostData, VerificationDocument } from './api';
 
-let adminToken: string | null = localStorage.getItem('admin_token');
+// F4 : le jeton admin vit dans un cookie HttpOnly posé par le serveur ; il
+// n'est jamais accessible au JavaScript (aucun localStorage/sessionStorage de
+// secret). On ne garde côté navigateur qu'un *indice* non sensible pour éviter
+// un appel réseau inutile quand l'utilisateur n'a manifestement pas de session.
+const SESSION_HINT_KEY = 'admin_session';
+const LEGACY_TOKEN_KEY = 'admin_token';
 
-/** Émis (window) quand le serveur répond 401 : token expiré ou révoqué. */
+function readSessionHint(): string | null {
+  try {
+    if (sessionStorage.getItem(SESSION_HINT_KEY)) return '1';
+    // Migration : un ancien jeton persisté n'est plus utilisable (plus envoyé
+    // en Bearer) mais signale une session probable → on tente /me.
+    if (localStorage.getItem(LEGACY_TOKEN_KEY)) return '1';
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+let adminSessionHint: string | null = readSessionHint();
+
+/** A%mis (window) quand le serveur rAcpond 401 : token expirAc ou rAcvoquAc. */
 export const ADMIN_UNAUTHORIZED_EVENT = 'admin:unauthorized';
 
-export function setAdminToken(token: string | null) {
-  adminToken = token;
-  if (token) {
-    localStorage.setItem('admin_token', token);
-  } else {
-    localStorage.removeItem('admin_token');
+/** Erreur levée quand l'API admin répond 401 (session absente/expirée). */
+export class AdminUnauthorizedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AdminUnauthorizedError';
+  }
+}
+
+export function setAdminToken(active: string | null) {
+  adminSessionHint = active ? '1' : null;
+  try {
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+    if (active) {
+      sessionStorage.setItem(SESSION_HINT_KEY, '1');
+    } else {
+      sessionStorage.removeItem(SESSION_HINT_KEY);
+    }
+  } catch {
+    // Stockage indisponible (navigation privée stricte) : l'indice vit en
+    // mémoire pour la durée de l'onglet.
   }
 }
 
 export function getAdminToken(): string | null {
-  return adminToken;
+  return adminSessionHint;
 }
 
 function notifyUnauthorized() {
@@ -35,13 +68,11 @@ async function adminRequest<T>(path: string, options?: RequestInit): Promise<T> 
     ...(options?.headers as Record<string, string>),
   };
 
-  if (adminToken) {
-    headers['Authorization'] = `Bearer ${adminToken}`;
-  }
-
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
+    // F4 : le cookie HttpOnly admin est envoyé avec chaque appel.
+    credentials: 'include',
     signal: options?.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   }).catch((e: unknown) => {
     if (e instanceof Error && e.name === 'TimeoutError') {
@@ -51,7 +82,10 @@ async function adminRequest<T>(path: string, options?: RequestInit): Promise<T> 
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    if (res.status === 401) notifyUnauthorized();
+    if (res.status === 401) {
+      notifyUnauthorized();
+      throw new AdminUnauthorizedError(body.error || 'Session expirée');
+    }
     throw new Error(body.error || `API error ${res.status}`);
   }
   // Une mutation admin (bannières, événements, promos…) invalide le cache
@@ -144,6 +178,9 @@ export interface AdminGerant {
   nom: string;
   prenom: string;
   phone: string | null;
+  address: string | null;
+  date_of_birth: string | null;
+  nationality: string | null;
   market: MarketCode;
   is_verified: boolean;
   verified_at: string | null;
@@ -277,10 +314,13 @@ export interface AdminBoostItem extends BoostData {
 
 export const apiAdmin = {
   login: (email: string, password: string) =>
-    adminRequest<{ token: string; admin: AdminData }>('/admin/login', {
+    adminRequest<{ admin: AdminData }>('/admin/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
+
+  logout: () =>
+    adminRequest<{ ok: boolean }>('/admin/logout', { method: 'POST' }),
 
   getMe: () => adminRequest<AdminData>('/admin/me'),
 
@@ -467,13 +507,14 @@ export const apiAdmin = {
     adminRequest<void>(`/escapades/${id}`, { method: 'DELETE' }),
 
   uploadFile: async (file: File): Promise<{ url: string; path: string }> => {
-    const headers: Record<string, string> = {};
-    if (adminToken) {
-      headers['Authorization'] = `Bearer ${adminToken}`;
-    }
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch(`${API_BASE}/upload`, { method: 'POST', headers, body: formData });
+    const res = await fetch(`${API_BASE}/upload`, {
+      method: 'POST',
+      body: formData,
+      // F4 : authentification par cookie HttpOnly (aucun Bearer côté navigateur).
+      credentials: 'include',
+    });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.error || 'Upload failed');

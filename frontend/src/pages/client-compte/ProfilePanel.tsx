@@ -25,8 +25,11 @@ export default function ProfilePanel({
   onChange: (patch: Partial<ProfileFormState>) => void;
   onSubmit: (e: FormEvent) => void;
 }) {
+  const initials = `${profileForm.prenom.charAt(0)}${profileForm.nom.charAt(0)}`.toUpperCase() || 'U';
+  const fullName = [profileForm.prenom, profileForm.nom].map((v) => v.trim()).filter(Boolean).join(' ');
+
   return (
-    <section className="client-compte__panel" id="cp-panel" role="tabpanel">
+    <section className="client-compte__panel">
       <div className="client-compte__profile">
         <div className="client-compte__profile-head">
           <span className="client-compte__profile-icon"><Glyph>{glyphUser}</Glyph></span>
@@ -39,60 +42,71 @@ export default function ProfilePanel({
           </div>
         </div>
 
-        <form className="client-compte__profile-form" onSubmit={onSubmit}>
-          <div className="client-compte__fields">
-            <div className="client-compte__field">
-              <label htmlFor="cp-prenom">Prénom</label>
-              <input
-                id="cp-prenom"
-                type="text"
-                value={profileForm.prenom}
-                onChange={(e) => onChange({ prenom: e.target.value })}
-                autoComplete="given-name"
-              />
-            </div>
-            <div className="client-compte__field">
-              <label htmlFor="cp-nom">Nom</label>
-              <input
-                id="cp-nom"
-                type="text"
-                value={profileForm.nom}
-                onChange={(e) => onChange({ nom: e.target.value })}
-                autoComplete="family-name"
-              />
-            </div>
-            <div className="client-compte__field">
-              <label htmlFor="cp-tel">Téléphone</label>
-              <input
-                id="cp-tel"
-                type="tel"
-                value={profileForm.telephone}
-                onChange={(e) => onChange({ telephone: e.target.value })}
-                autoComplete="tel"
-              />
-            </div>
-            <div className="client-compte__field">
-              <label htmlFor="cp-email">
-                Email
-                <span className="client-compte__field-hint">Géré par votre compte</span>
-              </label>
-              <input id="cp-email" type="email" value={email} disabled />
-            </div>
-          </div>
+        <div className="client-compte__profile-grid">
+          <aside className="client-compte__profile-aside">
+            <span className="client-compte__profile-avatar" aria-hidden="true">{initials}</span>
+            <p className="client-compte__profile-aside-name">{fullName || 'Votre profil'}</p>
+            {email && <p className="client-compte__profile-aside-email">{email}</p>}
+            <p className="client-compte__profile-aside-note">
+              Votre adresse email est gérée par votre compte et ne peut pas être modifiée ici.
+            </p>
+          </aside>
 
-          {error && <p className="client-compte__error" role="alert">{error}</p>}
-          {success && <p className="client-compte__success" role="status">{success}</p>}
+          <form className="client-compte__profile-form" onSubmit={onSubmit}>
+            <div className="client-compte__fields">
+              <div className="client-compte__field">
+                <label htmlFor="cp-prenom">Prénom</label>
+                <input
+                  id="cp-prenom"
+                  type="text"
+                  value={profileForm.prenom}
+                  onChange={(e) => onChange({ prenom: e.target.value })}
+                  autoComplete="given-name"
+                />
+              </div>
+              <div className="client-compte__field">
+                <label htmlFor="cp-nom">Nom</label>
+                <input
+                  id="cp-nom"
+                  type="text"
+                  value={profileForm.nom}
+                  onChange={(e) => onChange({ nom: e.target.value })}
+                  autoComplete="family-name"
+                />
+              </div>
+              <div className="client-compte__field">
+                <label htmlFor="cp-tel">Téléphone</label>
+                <input
+                  id="cp-tel"
+                  type="tel"
+                  value={profileForm.telephone}
+                  onChange={(e) => onChange({ telephone: e.target.value })}
+                  autoComplete="tel"
+                />
+              </div>
+              <div className="client-compte__field">
+                <label htmlFor="cp-email">
+                  Email
+                  <span className="client-compte__field-hint">Géré par votre compte</span>
+                </label>
+                <input id="cp-email" type="email" value={email} disabled />
+              </div>
+            </div>
 
-          <div className="client-compte__form-actions">
-            <button
-              type="submit"
-              className="client-compte__btn client-compte__btn--primary"
-              disabled={saving}
-            >
-              {saving ? 'Enregistrement…' : 'Enregistrer les modifications'}
-            </button>
-          </div>
-        </form>
+            {error && <p className="client-compte__error" role="alert">{error}</p>}
+            {success && <p className="client-compte__success" role="status">{success}</p>}
+
+            <div className="client-compte__form-actions">
+              <button
+                type="submit"
+                className="client-compte__btn client-compte__btn--primary"
+                disabled={saving}
+              >
+                {saving ? 'Enregistrement…' : 'Enregistrer les modifications'}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </section>
   );

@@ -24,7 +24,13 @@ const MAX_VISITOR_ID = 64;
 const SIG_HEX_LENGTH = 64;
 
 function trackSecret(): string {
-  return process.env.BOOST_TRACK_SECRET || process.env.ADMIN_JWT_SECRET || 'ilehya-boost-track';
+  // Fail-closed : un secret en dur public permettrait de forger des cookies
+  // visiteur et de contourner la déduplication (donc de vider un budget boost).
+  const secret = process.env.BOOST_TRACK_SECRET || process.env.ADMIN_JWT_SECRET;
+  if (!secret) {
+    throw new Error('BOOST_TRACK_SECRET (ou ADMIN_JWT_SECRET) est requis pour signer les cookies de suivi');
+  }
+  return secret;
 }
 
 function signature(visitorId: string): string {

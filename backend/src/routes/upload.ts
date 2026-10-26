@@ -5,6 +5,7 @@ import multer from 'multer';
 import sharp from 'sharp';
 import { supabaseAdmin } from '../config/supabase';
 import { requireClerkOrAdminAuth, requireAdminOrGerant } from '../middleware/clerkAuth';
+import { sanitizeOwnerId } from '../utils/verificationStorage';
 import {
   checkApartmentImage,
   IMAGE_CHECK_REJECT_MESSAGE,
@@ -113,7 +114,13 @@ router.post('/', requireClerkOrAdminAuth, requireAdminOrGerant, handleUpload, as
       uploadExtension = extname(file.originalname).slice(1).toLowerCase();
     }
 
-    const fileName = `${randomUUID()}.${uploadExtension}`;
+    // Bucket privé de vérification : chaque objet est rangé sous le préfixe de
+    // son propriétaire (id Clerk). Le chemin retourné est ensuite vérifié à
+    // l'enregistrement du document (routes/gerants.ts), ce qui interdit à un
+    // gérant de référencer la pièce d'identité d'un autre.
+    const randomName = `${randomUUID()}.${uploadExtension}`;
+    const ownerId = sanitizeOwnerId(req.auth?.userId || 'admin');
+    const fileName = bucket === 'verification-docs' ? `${ownerId}/${randomName}` : randomName;
     const { error } = await supabaseAdmin.storage.from(bucket).upload(fileName, uploadBuffer, {
       contentType: uploadContentType,
       upsert: false,

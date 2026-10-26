@@ -1,23 +1,45 @@
-import CountrySelector from '../components/CountrySelector';
-import LandingBoosts from '../components/LandingBoosts';
-import LandingHero from '../components/LandingHero';
-import LandingSlider from '../components/LandingSlider';
-import LandingTestimonials from '../components/LandingTestimonials';
-import { useRevealOnScroll } from '../hooks/useRevealOnScroll';
+import { useState } from 'react';
+import LandingBackToTop from '../components/landing/LandingBackToTop';
+import LandingCountries from '../components/landing/LandingCountries';
+import LandingFooter from '../components/landing/LandingFooter';
+import LandingHeader from '../components/landing/LandingHeader';
+import LandingHero from '../components/landing/LandingHero';
+import LandingListings from '../components/landing/LandingListings';
+import LandingReviews from '../components/landing/LandingReviews';
+import LandingSlider from '../components/landing/LandingSlider';
+import LandingTopBar from '../components/landing/LandingTopBar';
+import { DEFAULT_COUNTRY, type Country } from '../components/landing/data';
 
-// Page d'accueil racine — squelette repris de CoinAfrique :
-// hero + recherche multicritères, choix du pays, annonces sponsorisées,
-// carrousel, témoignages.
 export default function LandingPage() {
-  useRevealOnScroll();
+  const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
+
+  const focusSearch = () => {
+    const input = document.getElementById('acc-search-keyword');
+    input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    input?.focus({ preventScroll: true });
+  };
+
+  const scrollToCountries = () => {
+    document.getElementById('ou-louer')?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
-    <main className="landing">
-      <LandingHero />
-      <CountrySelector />
-      <LandingBoosts />
-      <LandingSlider />
-      <LandingTestimonials />
-    </main>
+    <div className="landing">
+      <LandingTopBar />
+      <LandingHeader
+        country={country}
+        onCountryClick={scrollToCountries}
+        onSearchClick={focusSearch}
+      />
+      <main>
+        <LandingHero country={country} onCountryChange={setCountry} />
+        <LandingCountries country={country} onCountryChange={setCountry} />
+        <LandingListings country={country} />
+        <LandingSlider />
+        <LandingReviews />
+      </main>
+      <LandingFooter />
+      <LandingBackToTop />
+    </div>
   );
 }

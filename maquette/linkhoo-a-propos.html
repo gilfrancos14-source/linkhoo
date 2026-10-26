@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>À propos de Linkhoo | La location réinventée</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<!-- CDN : adapté à la démo / au prototypage. En production, installer Tailwind (PostCSS ou CLI). -->
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+<script>
+tailwind.config = { theme: { extend: {
+  fontFamily: { sans: ['Inter', 'sans-serif'], hand: ['Caveat', 'cursive'] },
+  colors: { brand: { DEFAULT: '#6D28D9', dark: '#5B21B6', soft: '#EDE9FE', bg: '#F6F4FD' } }
+} } }
+</script>
+</head>
+<body class="font-sans text-[#1B1535] bg-white antialiased">
+
+<!-- ============ BARRE D'ANNONCE ============ -->
+<div class="bg-gradient-to-r from-[#6D28D9] via-[#7C3AED] to-[#8B5CF6] text-white text-[12px]">
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 h-9 flex items-center justify-between">
+    <p class="flex items-center gap-2"><i data-lucide="megaphone" class="w-4 h-4"></i>Louer en toute confiance, partout en Afrique de l'Ouest !</p>
+    <div class="flex items-center gap-4">
+      <span class="hidden sm:flex items-center gap-1.5 bg-white/15 rounded-full px-3 py-1"><i data-lucide="globe" class="w-3.5 h-3.5"></i>12 pays disponibles</span>
+      <button onclick="this.closest('div.bg-gradient-to-r').remove()" aria-label="Fermer"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HEADER ============ -->
+<header class="bg-white border-b border-slate-100 relative z-20">
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 h-[58px] flex items-center justify-between">
+    <a href="#" class="flex items-center gap-2">
+      <span class="w-9 h-9 rounded-[10px] bg-gradient-to-br from-[#7C3AED] to-[#5B21B6] grid place-items-center text-white"><i data-lucide="house" class="w-5 h-5"></i></span>
+      <span class="text-[28px] font-bold tracking-tight text-brand-dark leading-none">Linkhoo</span>
+    </a>
+    <nav class="hidden md:flex items-center gap-9 text-[13px] font-medium text-slate-700">
+      <a href="#" class="hover:text-brand">Accueil</a>
+      <a href="#" class="text-brand font-semibold border-b-2 border-brand py-[19px] -mb-px">À propos</a>
+      <a href="#" class="hover:text-brand">Contact</a>
+    </nav>
+    <div class="flex items-center gap-4 sm:gap-6">
+      <button class="hidden sm:flex items-center gap-2 border border-slate-200 rounded-lg px-3 h-9 text-[13px] text-slate-700 w-[148px]">
+        <span class="w-[18px] h-[13px] rounded-[2px] overflow-hidden flex"><i class="flex-1 bg-orange-500"></i><i class="flex-1 bg-white border-y border-slate-100"></i><i class="flex-1 bg-green-600"></i></span>
+        Côte d'Ivoire <i data-lucide="chevron-down" class="w-3.5 h-3.5 ml-auto text-slate-400"></i>
+      </button>
+      <button aria-label="Rechercher" class="text-slate-800"><i data-lucide="search" class="w-5 h-5"></i></button>
+      <button id="menuBtn" aria-label="Menu" class="text-slate-800"><i data-lucide="menu" class="w-6 h-6"></i></button>
+    </div>
+  </div>
+  <div id="mobileMenu" class="hidden absolute top-full inset-x-0 bg-white border-b border-slate-100 shadow-lg">
+    <div class="max-w-[1180px] mx-auto px-6 py-4 flex flex-col gap-3 text-sm font-medium">
+      <a href="#">Accueil</a><a href="#" class="text-brand">À propos</a><a href="#">Contact</a><a href="#">FAQ</a>
+    </div>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="relative overflow-hidden bg-gradient-to-b from-[#F9F8FE] to-white">
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 pt-9 pb-14 grid lg:grid-cols-[1.12fr_1fr] gap-10 items-center">
+    <div>
+      <nav class="flex items-center gap-2 text-[12px] text-slate-500 mb-7">
+        <i data-lucide="house" class="w-3.5 h-3.5"></i><a href="#">Accueil</a><i data-lucide="chevron-right" class="w-3 h-3"></i><span>À propos</span>
+      </nav>
+      <span class="inline-block bg-brand-soft text-brand-dark text-[11px] font-semibold rounded-full px-3 py-1 mb-4">À propos de Linkhoo</span>
+      <h1 class="text-[34px] sm:text-[40px] leading-[1.15] font-extrabold tracking-tight text-[#14102B]">
+        Notre mission :<br>rendre la location <span class="text-brand">plus simple,</span><br>
+        <span class="bg-gradient-to-r from-[#6D28D9] to-[#A21CAF] bg-clip-text text-transparent">plus sûre</span> et <span class="bg-gradient-to-r from-[#6D28D9] to-[#A21CAF] bg-clip-text text-transparent">plus proche</span> de vous<span class="text-fuchsia-600">.</span>
+      </h1>
+      <p class="mt-6 text-[14px] leading-[1.75] text-slate-600 max-w-[480px]">
+        <span class="text-slate-800">Linkhoo est une plateforme de location directe qui connecte les voyageurs aux propriétaires, partout en Afrique de l'Ouest.</span><br>
+        Nous croyons qu'un bon séjour commence par une bonne expérience de recherche. C'est pourquoi nous mettons la technologie au service de l'hospitalité et de la confiance.
+      </p>
+      <a href="#" class="mt-8 inline-flex items-center gap-4 bg-brand hover:bg-brand-dark text-white text-[13px] font-semibold rounded-xl px-6 h-11 shadow-lg shadow-brand/25 transition">
+        Découvrir nos marchés <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      </a>
+    </div>
+    <div class="relative">
+      <div class="hidden lg:block absolute -right-16 top-10 w-40 h-72 bg-[#E9E3FB] rounded-[60px] -z-0"></div>
+      <div class="hidden lg:block absolute -left-14 bottom-0 w-32 h-32 bg-[#EDE8FB] rounded-full -z-0"></div>
+      <div class="relative z-10 h-[300px] sm:h-[380px] rounded-[18px] overflow-hidden shadow-xl bg-gradient-to-b from-sky-400 via-sky-200 to-teal-500">
+        <!-- Ressource manquante : placer la photo dans assets/hero.jpg (villa, palmiers, piscine, mer) -->
+        <img src="assets/hero.jpg" alt="Villa avec piscine face à la mer" class="absolute inset-0 w-full h-full object-cover" onerror="this.remove()">
+        <p class="absolute top-8 left-6 font-hand text-[30px] leading-[1.05] text-white -rotate-6 drop-shadow">Des séjours<br>qui rapprochent<br>les gens
+          <svg class="mt-1" width="90" height="10" viewBox="0 0 90 10"><path d="M2 8 Q40 0 88 3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg></p>
+        <div class="absolute bottom-0 right-0 bg-white rounded-tl-2xl rounded-br-[18px] pl-4 pr-8 py-4 flex items-center gap-3 shadow-lg">
+          <span class="w-12 h-12 rounded-full bg-brand grid place-items-center text-white"><i data-lucide="house" class="w-6 h-6"></i></span>
+          <div><p class="font-bold text-[15px]">12 pays</p><p class="text-[11px] text-slate-500">en Afrique de l'Ouest</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MISSION / VISION / VALEURS ============ -->
+<section class="bg-brand-bg border-y border-[#EEEAFB]">
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 py-12 grid md:grid-cols-3 gap-10 md:gap-0">
+    <div class="md:pr-10 md:border-r md:border-[#E6E1F7]">
+      <span class="w-14 h-14 rounded-full bg-brand-soft grid place-items-center text-brand"><i data-lucide="target" class="w-7 h-7"></i></span>
+      <h2 class="mt-6 text-[20px] font-bold">Notre mission</h2>
+      <p class="mt-3 text-[13px] leading-[1.9] text-slate-500 max-w-[260px]">Simplifier l'accès à la location de logements et d'hébergements en Afrique de l'Ouest en offrant une plateforme fiable, intuitive et accessible à tous.</p>
+    </div>
+    <div class="md:px-10 md:border-r md:border-[#E6E1F7]">
+      <span class="w-14 h-14 rounded-full bg-brand-soft grid place-items-center text-brand"><i data-lucide="eye" class="w-7 h-7"></i></span>
+      <h2 class="mt-6 text-[20px] font-bold">Notre vision</h2>
+      <p class="mt-3 text-[13px] leading-[1.9] text-slate-500 max-w-[270px]">Devenir la référence de la location directe en Afrique de l'Ouest, en connectant des millions de personnes à des logements de qualité, partout et à tout moment.</p>
+    </div>
+    <div class="md:pl-10">
+      <span class="w-14 h-14 rounded-full bg-brand-soft grid place-items-center text-brand"><i data-lucide="gem" class="w-7 h-7"></i></span>
+      <h2 class="mt-6 text-[20px] font-bold">Nos valeurs</h2>
+      <ul class="mt-3 space-y-[7px] text-[13px] text-slate-600">
+        <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-brand"></i>Confiance</li>
+        <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-brand"></i>Proximité</li>
+        <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-brand"></i>Simplicité</li>
+        <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-brand"></i>Innovation</li>
+        <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-brand"></i>Impact local</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CHIFFRES ============ -->
+<section class="bg-white">
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 py-12 grid lg:grid-cols-[0.8fr_1.6fr] gap-10 items-center">
+    <div>
+      <span class="inline-block bg-brand-soft text-brand-dark text-[11px] font-semibold rounded-full px-3 py-1 mb-3">En quelques chiffres</span>
+      <h2 class="text-[28px] leading-[1.15] font-extrabold tracking-tight">Une plateforme qui <span class="text-brand">grandit avec vous</span></h2>
+      <p class="mt-5 text-[13px] leading-[1.8] text-slate-500 max-w-[260px]">Depuis notre lancement, nous accompagnons des milliers de voyageurs et de propriétaires à travers l'Afrique de l'Ouest.</p>
+      <a href="#" class="mt-6 inline-flex items-center gap-3 bg-brand hover:bg-brand-dark text-white text-[12px] font-semibold rounded-xl px-5 h-10 transition">Nous rejoindre <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 lg:gap-4">
+      <div class="bg-[#F3F1FC] rounded-xl px-3 py-6 text-center"><span class="w-10 h-10 mx-auto rounded-full bg-brand-soft grid place-items-center text-brand"><i data-lucide="house" class="w-5 h-5"></i></span><p class="mt-4 text-[26px] font-extrabold text-brand-dark leading-none">12</p><p class="mt-2 text-[13px] font-medium">pays couverts</p><p class="mt-3 text-[10px] text-slate-400">Du Sénégal au Togo</p></div>
+      <div class="bg-[#F3F1FC] rounded-xl px-3 py-6 text-center"><span class="w-10 h-10 mx-auto rounded-full bg-brand-soft grid place-items-center text-brand"><i data-lucide="users" class="w-5 h-5"></i></span><p class="mt-4 text-[26px] font-extrabold text-brand-dark leading-none">+ 50 000</p><p class="mt-2 text-[13px] font-medium">voyageurs</p><p class="mt-3 text-[10px] text-slate-400">nous font confiance</p></div>
+      <div class="bg-[#F3F1FC] rounded-xl px-3 py-6 text-center"><span class="w-10 h-10 mx-auto rounded-full bg-brand-soft grid place-items-center text-brand"><i data-lucide="building-2" class="w-5 h-5"></i></span><p class="mt-4 text-[26px] font-extrabold text-brand-dark leading-none">+ 10 000</p><p class="mt-2 text-[13px] font-medium">annonces</p><p class="mt-3 text-[10px] text-slate-400">de logements et chambres</p></div>
+      <div class="bg-[#F3F1FC] rounded-xl px-3 py-6 text-center"><span class="w-10 h-10 mx-auto rounded-full bg-brand-soft grid place-items-center text-brand"><i data-lucide="shield-check" class="w-5 h-5"></i></span><p class="mt-4 text-[26px] font-extrabold text-brand-dark leading-none">99%</p><p class="mt-2 text-[13px] font-medium">de satisfaction</p><p class="mt-3 text-[10px] text-slate-400">de nos utilisateurs</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ POURQUOI CHOISIR LINKHOO ============ -->
+<section class="bg-gradient-to-b from-[#F8F7FD] to-[#F3F1FC]">
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 py-12 grid lg:grid-cols-[0.75fr_1.7fr] gap-10 items-center">
+    <div>
+      <span class="inline-block bg-brand-soft text-brand-dark text-[11px] font-semibold rounded-full px-3 py-1 mb-3">Pourquoi choisir Linkhoo ?</span>
+      <h2 class="text-[28px] leading-[1.15] font-extrabold tracking-tight">Une <span class="text-brand">expérience unique</span></h2>
+      <p class="mt-5 text-[13px] leading-[1.8] text-slate-500 max-w-[260px]">Nous ne sommes pas juste une plateforme de location.<br>Nous sommes votre allié pour des séjours réussis.</p>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="bg-white border border-[#ECE8F8] rounded-xl p-4 shadow-sm"><span class="w-11 h-11 rounded-xl bg-green-100 grid place-items-center text-green-600"><i data-lucide="shield-check" class="w-6 h-6"></i></span><h3 class="mt-5 text-[13px] font-bold">Paiement sécurisé</h3><p class="mt-2 text-[11px] leading-[1.6] text-slate-500">Transactions protégées et fiables.</p></div>
+      <div class="bg-white border border-[#ECE8F8] rounded-xl p-4 shadow-sm"><span class="w-11 h-11 rounded-xl bg-brand-soft grid place-items-center text-brand"><i data-lucide="zap" class="w-6 h-6"></i></span><h3 class="mt-5 text-[13px] font-bold">Réservation instantanée</h3><p class="mt-2 text-[11px] leading-[1.6] text-slate-500">Réservez en quelques clics, sans stress.</p></div>
+      <div class="bg-white border border-[#ECE8F8] rounded-xl p-4 shadow-sm"><span class="w-11 h-11 rounded-xl bg-orange-100 grid place-items-center text-orange-500"><i data-lucide="headphones" class="w-6 h-6"></i></span><h3 class="mt-5 text-[13px] font-bold">Service client réactif</h3><p class="mt-2 text-[11px] leading-[1.6] text-slate-500">Une équipe à votre écoute 24/7.</p></div>
+      <div class="bg-white border border-[#ECE8F8] rounded-xl p-4 shadow-sm"><span class="w-11 h-11 rounded-xl bg-indigo-100 grid place-items-center text-indigo-600"><i data-lucide="map" class="w-6 h-6"></i></span><h3 class="mt-5 text-[13px] font-bold">Ancrage local</h3><p class="mt-2 text-[11px] leading-[1.6] text-slate-500">Une connaissance unique des marchés de la région.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ÉQUIPE ============ -->
+<section class="bg-white">
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 pt-12 pb-8 grid lg:grid-cols-[0.8fr_1.45fr] gap-10 items-start">
+    <div>
+      <span class="inline-block bg-brand-soft text-brand-dark text-[11px] font-semibold rounded-full px-3 py-1 mb-3">Notre équipe</span>
+      <h2 class="text-[28px] leading-[1.15] font-extrabold tracking-tight">Des passionnés derrière <span class="text-brand">Linkhoo</span></h2>
+      <p class="mt-5 text-[13px] leading-[1.8] text-slate-500 max-w-[270px]">Nous sommes une équipe de jeunes professionnels, unis par une même ambition : faire de la location directe une réalité accessible à tous en Afrique de l'Ouest.</p>
+      <div class="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div><span class="w-11 h-11 rounded-full bg-brand-soft grid place-items-center text-brand"><i data-lucide="lightbulb" class="w-5 h-5"></i></span><p class="mt-3 text-[12px] font-bold">Innovation</p><p class="text-[10px] text-slate-400">au quotidien</p></div>
+        <div><span class="w-11 h-11 rounded-full bg-brand-soft grid place-items-center text-brand"><i data-lucide="user-round" class="w-5 h-5"></i></span><p class="mt-3 text-[12px] font-bold">Proximité</p><p class="text-[10px] text-slate-400">avec nos utilisateurs</p></div>
+        <div><span class="w-11 h-11 rounded-full bg-brand-soft grid place-items-center text-brand"><i data-lucide="clipboard-check" class="w-5 h-5"></i></span><p class="mt-3 text-[12px] font-bold">Engagement</p><p class="text-[10px] text-slate-400">pour la région</p></div>
+        <div><span class="w-11 h-11 rounded-full bg-brand-soft grid place-items-center text-brand"><i data-lucide="badge-check" class="w-5 h-5"></i></span><p class="mt-3 text-[12px] font-bold">Excellence</p><p class="text-[10px] text-slate-400">dans tout ce que nous faisons</p></div>
+      </div>
+    </div>
+    <div class="relative h-[260px] sm:h-[340px] lg:h-[300px] rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-slate-300 via-slate-200 to-violet-200">
+      <!-- Ressource manquante : placer la photo dans assets/team.jpg (équipe Linkhoo autour d'un ordinateur) -->
+      <img src="assets/team.jpg" alt="L'équipe Linkhoo" class="absolute inset-0 w-full h-full object-cover" onerror="this.remove()">
+      <p class="absolute top-8 right-6 font-hand text-[26px] leading-[1.05] text-[#1B1535] -rotate-6 text-left">Ensemble pour<br>l'Afrique de l'Ouest<br>plus connectée</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BANDEAU CTA ============ -->
+<section class="max-w-[1180px] mx-auto px-4 sm:px-6 pb-8">
+  <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#5B21B6] via-[#6D28D9] to-[#7C3AED] text-white px-6 sm:px-9 py-6 flex flex-col md:flex-row items-start md:items-center gap-5">
+    <i data-lucide="house" class="w-14 h-14 shrink-0 stroke-[1.5]"></i>
+    <div class="flex-1">
+      <h2 class="text-[18px] font-bold">Prêt à trouver votre prochain séjour ?</h2>
+      <p class="mt-1 text-[12px] text-white/90">Rejoignez des milliers de voyageurs et découvrez des logements uniques en Afrique de l'Ouest.</p>
+    </div>
+    <a href="#" class="inline-flex items-center gap-3 bg-white text-brand-dark text-[12px] font-semibold rounded-lg px-5 h-10 shrink-0">Explorer les annonces <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="bg-[#0E0B1F] text-white">
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 pt-8 pb-6 grid sm:grid-cols-2 lg:grid-cols-[1.3fr_.8fr_.8fr_1.25fr_1.3fr] gap-8">
+    <div>
+      <a href="#" class="flex items-center gap-2"><i data-lucide="house" class="w-7 h-7"></i><span class="text-[24px] font-bold leading-none">Linkhoo</span></a>
+      <p class="mt-3 text-[11px] leading-[1.7] text-slate-400">La location directe en Afrique de l'Ouest.<br>Des milliers de logements, une seule plateforme.</p>
+      <div class="mt-5 flex gap-2.5">
+        <a href="#" aria-label="Facebook" class="w-8 h-8 rounded-full bg-white/10 grid place-items-center"><i data-lucide="facebook" class="w-4 h-4"></i></a>
+        <a href="#" aria-label="X" class="w-8 h-8 rounded-full bg-white/10 grid place-items-center"><i data-lucide="twitter" class="w-4 h-4"></i></a>
+        <a href="#" aria-label="Instagram" class="w-8 h-8 rounded-full bg-white/10 grid place-items-center"><i data-lucide="instagram" class="w-4 h-4"></i></a>
+        <a href="#" aria-label="YouTube" class="w-8 h-8 rounded-full bg-white/10 grid place-items-center"><i data-lucide="youtube" class="w-4 h-4"></i></a>
+        <a href="#" aria-label="LinkedIn" class="w-8 h-8 rounded-full bg-white/10 grid place-items-center"><i data-lucide="linkedin" class="w-4 h-4"></i></a>
+        <a href="#" aria-label="TikTok" class="w-8 h-8 rounded-full bg-white/10 grid place-items-center"><i data-lucide="music-2" class="w-4 h-4"></i></a>
+      </div>
+    </div>
+    <div>
+      <h3 class="text-[12px] font-semibold">Liens utiles</h3>
+      <ul class="mt-3 space-y-2 text-[11px] text-slate-400"><li><a href="#">Accueil</a></li><li><a href="#">À propos</a></li><li><a href="#">Contact</a></li><li><a href="#">FAQ</a></li></ul>
+    </div>
+    <div>
+      <h3 class="text-[12px] font-semibold">Nos marchés</h3>
+      <ul class="mt-3 space-y-2 text-[11px] text-slate-400"><li><a href="#">Sénégal</a></li><li><a href="#">Côte d'Ivoire</a></li><li><a href="#">Bénin</a></li><li><a href="#">Mali</a></li><li>et 7 autres pays</li></ul>
+    </div>
+    <div>
+      <h3 class="text-[12px] font-semibold">Application mobile</h3>
+      <p class="mt-2 text-[10px] leading-[1.6] text-slate-400">Téléchargez notre application<br>pour une meilleure expérience.</p>
+      <div class="mt-3 flex gap-2">
+        <a href="#" class="flex items-center gap-2 border border-white/30 rounded-md bg-black px-3 h-9"><i data-lucide="apple" class="w-5 h-5 fill-white"></i><span class="leading-none"><span class="block text-[7px] text-slate-300">Disponible sur</span><span class="text-[12px] font-semibold">App Store</span></span></a>
+        <a href="#" class="flex items-center gap-2 border border-white/30 rounded-md bg-black px-3 h-9"><i data-lucide="play" class="w-4 h-4 fill-emerald-400 text-emerald-400"></i><span class="leading-none"><span class="block text-[7px] text-slate-300">Disponible sur</span><span class="text-[12px] font-semibold">Google Play</span></span></a>
+      </div>
+    </div>
+    <div>
+      <h3 class="text-[12px] font-semibold">Newsletter</h3>
+      <p class="mt-2 text-[10px] leading-[1.6] text-slate-400">Restez informé de nos nouveautés<br>et offres exclusives.</p>
+      <form class="mt-3 flex h-9 rounded-md overflow-hidden" onsubmit="return false">
+        <input type="email" placeholder="Votre adresse e-mail" class="flex-1 min-w-0 bg-white text-slate-800 text-[10px] px-3 outline-none placeholder:text-slate-400">
+        <button class="w-10 bg-brand grid place-items-center" aria-label="Envoyer"><i data-lucide="send" class="w-4 h-4"></i></button>
+      </form>
+    </div>
+  </div>
+  <div class="max-w-[1180px] mx-auto px-4 sm:px-6 pb-6 pt-8 flex flex-col md:flex-row md:items-center justify-between gap-3 text-[10px] text-slate-400">
+    <p>© 2025 Linkhoo. Tous droits réservés.</p>
+    <ul class="flex flex-wrap items-center gap-y-2 divide-x divide-white/20">
+      <li class="px-3 first:pl-0"><a href="#">Mentions légales</a></li>
+      <li class="px-3"><a href="#">Conditions d'utilisation</a></li>
+      <li class="px-3"><a href="#">Politique de confidentialité</a></li>
+      <li class="px-3 pr-0"><a href="#">Aide</a></li>
+    </ul>
+  </div>
+</footer>
+
+<!-- Retour en haut -->
+<button id="toTop" aria-label="Retour en haut" class="fixed bottom-6 right-6 w-12 h-12 rounded-full bg-brand hover:bg-brand-dark text-white grid place-items-center shadow-lg shadow-brand/40 z-30">
+  <i data-lucide="arrow-up" class="w-5 h-5"></i>
+</button>
+
+<script>
+  lucide.createIcons();
+  document.getElementById('menuBtn').addEventListener('click', () => document.getElementById('mobileMenu').classList.toggle('hidden'));
+  document.getElementById('toTop').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+</script>
+</body>
+</html>

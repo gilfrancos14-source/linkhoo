@@ -9,6 +9,7 @@ import { isQualifiedGerantUser } from '../utils/gerantAccess';
 import { isPremiumActive } from '../utils/premium';
 import { fetchAllRows } from '../utils/fetchAll';
 import { calculateMontant, unitFromPriceUnit } from '../utils/duration';
+import { RESERVATION_COLUMNS } from '../utils/selects';
 import {
   clientReservationQuerySchema,
   reservationCheckQuerySchema,
@@ -64,7 +65,7 @@ router.get('/', requireClerkAuth, async (req: Request, res: Response, next: Next
     const data = await fetchAllRows<any>((from, to) =>
       supabaseAdmin
         .from('reservations')
-        .select('*')
+        .select(RESERVATION_COLUMNS)
         .in('room_id', ids)
         .order('created_at', { ascending: false })
         .order('id', { ascending: true })
@@ -155,7 +156,7 @@ router.post('/', reserveLimiter, async (req: Request, res: Response, next: NextF
     if (clientKey) {
       const { data: replayed, error: replayError } = await supabaseAdmin
         .from('reservations')
-        .select('*')
+        .select(RESERVATION_COLUMNS)
         .eq('client_key', clientKey)
         .maybeSingle();
       if (replayError) throw replayError;
@@ -208,7 +209,7 @@ router.post('/', reserveLimiter, async (req: Request, res: Response, next: NextF
       if (clientKey && msg.includes('duplicate key') && msg.includes('client_key')) {
         const { data: winner } = await supabaseAdmin
           .from('reservations')
-          .select('*')
+          .select(RESERVATION_COLUMNS)
           .eq('client_key', clientKey)
           .maybeSingle();
         if (winner) return res.status(200).json(winner);
@@ -300,7 +301,7 @@ router.patch('/:id', requireClerkAuth, async (req: Request, res: Response, next:
         .from('reservations')
         .update({ statut: parsedBody.data.statut, responded_at: new Date().toISOString() })
         .eq('id', parsedParams.data.id)
-        .select()
+        .select(RESERVATION_COLUMNS)
         .maybeSingle();
       if (error) throw error;
       data = updated;

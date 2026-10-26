@@ -9,6 +9,7 @@ import {
   escapadeCreateSchema,
   escapadeUpdateSchema,
 } from '../validations/escapade';
+import { ESCAPADE_COLUMNS } from '../utils/selects';
 
 const router = Router();
 
@@ -24,7 +25,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
     const { data, error } = await supabasePublic
       .from('escapades')
-      .select('*')
+      .select(ESCAPADE_COLUMNS)
       .eq('market', market)
       .order('created_at', { ascending: true })
       .order('id', { ascending: true });
@@ -46,7 +47,7 @@ router.post('/', requireAdminAuth, requirePermission('escapades'), async (req: R
     const { data, error } = await supabaseAdmin
       .from('escapades')
       .insert({ id: randomUUID(), ...parsedBody.data })
-      .select()
+      .select(ESCAPADE_COLUMNS)
       .single();
     if (error) throw error;
     res.status(201).json(data);
@@ -67,7 +68,7 @@ router.put('/:id', requireAdminAuth, requirePermission('escapades'), async (req:
       .from('escapades')
       .update(parsedBody.data)
       .eq('id', parsedParams.data.id)
-      .select()
+      .select(ESCAPADE_COLUMNS)
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Escapade introuvable' });

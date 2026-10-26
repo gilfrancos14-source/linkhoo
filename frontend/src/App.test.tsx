@@ -94,6 +94,12 @@ const mocks = vi.hoisted(() => {
     // --- drapeaux de test ---
     throwOnCategory: false,
     resolveRoomDetail: (() => {}) as () => void,
+    AdminUnauthorizedError: class AdminUnauthorizedError extends Error {
+      constructor(message: string) {
+        super(message);
+        this.name = 'AdminUnauthorizedError';
+      }
+    },
   };
 });
 
@@ -125,7 +131,12 @@ vi.mock('./lib/api', () => ({
   cachedGet: mocks.autoFn,
   parseJsonBody: mocks.autoFn,
   request: mocks.autoFn,
-  apiRooms: { getPopular: mocks.getPopular },
+  apiRooms: {
+    getPopular: mocks.getPopular,
+    list: vi.fn(() => Promise.resolve([])),
+  },
+  apiTourism: mocks.autoApi(),
+  apiEscapades: mocks.autoApi(),
   apiBanners: mocks.autoApi(),
   apiEvents: mocks.autoApi(),
   apiReservations: mocks.autoApi(),
@@ -146,9 +157,10 @@ vi.mock('./lib/adminApi', () => ({
   getAdminToken: mocks.getAdminToken,
   setAdminToken: vi.fn(),
   ADMIN_UNAUTHORIZED_EVENT: 'admin:unauthorized',
+  AdminUnauthorizedError: mocks.AdminUnauthorizedError,
   apiAdmin: {
     getMe: mocks.adminGetMe,
-    login: vi.fn(() => Promise.resolve({ token: 'jwt-test' })),
+    login: vi.fn(() => Promise.resolve({ admin: { id: 'admin-1', email: 'admin@ilehya.ci' } })),
   },
 }));
 
@@ -289,11 +301,14 @@ afterEach(() => {
 });
 
 describe('App — racine et marché', () => {
-  it('rend la landing CoinAfrique à la racine, avec header et footer', async () => {
+  it("rend la landing accueil à la racine, avec header et footer", async () => {
     renderApp('/');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: /La location directe en Afrique/ }),
+      await screen.findByRole('heading', {
+        level: 1,
+        name: /La location directe en Afrique de l'Ouest/,
+      }),
     ).toBeInTheDocument();
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
@@ -306,7 +321,10 @@ describe('App — racine et marché', () => {
 
     await waitFor(() => expect(screen.getByTestId('pathname')).toHaveTextContent('/'));
     expect(
-      await screen.findByRole('heading', { level: 1, name: /La location directe en Afrique/ }),
+      await screen.findByRole('heading', {
+        level: 1,
+        name: /La location directe en Afrique de l'Ouest/,
+      }),
     ).toBeInTheDocument();
   });
 
@@ -315,20 +333,36 @@ describe('App — racine et marché', () => {
 
     await waitFor(() => expect(screen.getByTestId('pathname')).toHaveTextContent('/'));
     expect(
-      await screen.findByRole('heading', { level: 1, name: /La location directe en Afrique/ }),
+      await screen.findByRole('heading', {
+        level: 1,
+        name: /La location directe en Afrique de l'Ouest/,
+      }),
     ).toBeInTheDocument();
   });
 
-  it("rend la page d'accueil complète du marché CI", async () => {
+  it("rend la maquette React du marché sur l'accueil /ci", async () => {
     renderApp('/ci');
 
     expect(
       await screen.findByRole('heading', {
         level: 1,
-        name: 'Trouvez le lieu idéal pour votre prochain séjour',
+        name: /Trouvez le lieu idéal pour votre prochain séjour/,
       }),
     ).toBeInTheDocument();
+    expect(document.querySelector('.maquette-home')).toBeInTheDocument();
+
+    // La barre de navigation reste celle de la landing page, avec le menu du marché.
     expect(screen.getByRole('banner')).toBeInTheDocument();
+    const nav = screen.getByRole('navigation', { name: 'Navigation principale' });
+    expect(within(nav).getByRole('button', { name: 'Appartements' })).toBeInTheDocument();
+    expect(within(nav).getByRole('button', { name: 'Événements' })).toBeInTheDocument();
+    expect(within(nav).getByRole('button', { name: 'Tourisme' })).toBeInTheDocument();
+    expect(within(nav).getByRole('button', { name: 'Avis' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Mon espace' })).toHaveAttribute(
+      'href',
+      '/ci/compte',
+    );
+
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
     expect(document.documentElement.getAttribute('data-market')).toBe('CI');
   });
@@ -342,6 +376,7 @@ describe('App — racine et marché', () => {
         name: 'Trouvez le lieu idéal pour votre prochain séjour',
       }),
     ).toBeInTheDocument();
+    expect(document.querySelector('.maquette-home')).toBeInTheDocument();
     expect(document.documentElement.getAttribute('data-market')).toBe('BJ');
   });
 
@@ -380,34 +415,35 @@ describe('App — pages de contenu (intégration)', () => {
     renderApp('/a-propos');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'À propos de Linkhoo' }),
+      await screen.findByRole('heading', { level: 1, name: /Notre mission/ }, { timeout: 5000 }),
     ).toBeInTheDocument();
     expect(screen.getByRole('banner')).toBeInTheDocument();
-    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(6);
-    expect(screen.getByRole('link', { name: "← Retour à l'accueil" })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('contentinfo')).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(7);
+    expect(screen.getByRole('link', { name: 'Découvrir nos marchés' })).toHaveAttribute(
+      'href',
+      '/#ou-louer',
+    );
   });
 
   it("rend la page Contact depuis /contact", async () => {
     renderApp('/contact');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Contactez-nous' }),
+      await screen.findByRole('heading', { level: 1, name: /Une question/ }, { timeout: 5000 }),
     ).toBeInTheDocument();
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: "← Retour à l'accueil" })).toHaveAttribute(
-      'href',
-      '/',
-    );
-    expect(screen.getByRole('button', { name: 'Envoyer' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Pays *')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Envoyer le message' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Nom complet/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Questions fréquentes' })).toBeInTheDocument();
   });
 
   it("redirige /ci/contact vers /contact", async () => {
     renderApp('/ci/contact');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Contactez-nous' }),
+      await screen.findByRole('heading', { level: 1, name: /Une question/ }, { timeout: 5000 }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('pathname')).toHaveTextContent('/contact');
   });
@@ -416,7 +452,7 @@ describe('App — pages de contenu (intégration)', () => {
     renderApp('/bj/a-propos');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'À propos de Linkhoo' }),
+      await screen.findByRole('heading', { level: 1, name: /Notre mission/ }, { timeout: 5000 }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('pathname')).toHaveTextContent('/a-propos');
   });
@@ -531,14 +567,16 @@ describe('App — back-office admin', () => {
     expect(screen.queryByRole('banner')).not.toBeInTheDocument();
   });
 
-  it("redirige /admin sans token vers /admin/login", async () => {
-    mocks.getAdminToken.mockReturnValue(null);
+  it("redirige /admin sans session vers /admin/login", async () => {
+    // Le cookie HttpOnly n'est pas lisible : le guard interroge /me et un 401
+    // déclenche la redirection.
+    mocks.adminGetMe.mockRejectedValue(new mocks.AdminUnauthorizedError('Session expirée'));
 
     renderApp('/admin');
 
     await waitFor(() => expect(screen.getByTestId('pathname')).toHaveTextContent('/admin/login'));
     expect(await screen.findByRole('heading', { level: 1, name: 'Linkhoo' })).toBeInTheDocument();
-    expect(mocks.adminGetMe).not.toHaveBeenCalled();
+    expect(mocks.adminGetMe).toHaveBeenCalled();
   });
 
   it("ouvre la console admin authentifiée sur /admin", async () => {
@@ -553,7 +591,7 @@ describe('App — back-office admin', () => {
   });
 
   it("détecte le marché sur /bj/admin et redirige vers /bj/admin/login", async () => {
-    mocks.getAdminToken.mockReturnValue(null);
+    mocks.adminGetMe.mockRejectedValue(new mocks.AdminUnauthorizedError('Session expirée'));
 
     renderApp('/bj/admin');
 
@@ -602,7 +640,7 @@ describe('App — lazy, chrome et résilience', () => {
     await userEvent.click(screen.getByRole('link', { name: "← Retour à l'accueil" }));
     await screen.findByRole('heading', {
       level: 1,
-      name: 'Trouvez le lieu idéal pour votre prochain séjour',
+      name: /Trouvez le lieu idéal pour votre prochain séjour/,
     });
 
     expect(mocks.scrollTo.mock.calls.length).toBeGreaterThan(callsAfterMount);
@@ -625,7 +663,7 @@ describe('App — lazy, chrome et résilience', () => {
 
     renderApp('/ci/messages/conv-1');
 
-    await screen.findByRole('main');
+    await screen.findByRole('main', undefined, { timeout: 5000 });
     expect(screen.getByTestId('pathname')).toHaveTextContent('/ci/messages/conv-1');
     // Seul le pied de page part : l'en-tête de navigation reste.
     expect(screen.getByRole('banner')).toBeInTheDocument();

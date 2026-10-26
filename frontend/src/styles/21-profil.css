@@ -78,6 +78,11 @@
 }
 
 /* Avatar */
+.profil-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
 .profil-avatar {
   width: 92px;
   height: 92px;
@@ -103,6 +108,26 @@
 
 .profil-avatar svg {
   color: rgba(255, 255, 255, 0.75);
+}
+
+/* Pastille « vérifié » posée sur l'avatar */
+.profil-avatar__badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  justify-content: center;
+  border-width: 2px;
+  border-color: rgba(255, 255, 255, 0.9);
+  background: #10b981;
+  box-shadow: 0 4px 10px -2px rgba(15, 23, 42, 0.35);
+}
+
+.profil-avatar__badge svg {
+  width: 15px;
+  height: 15px;
 }
 
 /* Hero info */
@@ -616,48 +641,102 @@
 
 @media (max-width: 640px) {
   .profil-hero {
-    padding: 24px 18px;
+    padding: 20px 16px 18px;
     border-radius: 18px;
   }
 
   .profil-hero__content {
-    flex-direction: column;
-    text-align: center;
-    gap: 14px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "avatar main"
+      "meta meta"
+      "badges badges";
+    align-items: center;
+    gap: 14px 14px;
+    text-align: left;
+  }
+
+  .profil-avatar-wrap {
+    grid-area: avatar;
+    align-self: center;
   }
 
   .profil-avatar {
-    width: 76px;
-    height: 76px;
+    width: 72px;
+    height: 72px;
+    border-width: 2.5px;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.25),
+      0 10px 20px -12px rgba(15, 23, 42, 0.45);
+  }
+
+  .profil-avatar__badge {
+    width: 25px;
+    height: 25px;
   }
 
   .profil-avatar span {
-    font-size: 26px;
+    font-size: 25px;
+  }
+
+  .profil-hero__main {
+    grid-area: main;
+    min-width: 0;
   }
 
   .profil-hero__main h2 {
-    font-size: 20px;
+    margin-bottom: 4px;
+    font-size: 19px;
+    line-height: 1.2;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow-wrap: anywhere;
   }
 
   .profil-hero__email {
-    justify-content: center;
-    font-size: 13px;
+    justify-content: flex-start;
+    font-size: 12.5px;
   }
 
   .profil-hero__meta {
-    justify-content: center;
-    margin-top: 10px;
+    grid-area: meta;
+    display: flex;
+    justify-content: flex-start;
+    gap: 8px;
+    margin-top: 0;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
   }
 
   .profil-hero__chip {
+    flex: 1 1 140px;
+    min-width: 0;
+    justify-content: center;
+    padding: 6px 10px;
     font-size: 11.5px;
-    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.16);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
   }
 
   .profil-hero__badges {
+    grid-area: badges;
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+  }
+
+  .profil-hero__badges:empty {
+    display: none;
+  }
+
+  .profil-badge {
+    padding: 6px 12px;
+    font-size: 11.5px;
   }
 
   .profil-layout {

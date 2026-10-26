@@ -161,17 +161,25 @@ export default function ReservationForm({
         </div>
       )}
       {effectiveDateFin && estimatedMontant !== null && (
-        <p className="room-detail__field" style={{ margin: 0, fontSize: '14px', color: 'var(--ink-soft)' }}>
-          Du {formData.dateDebut} au {effectiveDateFin} · {pluralDuree(dureeNombre, unite)} — estimation :{' '}
-          <strong>{priceWithCurrency(estimatedMontant)}</strong>
-        </p>
+        <div className="room-detail__estimate">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+          <p>
+            Du {formData.dateDebut} au {effectiveDateFin} · {pluralDuree(dureeNombre, unite)} — estimation :{' '}
+            <strong>{priceWithCurrency(estimatedMontant)}</strong>
+          </p>
+        </div>
       )}
       {submitError && (
         <p className="room-detail__field-error" role="alert">{submitError}</p>
       )}
       <button type="submit" className="room-detail__submit" disabled={submitting}>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ marginRight: '0.4rem' }}><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
         {submitting ? 'Envoi en cours...' : 'Envoyer la demande'}
       </button>
+      <p className="room-detail__secure">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Vos informations sont sécurisées
+      </p>
     </form>
   );
 }

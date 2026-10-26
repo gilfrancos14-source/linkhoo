@@ -77,6 +77,23 @@ describe('gerantUpdateSchema', () => {
     expect(parsed.success).toBe(false);
   });
 
+  it('accepte la date de naissance et la nationalité', () => {
+    const parsed = gerantUpdateSchema.safeParse({
+      date_of_birth: '1995-03-12',
+      nationality: 'Ivoirienne',
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('refuse une date de naissance invalide ou future', () => {
+    expect(gerantUpdateSchema.safeParse({ date_of_birth: '1995-02-31' }).success).toBe(false);
+    expect(gerantUpdateSchema.safeParse({ date_of_birth: '2999-01-01' }).success).toBe(false);
+  });
+
+  it('refuse une nationalité vide', () => {
+    expect(gerantUpdateSchema.safeParse({ nationality: '   ' }).success).toBe(false);
+  });
+
   it('accepte un objet vide (tous les champs sont facultatifs)', () => {
     const parsed = gerantUpdateSchema.safeParse({});
     expect(parsed.success).toBe(true);
@@ -101,10 +118,15 @@ describe('gerantUpdateSchema', () => {
 });
 
 describe('verificationDocumentTypeSchema', () => {
-  it('accepte les quatre types de document', () => {
-    for (const type of ['national_id', 'selfie', 'id_card_front', 'id_card_back']) {
+  it('accepte les trois types de document', () => {
+    for (const type of ['national_id', 'proof_of_address', 'selfie']) {
       expect(verificationDocumentTypeSchema.safeParse(type).success).toBe(true);
     }
+  });
+
+  it('refuse les anciens types recto/verso', () => {
+    expect(verificationDocumentTypeSchema.safeParse('id_card_front').success).toBe(false);
+    expect(verificationDocumentTypeSchema.safeParse('id_card_back').success).toBe(false);
   });
 
   it('refuse un type inconnu', () => {

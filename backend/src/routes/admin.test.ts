@@ -119,7 +119,7 @@ describe('POST /api/admin/login', () => {
     expect(res.status).toBe(401);
   });
 
-  it('200 : renvoie un jeton signé', async () => {
+  it('200 : pose un cookie HttpOnly et ne renvoie aucun jeton', async () => {
     admins = fakeChain({
       data: {
         id: 'a1',
@@ -137,13 +137,50 @@ describe('POST /api/admin/login', () => {
       .send({ email: 'admin@test.ci', password: 'Admin123!' });
 
     expect(res.status).toBe(200);
-    expect(typeof res.body.token).toBe('string');
+    expect(res.body.token).toBeUndefined();
+    const cookie = res.headers['set-cookie']?.[0] ?? '';
+    expect(cookie).toContain('admin_token=');
+    expect(cookie).toContain('HttpOnly');
+    expect(cookie).toContain('SameSite=Strict');
     expect(res.body.admin).toEqual({
       id: 'a1',
       email: 'admin@test.ci',
       nom: 'Admin',
       prenom: 'Test',
     });
+  });
+
+  it('POST /logout efface le cookie de session', async () => {
+    const res = await request(app).post('/api/admin/logout');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ ok: true });
+    expect(res.headers['set-cookie']?.[0] ?? '').toContain('admin_token=;');
+  });
+});
+
+describe('requireAdminAuth via cookie', () => {
+  it('200 quand le cookie porte un jeton valide', async () => {
+    admins = fakeChain({
+      data: { id: 'admin-1', email: 'admin@test.ci', nom: 'Admin', prenom: 'Test' },
+      error: null,
+    });
+    stubTables();
+
+    const res = await request(app)
+      .get('/api/admin/me')
+      .set('Cookie', `admin_token=${adminToken()}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.email).toBe('admin@test.ci');
+  });
+
+  it('401 quand le cookie porte un jeton invalide', async () => {
+    const res = await request(app)
+      .get('/api/admin/me')
+      .set('Cookie', 'admin_token=jeton-absurde');
+
+    expect(res.status).toBe(401);
   });
 });
 
@@ -350,9 +387,9 @@ describe('GET /api/admin/gerants/:id/documents', () => {
   });
 
   it('200 : renouvelle les URL signées', async () => {
-    gerants = fakeChain({ data: { id: 'g1' }, error: null });
+    gerants = fakeChain({ data: { id: 'g1', clerk_user_id: 'user_1' }, error: null });
     documents = fakeChain({
-      data: [{ id: 'doc-1', file_path: 'verification-docs/front.webp', file_url: 'ancienne' }],
+      data: [{ id: 'doc-1', file_path: 'user_1/front.webp', file_url: 'ancienne' }],
       error: null,
     });
     stubTables();
@@ -363,10 +400,27 @@ describe('GET /api/admin/gerants/:id/documents', () => {
 
     expect(res.status).toBe(200);
     expect(supabaseStorage().createSignedUrl).toHaveBeenCalledWith(
-      'verification-docs/front.webp',
+      'user_1/front.webp',
       3600,
     );
     expect(res.body[0].file_url).toBe('https://storage.test/signed/fichier-test');
+  });
+
+  it('200 : ne signe pas un chemin appartenant à un autre gérant', async () => {
+    gerants = fakeChain({ data: { id: 'g1', clerk_user_id: 'user_1' }, error: null });
+    documents = fakeChain({
+      data: [{ id: 'doc-1', file_path: 'user_2/front.webp' }],
+      error: null,
+    });
+    stubTables();
+
+    const res = await request(app)
+      .get('/api/admin/gerants/g1/documents')
+      .set(auth(adminToken()));
+
+    expect(res.status).toBe(200);
+    expect(supabaseStorage().createSignedUrl).not.toHaveBeenCalled();
+    expect(res.body[0].file_url).toBeNull();
   });
 });
 

@@ -35,6 +35,8 @@ function makeBoost(overrides: Partial<AdminBoostItem> = {}): AdminBoostItem {
     display_status: 'live',
     budget_total: 3000,
     spent: 500,
+    clicks_count: 10,
+    impressions_count: 120,
     remaining: 2500,
     starts_at: start,
     ends_at: end,

@@ -1,25 +1,45 @@
 import { useState, useEffect, useCallback, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useUser, useAuth, useClerk } from '@clerk/clerk-react';
+import { useSearchParams } from 'react-router-dom';
+import { useUser, useAuth } from '@clerk/clerk-react';
 import { useHomePath } from '../hooks/useHomePath';
 import { useClientUnread } from '../hooks/useClientUnread';
 import { setAuthTokenGetter, apiClients, apiReviews, type ClientMineReservationData, type ReviewData } from '../lib/api';
 import { getMyReservations, cancelMyReservation } from '../lib/reservations';
 
-import type { Tab, ReviewFormState } from './client-compte/types';
-import CompteRail from './client-compte/CompteRail';
+import type { View, ReviewFormState } from './client-compte/types';
+import ClientAccountLayout from '../components/ClientAccountLayout';
+import OverviewPanel from './client-compte/OverviewPanel';
 import ReservationsPanel from './client-compte/ReservationsPanel';
 import ProfilePanel, { type ProfileFormState } from './client-compte/ProfilePanel';
+
+const VIEW_TITLES: Record<View, string> = {
+  overview: "Vue d'ensemble",
+  stays: 'Mes séjours',
+  profile: 'Mon profil',
+};
+
+function todayLabel(): string {
+  return new Date().toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
 
 export default function ClientComptePage() {
   const homePath = useHomePath();
   const unreadMessages = useClientUnread();
-  const navigate = useNavigate();
   const { user } = useUser();
   const { getToken, isLoaded } = useAuth();
-  const { signOut } = useClerk();
 
-  const [tab, setTab] = useState<Tab>('reservations');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const viewParam = searchParams.get('view');
+  const view: View = viewParam === 'stays' || viewParam === 'profile' ? viewParam : 'overview';
+  const setView = (next: View) => {
+    setSearchParams(next === 'overview' ? {} : { view: next });
+  };
+
   const [reservations, setReservations] = useState<ClientMineReservationData[]>([]);
   const [reviews, setReviews] = useState<ReviewData[]>([]);
   const [reviewsError, setReviewsError] = useState(false);
@@ -90,16 +110,6 @@ export default function ClientComptePage() {
   );
 
   const displayName = firstName || profileForm.prenom || 'à vous';
-  const initials = `${firstName.charAt(0) || profileForm.prenom.charAt(0)}${lastName.charAt(0) || profileForm.nom.charAt(0)}`
-    .toUpperCase() || 'U';
-  const memberSince = user?.createdAt
-    ? new Date(user.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
-    : '';
-  const tabs: { id: Tab; label: string; count: number }[] = [
-    { id: 'reservations', label: 'Mes réservations', count: reservations.length },
-    { id: 'profil', label: 'Mon profil', count: 0 },
-  ];
-  const activeTabLabel = tabs.find((t) => t.id === tab)?.label ?? 'Mon espace';
 
   const handleCancel = async (id: string) => {
     if (!window.confirm('Annuler cette réservation ?')) return;
@@ -174,38 +184,34 @@ export default function ClientComptePage() {
     setProfileForm((prev) => ({ ...prev, ...patch }));
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate(homePath);
-  };
-
   return (
-    <main className="client-compte">
-      <div className="container">
-        <div className="compte-shell">
-
-          <CompteRail
-            initials={initials}
-            displayName={displayName}
-            email={email}
-            tabs={tabs}
-            tab={tab}
-            unreadMessages={unreadMessages}
-            memberSince={memberSince}
-            homePath={homePath}
-            onSelectTab={setTab}
-            onSignOut={handleSignOut}
-          />
-
-          <div className="compte-main">
-            <div className="compte-main__head">
-              <p className="eyebrow">Espace client</p>
-              <h1>{activeTabLabel}</h1>
+    <ClientAccountLayout active={view} staysCount={reservations.length}>
+      <div className="admin-content">
+        <section className="cdash__content">
+          <header className="cdash-top">
+            <div className="cdash-top__lead">
+              <p className="cdash-top__eyebrow">Espace client</p>
+              <h1 className="cdash-top__title">{VIEW_TITLES[view]}</h1>
             </div>
+          </header>
 
-            {error && <p className="client-compte__error" role="alert">{error}</p>}
+          {error && <p className="client-compte__error" role="alert">{error}</p>}
 
-            {tab === 'reservations' && (
+          <div className="cdash__views" id="cdash-panel" role="tabpanel">
+            {view === 'overview' && (
+              <OverviewPanel
+                displayName={displayName}
+                todayLabel={todayLabel()}
+                reservations={reservations}
+                reviewableCount={reviewsError ? 0 : reviewable.length}
+                unreadMessages={unreadMessages}
+                homePath={homePath}
+                onGoToStays={() => setView('stays')}
+                onGoToProfile={() => setView('profile')}
+              />
+            )}
+
+            {view === 'stays' && (
               <ReservationsPanel
                 homePath={homePath}
                 loading={loading}
@@ -226,7 +232,7 @@ export default function ClientComptePage() {
               />
             )}
 
-            {tab === 'profil' && (
+            {view === 'profile' && (
               <ProfilePanel
                 profileForm={profileForm}
                 email={email}
@@ -238,8 +244,8 @@ export default function ClientComptePage() {
               />
             )}
           </div>
-        </div>
+        </section>
       </div>
-    </main>
+    </ClientAccountLayout>
   );
 }

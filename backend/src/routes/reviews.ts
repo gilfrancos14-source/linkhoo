@@ -3,6 +3,10 @@ import { supabaseAdmin } from '../config/supabase';
 import { requireClerkAuth } from '../middleware/clerkAuth';
 import { createClientLimiter } from '../utils/rateLimiters';
 import { reviewCreateSchema, reviewRoomQuerySchema } from '../validations/review';
+import {
+  fetchRoomReviewStats,
+  type RoomReviewStats,
+} from '../services/reviewStats';
 
 const router = Router();
 const reviewsLimiter = createClientLimiter({ prefix: 'reviews' });
@@ -92,13 +96,32 @@ router.get('/featured', reviewsLimiter, async (_req: Request, res: Response, nex
   try {
     const { data, error } = await supabaseAdmin
       .from('reviews')
-      .select('id, client_name, note_appartement, commentaire, created_at, room:rooms(title)')
+      .select(
+        'id, room_id, client_name, note_appartement, commentaire, created_at, room:rooms(title, ville, market)',
+      )
       .not('commentaire', 'is', null)
       .neq('commentaire', '')
       .order('created_at', { ascending: false })
-      .limit(3);
+      .limit(6);
     if (error) throw error;
-    res.json(data || []);
+
+    const rows = Array.isArray(data) ? data : [];
+    const roomIds = rows
+      .map((row) => row.room_id)
+      .filter((id): id is string => typeof id === 'string' && id.length > 0);
+
+    // La note affichée sur une carte est la moyenne de l'appartement, pas la
+    // note individuelle de l'avis cité. Repli côté client si absente.
+    const stats = await fetchRoomReviewStats(roomIds).catch(
+      () => new Map<string, RoomReviewStats>(),
+    );
+
+    res.json(
+      rows.map((row) => ({
+        ...row,
+        room_avg: row.room_id ? (stats.get(row.room_id)?.rating ?? null) : null,
+      })),
+    );
   } catch (err) {
     next(err);
   }

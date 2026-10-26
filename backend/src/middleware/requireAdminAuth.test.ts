@@ -133,6 +133,24 @@ describe('requireAdminAuth', () => {
     expect(res.status).toBe(401);
     expect(res.body.admin).toBeUndefined();
   });
+
+  it('accepte un jeton porté par le cookie HttpOnly admin_token', async () => {
+    const token = signAdminToken({ adminId: 'a7', email: 'cookie@test.ci' });
+    const res = await request(app)
+      .get('/api/secure/me')
+      .set('Cookie', `admin_token=${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.admin).toMatchObject({ adminId: 'a7', email: 'cookie@test.ci' });
+  });
+
+  it('ignore un cookie invalide et reste 401', async () => {
+    const res = await request(app)
+      .get('/api/secure/me')
+      .set('Cookie', 'admin_token=faux');
+
+    expect(res.status).toBe(401);
+  });
 });
 
 describe('signAdminToken', () => {
@@ -150,10 +168,10 @@ describe('signAdminToken', () => {
     expect(res.body.admin).toMatchObject({ adminId: 'a42', email: 'signe@test.ci' });
   });
 
-  it('signe avec une expiration de 24h', () => {
+  it('signe avec une expiration de 8h', () => {
     const token = signAdminToken({ adminId: 'a1', email: 'a1@test.ci' });
     const decoded = jwt.decode(token) as { iat: number; exp: number };
-    expect(decoded.exp - decoded.iat).toBe(86_400);
+    expect(decoded.exp - decoded.iat).toBe(28_800);
   });
 
   it('est rejeté quand le secret change après signature', () => {

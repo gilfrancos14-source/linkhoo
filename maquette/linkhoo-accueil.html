@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linkhoo – La location directe en Afrique de l'Ouest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+tailwind.config = { theme: { extend: {
+  fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] },
+  colors: { brand: '#6d3fd9', brand2: '#5b3fd6', ink: '#14122b', soft: '#f6f5fb', navy: '#0e1433' }
+}}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.453.0/dist/umd/lucide.min.js"></script>
+</head>
+<body class="font-sans text-ink bg-white antialiased">
+
+<!-- Bandeau hors ligne -->
+<div id="offline" class="bg-gradient-to-r from-[#6a3fd6] to-[#7b4df0] text-white h-11 text-[13px]">
+  <div class="mx-auto max-w-[1200px] px-4 h-full flex items-center justify-between gap-3">
+    <p class="flex items-center gap-2 min-w-0"><i data-lucide="wifi-off" class="w-4 h-4 shrink-0"></i><span class="truncate">Vous êtes actuellement hors ligne. Certaines fonctionnalités peuvent être limitées.</span></p>
+    <div class="flex items-center gap-4 shrink-0">
+      <button class="hidden sm:flex items-center gap-1.5 bg-white/15 hover:bg-white/25 rounded-full px-4 h-8 font-medium" onclick="location.reload()"><i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>Réessayer</button>
+      <button aria-label="Fermer" onclick="document.getElementById('offline').remove()"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="bg-white border-b border-[#eeecf5] relative z-30">
+  <div class="mx-auto max-w-[1200px] px-4 h-[73px] flex items-center justify-between">
+    <a href="#" class="flex items-center gap-2.5">
+      <span class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#8b5cf6] to-[#5b3fd6] grid place-items-center text-white"><i data-lucide="house" class="w-6 h-6"></i></span>
+      <span class="text-[32px] font-bold tracking-tight bg-gradient-to-r from-[#8b3df0] to-[#5b3fd6] bg-clip-text text-transparent">Linkhoo</span>
+    </a>
+    <nav class="hidden md:flex items-center gap-8 text-[14px] font-medium absolute left-1/2 -translate-x-1/2 ml-[-20px]">
+      <a href="#" class="text-brand relative py-6">Accueil<span class="absolute left-0 right-0 bottom-3 h-0.5 bg-brand rounded"></span></a>
+      <a href="#" class="hover:text-brand">À propos</a>
+      <a href="#" class="hover:text-brand">Contact</a>
+    </nav>
+    <div class="flex items-center gap-5">
+      <button id="countryBtn" class="hidden sm:flex items-center gap-2.5 h-[42px] pl-3 pr-4 rounded-xl border border-[#e5e2f0] text-[14px] w-[190px]">
+        <span class="w-6 h-[17px] rounded-[3px]" style="background:linear-gradient(to right,#f77f00 33%,#fff 33% 66%,#009e60 66%)"></span>
+        <span class="flex-1 text-left">Côte d'Ivoire</span><i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"></i>
+      </button>
+      <button aria-label="Rechercher"><i data-lucide="search" class="w-6 h-6"></i></button>
+      <button id="menuBtn" aria-label="Menu"><i data-lucide="menu" class="w-7 h-7"></i></button>
+    </div>
+  </div>
+  <div id="mobileMenu" class="hidden md:hidden border-t border-[#eeecf5] px-4 py-3 text-[15px] font-medium flex-col gap-3">
+    <a href="#" class="text-brand">Accueil</a><a href="#">À propos</a><a href="#">Contact</a>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="relative min-h-[390px] md:h-[388px] text-white bg-[linear-gradient(90deg,rgba(20,12,8,.88)_0%,rgba(40,22,12,.55)_45%,rgba(0,0,0,0)_100%),linear-gradient(180deg,#3a2314_0%,#6b4a2b_45%,#1f7fa8_100%)]">
+  <div class="mx-auto max-w-[1200px] px-4 h-full flex flex-col justify-between pt-9 pb-8 md:pb-[38px] gap-6">
+    <div>
+      <p class="text-[16px] font-medium">Location de chambres, appartements, villas et plus encore</p>
+      <h1 class="mt-3 text-[34px] md:text-[42px] leading-[1.15] font-bold max-w-[640px]"><span class="bg-gradient-to-r from-[#b36bff] to-[#8f5cf5] bg-clip-text text-transparent">Linkhoo</span> – La location directe en Afrique de l'Ouest</h1>
+      <p class="mt-3 text-[16px] leading-[1.5] max-w-[440px]">Trouvez facilement le logement idéal pour vos séjours, vos voyages ou vos déplacements professionnels.</p>
+    </div>
+    <form onsubmit="return false" class="bg-white text-ink rounded-2xl p-4 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1.15fr_1.25fr_auto] lg:items-center lg:w-[980px] max-w-full shadow-xl">
+      <label class="h-16 rounded-xl border border-[#e8e6f1] px-4 flex items-center gap-3 cursor-text shadow-sm">
+        <i data-lucide="search" class="w-5 h-5 shrink-0"></i>
+        <span class="min-w-0"><span class="block text-[13px] font-medium">Mot-clé</span><input class="w-full text-[11px] placeholder-gray-400 outline-none" placeholder="Ex: villa, hôtel, plage..."></span>
+      </label>
+      <label class="h-16 rounded-xl border border-[#e8e6f1] px-4 flex items-center gap-3 shadow-sm">
+        <i data-lucide="layout-grid" class="w-5 h-5 shrink-0"></i>
+        <span class="flex-1"><span class="block text-[13px] font-medium">Catégorie</span>
+        <select class="w-full text-[11px] text-gray-500 bg-transparent outline-none appearance-none"><option>Toutes les catégories</option><option>Chambres</option><option>Appartements</option><option>Villas</option></select></span>
+        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"></i>
+      </label>
+      <label class="h-16 rounded-xl border border-[#e8e6f1] px-4 flex items-center gap-3 shadow-sm">
+        <span class="w-[22px] h-4 rounded-[3px] shrink-0" style="background:linear-gradient(to right,#f77f00 33%,#fff 33% 66%,#009e60 66%)"></span>
+        <span class="flex-1"><span class="block text-[13px] font-medium">Pays <span class="text-red-500">*</span></span>
+        <select class="w-full text-[11px] text-gray-500 bg-transparent outline-none appearance-none"><option>Côte d'Ivoire</option><option>Bénin</option><option>Sénégal</option><option>Togo</option></select></span>
+        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"></i>
+      </label>
+      <button class="h-[60px] w-[60px] rounded-full bg-brand2 hover:bg-[#4d33c0] text-white grid place-items-center justify-self-end shadow-lg"><i data-lucide="search" class="w-6 h-6"></i></button>
+    </form>
+  </div>
+</section>
+
+<!-- Où louer ? -->
+<section class="bg-soft">
+  <div class="mx-auto max-w-[1200px] px-4 py-9 grid lg:grid-cols-[365px_1fr] gap-8 lg:gap-9 items-start">
+    <div>
+      <p class="flex items-center gap-2 text-[17px] font-semibold"><i data-lucide="map-pin" class="w-5 h-5 text-brand fill-brand/20"></i>Où louer ?</p>
+      <h2 class="mt-1 text-[32px] font-bold leading-tight">Choisissez un Pays</h2>
+      <p class="mt-3 text-[15px] leading-[1.55] text-gray-600 max-w-[300px]">Explorez nos marchés disponibles et trouvez le logement qu'il vous faut dans votre pays.</p>
+      <a href="#" class="mt-6 flex items-center gap-4 rounded-2xl border border-[#d9ccf5] bg-[#ece6fb] p-4 pr-3">
+        <span class="w-11 h-11 rounded-xl bg-gradient-to-br from-[#8b5cf6] to-[#6d3fd9] grid place-items-center text-white shrink-0"><i data-lucide="user-round-cog" class="w-6 h-6"></i></span>
+        <span class="flex-1 text-[13px] leading-snug"><span class="text-brand font-medium">Connectez-vous</span> <b class="font-semibold">pour gérer<br>votre marché</b><span class="block mt-1.5 text-[11px] text-gray-500">Accédez à vos annonces, statistiques et plus encore.</span></span>
+        <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500"></i>
+      </a>
+    </div>
+    <div id="countries" class="grid grid-cols-2 md:grid-cols-4 gap-[17px]"></div>
+  </div>
+</section>
+
+<!-- Chambres en vedette -->
+<section class="bg-white">
+  <div class="mx-auto max-w-[1200px] px-4 pt-6 pb-6">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <p class="flex items-center gap-2 text-[15px] font-medium"><i data-lucide="star" class="w-5 h-5 text-brand fill-brand"></i>Sponsorisé</p>
+        <h2 class="mt-1 text-[26px] font-bold">Des chambres en vedette</h2>
+        <p class="text-[14px] text-gray-600">Les annonces les plus consultées du moment. Profitez-en !</p>
+      </div>
+      <a href="#" class="mt-4 text-[11px] font-medium text-brand flex items-center gap-1.5 whitespace-nowrap">Voir toutes les annonces <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></a>
+    </div>
+    <div id="listings" class="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-[15px]"></div>
+  </div>
+</section>
+
+<!-- Bannière / carrousel -->
+<section id="slider" class="relative h-[366px] text-white overflow-hidden transition-all">
+  <div class="absolute inset-0" id="slideBg"></div>
+  <div class="relative mx-auto max-w-[1200px] px-4 h-full flex flex-col justify-center pb-6 md:pl-[90px] lg:pl-[4px]">
+    <div class="lg:ml-[75px] max-w-[500px]">
+      <p class="text-[14px] font-medium">Découvrez l'Afrique de l'Ouest autrement</p>
+      <h2 class="mt-3 text-[32px] md:text-[34px] font-bold leading-[1.2]">Des séjours inoubliables vous attendent</h2>
+      <p class="mt-4 text-[15px] leading-[1.5] max-w-[400px]">Plages, villes, nature, culture... trouvez le logement parfait pour toutes vos envies.</p>
+      <a href="#" class="mt-5 inline-flex items-center gap-3 h-[46px] px-6 rounded-xl bg-brand2 hover:bg-[#4d33c0] text-[14px] font-semibold shadow-lg">Explorer maintenant <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+    </div>
+  </div>
+  <button id="prev" aria-label="Précédent" class="absolute left-[52px] top-1/2 -translate-y-1/2 w-[38px] h-[38px] rounded-full bg-white text-ink grid place-items-center shadow-lg max-md:left-3"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+  <button id="next" aria-label="Suivant" class="absolute right-[52px] top-1/2 -translate-y-1/2 w-[38px] h-[38px] rounded-full bg-white text-ink grid place-items-center shadow-lg max-md:right-3"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+  <div id="dots" class="absolute bottom-[18px] left-1/2 -translate-x-1/2 flex gap-2.5"></div>
+</section>
+
+<!-- Avis -->
+<section class="bg-white">
+  <div class="mx-auto max-w-[1200px] px-4 pt-6 pb-6">
+    <div class="flex items-start justify-between gap-4">
+      <div class="flex items-start gap-3">
+        <span class="w-[30px] h-[30px] rounded-full bg-brand text-white grid place-items-center mt-0.5"><i data-lucide="messages-square" class="w-4 h-4"></i></span>
+        <div><h2 class="text-[21px] font-bold leading-tight">Nos utilisateurs en parlent</h2><p class="mt-1 text-[14px] text-gray-600">Découvrez les avis de nos voyageurs et de nos hôtes.</p></div>
+      </div>
+      <a href="#" class="mt-2 text-[11px] font-medium text-brand flex items-center gap-1.5 whitespace-nowrap">Voir tous les avis <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></a>
+    </div>
+    <div id="reviews" class="mt-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-[15px]"></div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-navy text-white">
+  <div class="mx-auto max-w-[1200px] px-4 pt-6 pb-5">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-[1.35fr_1fr_1.35fr_1.3fr_1.1fr_.8fr] gap-8 lg:gap-6">
+      <div class="col-span-2 md:col-span-1">
+        <div class="flex items-center gap-2"><span class="w-8 h-8 rounded-lg bg-white text-brand grid place-items-center"><i data-lucide="house" class="w-5 h-5"></i></span><span class="text-[22px] font-bold">Linkhoo</span></div>
+        <p class="mt-3 text-[11px] leading-[1.7] text-gray-300 max-w-[190px]">Linkhoo est la plateforme de location directe en Afrique de l'Ouest. Des milliers de logements pour tous vos séjours.</p>
+        <div class="mt-4 flex gap-4 text-white">
+          <i data-lucide="facebook" class="w-[18px] h-[18px]"></i><span class="text-[16px] leading-[18px] font-bold">𝕏</span><i data-lucide="instagram" class="w-[18px] h-[18px]"></i><i data-lucide="youtube" class="w-[18px] h-[18px]"></i><i data-lucide="linkedin" class="w-[18px] h-[18px]"></i><i data-lucide="music-2" class="w-[18px] h-[18px]"></i>
+        </div>
+      </div>
+      <div>
+        <h3 class="text-[11px] font-semibold">Revue de presse</h3>
+        <div class="mt-3 grid grid-cols-2 gap-x-3 gap-y-3 items-center text-gray-300">
+          <span class="text-[11px] font-bold tracking-wider bg-white/10 rounded px-1.5 py-0.5 w-fit">RTS</span><span class="text-[10px] font-semibold italic">Jeune Afrique</span>
+          <span class="text-[11px] font-bold tracking-wider bg-white/10 rounded px-1.5 py-0.5 w-fit">BBC</span><span class="text-[12px] font-serif">Le Monde</span>
+          <span class="col-span-2 text-[13px] font-semibold">africanews.</span>
+        </div>
+      </div>
+      <div>
+        <h3 class="text-[11px] font-semibold">Application mobile</h3>
+        <p class="mt-2 text-[11px] leading-[1.6] text-gray-300 max-w-[170px]">Téléchargez notre application pour une meilleure expérience.</p>
+        <div class="mt-3 flex gap-2">
+          <a href="#" class="flex items-center gap-1.5 h-[26px] px-2 rounded-md border border-gray-500 bg-black text-[10px] font-medium"><i data-lucide="apple" class="w-3.5 h-3.5"></i>App Store</a>
+          <a href="#" class="flex items-center gap-1.5 h-[26px] px-2 rounded-md border border-gray-500 bg-black text-[10px] font-medium"><i data-lucide="play" class="w-3 h-3 text-green-400 fill-green-400"></i>Google Play</a>
+        </div>
+      </div>
+      <div>
+        <h3 class="text-[11px] font-semibold">Newsletter</h3>
+        <p class="mt-2 text-[11px] leading-[1.6] text-gray-300 max-w-[170px]">Restez informé de nos nouveautés et offres exclusives.</p>
+        <form onsubmit="return false" class="mt-3 flex h-[24px] max-w-[130px] md:max-w-[128px] lg:max-w-[130px] rounded-md overflow-hidden bg-white">
+          <input type="email" placeholder="Votre adresse e-mail" class="flex-1 min-w-0 px-2 text-[8px] text-ink outline-none">
+          <button class="w-6 bg-brand2 grid place-items-center" aria-label="Envoyer"><i data-lucide="send" class="w-3 h-3"></i></button>
+        </form>
+      </div>
+      <div>
+        <h3 class="text-[11px] font-semibold">Liens légaux</h3>
+        <ul class="mt-3 space-y-[9px] text-[10.5px] text-gray-300"><li>Conditions d'utilisation</li><li>Politique de confidentialité</li><li>Mentions légales</li><li>Cookies</li></ul>
+      </div>
+      <div>
+        <h3 class="text-[11px] font-semibold">Compte</h3>
+        <ul class="mt-3 space-y-[9px] text-[10.5px] text-gray-300"><li>Se connecter</li><li>S'inscrire</li><li>Devenir hôte</li><li>Aide</li></ul>
+      </div>
+    </div>
+    <p class="mt-6 text-[10px] text-gray-400">© 2025 Linkhoo. Tous droits réservés.</p>
+  </div>
+</footer>
+
+<button id="toTop" aria-label="Haut de page" class="fixed bottom-10 right-6 lg:right-[52px] w-[38px] h-[38px] rounded-full bg-brand text-white grid place-items-center shadow-lg z-40"><i data-lucide="arrow-up" class="w-5 h-5"></i></button>
+
+<script>
+const H = (a,b,c) => `linear-gradient(${a} 33%,${b} 33% 66%,${c} 66%)`;
+const V = (a,b,c) => `linear-gradient(to right,${a} 33%,${b} 33% 66%,${c} 66%)`;
+const countries = [
+  ['Sénégal', V('#00853f','#fdef42','#e31b23')], ["Côte d'Ivoire", V('#f77f00','#fff','#009e60'), true], ['Bénin', 'linear-gradient(to right,#008751 0 38%,transparent 38%),linear-gradient(#fcd116 50%,#e8112d 50%)'], ['Togo', 'repeating-linear-gradient(#006a4e 0 20%,#ffce00 20% 40%)'],
+  ['Burkina Faso', 'linear-gradient(#ef2b2d 50%,#009e49 50%)'], ['Mali', V('#14b53a','#fcd116','#ce1126')], ['Niger', H('#e05206','#fff','#0db02b')], ['Ghana', H('#ce1126','#fcd116','#006b3f')],
+  ['Guinée', V('#ce1126','#fcd116','#009460')], ['Guinée-Bissau', 'linear-gradient(to right,#ce1126 0 33%,transparent 33%),linear-gradient(#fcd116 50%,#009e49 50%)'], ['Mauritanie', 'linear-gradient(#d01c1f 0 15%,#00a95c 15% 85%,#d01c1f 85%)'], ['Cap-Vert', 'linear-gradient(#003893 0 40%,#fff 40% 45%,#cf2027 45% 55%,#fff 55% 60%,#003893 60%)']
+];
+document.getElementById('countries').innerHTML = countries.map(([n,bg,on]) => `
+  <button class="h-[66px] rounded-xl flex items-center gap-3 px-4 text-[13px] font-medium transition ${on ? 'bg-[#e7e0fa] border border-[#b7a4ee] shadow-sm' : 'bg-white border border-[#ebe9f3] hover:border-[#c9bcf1] shadow-sm'}">
+    <span class="w-[30px] h-[21px] rounded-[3px] shadow-sm shrink-0" style="background:${bg}"></span>
+    <span class="flex-1 text-left truncate">${n}</span>
+    ${on ? '<span class="w-6 h-6 rounded-full bg-[#d6caf6] text-brand grid place-items-center"><i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></span>' : ''}
+  </button>`).join('');
+
+const listings = [
+  ['Abidjan, CI','Studio moderne à Cocody','4.8','124','25 000','#4a3a3a,#c9a27a'],
+  ['Grand-Bassam, CI','Villa avec piscine','4.9','87','75 000','#2e8bb8,#e8d9b5'],
+  ['Yamoussoukro, CI','Chambre privée climatisée','4.7','96','18 000','#6b4a3a,#e5a66b'],
+  ['San Pedro, CI','Appartement vue mer','4.6','73','40 000','#1f86c9,#3aa5a0'],
+  ['Bingerville, CI','Studio cosy','4.8','102','22 000','#5a3d2e,#d9a066'],
+  ['Assinie, CI','Villa de luxe','4.9','63','120 000','#2c8fd0,#f1f1ec']
+];
+document.getElementById('listings').innerHTML = listings.map(([loc,t,r,c,p,g]) => {
+  const [g1,g2] = g.split(',');
+  return `<article class="bg-white rounded-xl border border-[#ebe9f3] shadow-sm overflow-hidden">
+    <div class="relative h-[135px]" style="background:linear-gradient(135deg,${g1},${g2})">
+      <span class="absolute top-2.5 left-2.5 bg-brand text-white text-[10px] font-semibold px-2 py-[3px] rounded-md">Sponsorisé</span>
+      <button class="heart absolute top-2 right-2 w-[26px] h-[26px] rounded-full bg-white/90 text-brand grid place-items-center" aria-label="Favori"><i data-lucide="heart" class="w-4 h-4"></i></button>
+    </div>
+    <div class="px-3.5 pt-3 pb-3.5">
+      <p class="flex items-center gap-1 text-[9.5px] text-gray-500"><i data-lucide="map-pin" class="w-3 h-3"></i>${loc}</p>
+      <h3 class="mt-1.5 text-[12.5px] font-semibold leading-tight truncate">${t}</h3>
+      <p class="mt-2 flex items-center gap-1 text-[10px]"><i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i><b class="font-semibold">${r}</b><span class="text-gray-400">(${c})</span></p>
+      <p class="mt-3 text-[12.5px]"><b class="font-bold">${p} FCFA</b> <span class="text-[10px] text-gray-500">/ nuit</span></p>
+    </div></article>`;
+}).join('');
+document.querySelectorAll('.heart').forEach(b => b.onclick = () => b.classList.toggle('bg-brand') || b.classList.toggle('text-white'));
+
+const reviews = [
+  ['AD','Adama Diallo','Séjour à Abidjan, CI','5.0','Super expérience ! L\'appartement était propre, bien situé et l\'hôte très accueillant. Je recommande à 100% !'],
+  ['MK','Mariama Koné','Séjour à Grand-Bassam, CI','4.8','Un cadre magnifique, idéal pour se reposer. La plage est à quelques minutes. Je reviendrai sans hésiter !'],
+  ['BT','Brice Tchibozo','Séjour à Lomé, TG','4.9','Très bon rapport qualité/prix. Le logement correspondait exactement aux photos. Service au top !'],
+  ['FD','Fatou Diop','Séjour à Dakar, SN','4.7','Je suis restée 5 jours et tout s\'est très bien passé. L\'hôte est disponible et très sympa.'],
+  ['IL','Issa Lamine','Séjour à Cotonou, BJ','4.8','Logement propre, confortable et bien équipé. Je recommande Linkhoo pour vos séjours !'],
+  ['SL','Sophie Laurent','Séjour à Accra, GH','5.0','Une expérience incroyable ! L\'emplacement est parfait et le service client est réactif.']
+];
+document.getElementById('reviews').innerHTML = reviews.map(([i,n,s,r,t]) => `
+  <article class="bg-white rounded-xl border border-[#ebe9f3] shadow-sm p-3.5 h-[172px]">
+    <div class="flex items-center gap-2.5">
+      <span class="w-[34px] h-[34px] rounded-full bg-brand2 text-white text-[11px] font-semibold grid place-items-center shrink-0">${i}</span>
+      <div class="min-w-0"><p class="text-[10.5px] font-semibold truncate">${n}</p><p class="text-[8.5px] text-gray-500 truncate">${s}</p></div>
+    </div>
+    <p class="mt-3 flex items-center gap-1 text-[9px]"><i data-lucide="star" class="w-3 h-3 text-amber-400 fill-amber-400"></i><span class="text-gray-600">${r}</span></p>
+    <p class="mt-2 text-[9.5px] leading-[1.6] text-gray-600"><span class="font-serif text-[14px] leading-none text-ink">“</span>${t}”</p>
+  </article>`).join('');
+
+// Carrousel
+const slides = [
+  'linear-gradient(90deg,rgba(15,10,10,.65),rgba(0,0,0,0) 60%),linear-gradient(180deg,#e9a56a 0%,#a8553a 40%,#1d5b73 75%,#10343f 100%)',
+  'linear-gradient(90deg,rgba(15,10,10,.65),rgba(0,0,0,0) 60%),linear-gradient(180deg,#f2c28a 0%,#d46e4a 40%,#2a6f88 80%)',
+  'linear-gradient(90deg,rgba(15,10,10,.65),rgba(0,0,0,0) 60%),linear-gradient(180deg,#8fc7e8 0%,#3e9bc2 45%,#e8d9b5 100%)',
+  'linear-gradient(90deg,rgba(15,10,10,.65),rgba(0,0,0,0) 60%),linear-gradient(180deg,#6a3d52 0%,#d1704d 45%,#173b4d 100%)'
+];
+let cur = 0, timer;
+const bg = document.getElementById('slideBg'), dots = document.getElementById('dots');
+dots.innerHTML = slides.map((_,i) => `<button aria-label="Slide ${i+1}" data-i="${i}" class="w-2.5 h-2.5 rounded-full border-2 border-white"></button>`).join('');
+function go(i) {
+  cur = (i + slides.length) % slides.length;
+  bg.style.background = slides[cur];
+  dots.querySelectorAll('button').forEach((d,k) => d.className = `w-2.5 h-2.5 rounded-full border-2 ${k === cur ? 'border-brand bg-white' : 'border-white bg-white'}`);
+  dots.querySelectorAll('button').forEach((d,k) => d.style.background = k === cur ? '#6d3fd9' : '#fff');
+  dots.querySelectorAll('button').forEach((d,k) => d.style.borderColor = k === cur ? '#fff' : '#fff');
+}
+const reset = () => { clearInterval(timer); timer = setInterval(() => go(cur + 1), 6000); };
+document.getElementById('prev').onclick = () => { go(cur - 1); reset(); };
+document.getElementById('next').onclick = () => { go(cur + 1); reset(); };
+dots.onclick = e => { const b = e.target.closest('button'); if (b) { go(+b.dataset.i); reset(); } };
+go(0); reset();
+
+// Menu mobile, haut de page, sélection pays
+document.getElementById('menuBtn').onclick = () => { const m = document.getElementById('mobileMenu'); m.classList.toggle('hidden'); m.classList.toggle('flex'); };
+document.getElementById('toTop').onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
+document.getElementById('countries').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  document.querySelectorAll('#countries button').forEach(x => {
+    x.classList.remove('bg-[#e7e0fa]','border-[#b7a4ee]'); x.classList.add('bg-white','border-[#ebe9f3]');
+    x.querySelector('span:last-child')?.matches('.rounded-full') && x.querySelector('span:last-child').remove();
+  });
+  b.classList.remove('bg-white','border-[#ebe9f3]'); b.classList.add('bg-[#e7e0fa]','border-[#b7a4ee]');
+  b.insertAdjacentHTML('beforeend', '<span class="w-6 h-6 rounded-full bg-[#d6caf6] text-brand grid place-items-center"><i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></span>');
+  lucide.createIcons();
+};
+lucide.createIcons();
+</script>
+</body>
+</html>

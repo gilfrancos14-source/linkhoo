@@ -62,6 +62,9 @@ export default function ReservationCard({
             <Glyph>{glyphCalendar}</Glyph>
             {formatStayDates(r.date_debut, r.date_fin)}
           </span>
+          <span className="client-compte__chip client-compte__chip--muted">
+            {r.duree_nombre ?? 1} {r.duree_unite === 'mois' ? 'mois' : (r.duree_nombre ?? 1) > 1 ? 'nuits' : 'nuit'}
+          </span>
           {r.montant ? (
             <span className="client-compte__price">
               {formatPrice(r.montant)}

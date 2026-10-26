@@ -165,7 +165,37 @@ describe('GET /api/reviews/featured', () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
     expect(reviews.not).toHaveBeenCalledWith('commentaire', 'is', null);
-    expect(reviews.limit).toHaveBeenCalledWith(3);
+    expect(reviews.limit).toHaveBeenCalledWith(6);
+  });
+
+  it('ajoute la moyenne de tous les avis de l\'appartement', async () => {
+    const featured = fakeChain({
+      data: [
+        {
+          id: 'r1',
+          room_id: 'room-1',
+          client_name: 'Awa',
+          note_appartement: 3,
+          commentaire: 'Correct',
+          room: { title: 'Studio', ville: 'Abidjan', market: 'CI' },
+        },
+      ],
+      error: null,
+    });
+    const stats = fakeChain({
+      data: [
+        { room_id: 'room-1', note_appartement: 5 },
+        { room_id: 'room-1', note_appartement: 4 },
+      ],
+      error: null,
+    });
+    stubTables({ reviews: [featured, stats] });
+
+    const res = await request(app).get('/api/reviews/featured');
+
+    expect(res.status).toBe(200);
+    expect(res.body[0].room_avg).toBe(4.5);
+    expect(stats.in).toHaveBeenCalledWith('room_id', ['room-1']);
   });
 });
 

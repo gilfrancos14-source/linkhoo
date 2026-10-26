@@ -22,8 +22,9 @@ export default function AdminLogin() {
     setError('');
     setLoading(true);
     try {
-      const { token } = await apiAdmin.login(email, password);
-      setAdminToken(token);
+      await apiAdmin.login(email, password);
+      // Le serveur a posé le cookie HttpOnly ; on ne stocke qu'un indice local.
+      setAdminToken('session');
       navigate(marketSlug ? `/${marketSlug}/admin` : '/admin');
     } catch (err: any) {
       setError(err.message || 'Erreur de connexion');

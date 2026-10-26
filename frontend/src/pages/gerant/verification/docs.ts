@@ -1,6 +1,6 @@
 import type { VerificationDocument } from '../../../lib/api';
 
-export type DocType = 'id_card_front' | 'id_card_back';
+export type DocType = 'national_id' | 'proof_of_address' | 'selfie';
 
 export interface DocConfig {
   title: string;
@@ -18,21 +18,27 @@ export interface UploadState {
 }
 
 export const DOC_LABELS: Record<DocType, DocConfig> = {
-  id_card_front: {
-    title: 'Carte d\'identité — Recto',
-    description: 'Photo du recto de votre carte nationale d\'identité',
-    accept: 'image/*',
-    hint: 'JPG ou PNG · 4 coins visibles, texte lisible',
+  national_id: {
+    title: 'Pièce d\'identité',
+    description: 'Photo de votre pièce d\'identité',
+    accept: 'image/*,.pdf',
+    hint: 'JPG, PNG ou PDF · document lisible',
   },
-  id_card_back: {
-    title: 'Carte d\'identité — Verso',
-    description: 'Photo du verso de votre carte nationale d\'identité',
+  proof_of_address: {
+    title: 'Justificatif de domicile',
+    description: 'Facture d\'eau, d\'électricité ou attestation de domicile',
+    accept: 'image/*,.pdf',
+    hint: 'JPG, PNG ou PDF · moins de 3 mois',
+  },
+  selfie: {
+    title: 'Photo de vous',
+    description: 'Selfie récent, visage bien visible',
     accept: 'image/*',
-    hint: 'JPG ou PNG · 4 coins visibles, texte lisible',
+    hint: 'JPG ou PNG · visage dégagé',
   },
 };
 
-export const DOC_ORDER: DocType[] = ['id_card_front', 'id_card_back'];
+export const DOC_ORDER: DocType[] = ['national_id', 'proof_of_address', 'selfie'];
 
 export interface AddressState {
   url: string;

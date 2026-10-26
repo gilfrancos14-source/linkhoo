@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import AdminLogin from './AdminLogin';
 
 const mocks = vi.hoisted(() => ({
-  login: vi.fn<(email: string, password: string) => Promise<{ token: string }>>(),
+  login: vi.fn<(email: string, password: string) => Promise<{ admin: unknown }>>(),
   setAdminToken: vi.fn<(token: string | null) => void>(),
 }));
 
@@ -64,7 +64,7 @@ async function submitCredentials(
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.login.mockResolvedValue({ token: 'jwt-admin' });
+  mocks.login.mockResolvedValue({ admin: { id: 'a1' } });
 });
 
 afterEach(() => {
@@ -137,7 +137,7 @@ describe('AdminLogin', () => {
     expect(await screen.findByText('Tableau de bord admin')).toBeInTheDocument();
     expect(mocks.login).toHaveBeenCalledTimes(1);
     expect(mocks.login).toHaveBeenCalledWith('admin@linkhoo.ci', 'secret-123');
-    expect(mocks.setAdminToken).toHaveBeenCalledWith('jwt-admin');
+    expect(mocks.setAdminToken).toHaveBeenCalledWith('session');
     expect(screen.getByTestId('path')).toHaveTextContent('/ci/admin');
     expect(mocks.setAdminToken).not.toHaveBeenCalledWith(null);
   });
@@ -187,10 +187,10 @@ describe('AdminLogin', () => {
   });
 
   it("affiche l'état « Connexion... » et désactive le bouton pendant la requête", async () => {
-    let resolveLogin: (value: { token: string }) => void = () => {};
+    let resolveLogin: (value: { admin: unknown }) => void = () => {};
     mocks.login.mockImplementation(
       () =>
-        new Promise<{ token: string }>((resolve) => {
+        new Promise<{ admin: unknown }>((resolve) => {
           resolveLogin = resolve;
         }),
     );
@@ -206,7 +206,7 @@ describe('AdminLogin', () => {
     expect(busy).toBeDisabled();
     expect(screen.queryByText('Tableau de bord admin')).not.toBeInTheDocument();
 
-    resolveLogin({ token: 'jwt-admin' });
+    resolveLogin({ admin: { id: 'a1' } });
     expect(await screen.findByText('Tableau de bord admin')).toBeInTheDocument();
   });
 
@@ -218,7 +218,7 @@ describe('AdminLogin', () => {
     await submitCredentials(user, 'admin@linkhoo.ci', 'secret-123');
     expect(await screen.findByText('Identifiants invalides')).toBeInTheDocument();
 
-    mocks.login.mockResolvedValue({ token: 'jwt-admin' });
+    mocks.login.mockResolvedValue({ admin: { id: 'a1' } });
     await user.click(screen.getByRole('button', { name: 'Se connecter' }));
 
     await waitFor(() => {

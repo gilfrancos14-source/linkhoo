@@ -3,10 +3,11 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { createRateLimitStore } from './utils/rateLimitStore';
 import { skipWriteQuota, userOrIpKey } from './utils/rateLimiters';
 import { readTrackVisitor } from './utils/trackVisitor';
+import { usesAdminCookie } from './utils/adminCookie';
 import { errorHandler } from './middleware/errorHandler';
 import { requireClerkAuth } from './middleware/clerkAuth';
 import type { RawBodyRequest } from './types/express';
@@ -202,6 +203,54 @@ const boostTrackBoostLimiter = rateLimit({
   message: { error: 'Trop de requêtes pour cette campagne, veuillez réessayer plus tard' },
 });
 
+// M4 : un budget clic peut être vidé par une seule IP qui forge de nouvelles
+// identités visiteur (10 cookies / 15 min). On borne en plus les clics
+// facturables par couple IP + campagne : le minting ne suffit plus à financer
+// une rafale. Le plafond reste large pour un NAT légitime.
+const boostClickIpLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  store: createRateLimitStore('boost-click-ip-campaign'),
+  keyGenerator: (req) => {
+    const boostId = String(
+      (req.body as { boost_id?: unknown } | undefined)?.boost_id ?? 'none',
+    );
+    return `${ipKeyGenerator(req.ip ?? '')}:${boostId}`;
+  },
+  message: { error: 'Trop de clics pour cette campagne, veuillez réessayer plus tard' },
+});
+
+// M4 (suite) : le limiteur de campagne ci-dessus (150 / 15 min, impressions ET
+// clics confondus) laisse une campagne vidée très vite en clics. Le clic est
+// l'événement cher (50 F) : on le borne séparément par campagne à 60 / 15 min
+// (≤ 3 000 F, soit le budget minimal) — très au-dessus d'un trafic légitime
+// (une campagne à budget max 100 000 F = 2 000 clics sur 90 jours ≈ 22/jour).
+const boostClickCampaignLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  store: createRateLimitStore('boost-click-campaign'),
+  // Volontairement SANS req.ip : la clé est la campagne ciblée.
+  keyGenerator: (req) => `boost:${String((req.body as { boost_id?: unknown } | undefined)?.boost_id ?? 'none')}`,
+  message: { error: 'Trop de clics pour cette campagne, veuillez réessayer plus tard' },
+});
+
+// F5 : les routes de paiement appellent FedaPay et permettent d'énumérer des
+// transactions. Elles étaient absentes de tout limiteur dédié (le quota global
+// « write » ne comptait que 200 requêtes / 15 min / IP).
+const paymentFlowLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  store: createRateLimitStore('payment-flow'),
+  keyGenerator: userOrIpKey,
+  message: { error: 'Trop de tentatives de paiement, veuillez réessayer plus tard' },
+});
+
 app.disable('x-powered-by');
 // gzip/brotli : les JSON de la home (salles, bannières, événements) perdent
 // ~70 % de poids. À placer avant toutes les routes.
@@ -241,6 +290,17 @@ app.use('/api/premium/webhook', webhookLimiter, express.json({
   },
 }));
 app.use(express.json({ limit: '1mb' }));
+// F4 : une requête admin authentifiée par cookie doit venir d'une origine
+// autorisée. SameSite=Strict bloque déjà le cross-site ; cette garde couvre les
+// navigateurs/proxys qui l'assouplissent et le cas « même site, origine non
+// autorisée ». Les clients Bearer (API, tests) ne sont pas concernés.
+app.use((req, res, next) => {
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
+  if (!usesAdminCookie(req)) return next();
+  const origin = req.get('origin');
+  if (origin && allowedOrigins.includes(origin)) return next();
+  return res.status(403).json({ error: 'Origine non autorisée' });
+});
 app.use('/api', writeLimiter);
 app.use('/api/upload', uploadLimiter);
 // Placés APRÈS express.json() (sinon req.body est encore vide) et AVANT le
@@ -252,6 +312,11 @@ app.use(
   boostIssueLimiter,
   boostTrackIpLimiter,
   boostTrackBoostLimiter,
+);
+app.use('/api/boosts/click', boostClickIpLimiter, boostClickCampaignLimiter);
+app.use(
+  ['/api/boosts/initiate', '/api/boosts/confirm', '/api/premium/confirm'],
+  paymentFlowLimiter,
 );
 
 app.use('/api/rooms', roomsRouter);

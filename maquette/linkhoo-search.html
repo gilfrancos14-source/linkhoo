@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linkhoo – Trouvez votre séjour idéal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- CDN Tailwind : adapté à la démo / au prototypage uniquement -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+      colors: { brand: '#6b3fd4', 'brand-dark': '#5b34c0', lilac: '#e8e2f8', 'lilac-line': '#b7a6ea', navy: '#131b33' }
+    } }
+  }
+</script>
+</head>
+<body class="font-sans bg-[#f4f1ec] text-[#2b1f1f] antialiased">
+
+<!-- ============ BANDEAU HORS LIGNE ============ -->
+<div id="offline" class="bg-gradient-to-r from-[#5a3bc9] via-[#6a43d6] to-[#7a4fe0] text-white">
+  <div class="mx-auto flex h-10 max-w-[1264px] items-center gap-2.5 px-4 text-[12.5px] sm:px-[54px]">
+    <i data-i="wifi" class="h-4 w-4 shrink-0"></i>
+    <p class="truncate text-white/90">Vous êtes actuellement hors ligne. Certaines fonctionnalités peuvent être limitées.</p>
+    <button id="retry" class="ml-auto flex shrink-0 items-center gap-1.5 rounded-full bg-white/15 px-3.5 py-1 text-[12px] font-medium hover:bg-white/25">
+      <i data-i="refresh" class="h-3.5 w-3.5"></i><span class="hidden sm:inline">Réessayer</span>
+    </button>
+    <button id="closeOffline" aria-label="Fermer" class="shrink-0 p-1 hover:opacity-75"><i data-i="x" class="h-4 w-4"></i></button>
+  </div>
+</div>
+
+<!-- ============ HEADER ============ -->
+<header class="relative border-b border-black/5 bg-white">
+  <div class="mx-auto flex h-[66px] max-w-[1264px] items-center justify-between px-4 sm:px-[54px]">
+    <a href="#" class="flex items-center gap-1.5">
+      <svg viewBox="0 0 32 32" class="h-8 w-8" aria-hidden="true">
+        <path d="M16 2.5 3.5 12.2c-.9.7-1.5 1.8-1.5 3V26a3.5 3.5 0 0 0 3.5 3.5h21A3.5 3.5 0 0 0 30 26V15.2c0-1.2-.6-2.3-1.5-3L16 2.5Z" fill="#7a45e0"/>
+        <path d="M16 10 8.5 15.8V25a1 1 0 0 0 1 1h4v-6h5v6h4a1 1 0 0 0 1-1v-9.2L16 10Z" fill="#fff"/>
+      </svg>
+      <span class="text-[27px] font-bold tracking-tight text-[#1d1a2b]">Link<span class="text-brand">hoo</span></span>
+    </a>
+
+    <nav class="hidden items-center gap-9 text-[13.5px] md:flex">
+      <a href="#" class="relative py-[22px] font-medium text-brand after:absolute after:inset-x-0 after:bottom-[14px] after:h-[2px] after:bg-brand">Accueil</a>
+      <a href="#" class="text-[#2b2b3a] hover:text-brand">À propos</a>
+      <a href="#" class="text-[#2b2b3a] hover:text-brand">Contact</a>
+    </nav>
+
+    <div class="flex items-center gap-4 sm:gap-6">
+      <div class="relative hidden md:block">
+        <button id="countryBtn" class="flex h-[38px] w-[150px] items-center gap-2.5 rounded-lg border border-black/10 bg-white px-3 text-[12.5px] text-[#444]">
+          <span class="flex h-[14px] w-[20px] overflow-hidden rounded-[2px] border border-black/10"><i class="w-1/3 bg-[#f77f00]"></i><i class="w-1/3 bg-white"></i><i class="w-1/3 bg-[#009e60]"></i></span>
+          <span id="countryLabel">Côte d'Ivoire</span>
+          <i data-i="chevron" class="ml-auto h-4 w-4 text-gray-400"></i>
+        </button>
+        <ul id="countryList" class="absolute right-0 top-[44px] z-30 hidden w-[150px] overflow-hidden rounded-lg border border-black/10 bg-white text-[12.5px] shadow-lg">
+          <li class="cursor-pointer px-3 py-2 hover:bg-lilac">Côte d'Ivoire</li>
+          <li class="cursor-pointer px-3 py-2 hover:bg-lilac">Sénégal</li>
+          <li class="cursor-pointer px-3 py-2 hover:bg-lilac">Bénin</li>
+          <li class="cursor-pointer px-3 py-2 hover:bg-lilac">Togo</li>
+          <li class="cursor-pointer px-3 py-2 hover:bg-lilac">Ghana</li>
+        </ul>
+      </div>
+      <button aria-label="Rechercher" class="text-[#1d1a2b] hover:text-brand"><i data-i="search" class="h-6 w-6"></i></button>
+      <button id="menuBtn" aria-label="Menu" class="text-[#1d1a2b] hover:text-brand"><i data-i="menu" class="h-7 w-7"></i></button>
+    </div>
+  </div>
+  <!-- Menu déroulant -->
+  <nav id="mobileMenu" class="absolute inset-x-0 top-full z-30 hidden border-b border-black/5 bg-white px-4 py-3 text-[14px] shadow-md sm:px-[54px] md:hidden">
+    <a href="#" class="block py-2 font-medium text-brand">Accueil</a>
+    <a href="#" class="block py-2">À propos</a>
+    <a href="#" class="block py-2">Contact</a>
+  </nav>
+</header>
+
+<!-- ============ CONTENU ============ -->
+<main class="bg-[radial-gradient(ellipse_at_top_right,#ecd5b0_0%,rgba(244,241,236,0)_42%)] pb-14 pt-10 lg:pt-[57px]">
+  <div class="mx-auto max-w-[1264px] px-4 sm:px-[54px]">
+    <div class="grid grid-cols-1 gap-x-6 gap-y-[22px] sm:grid-cols-2 lg:grid-cols-3">
+
+      <!-- Formulaire de recherche -->
+      <section class="order-first rounded-[20px] bg-[#faf8f5] p-6 shadow-[0_10px_40px_rgba(60,40,20,0.12)] sm:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-span-2 lg:row-start-1 lg:p-8">
+        <h1 class="text-[34px] font-extrabold leading-[1.15] tracking-tight text-[#2b1c1c] lg:text-[40px]">Trouvez votre séjour idéal</h1>
+
+        <div class="mt-7 space-y-4">
+          <div>
+            <p class="mb-2 text-[17px] font-semibold">Date d'arrivée</p>
+            <label class="relative flex h-[52px] cursor-pointer items-center gap-3 rounded-[10px] border border-lilac-line bg-lilac px-3.5 text-[17px] text-[#3a2f4f]">
+              <i data-i="calendar" class="h-5 w-5 shrink-0 text-brand"></i>
+              <span id="arriveeTxt">Aujourd'hui, 24 oct. 2023</span>
+              <input id="arrivee" type="date" value="2023-10-24" class="absolute inset-0 h-full w-full cursor-pointer opacity-0">
+            </label>
+          </div>
+          <div>
+            <p class="mb-2 text-[17px] font-semibold">Date de départ</p>
+            <label class="relative flex h-[52px] cursor-pointer items-center gap-3 rounded-[10px] border border-lilac-line bg-lilac px-3.5 text-[17px] text-[#3a2f4f]">
+              <i data-i="calendar" class="h-5 w-5 shrink-0 text-brand"></i>
+              <span id="departTxt">Demain, 25 oct. 2023</span>
+              <input id="depart" type="date" value="2023-10-25" class="absolute inset-0 h-full w-full cursor-pointer opacity-0">
+            </label>
+          </div>
+          <div>
+            <p class="mb-2 text-[17px] font-semibold">Destination</p>
+            <div class="overflow-hidden rounded-[10px] border border-lilac-line bg-white shadow-[0_6px_18px_rgba(60,40,100,0.12)]">
+              <label class="flex h-[48px] items-center gap-3 bg-lilac px-3.5">
+                <i data-i="search" class="h-5 w-5 shrink-0 text-brand"></i>
+                <input id="dest" type="text" placeholder="Rechercher" autocomplete="off" class="w-full bg-transparent text-[17px] text-[#3a2f4f] placeholder:text-[#7a7390] focus:outline-none">
+              </label>
+              <ul id="destList" class="px-3.5 py-2.5 text-[17px] leading-[30px] text-[#2b2b3a]">
+                <li class="cursor-pointer hover:text-brand">Dakar</li>
+                <li class="cursor-pointer hover:text-brand">Abidjan</li>
+                <li class="cursor-pointer hover:text-brand">Cotonou</li>
+                <li class="cursor-pointer hover:text-brand">Lomé</li>
+                <li class="cursor-pointer hover:text-brand">Accra</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <button id="searchBtn" class="mt-6 flex h-[54px] w-full items-center justify-center gap-3 rounded-[10px] bg-brand text-[17px] font-semibold text-white shadow-[0_6px_16px_rgba(107,63,212,0.35)] transition hover:bg-brand-dark">
+          <i data-i="search" class="h-5 w-5"></i>Lancer la recherche
+        </button>
+      </section>
+
+      <!-- Logements -->
+      <article data-city="Abidjan"><img src="img/logement-1.jpg" alt="Villa Coco à Abidjan" class="aspect-[6/5] w-full rounded-xl object-cover shadow-md"><p class="mt-2.5 text-[15px] text-[#1d1a1a]">Villa Coco - Abidjan - 150€/nuit</p></article>
+      <article data-city="Dakar"><img src="img/logement-2.jpg" alt="Penthouse Azur à Dakar" class="aspect-[6/5] w-full rounded-xl object-cover shadow-md"><p class="mt-2.5 text-[15px] text-[#1d1a1a]">Penthouse Azur - Dakar - 210€/nuit</p></article>
+      <article data-city="Dakar"><img src="img/logement-3.jpg" alt="Luxury villa à Dakar" class="aspect-[6/5] w-full rounded-xl object-cover shadow-md"><p class="mt-2.5 text-[15px] text-[#1d1a1a]">Luxury villa - Dakar - 250€/nuit</p></article>
+      <article data-city="Dakar"><img src="img/logement-4.jpg" alt="Élégant appartement à Dakar" class="aspect-[6/5] w-full rounded-xl object-cover shadow-md"><p class="mt-2.5 text-[15px] text-[#1d1a1a]">Elegant appartement - Dakar - 110€/nuit</p></article>
+      <article data-city="Abidjan"><img src="img/logement-5.jpg" alt="Garden guesthouse à Abidjan" class="aspect-[6/5] w-full rounded-xl object-cover shadow-md"><p class="mt-2.5 text-[15px] text-[#1d1a1a]">Garden guesthouse - Abidjan - 150€/nuit</p></article>
+      <article data-city="Dakar"><img src="img/logement-6.jpg" alt="Terrasse Océane à Dakar" class="aspect-[6/5] w-full rounded-xl object-cover shadow-md"><p class="mt-2.5 text-[15px] text-[#1d1a1a]">Terrasse Océane - Dakar - 250€/nuit</p></article>
+      <article data-city="Dakar"><img src="img/logement-7.jpg" alt="Penthouse Azur à Dakar" class="aspect-[6/5] w-full rounded-xl object-cover shadow-md"><p class="mt-2.5 text-[15px] text-[#1d1a1a]">Penthouse Azur - Dakar - 210€/nuit</p></article>
+      <article data-city="Abidjan"><img src="img/logement-8.jpg" alt="Villa Coco à Abidjan" class="aspect-[6/5] w-full rounded-xl object-cover shadow-md"><p class="mt-2.5 text-[15px] text-[#1d1a1a]">Villa Coco - Abidjan - 150€/nuit</p></article>
+      <article data-city="Abidjan"><img src="img/logement-9.jpg" alt="Villa Coco à Abidjan" class="aspect-[6/5] w-full rounded-xl object-cover shadow-md"><p class="mt-2.5 text-[15px] text-[#1d1a1a]">Villa Coco - Abidjan - 150€/nuit</p></article>
+      <article data-city="Dakar"><img src="img/logement-10.jpg" alt="Penthouse Azur à Dakar" class="aspect-[6/5] w-full rounded-xl object-cover shadow-md"><p class="mt-2.5 text-[15px] text-[#1d1a1a]">Penthouse Azur - Dakar - 210€/nuit</p></article>
+    </div>
+    <p id="noResult" class="mt-8 hidden text-center text-[15px] text-[#6b6475]">Aucun logement disponible pour cette destination.</p>
+  </div>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="bg-navy text-white">
+  <div class="mx-auto max-w-[1264px] px-4 pb-6 pt-8 sm:px-[54px] lg:px-[105px]">
+    <div class="grid grid-cols-2 gap-x-6 gap-y-8 md:grid-cols-3 lg:grid-cols-[1.45fr_1fr_1.1fr_1.2fr_1fr_.8fr]">
+
+      <div class="col-span-2 md:col-span-3 lg:col-span-1">
+        <a href="#" class="flex items-center gap-1.5">
+          <svg viewBox="0 0 32 32" class="h-6 w-6" aria-hidden="true"><path d="M16 2.5 3.5 12.2c-.9.7-1.5 1.8-1.5 3V26a3.5 3.5 0 0 0 3.5 3.5h21A3.5 3.5 0 0 0 30 26V15.2c0-1.2-.6-2.3-1.5-3L16 2.5Z" fill="#fff"/><path d="M16 10 8.5 15.8V25a1 1 0 0 0 1 1h4v-6h5v6h4a1 1 0 0 0 1-1v-9.2L16 10Z" fill="#131b33"/></svg>
+          <span class="text-[22px] font-semibold tracking-tight">Linkhoo</span>
+        </a>
+        <p class="mt-3 max-w-[200px] text-[11px] leading-[1.6] text-[#9aa4bd]">La plateforme de location directe de logements en Afrique de l'Ouest. Des milliers de logements pour tous vos séjours.</p>
+        <div class="mt-4 flex items-center gap-2.5">
+          <a href="#" aria-label="Facebook" class="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"><i data-i="facebook" class="h-3.5 w-3.5"></i></a>
+          <a href="#" aria-label="X" class="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"><i data-i="x" class="h-3.5 w-3.5"></i></a>
+          <a href="#" aria-label="Instagram" class="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"><i data-i="instagram" class="h-3.5 w-3.5"></i></a>
+          <a href="#" aria-label="YouTube" class="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"><i data-i="youtube" class="h-3.5 w-3.5"></i></a>
+          <a href="#" aria-label="LinkedIn" class="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"><i data-i="linkedin" class="h-3.5 w-3.5"></i></a>
+          <a href="#" aria-label="TikTok" class="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 hover:bg-white/20"><i data-i="tiktok" class="h-3.5 w-3.5"></i></a>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="text-[11px] font-semibold">Liens utiles</h3>
+        <ul class="mt-3 space-y-2.5 text-[11px] font-semibold text-[#c3cade]">
+          <li class="text-[#8f99b3]">095</li>
+          <li class="flex gap-4"><span>E3E</span><span class="text-[#8f99b3]">Lé Maloïc</span></li>
+          <li class="text-[#e6e9f2]">africonnexe.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="text-[11px] font-semibold">Application mobile</h3>
+        <p class="mt-2 max-w-[130px] text-[10px] leading-[1.5] text-[#8f99b3]">Téléchargez notre application pour une meilleure expérience.</p>
+        <div class="mt-3 flex gap-2">
+          <a href="#" class="flex h-[30px] items-center gap-1.5 rounded-md border border-white/30 bg-black px-2"><i data-i="apple" class="h-3.5 w-3.5"></i><span class="text-[8px] font-semibold leading-tight">App Store</span></a>
+          <a href="#" class="flex h-[30px] items-center gap-1.5 rounded-md border border-white/30 bg-black px-2"><i data-i="play" class="h-3.5 w-3.5"></i><span class="text-[8px] font-semibold leading-tight">Google Play</span></a>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="text-[11px] font-semibold">Newsletter</h3>
+        <p class="mt-2 max-w-[140px] text-[10px] leading-[1.5] text-[#8f99b3]">Recevez nos nouvelles et offres exclusives.</p>
+        <form id="newsletter" class="mt-3 flex h-[22px] max-w-[145px] overflow-hidden rounded">
+          <input type="email" required placeholder="Votre adresse email" class="min-w-0 flex-1 bg-white px-2 text-[9px] text-gray-700 placeholder:text-gray-400 focus:outline-none">
+          <button class="flex w-7 items-center justify-center bg-brand hover:bg-brand-dark" aria-label="S'abonner"><i data-i="send" class="h-3 w-3"></i></button>
+        </form>
+      </div>
+
+      <div>
+        <h3 class="text-[11px] font-semibold">Liens utiles</h3>
+        <ul class="mt-3 space-y-2 text-[10px] text-[#8f99b3]">
+          <li><a href="#" class="hover:text-white">Conditions d'utilisation</a></li>
+          <li><a href="#" class="hover:text-white">Politique de confidentialité</a></li>
+          <li><a href="#" class="hover:text-white">Mentions légales</a></li>
+          <li><a href="#" class="hover:text-white">Cookies</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="text-[11px] font-semibold">Compte</h3>
+        <ul class="mt-3 space-y-2 text-[10px] text-[#8f99b3]">
+          <li><a href="#" class="hover:text-white">Connexion</a></li>
+          <li><a href="#" class="hover:text-white">Inscription</a></li>
+          <li><a href="#" class="hover:text-white">Réservations</a></li>
+          <li><a href="#" class="hover:text-white">Aide</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-8 border-t border-white/10 pt-4 text-[10px] text-[#8f99b3]">© 2023 Linkhoo. Tous droits réservés.</div>
+  </div>
+</footer>
+
+<script>
+  /* ---------- Icônes (Lucide, inline) ---------- */
+  const ICONS = {
+    wifi: '<path d="M5 13a10 10 0 0 1 14 0"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M2 8.82a15 15 0 0 1 20 0"/><line x1="12" x2="12.01" y1="20" y2="20"/>',
+    refresh: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+    x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    menu: '<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>',
+    chevron: '<path d="m6 9 6 6 6-6"/>',
+    calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+    send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+    facebook: '<path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>',
+    instagram: '<rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>',
+    youtube: '<path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/>',
+    linkedin: '<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/>',
+    tiktok: '<path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/>',
+    apple: '<path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"/><path d="M10 2c1 .5 2 2 2 5"/>',
+    play: '<polygon points="6 3 20 12 6 21 6 3"/>'
+  };
+  document.querySelectorAll('[data-i]').forEach(el => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('class', el.className);
+    svg.setAttribute('aria-hidden', 'true');
+    svg.innerHTML = ICONS[el.dataset.i] || '';
+    el.replaceWith(svg);
+  });
+
+  const $ = id => document.getElementById(id);
+
+  /* ---------- Bandeau hors ligne ---------- */
+  $('closeOffline').onclick = () => $('offline').remove();
+  $('retry').onclick = () => {
+    const icon = $('retry').querySelector('svg');
+    icon.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(360deg)' }], { duration: 700 });
+    if (navigator.onLine) $('offline').remove();
+  };
+
+  /* ---------- Menus ---------- */
+  $('menuBtn').onclick = () => $('mobileMenu').classList.toggle('hidden');
+  $('countryBtn').onclick = e => { e.stopPropagation(); $('countryList').classList.toggle('hidden'); };
+  $('countryList').querySelectorAll('li').forEach(li => li.onclick = () => {
+    $('countryLabel').textContent = li.textContent;
+    $('countryList').classList.add('hidden');
+  });
+  document.addEventListener('click', () => $('countryList').classList.add('hidden'));
+
+  /* ---------- Dates ---------- */
+  const fmt = v => new Date(v + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  [['arrivee', 'arriveeTxt'], ['depart', 'departTxt']].forEach(([i, t]) => {
+    const input = $(i);
+    input.addEventListener('click', () => input.showPicker && input.showPicker());
+    input.addEventListener('change', () => { if (input.value) $(t).textContent = fmt(input.value); });
+  });
+
+  /* ---------- Destination + recherche ---------- */
+  const items = [...$('destList').querySelectorAll('li')];
+  $('dest').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    items.forEach(li => li.classList.toggle('hidden', !li.textContent.toLowerCase().includes(q)));
+  });
+  items.forEach(li => li.onclick = () => { $('dest').value = li.textContent; });
+
+  function runSearch() {
+    const q = $('dest').value.trim().toLowerCase();
+    let visible = 0;
+    document.querySelectorAll('article[data-city]').forEach(a => {
+      const show = !q || a.dataset.city.toLowerCase().includes(q);
+      a.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+    $('noResult').classList.toggle('hidden', visible > 0);
+  }
+  $('searchBtn').onclick = runSearch;
+  $('dest').addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+
+  /* ---------- Newsletter ---------- */
+  $('newsletter').addEventListener('submit', e => { e.preventDefault(); e.target.reset(); });
+</script>
+</body>
+</html>

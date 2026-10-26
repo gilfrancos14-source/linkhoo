@@ -19,6 +19,15 @@ import { isQualifiedGerant } from '../utils/gerantQualification';
 import { BOOST_ROOM_EMBED, deriveBoostDisplayStatus, mapBoostRow } from '../utils/boostDisplay';
 import { fetchAllRows } from '../utils/fetchAll';
 import { isMarketCode } from '../config/markets';
+import { isAccessibleVerificationPath } from '../utils/verificationStorage';
+import { GERANT_COLUMNS, VERIFICATION_DOCUMENT_COLUMNS } from '../utils/gerantSelect';
+import { NOTIFICATION_COLUMNS, ROOM_COLUMNS } from '../utils/selects';
+import {
+  ADMIN_COOKIE_NAME,
+  adminCookieClearOptions,
+  adminCookieOptions,
+} from '../utils/adminCookie';
+import { logAdminAction } from '../utils/adminAudit';
 import { z } from 'zod';
 
 const promoGroupSchema = z.object({
@@ -43,16 +52,60 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
       .maybeSingle();
 
     if (error) throw error;
-    if (!admin) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+    if (!admin) {
+      logAdminAction({
+        adminEmail: parsed.data.email,
+        action: 'login_failed',
+        method: 'POST',
+        path: req.originalUrl,
+        status: 401,
+        ip: req.ip ?? null,
+        userAgent: req.get('user-agent') ?? null,
+      });
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+    }
 
     const valid = await bcrypt.compare(parsed.data.password, admin.password_hash);
-    if (!valid) return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+    if (!valid) {
+      logAdminAction({
+        adminId: admin.id,
+        adminEmail: admin.email,
+        action: 'login_failed',
+        method: 'POST',
+        path: req.originalUrl,
+        status: 401,
+        ip: req.ip ?? null,
+        userAgent: req.get('user-agent') ?? null,
+      });
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect' });
+    }
 
-    const token = signAdminToken({ adminId: admin.id, email: admin.email });
-    res.json({ token, admin: { id: admin.id, email: admin.email, nom: admin.nom, prenom: admin.prenom } });
+    // F4 : le jeton part uniquement en cookie HttpOnly ; il n'apparaît jamais
+    // dans le corps de la réponse (donc jamais dans une variable JS).
+    res.cookie(
+      ADMIN_COOKIE_NAME,
+      signAdminToken({ adminId: admin.id, email: admin.email }),
+      adminCookieOptions(),
+    );
+    logAdminAction({
+      adminId: admin.id,
+      adminEmail: admin.email,
+      action: 'login',
+      method: 'POST',
+      path: req.originalUrl,
+      status: 200,
+      ip: req.ip ?? null,
+      userAgent: req.get('user-agent') ?? null,
+    });
+    res.json({ admin: { id: admin.id, email: admin.email, nom: admin.nom, prenom: admin.prenom } });
   } catch (err) {
     next(err);
   }
+});
+
+router.post('/logout', (_req: Request, res: Response) => {
+  res.clearCookie(ADMIN_COOKIE_NAME, adminCookieClearOptions());
+  res.json({ ok: true });
 });
 
 router.get('/stats', requireAdminAuth, requirePermission('stats'), async (_req: Request, res: Response, next: NextFunction) => {
@@ -338,7 +391,7 @@ router.patch('/gerants/:id/verify', requireAdminAuth, requirePermission('gerants
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .select()
+      .select(GERANT_COLUMNS)
       .single();
     if (error) throw error;
     res.json(data);
@@ -367,7 +420,7 @@ router.patch('/gerants/:id/revoke-verification', requireAdminAuth, requirePermis
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .select()
+      .select(GERANT_COLUMNS)
       .single();
     if (error) throw error;
     res.json(data);
@@ -387,7 +440,7 @@ router.get('/gerants/:id/documents', requireAdminAuth, requirePermission('gerant
 
     const { data: gerant, error: fetchError } = await supabaseAdmin
       .from('gerants')
-      .select('id')
+      .select('id, clerk_user_id')
       .eq('id', parsedParams.data.id)
       .maybeSingle();
     if (fetchError) throw fetchError;
@@ -395,17 +448,26 @@ router.get('/gerants/:id/documents', requireAdminAuth, requirePermission('gerant
 
     const { data, error } = await supabaseAdmin
       .from('verification_documents')
-      .select('*')
+      .select(VERIFICATION_DOCUMENT_COLUMNS)
       .eq('gerant_id', parsedParams.data.id)
       .order('created_at', { ascending: true });
     if (error) throw error;
 
     const docsWithFreshUrls = await Promise.all(
       (data || []).map(async (doc: any) => {
+        // Ne signe que les chemins appartenant à ce gérant : une ligne héritée
+        // pointant vers un autre préfixe ne doit pas devenir lisible par
+        // l'admin via une URL signée fraîche.
+        if (!isAccessibleVerificationPath(doc.file_path, gerant.clerk_user_id)) {
+          return { ...doc, file_url: null };
+        }
         const { data: signData } = await supabaseAdmin.storage
           .from('verification-docs')
           .createSignedUrl(doc.file_path, 3600);
-        return { ...doc, file_url: signData?.signedUrl ?? doc.file_url };
+        // Jamais de fallback sur `doc.file_url` : ce champ a pu être fourni par
+        // le gérant et ferait charger une URL externe arbitraire par le
+        // navigateur de l'admin (fuite d'IP / hameçonnage).
+        return { ...doc, file_url: signData?.signedUrl ?? null };
       })
     );
     res.json(docsWithFreshUrls);
@@ -443,7 +505,7 @@ router.patch('/documents/:docId/review', requireAdminAuth, requirePermission('ge
         reviewed_at: new Date().toISOString(),
       })
       .eq('id', docId)
-      .select()
+      .select(VERIFICATION_DOCUMENT_COLUMNS)
       .single();
     if (error) throw error;
     res.json(data);
@@ -478,7 +540,7 @@ router.patch('/gerants/:id/start-review', requireAdminAuth, requirePermission('g
         updated_at: new Date().toISOString(),
       })
       .eq('id', parsedParams.data.id)
-      .select()
+      .select(GERANT_COLUMNS)
       .single();
     if (error) throw error;
     res.json(data);
@@ -518,7 +580,7 @@ router.patch('/gerants/:id/approve-verification', requireAdminAuth, requirePermi
         updated_at: now,
       })
       .eq('id', parsedParams.data.id)
-      .select()
+      .select(GERANT_COLUMNS)
       .single();
     if (error) throw error;
 
@@ -575,7 +637,7 @@ router.patch('/gerants/:id/reject-verification', requireAdminAuth, requirePermis
         updated_at: now,
       })
       .eq('id', parsedParams.data.id)
-      .select()
+      .select(GERANT_COLUMNS)
       .single();
     if (error) throw error;
 
@@ -752,7 +814,7 @@ router.get('/notifications', requireAdminAuth, async (req: Request, res: Respons
         reservationRows = await fetchAllRows<any>((from, to) =>
           supabaseAdmin
             .from('notifications')
-            .select('*')
+            .select(NOTIFICATION_COLUMNS)
             .in('room_id', roomIds)
             .in('type', ['reservation', 'reservation_cancelled'])
             .order('date', { ascending: false })
@@ -768,7 +830,7 @@ router.get('/notifications', requireAdminAuth, async (req: Request, res: Respons
     const incidentsRaw = await fetchAllRows<any>((from, to) =>
       supabaseAdmin
         .from('notifications')
-        .select('*')
+        .select(NOTIFICATION_COLUMNS)
         .eq('type', 'boost_paid_without_campaign')
         .order('date', { ascending: false })
         .order('id', { ascending: true })
@@ -821,7 +883,7 @@ router.patch('/notifications/:id/read', requireAdminAuth, async (req: Request, r
       .from('notifications')
       .update({ read: true })
       .eq('id', parsedParams.data.id)
-      .select()
+      .select(NOTIFICATION_COLUMNS)
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Notification introuvable' });
@@ -862,7 +924,7 @@ router.patch('/rooms/:id/promo-group', requireAdminAuth, requirePermission('prom
         updated_at: new Date().toISOString(),
       })
       .eq('id', parsedParams.data.id)
-      .select()
+      .select(ROOM_COLUMNS)
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Chambre introuvable' });

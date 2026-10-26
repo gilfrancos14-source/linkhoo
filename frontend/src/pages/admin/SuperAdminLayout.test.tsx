@@ -22,6 +22,7 @@ vi.mock('../../lib/adminApi', () => ({
     getNotifications: mocks.getNotifications,
     markNotificationRead: mocks.markNotificationRead,
     checkAvailability: mocks.checkAvailability,
+    logout: vi.fn(() => Promise.resolve({ ok: true })),
   },
   setAdminToken: mocks.setAdminToken,
   getAdminToken: mocks.getAdminToken,

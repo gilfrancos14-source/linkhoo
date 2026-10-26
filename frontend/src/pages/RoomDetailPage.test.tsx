@@ -1,7 +1,7 @@
 import type { MarketCode } from '../config/markets';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { MarketProvider } from '../contexts/MarketContext';
 import type { Room } from '../data/rooms';
@@ -177,6 +177,24 @@ function mustFind<T extends Element>(selector: string): T {
   return el;
 }
 
+function getBreadcrumb(container: HTMLElement): HTMLElement {
+  const nav = container.querySelector<HTMLElement>('nav[aria-label="Fil d’Ariane"]');
+  if (!nav) throw new Error('fil d’Ariane introuvable');
+  return nav;
+}
+
+function getAside(container: HTMLElement): HTMLElement {
+  const aside = container.querySelector<HTMLElement>('aside');
+  if (!aside) throw new Error('panneau de réservation introuvable');
+  return aside;
+}
+
+function getEstimateBox(): HTMLElement {
+  const box = screen.getByText(/Estimation/).parentElement;
+  if (!box) throw new Error('encart d’estimation introuvable');
+  return box;
+}
+
 type FormValues = Partial<Record<'name' | 'email' | 'phone' | 'dateDebut' | 'duree', string>>;
 
 function fillForm(values: FormValues = {}) {
@@ -240,7 +258,7 @@ describe('RoomDetailPage — états', () => {
 
     renderPage('/ci/chambre/inconnu');
 
-    const back = await screen.findByRole('link', { name: "← Retour à l'accueil" });
+    const back = await screen.findByRole('link', { name: /Retour à l'accueil/ });
     expect(back).toHaveAttribute('href', '/ci');
   });
 
@@ -256,31 +274,35 @@ describe('RoomDetailPage — états', () => {
 
 describe("RoomDetailPage — fil d'Ariane et marché", () => {
   it("affiche le fil d'Ariane avec la catégorie cliquable", async () => {
-    await renderLoaded();
+    const { container } = await renderLoaded();
+    const crumb = within(getBreadcrumb(container));
 
-    const cat = screen.getByRole('link', { name: 'Chambres premium' });
+    const cat = crumb.getByRole('link', { name: 'Chambres premium' });
     expect(cat).toHaveAttribute('href', '/ci/categorie/cat-premium');
-    expect(screen.getByText('Accueil')).toHaveAttribute('href', '/ci');
-    expect(mustFind<HTMLElement>('[aria-current="page"]')).toHaveTextContent('Suite vue mer');
+    expect(crumb.getByRole('link', { name: 'Accueil' })).toHaveAttribute('href', '/ci');
+    expect(crumb.getByText('Suite vue mer')).toHaveAttribute('aria-current', 'page');
   });
 
   it("n'affiche pas la catégorie quand elle est absente du référentiel", async () => {
     mocks.fetchCategoriesByMarket.mockResolvedValue([]);
 
-    await renderLoaded();
+    const { container } = await renderLoaded();
+    const crumb = within(getBreadcrumb(container));
 
-    expect(screen.queryByRole('link', { name: 'Chambres premium' })).not.toBeInTheDocument();
-    expect(screen.getByText('Accueil')).toHaveAttribute('href', '/ci');
+    expect(crumb.queryByRole('link', { name: 'Chambres premium' })).not.toBeInTheDocument();
+    expect(crumb.getByRole('link', { name: 'Accueil' })).toHaveAttribute('href', '/ci');
   });
 
   it("construit les liens d'authentification depuis le marché de l'URL", async () => {
     mocks.fetchRoomById.mockResolvedValue(makeRoom({ market: 'BJ' }));
 
-    await renderLoaded('/bj/chambre/r1');
+    const { container } = await renderLoaded('/bj/chambre/r1');
+    const crumb = within(getBreadcrumb(container));
+    const aside = within(getAside(container));
 
-    expect(screen.getByText('Accueil')).toHaveAttribute('href', '/bj');
-    expect(screen.getByRole('link', { name: 'Se connecter' })).toHaveAttribute('href', '/bj/login');
-    expect(screen.getByRole('link', { name: 'Créer un compte' })).toHaveAttribute('href', '/bj/inscription');
+    expect(crumb.getByRole('link', { name: 'Accueil' })).toHaveAttribute('href', '/bj');
+    expect(aside.getByRole('link', { name: 'Se connecter' })).toHaveAttribute('href', '/bj/login');
+    expect(aside.getByRole('link', { name: 'Créer un compte' })).toHaveAttribute('href', '/bj/inscription');
   });
 });
 
@@ -317,11 +339,11 @@ describe('RoomDetailPage — galerie', () => {
   });
 
   it('signale l’absence de photo sans flèches ni vignettes', async () => {
-    mocks.fetchRoomById.mockResolvedValue(makeRoom({ images: [] }));
+    mocks.fetchRoomById.mockResolvedValue(makeRoom({ images: [], img: '' }));
 
     await renderLoaded();
 
-    expect(screen.getByText('Aucune photo disponible')).toBeInTheDocument();
+    expect(screen.getByText('Aucune photo disponible.')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Photo suivante' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Voir la photo 1' })).not.toBeInTheDocument();
   });
@@ -341,11 +363,11 @@ describe('RoomDetailPage — contenu', () => {
   it("n'affiche aucune capacité même quand le bien en porte une", async () => {
     await renderLoaded();
 
-    expect(document.querySelector('.room-detail__capacity')).not.toBeInTheDocument();
+    expect(screen.queryByText('2 personnes')).not.toBeInTheDocument();
     expect(screen.queryByText(/Capacité/)).not.toBeInTheDocument();
   });
 
-  it("complète le sous-titre quand le bien est saisi sans lui", async () => {
+  it("n'affiche pas la description en guise de sous-titre quand il est vide", async () => {
     mocks.fetchRoomById.mockResolvedValue(
       makeRoom({
         subtitle: '',
@@ -355,15 +377,21 @@ describe('RoomDetailPage — contenu', () => {
 
     await renderLoaded();
 
-    expect(document.querySelector('.room-detail__subtitle')).toHaveTextContent(
-      'Vue sur mer, calme absolu.',
-    );
+    expect(screen.queryByText('Vue sur mer, calme absolu.')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Vue sur mer, calme absolu. Proche des commerces.'),
+    ).toBeInTheDocument();
   });
 
   it('découpe les conditions en éléments de liste', async () => {
     await renderLoaded();
 
-    const items = document.querySelectorAll('.room-detail__conditions li');
+    const section = screen
+      .getByRole('heading', { name: 'Conditions de réservation' })
+      .closest('section');
+    expect(section).not.toBeNull();
+
+    const items = within(section as HTMLElement).getAllByRole('listitem');
     expect(items).toHaveLength(2);
     expect(screen.getByText('Annulation gratuite')).toBeInTheDocument();
     expect(screen.getByText('Dépôt de garantie')).toBeInTheDocument();
@@ -374,8 +402,7 @@ describe('RoomDetailPage — contenu', () => {
 
     await renderLoaded();
 
-    expect(screen.getByRole('heading', { level: 2, name: "Votre hôte" })).toBeInTheDocument();
-    expect(screen.getByText('Aya Kouassi')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Aya Kouassi' })).toBeInTheDocument();
     expect(screen.getByText('Vérifié')).toBeInTheDocument();
     expect(screen.getByText('Premium')).toBeInTheDocument();
   });
@@ -387,19 +414,20 @@ describe('RoomDetailPage — contenu', () => {
 
     await renderLoaded();
 
-    expect(screen.getByRole('heading', { level: 2, name: "Votre hôte" })).toBeInTheDocument();
-    expect(screen.getByText('Aya Kouassi')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Aya Kouassi' })).toBeInTheDocument();
     expect(screen.getByText('Vérifié')).toBeInTheDocument();
     expect(screen.queryByText('Premium')).not.toBeInTheDocument();
   });
 
-  it("n'affiche pas la carte de l'hôte pour un gérant non vérifié", async () => {
+  it("affiche la carte d'un gérant non vérifié sans badge", async () => {
     mocks.fetchRoomById.mockResolvedValue(makeRoom({ gerant: GERANT_PLAIN }));
 
     await renderLoaded();
 
-    expect(screen.queryByRole('heading', { level: 2, name: "Votre hôte" })).not.toBeInTheDocument();
-    expect(screen.queryByText('Paul N’Guessan')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Paul N’Guessan' })).toBeInTheDocument();
+    expect(screen.getByText('Gérant sur Linkhoo')).toBeInTheDocument();
+    expect(screen.queryByText('Vérifié')).not.toBeInTheDocument();
+    expect(screen.queryByText('Premium')).not.toBeInTheDocument();
   });
 
   it("affiche le lien téléphonique de l'hôte", async () => {
@@ -407,7 +435,10 @@ describe('RoomDetailPage — contenu', () => {
 
     await renderLoaded();
 
-    expect(screen.getByRole('link', { name: '+2250707070707' })).toHaveAttribute('href', 'tel:+2250707070707');
+    expect(screen.getByRole('link', { name: /Appeler/ })).toHaveAttribute(
+      'href',
+      'tel:+2250707070707',
+    );
   });
 
   it("affiche un lien WhatsApp qui ouvre la discussion avec un message pré-rempli", async () => {
@@ -415,7 +446,7 @@ describe('RoomDetailPage — contenu', () => {
 
     await renderLoaded();
 
-    const wa = screen.getByRole('link', { name: 'Discuter avec le gérant sur WhatsApp' });
+    const wa = screen.getByRole('link', { name: 'Discuter sur WhatsApp' });
     expect(wa).toHaveAttribute('href', expect.stringContaining('https://wa.me/2250707070707?text='));
     expect(wa).toHaveAttribute('href', expect.stringContaining(encodeURIComponent('Suite vue mer')));
     expect(wa).toHaveAttribute('target', '_blank');
@@ -427,10 +458,9 @@ describe('RoomDetailPage — contenu', () => {
 
     await renderLoaded();
 
-    expect(screen.getByRole('heading', { level: 2, name: "Votre hôte" })).toBeInTheDocument();
-    expect(document.querySelector('.host-card__phone')).toBeNull();
-    expect(document.querySelector('.host-card__whatsapp')).toBeNull();
-    expect(document.querySelector('.host-card__actions')).toBeNull();
+    expect(screen.getByRole('heading', { level: 2, name: 'Aya Kouassi' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Appeler/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Discuter sur WhatsApp' })).not.toBeInTheDocument();
   });
 
   it("charge la chambre via fetchRoomById et affiche son gérant", async () => {
@@ -443,14 +473,14 @@ describe('RoomDetailPage — contenu', () => {
 
     renderPage();
     expect(screen.getByText('Chargement...')).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { level: 2, name: "Votre hôte" })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 2, name: 'Aya Kouassi' })).not.toBeInTheDocument();
 
     await act(async () => {
       resolveDetail(makeRoom({ gerant: GERANT_VERIFIED, gerantId: 'g9' }));
     });
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Suite vue mer' })).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { level: 2, name: "Votre hôte" })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: 'Aya Kouassi' })).toBeInTheDocument();
     expect(mocks.fetchRoomById).toHaveBeenCalledWith('r1');
     // La page ne télécharge plus le catalogue du marché.
     expect(mocks.fetchRoomsByMarket).not.toHaveBeenCalled();
@@ -526,7 +556,7 @@ describe('RoomDetailPage — bouton Message', () => {
     await renderLoaded();
 
     expect(screen.queryByRole('button', { name: /Message/ })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '+2250707070707' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Appeler/ })).toBeInTheDocument();
   });
 });
 
@@ -536,9 +566,9 @@ describe('RoomDetailPage — avis', () => {
 
     expect(screen.getByRole('heading', { level: 2, name: 'Avis des locataires' })).toBeInTheDocument();
     const summary = mustFind<HTMLElement>('.room-reviews__summary');
-    expect(summary).toHaveTextContent('★ 4.5');
+    expect(summary).toHaveTextContent('Note globale 4.5');
     expect(summary).toHaveTextContent('(3)');
-    expect(summary).toHaveTextContent('Gérant ★ 4.0');
+    expect(summary).toHaveTextContent('Gérant 4.0');
     expect(summary).toHaveTextContent('(2)');
   });
 
@@ -546,8 +576,8 @@ describe('RoomDetailPage — avis', () => {
     await renderLoaded();
 
     expect(screen.getByText('Jeanne')).toBeInTheDocument();
-    expect(screen.getByText('Appartement ★★★★★')).toBeInTheDocument();
-    expect(screen.getByText('Gérant ★★★★')).toBeInTheDocument();
+    expect(screen.getByText('5/5')).toBeInTheDocument();
+    expect(screen.getByText('4/5')).toBeInTheDocument();
     expect(screen.getByText('« Super séjour »')).toBeInTheDocument();
   });
 
@@ -579,28 +609,31 @@ describe('RoomDetailPage — avis', () => {
 
 describe('RoomDetailPage — authentification Clerk', () => {
   it('affiche l’invitation à se connecter quand l’utilisateur est déconnecté', async () => {
-    await renderLoaded();
+    const { container } = await renderLoaded();
+    const aside = within(getAside(container));
 
-    expect(screen.getByText(/Connectez-vous pour pré-remplir/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Se connecter' })).toHaveAttribute('href', '/ci/login');
-    expect(screen.getByRole('link', { name: 'Créer un compte' })).toHaveAttribute('href', '/ci/inscription');
+    expect(aside.getByText(/Connectez-vous pour pré-remplir/)).toBeInTheDocument();
+    expect(aside.getByRole('link', { name: 'Se connecter' })).toHaveAttribute('href', '/ci/login');
+    expect(aside.getByRole('link', { name: 'Créer un compte' })).toHaveAttribute('href', '/ci/inscription');
   });
 
   it("masque l'invitation une fois connecté", async () => {
     mocks.clerk = { isLoaded: true, isSignedIn: true, user: CLERK_USER };
 
-    await renderLoaded();
+    const { container } = await renderLoaded();
+    const aside = within(getAside(container));
 
-    expect(screen.queryByText(/Connectez-vous pour pré-remplir/)).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Se connecter' })).not.toBeInTheDocument();
+    expect(aside.queryByText(/Connectez-vous pour pré-remplir/)).not.toBeInTheDocument();
+    expect(aside.queryByRole('link', { name: 'Se connecter' })).not.toBeInTheDocument();
   });
 
   it("affiche l'invitation tant que Clerk n'est pas chargé", async () => {
     mocks.clerk = { isLoaded: false, isSignedIn: false, user: null };
 
-    await renderLoaded();
+    const { container } = await renderLoaded();
+    const aside = within(getAside(container));
 
-    expect(screen.getByText(/Connectez-vous pour pré-remplir/)).toBeInTheDocument();
+    expect(aside.getByText(/Connectez-vous pour pré-remplir/)).toBeInTheDocument();
   });
 
   it('pré-remplit le nom et l’email depuis le compte Clerk', async () => {
@@ -720,8 +753,8 @@ describe('RoomDetailPage — estimation et date de fin', () => {
     await renderLoaded('/ci/chambre/r1?arrivee=2026-03-01&depart=2026-03-04');
 
     expect(screen.getByLabelText(/Date de fin \(calculée\)/)).toHaveValue('2026-03-04');
-    const summary = screen.getByText(/estimation/);
-    expect(summary).toHaveTextContent('Du 2026-03-01 au 2026-03-04');
+    const summary = getEstimateBox();
+    expect(summary).toHaveTextContent('Du 01/03 au 04/03');
     expect(summary).toHaveTextContent('3 nuits');
     expect(summary).toHaveTextContent(/75\s*000\s*FCFA/);
   });
@@ -731,23 +764,24 @@ describe('RoomDetailPage — estimation et date de fin', () => {
 
     fireEvent.change(screen.getByLabelText(/Durée/), { target: { value: '5' } });
 
-    expect(screen.getByText(/estimation/)).toHaveTextContent(/125\s*000\s*FCFA/);
+    expect(getEstimateBox()).toHaveTextContent(/125\s*000\s*FCFA/);
     expect(screen.getByLabelText(/Date de fin \(calculée\)/)).toHaveValue('2026-03-06');
   });
 
-  it("n'affiche ni date de fin ni estimation sans date de début", async () => {
+  it("affiche une estimation vide sans date de début", async () => {
     await renderLoaded();
 
-    expect(screen.queryByText(/estimation/)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/Date de fin \(calculée\)/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Date de fin \(calculée\)/)).toHaveValue('');
+    expect(getEstimateBox()).toHaveTextContent('Sélectionnez une date de début.');
+    expect(getEstimateBox()).toHaveTextContent('Estimation : —');
   });
 
-  it("n'affiche pas d'estimation quand la durée est invalide", async () => {
+  it("n'affiche pas de montant quand la durée est invalide", async () => {
     await renderLoaded('/ci/chambre/r1?arrivee=2026-03-01&depart=2026-03-04');
 
     fireEvent.change(screen.getByLabelText(/Durée/), { target: { value: '0' } });
 
-    expect(screen.queryByText(/estimation/)).not.toBeInTheDocument();
+    expect(getEstimateBox()).not.toHaveTextContent('FCFA');
   });
 
   it("utilise l'unité mois et borne la durée pour un bien mensuel", async () => {
@@ -755,16 +789,16 @@ describe('RoomDetailPage — estimation et date de fin', () => {
 
     await renderLoaded('/ci/chambre/r1?arrivee=2026-03-01');
 
-    expect(screen.getByLabelText(/Unité/)).toHaveValue('mois');
-    expect(screen.getByLabelText(/Unité/)).toBeDisabled();
+    expect(screen.getByText('Mois')).toBeInTheDocument();
+    expect(screen.queryByText('Nuit(s)')).not.toBeInTheDocument();
     expect(screen.getByLabelText(/Durée/)).toHaveAttribute('max', '24');
 
     fireEvent.change(screen.getByLabelText(/Date de début/), { target: { value: '2026-03-01' } });
     fireEvent.change(screen.getByLabelText(/Durée/), { target: { value: '2' } });
 
     expect(screen.getByLabelText(/Date de fin \(calculée\)/)).toHaveValue('2026-05-01');
-    const summary = screen.getByText(/estimation/);
-    expect(summary).toHaveTextContent('Du 2026-03-01 au 2026-05-01');
+    const summary = getEstimateBox();
+    expect(summary).toHaveTextContent('Du 01/03 au 01/05');
     expect(summary).toHaveTextContent('2 mois');
     expect(summary).toHaveTextContent(/50\s*000\s*FCFA/);
   });
@@ -788,7 +822,7 @@ describe('RoomDetailPage — soumission', () => {
     fillForm();
     fireEvent.submit(getForm(container));
 
-    expect(await screen.findByRole('status')).toHaveTextContent('Votre demande a bien été envoyée !');
+    expect(await screen.findByRole('status')).toHaveTextContent('Demande envoyée !');
     expect(mocks.addReservation).toHaveBeenCalledWith({
       clientName: 'Jean Koffi',
       clientEmail: 'jean@test.com',
@@ -878,7 +912,7 @@ describe('RoomDetailPage — soumission', () => {
     fillForm();
     fireEvent.submit(getForm(container));
 
-    const pending = await screen.findByRole('button', { name: 'Envoi en cours...' });
+    const pending = await screen.findByRole('button', { name: 'Envoi...' });
     expect(pending).toBeDisabled();
 
     await act(async () => {
@@ -890,7 +924,7 @@ describe('RoomDetailPage — soumission', () => {
 });
 
 describe('RoomDetailPage — partage', () => {
-  const SHARE_NAME = 'Copier le lien de cette page';
+  const SHARE_NAME = 'Partager';
 
   it("copie l'adresse de la page et confirme", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
@@ -924,14 +958,16 @@ describe('RoomDetailPage — partage', () => {
     await renderLoaded();
     vi.useFakeTimers();
 
-    fireEvent.click(screen.getByRole('button', { name: SHARE_NAME }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: SHARE_NAME }));
+    });
     expect(screen.getByText('Lien copié !')).toBeInTheDocument();
 
     act(() => {
       vi.advanceTimersByTime(2000);
     });
 
-    expect(screen.queryByText('Lien copié !')).not.toBeInTheDocument();
+    expect(screen.getByText('Lien copié !').className).toContain('hidden');
     expect(screen.getByText('Partager')).toBeInTheDocument();
   });
 });
@@ -992,10 +1028,12 @@ describe('RoomDetailPage — mode hors-ligne', () => {
 
     const notice = screen.getByRole('status');
     expect(notice).toHaveTextContent('hors-ligne');
-    expect(notice).toHaveTextContent(/envoyée automatiquement/);
+    expect(notice).toHaveTextContent(/envoyée au retour de la connexion/);
     expect(getSubmitButton()).toBeEnabled();
     // La consultation reste possible : la fiche est bien rendue.
-    expect(container.querySelector('.room-detail__title')).not.toBeNull();
+    expect(
+      within(container).getByRole('heading', { level: 1, name: 'Suite vue mer' }),
+    ).toBeInTheDocument();
   });
 
   it("enregistre la demande en file d'attente sans appeler l'API", async () => {
@@ -1009,8 +1047,11 @@ describe('RoomDetailPage — mode hors-ligne', () => {
     const stored = readQueue();
     expect(stored).toHaveLength(1);
     expect(stored[0]?.type).toBe('reservation');
-    expect(screen.getByText('Votre demande a été enregistrée hors-ligne.')).toBeInTheDocument();
-    expect(screen.queryByText('Suivre ma réservation')).not.toBeInTheDocument();
+    expect(screen.getByText('Demande enregistrée hors-ligne')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Suivre ma réservation/ })).toHaveAttribute(
+      'href',
+      '/ci/suivi-reservation',
+    );
   });
 
   it("envoie la demande enregistrée quand la connexion revient", async () => {
@@ -1028,7 +1069,7 @@ describe('RoomDetailPage — mode hors-ligne', () => {
 
     await waitFor(() => expect(mocks.addReservation).toHaveBeenCalledTimes(1));
     expect(readQueue()).toEqual([]);
-    expect(screen.getByText('Votre demande a été enregistrée hors-ligne.')).toBeInTheDocument();
+    expect(screen.getByText('Demande enregistrée hors-ligne')).toBeInTheDocument();
   });
 
   it("valide les champs avant de mettre en file d'attente", async () => {

@@ -30,11 +30,14 @@ test.describe('pages légales', () => {
 
     await page.goto('/a-propos');
 
-    await expect(page.locator('h1.page-legal__title')).toHaveText('À propos de Linkhoo');
-    await expect(page.locator('.page-legal__section').first()).toContainText(
-      '1. Qui sommes-nous ?',
+    await expect(page.locator('h1.ab-hero__title')).toContainText('Notre mission');
+    await expect(page.locator('.ab-pillars')).toContainText('Notre mission');
+    await expect(page.locator('h1.ab-hero__title')).toContainText(
+      'plus sûre et plus proche de vous',
     );
-    await expect(page.locator('.page-legal__back')).toBeVisible();
+    await expect(page.locator('nav[aria-label="Navigation principale"]')).toContainText(
+      'À propos',
+    );
   });
 
   test("ouvre la page à propos depuis le pied de page", async ({ page }) => {
@@ -47,7 +50,7 @@ test.describe('pages légales', () => {
     await legalNav.getByRole('link', { name: 'À propos' }).click();
 
     await expect(page).toHaveURL(/\/a-propos$/);
-    await expect(page.locator('h1.page-legal__title')).toHaveText('À propos de Linkhoo');
+    await expect(page.locator('h1.ab-hero__title')).toContainText('Notre mission');
   });
 
   test('ouvre les mentions légales depuis le pied de page', async ({ page }) => {

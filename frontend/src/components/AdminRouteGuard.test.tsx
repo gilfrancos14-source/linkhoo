@@ -4,14 +4,24 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import AdminRouteGuard from './AdminRouteGuard';
 import type { AdminData } from '../lib/adminApi';
 
-const mocks = vi.hoisted(() => ({
-  getAdminToken: vi.fn<() => string | null>(),
-  getMe: vi.fn<() => Promise<AdminData>>(),
-}));
+const mocks = vi.hoisted(() => {
+  class AdminUnauthorizedError extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = 'AdminUnauthorizedError';
+    }
+  }
+  return {
+    getAdminToken: vi.fn<() => string | null>(),
+    getMe: vi.fn<() => Promise<AdminData>>(),
+    AdminUnauthorizedError,
+  };
+});
 
 vi.mock('../lib/adminApi', () => ({
   getAdminToken: mocks.getAdminToken,
   apiAdmin: { getMe: mocks.getMe },
+  AdminUnauthorizedError: mocks.AdminUnauthorizedError,
   ADMIN_UNAUTHORIZED_EVENT: 'admin:unauthorized',
 }));
 
@@ -52,6 +62,8 @@ function renderAdmin(entry: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.getAdminToken.mockReturnValue(null);
+  // Par défaut : pas de session valide (401) → redirection vers le login.
+  mocks.getMe.mockRejectedValue(new mocks.AdminUnauthorizedError('Session expirée'));
 });
 
 afterEach(() => {
@@ -59,17 +71,14 @@ afterEach(() => {
 });
 
 describe('AdminRouteGuard', () => {
-  it("n'appelle pas getMe sans token et redirige vers /ci/admin/login", async () => {
-    mocks.getAdminToken.mockReturnValue(null);
-
+  it("interroge /me puis redirige vers /ci/admin/login sans session (401)", async () => {
     renderAdmin('/ci/admin');
 
     expect(await screen.findByText('Connexion admin')).toBeInTheDocument();
-    expect(mocks.getMe).not.toHaveBeenCalled();
+    expect(mocks.getMe).toHaveBeenCalledTimes(1);
   });
 
   it('affiche le chargement puis les children quand getMe résout', async () => {
-    mocks.getAdminToken.mockReturnValue('jwt-admin');
     let resolveMe: (value: AdminData) => void = () => {};
     mocks.getMe.mockImplementation(
       () =>
@@ -89,14 +98,7 @@ describe('AdminRouteGuard', () => {
     expect(await screen.findByText('Tableau de bord admin')).toBeInTheDocument();
   });
 
-  it('redirige vers /ci/admin/login quand getMe rejette avec un token purgé (401)', async () => {
-    // Scénario 401 : adminApi a purgé le token avant de throw → getAdminToken null.
-    mocks.getAdminToken.mockReturnValue('jwt-admin');
-    mocks.getMe.mockImplementation(async () => {
-      mocks.getAdminToken.mockReturnValue(null);
-      throw new Error('API error 401');
-    });
-
+  it('redirige vers /ci/admin/login quand getMe rejette en 401', async () => {
     renderAdmin('/ci/admin');
 
     expect(await screen.findByText('Connexion admin')).toBeInTheDocument();
@@ -104,8 +106,6 @@ describe('AdminRouteGuard', () => {
   });
 
   it('affiche un retry (pas de déconnexion) quand getMe échoue sur un réseau coupé', async () => {
-    // Scénario réseau : le token est encore valide, on ne déconnecte pas.
-    mocks.getAdminToken.mockReturnValue('jwt-admin');
     mocks.getMe.mockRejectedValue(new Error('Délai dépassé'));
 
     renderAdmin('/ci/admin');

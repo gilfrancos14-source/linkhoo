@@ -1,7 +1,7 @@
 import type { MarketCode } from '../config/markets';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
 import { MarketProvider } from '../contexts/MarketContext';
@@ -271,12 +271,12 @@ describe('SearchResultsPage — requêtes', () => {
     expect(mocks.fetchCategoriesByMarket).toHaveBeenCalledWith('CI');
   });
 
-  it('interroge les biens du marché paginés quand les dates manquent', async () => {
+  it('ne télécharge pas le catalogue quand les dates manquent', async () => {
     renderPage('/ci/recherche');
 
     await screen.findByRole('heading', { level: 1, name: 'Sélectionnez vos dates' });
 
-    expect(mocks.fetchRoomsPage).toHaveBeenCalledWith(expect.objectContaining({ market: 'CI' }));
+    expect(mocks.fetchRoomsPage).not.toHaveBeenCalled();
     expect(mocks.fetchAvailableRooms).not.toHaveBeenCalled();
   });
 
@@ -287,7 +287,11 @@ describe('SearchResultsPage — requêtes', () => {
     await screen.findByText('1 bien trouvé');
 
     expect(mocks.fetchAvailableRooms).toHaveBeenCalledWith('BJ', '2026-03-01', '2026-03-04');
-    expect(screen.getByRole('link', { name: 'Accueil' })).toHaveAttribute('href', '/bj');
+    expect(
+      within(screen.getByRole('navigation', { name: "Fil d'Ariane" })).getByRole('link', {
+        name: 'Accueil',
+      }),
+    ).toHaveAttribute('href', '/bj');
     expect(screen.getByRole('link', { name: 'Suite vue mer, dès 25 000 FCFA / nuit' })).toHaveAttribute(
       'href',
       '/bj/chambre/r1?arrivee=2026-03-01&depart=2026-03-04',

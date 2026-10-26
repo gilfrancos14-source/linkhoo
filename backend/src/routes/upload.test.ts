@@ -252,7 +252,18 @@ describe('POST /api/upload — mise en ligne', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.url).toBe('https://storage.test/signed/fichier-test');
-    expect(supabaseStorage().createSignedUrl).toHaveBeenCalledWith(expect.any(String), 3600);
+    // Les documents de vérification sont préfixés par l'utilisateur : le
+    // backend peut ensuite vérifier que le chemin soumis lui appartient.
+    expect(res.body.path).toMatch(/^user_1\/[^/]+\.pdf$/);
+    expect(supabaseStorage().upload).toHaveBeenCalledWith(
+      expect.stringMatching(/^user_1\/[^/]+\.pdf$/),
+      PDF_HEADER,
+      expect.objectContaining({ contentType: 'application/pdf' }),
+    );
+    expect(supabaseStorage().createSignedUrl).toHaveBeenCalledWith(
+      expect.stringMatching(/^user_1\/[^/]+\.pdf$/),
+      3600,
+    );
     expect(supabaseStorage().getPublicUrl).not.toHaveBeenCalled();
   });
 });

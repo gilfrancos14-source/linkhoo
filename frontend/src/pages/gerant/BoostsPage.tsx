@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
 import { useHomePath } from '../../hooks/useHomePath';
-import { apiBoosts, apiGerants, type BoostData, type GerantData } from '../../lib/api';
+import { apiBoosts, apiGerants, type BoostData, type BoostDisplayStatus, type GerantData } from '../../lib/api';
 import {
   boostAmount,
   boostDateRange,
@@ -19,6 +19,24 @@ import {
 // refuse pending / canceled / exhausted, la fenêtre reste à 90 jours).
 const RESCHEDULABLE = new Set<string>(['scheduled', 'live', 'paused', 'ended']);
 
+type BoostFilter = 'all' | 'live' | 'scheduled' | 'ended';
+
+const FILTERS: { id: BoostFilter; label: string }[] = [
+  { id: 'all', label: 'Toutes' },
+  { id: 'live', label: 'Actives' },
+  { id: 'scheduled', label: 'Programmées' },
+  { id: 'ended', label: 'Terminées' },
+];
+
+const ENDED_STATUSES: BoostDisplayStatus[] = ['ended', 'exhausted', 'canceled'];
+
+function matchesFilter(status: BoostDisplayStatus, filter: BoostFilter): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'live') return status === 'live' || status === 'paused';
+  if (filter === 'scheduled') return status === 'scheduled';
+  return ENDED_STATUSES.includes(status);
+}
+
 export default function BoostsPage() {
   const homePath = useHomePath();
   const gerantPath = `${homePath}/gerant`;
@@ -27,6 +45,7 @@ export default function BoostsPage() {
   const [items, setItems] = useState<BoostData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [filter, setFilter] = useState<BoostFilter>('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [startDay, setStartDay] = useState('');
   const [endDay, setEndDay] = useState('');
@@ -95,30 +114,50 @@ export default function BoostsPage() {
           <h1>Booster</h1>
           <p>Chargement...</p>
         </div>
+        <div className="boosts-skeleton" aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="boosts-skeleton__card">
+              <span className="boosts-skeleton__media" />
+              <span className="boosts-skeleton__line boosts-skeleton__line--lg" />
+              <span className="boosts-skeleton__line" />
+              <span className="boosts-skeleton__line boosts-skeleton__line--sm" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   const verified = Boolean(gerant?.is_verified);
+  const liveCount = items.filter((b) => b.display_status === 'live').length;
+  const totalSpent = items.reduce((sum, b) => sum + b.spent, 0);
+  const totalRemaining = items.reduce((sum, b) => sum + b.remaining, 0);
+  const visibleItems = items.filter((b) => matchesFilter(b.display_status, filter));
 
   return (
     <div className="dash">
-      <div className="admin-page__header">
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800 }}>Booster</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 14.5, color: 'var(--admin-ink-soft)' }}>
-            Sponsorisez vos chambres : jusqu'à 6 emplacements en vedette sur la page d'accueil.
-          </p>
+      <div className="boosts-head">
+        <div className="boosts-head__copy">
+          <span className="boosts-head__eyebrow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+            Sponsorisation
+          </span>
+          <h1>Booster</h1>
+          <p>Sponsorisez vos chambres : jusqu'à 6 emplacements en vedette sur la page d'accueil.</p>
         </div>
-        {verified ? (
-          <Link to={`${gerantPath}/boosts/new`} className="admin-btn admin-btn--primary">
-            + Nouvelle campagne
-          </Link>
-        ) : (
-          <Link to={`${gerantPath}/verification`} className="admin-btn">
-            Vérifier mon compte
-          </Link>
-        )}
+        <div className="boosts-head__actions">
+          {verified ? (
+            <Link to={`${gerantPath}/boosts/new`} className="admin-btn admin-btn--primary">
+              + Nouvelle campagne
+            </Link>
+          ) : (
+            <Link to={`${gerantPath}/verification`} className="admin-btn">
+              Vérifier mon compte
+            </Link>
+          )}
+        </div>
       </div>
 
       {!verified && (
@@ -140,8 +179,8 @@ export default function BoostsPage() {
       )}
 
       {error && (
-        <div style={{ padding: '12px 16px', background: '#FEE2E2', border: '1px solid #FECACA', borderRadius: 10, color: '#991B1B', fontSize: 13.5 }}>
-          {error}{' '}
+        <div className="boosts-alert" role="alert">
+          <span>{error}</span>
           <button className="admin-btn admin-btn--sm" onClick={() => { setLoading(true); load(); }}>
             Réessayer
           </button>
@@ -149,101 +188,221 @@ export default function BoostsPage() {
       )}
 
       {!error && items.length === 0 && (
-        <section className="panel">
-          <div className="panel__head">
-            <h2>Aucune campagne</h2>
-          </div>
-          <div style={{ padding: '16px 24px', color: '#64748B', fontSize: 14 }}>
-            {verified ? (
-              <>
-                Créez votre première campagne pour mettre une chambre en avant sur la page d'accueil.
-                {' '}
-                <Link to={`${gerantPath}/boosts/new`}>Commencer</Link>
-              </>
-            ) : (
-              'Passez la vérification de votre compte puis créez votre première campagne.'
-            )}
-          </div>
+        <section className="boosts-empty">
+          <span className="boosts-empty__icon" aria-hidden="true">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+          </span>
+          <h2>Aucune campagne</h2>
+          <p>
+            {verified
+              ? 'Créez votre première campagne pour mettre une chambre en avant sur la page d’accueil.'
+              : 'Passez la vérification de votre compte puis créez votre première campagne.'}
+          </p>
+          {verified && (
+            <Link to={`${gerantPath}/boosts/new`} className="admin-btn admin-btn--primary">
+              Commencer
+            </Link>
+          )}
         </section>
       )}
 
-      {items.length > 0 && (
-        <div className="boost-list">
-          {items.map((boost) => {
-            const percent = boostSpentPercent(boost.budget_total, boost.spent);
-            const canReschedule = RESCHEDULABLE.has(boost.display_status);
-            const roomTitle = boost.room?.title ?? 'Chambre';
-            return (
-              <article key={boost.id} className="boost-row">
-                <div className="boost-row__main">
-                  <div className="boost-row__title">
-                    {roomTitle}{' '}
-                    <span className={`boost-pill boost-pill--${boost.display_status}`}>
-                      {boostStatusLabels[boost.display_status]}
-                    </span>
-                  </div>
-                  <div className="boost-row__meta">
-                    <span>{boostModeLabels[boost.mode]}</span>
-                    <span>{boostDateRange(boost.starts_at, boost.ends_at)}</span>
-                    <span>
-                      Reste {boostAmount(boost.remaining)} sur {boostAmount(boost.budget_total)}
-                    </span>
-                  </div>
-                  {editingId === boost.id ? (
-                    <div className="boost-form" style={{ marginTop: 8 }}>
-                      <div className="boost-field">
-                        <label htmlFor={`start-${boost.id}`}>Début</label>
-                        <input
-                          id={`start-${boost.id}`}
-                          type="date"
-                          value={startDay}
-                          min={isoDay(new Date())}
-                          onChange={(e) => setStartDay(e.target.value)}
-                        />
-                      </div>
-                      <div className="boost-field">
-                        <label htmlFor={`end-${boost.id}`}>Fin</label>
-                        <input
-                          id={`end-${boost.id}`}
-                          type="date"
-                          value={endDay}
-                          min={startDay}
-                          onChange={(e) => setEndDay(e.target.value)}
-                        />
-                      </div>
-                      {scheduleError && (
-                        <p style={{ margin: 0, color: '#991B1B', fontSize: 13 }}>{scheduleError}</p>
+      {!error && items.length > 0 && (
+        <>
+          <div className="boosts-kpis">
+            <div className="boosts-kpi">
+              <span className="boosts-kpi__icon boosts-kpi__icon--live" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12.55a11 11 0 0114.08 0" />
+                  <path d="M1.42 9a16 16 0 0121.16 0" />
+                  <path d="M8.53 16.11a6 6 0 016.95 0" />
+                  <line x1="12" y1="20" x2="12.01" y2="20" />
+                </svg>
+              </span>
+              <div className="boosts-kpi__body">
+                <span className="boosts-kpi__label">Campagnes en ligne</span>
+                <strong className="boosts-kpi__value">{liveCount}</strong>
+                <span className="boosts-kpi__hint">sur {items.length} campagne{items.length > 1 ? 's' : ''}</span>
+              </div>
+            </div>
+
+            <div className="boosts-kpi">
+              <span className="boosts-kpi__icon boosts-kpi__icon--spent" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="1" x2="12" y2="23" />
+                  <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+                </svg>
+              </span>
+              <div className="boosts-kpi__body">
+                <span className="boosts-kpi__label">Budget consommé</span>
+                <strong className="boosts-kpi__value">{boostAmount(totalSpent)}</strong>
+                <span className="boosts-kpi__hint">sur l’ensemble des campagnes</span>
+              </div>
+            </div>
+
+            <div className="boosts-kpi">
+              <span className="boosts-kpi__icon boosts-kpi__icon--remaining" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 3v18h18" />
+                  <path d="M7 15l4-6 4 3 5-7" />
+                </svg>
+              </span>
+              <div className="boosts-kpi__body">
+                <span className="boosts-kpi__label">Budget restant</span>
+                <strong className="boosts-kpi__value">{boostAmount(totalRemaining)}</strong>
+                <span className="boosts-kpi__hint">encore disponible</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="boosts-filters" role="group" aria-label="Filtrer les campagnes">
+            {FILTERS.map((f) => {
+              const count = items.filter((b) => matchesFilter(b.display_status, f.id)).length;
+              return (
+                <button
+                  key={f.id}
+                  type="button"
+                  className={`boosts-filter${filter === f.id ? ' is-active' : ''}`}
+                  aria-pressed={filter === f.id}
+                  onClick={() => setFilter(f.id)}
+                >
+                  {f.label}
+                  <span className="boosts-filter__count">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {visibleItems.length === 0 ? (
+            <p className="boosts-filters-empty">Aucune campagne pour ce filtre.</p>
+          ) : (
+            <div className="boost-list">
+              {visibleItems.map((boost) => {
+                const percent = boostSpentPercent(boost.budget_total, boost.spent);
+                const canReschedule = RESCHEDULABLE.has(boost.display_status);
+                const roomTitle = boost.room?.title ?? 'Chambre';
+                const place = [boost.room?.ville, boost.room?.quartier].filter(Boolean).join(' · ');
+                return (
+                  <article key={boost.id} className="boost-card">
+                    <div className="boost-card__media">
+                      {boost.room?.img ? (
+                        <img src={boost.room.img} alt="" loading="lazy" />
+                      ) : (
+                        <span className="boost-card__media-fallback" aria-hidden="true">
+                          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                            <polyline points="9 22 9 12 15 12 15 22" />
+                          </svg>
+                        </span>
                       )}
-                      <div className="boost-actions">
-                        <button
-                          className="admin-btn admin-btn--primary admin-btn--sm"
-                          onClick={() => saveSchedule(boost.id)}
-                          disabled={saving}
-                        >
-                          {saving ? 'Enregistrement...' : 'Enregistrer'}
-                        </button>
-                        <button className="admin-btn admin-btn--sm" onClick={() => setEditingId(null)} disabled={saving}>
-                          Annuler
-                        </button>
-                      </div>
+                      <span className={`boost-pill boost-pill--${boost.display_status} boost-card__status`}>
+                        <span className="boost-pill__dot" aria-hidden="true" />
+                        {boostStatusLabels[boost.display_status]}
+                      </span>
                     </div>
-                  ) : null}
-                </div>
-                <div className="boost-row__side">
-                  <span className="boost-budget">{boostAmount(boost.spent)} consommés</span>
-                  <div className="boost-progress" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
-                    <span className="boost-progress__fill" style={{ width: `${percent}%` }} />
-                  </div>
-                  {canReschedule && (
-                    <button className="admin-btn admin-btn--sm" onClick={() => openSchedule(boost)}>
-                      Modifier les dates
-                    </button>
-                  )}
-                </div>
-              </article>
-            );
-          })}
-        </div>
+
+                    <div className="boost-card__body">
+                      <div className="boost-card__head">
+                        <h3 className="boost-card__title">{roomTitle}</h3>
+                        {place && <p className="boost-card__place">{place}</p>}
+                      </div>
+
+                      <div className="boost-card__meta">
+                        <span className="boost-card__chip">{boostModeLabels[boost.mode]}</span>
+                        <span className="boost-card__chip boost-card__chip--dates">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <rect x="3" y="4" width="18" height="18" rx="2" />
+                            <path d="M16 2v4M8 2v4M3 10h18" />
+                          </svg>
+                          {boostDateRange(boost.starts_at, boost.ends_at)}
+                        </span>
+                      </div>
+
+                      <div className="boost-card__stats">
+                        <div className="boost-card__stat">
+                          <span className="boost-card__stat-value">{boost.clicks_count}</span>
+                          <span className="boost-card__stat-label">clics</span>
+                        </div>
+                        <div className="boost-card__stat">
+                          <span className="boost-card__stat-value">{boost.impressions_count}</span>
+                          <span className="boost-card__stat-label">impressions</span>
+                        </div>
+                      </div>
+
+                      <div className="boost-card__budget">
+                        <div className="boost-card__budget-top">
+                          <span className="boost-budget">{boostAmount(boost.spent)} consommés</span>
+                          <span className="boost-card__remaining">
+                            Reste {boostAmount(boost.remaining)} sur {boostAmount(boost.budget_total)}
+                          </span>
+                        </div>
+                        <div
+                          className="boost-progress"
+                          role="progressbar"
+                          aria-valuenow={percent}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                        >
+                          <span className="boost-progress__fill" style={{ width: `${percent}%` }} />
+                        </div>
+                        <span className="boost-card__percent">{percent}% du budget utilisé</span>
+                      </div>
+
+                      {editingId === boost.id ? (
+                        <div className="boost-form boost-card__schedule">
+                          <div className="boost-field">
+                            <label htmlFor={`start-${boost.id}`}>Début</label>
+                            <input
+                              id={`start-${boost.id}`}
+                              type="date"
+                              value={startDay}
+                              min={isoDay(new Date())}
+                              onChange={(e) => setStartDay(e.target.value)}
+                            />
+                          </div>
+                          <div className="boost-field">
+                            <label htmlFor={`end-${boost.id}`}>Fin</label>
+                            <input
+                              id={`end-${boost.id}`}
+                              type="date"
+                              value={endDay}
+                              min={startDay}
+                              onChange={(e) => setEndDay(e.target.value)}
+                            />
+                          </div>
+                          {scheduleError && (
+                            <p className="boost-card__error">{scheduleError}</p>
+                          )}
+                          <div className="boost-actions">
+                            <button
+                              className="admin-btn admin-btn--primary admin-btn--sm"
+                              onClick={() => saveSchedule(boost.id)}
+                              disabled={saving}
+                            >
+                              {saving ? 'Enregistrement...' : 'Enregistrer'}
+                            </button>
+                            <button className="admin-btn admin-btn--sm" onClick={() => setEditingId(null)} disabled={saving}>
+                              Annuler
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {canReschedule && editingId !== boost.id && (
+                        <div className="boost-card__actions">
+                          <button className="admin-btn admin-btn--sm" onClick={() => openSchedule(boost)}>
+                            Modifier les dates
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

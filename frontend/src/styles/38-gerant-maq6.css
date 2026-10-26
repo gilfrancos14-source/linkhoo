@@ -1,0 +1,99 @@
+/* ==========================================================================
+   ESPACE GÉRANT - Boîte de réception (reproduction de maquette/maq6.html)
+   La page embarque sa propre sidebar et son propre topbar : l'AdminLayout
+   masque son chrome sur cette route (classe .admin--blank).
+   ========================================================================== */
+
+.gerant-maq6 {
+  background: #f7f9fc;
+  color: #1e2a44;
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:where(.gerant-maq6) :where(*, *::before, *::after) {
+  box-sizing: border-box;
+}
+
+:where(.gerant-maq6) :where(*) {
+  border-width: 0;
+  border-style: solid;
+  border-color: #e5e7eb;
+}
+
+:where(.gerant-maq6) :where(svg, img) {
+  display: block;
+  vertical-align: middle;
+}
+
+:where(.gerant-maq6) :where(h1, h2, h3, h4, h5, h6) {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+:where(.gerant-maq6) :where(ol, ul) {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+:where(.gerant-maq6) :where(dl, dd) {
+  margin: 0;
+}
+
+:where(.gerant-maq6) :where(button, [role='button']) {
+  cursor: pointer;
+}
+
+:where(.gerant-maq6) :where(button, [type='button'], [type='submit']) {
+  -webkit-appearance: button;
+  background-color: transparent;
+  background-image: none;
+}
+
+:where(.gerant-maq6) :where(input, select, textarea) {
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: 100%;
+  line-height: inherit;
+  color: inherit;
+}
+
+:where(.gerant-maq6) :where(input, textarea)::placeholder {
+  opacity: 1;
+  color: #94a3b8;
+}
+
+:where(.gerant-maq6) :where(input, select, textarea):focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.gerant-maq6 .ico {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.gerant-maq6 main {
+  overflow: visible;
+}
+
+html:has(.gerant-maq6)::before {
+  display: none;
+}
+
+.gerant-maq6 aside {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.gerant-maq6 aside::-webkit-scrollbar {
+  display: none;
+}

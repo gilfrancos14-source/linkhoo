@@ -3,6 +3,7 @@ import { createClerkClient } from '@clerk/backend';
 import { supabaseAdmin } from '../config/supabase';
 import { clientCreateSchema, clientUpdateSchema } from '../validations/client';
 import { requireProfile } from '../middleware/requireProfile';
+import { CLIENT_COLUMNS } from '../utils/selects';
 
 const router = Router();
 
@@ -25,7 +26,7 @@ router.get('/me', requireProfile('client'), async (req: Request, res: Response, 
 
     const { data, error } = await supabaseAdmin
       .from('clients')
-      .select('*')
+      .select(CLIENT_COLUMNS)
       .eq('clerk_user_id', authUserId)
       .maybeSingle();
     if (error) throw error;
@@ -62,7 +63,7 @@ router.patch('/me', requireProfile('client'), async (req: Request, res: Response
       .from('clients')
       .update({ ...parsed.data, updated_at: new Date().toISOString() })
       .eq('clerk_user_id', authUserId)
-      .select()
+      .select(CLIENT_COLUMNS)
       .maybeSingle();
     if (error) throw error;
     res.json(data);
@@ -124,7 +125,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
         prenom: parsedBody.data.prenom,
         telephone: parsedBody.data.telephone,
       })
-      .select()
+      .select(CLIENT_COLUMNS)
       .single();
     if (error) throw error;
     res.status(201).json(data);

@@ -16,7 +16,8 @@ function review(overrides: Partial<FeaturedReviewData> = {}): FeaturedReviewData
     note_appartement: 5,
     commentaire: 'Séjour parfait, vue magnifique sur la lagune.',
     created_at: '2026-01-10',
-    room: { title: 'Suite Azur' },
+    room: { title: 'Suite Azur', ville: 'Abidjan', market: 'CI' },
+    room_avg: 4.8,
     ...overrides,
   };
 }

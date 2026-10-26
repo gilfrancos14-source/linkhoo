@@ -1,4 +1,4 @@
-export type Tab = 'reservations' | 'profil';
+export type View = 'overview' | 'stays' | 'profile';
 
 export interface ReviewFormState {
   reservationId: string;

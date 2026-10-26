@@ -1,0 +1,74 @@
+/* ==========================================================================
+   Maquette React (page marché) — shell header + contenu.
+   ========================================================================== */
+
+.maquette-shell {
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+}
+
+.maquette-shell .acc-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  flex: none;
+}
+
+.maquette-shell .acc-nav {
+  gap: 24px;
+}
+
+.maquette-shell .acc-nav__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.maquette-shell .acc-nav__link--active {
+  padding: 24px 0;
+}
+
+.maquette-shell .acc-mobile-menu button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+@media (min-width: 768px) and (max-width: 1000px) {
+  .maquette-shell .acc-nav {
+    gap: 18px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 1359px) {
+  .maquette-shell .acc-account-btn {
+    width: 42px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .maquette-shell .acc-account-btn span {
+    display: none;
+  }
+}
+
+@media (min-width: 1360px) {
+  .maquette-shell .acc-nav {
+    margin-left: -80px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .maquette-shell .acc-country-btn {
+    display: none;
+  }
+}
+

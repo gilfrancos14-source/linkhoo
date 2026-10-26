@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HabiCI – Aperçu de l’activité</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: { extend: {
+    fontFamily: { sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+    colors: { navy: '#0f2a5c', brand: { DEFAULT: '#f97316', dark: '#ea580c', soft: '#fff1e6' } }
+  } }
+}
+</script>
+<style type="text/tailwindcss">
+@layer components {
+  .i { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .card { @apply bg-white rounded-2xl border border-slate-100 shadow-[0_2px_12px_rgba(15,42,92,.05)]; }
+  .grp { @apply flex items-center gap-3 px-3 py-2 text-sm font-semibold text-navy; }
+  .grp svg { @apply w-5 h-5; }
+  .sub { @apply flex items-center gap-3 py-2 text-xs text-slate-500 hover:text-navy; }
+  .sub svg { @apply w-4 h-4 text-slate-400; }
+  .pill { @apply inline-block rounded-full px-3.5 py-1 text-[11px] font-medium; }
+  .link { @apply inline-flex items-center gap-1 text-xs font-semibold text-brand-dark; }
+  .badge { @apply ml-auto grid h-5 w-5 place-items-center rounded-full bg-brand text-[11px] font-bold text-white; }
+  .avatar { @apply grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-slate-300 to-slate-500 font-bold text-white; }
+}
+</style>
+</head>
+
+<body class="bg-[#f5f8fc] font-sans text-navy antialiased">
+
+<!-- Icônes (sprite SVG) -->
+<svg class="absolute h-0 w-0" aria-hidden="true">
+  <symbol id="home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-5h4v5"/></symbol>
+  <symbol id="bed" viewBox="0 0 24 24"><path d="M3 20V5M3 16h18v4M21 16v-4a3 3 0 0 0-3-3h-7v7"/><circle cx="7" cy="11" r="1.5"/></symbol>
+  <symbol id="cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-5.4A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4"/></symbol>
+  <symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
+  <symbol id="crown" viewBox="0 0 24 24"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5z" fill="currentColor"/></symbol>
+  <symbol id="mega" viewBox="0 0 24 24"><path d="M3 11v3l12 5V6zM15 9a3 3 0 0 1 0 6M6 15l1 5h3l-1-4"/></symbol>
+  <symbol id="down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></symbol>
+  <symbol id="chart" viewBox="0 0 24 24"><path d="M5 21V10M12 21V4M19 21v-8"/></symbol>
+  <symbol id="bolt" viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol>
+  <symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM9 13h6M9 17h6"/></symbol>
+  <symbol id="mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+  <symbol id="build" viewBox="0 0 24 24"><path d="M5 21V4h10v17M15 9h4v12M9 8h2M9 12h2M9 16h2M3 21h18"/></symbol>
+  <symbol id="list" viewBox="0 0 24 24"><path d="M4 6h2M4 12h2M4 18h2M9 6h11M9 12h11M9 18h11"/></symbol>
+  <symbol id="dots" viewBox="0 0 24 24"><g fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></g></symbol>
+</svg>
+
+<div class="flex min-h-screen">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white px-4 py-5 lg:flex">
+    <a href="#" class="mb-6 flex items-center gap-2.5 px-2">
+      <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand text-white"><svg class="i h-5 w-5"><use href="#home"/></svg></span>
+      <span class="text-2xl font-extrabold">Habi<span class="text-brand">CI</span></span>
+    </a>
+
+    <nav class="space-y-3">
+      <a href="#" class="grp rounded-xl bg-brand-soft text-brand-dark"><svg class="i"><use href="#home"/></svg>Aperçu</a>
+
+      <div>
+        <div class="grp justify-between"><span class="flex items-center gap-3"><svg class="i"><use href="#bed"/></svg>Chambres</span><svg class="i !h-4 !w-4"><use href="#up"/></svg></div>
+        <div class="pl-3">
+          <a href="#" class="sub"><svg class="i"><use href="#list"/></svg>Toutes les chambres</a>
+          <a href="#" class="sub"><svg class="i"><use href="#plus"/></svg>Ajouter une chambre</a>
+          <a href="#" class="sub"><svg class="i"><use href="#tag"/></svg>Catégories</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="grp"><svg class="i"><use href="#cal"/></svg>Réservations<span class="badge">3</span></div>
+        <div class="pl-3">
+          <a href="#" class="sub"><svg class="i"><use href="#user"/></svg>Demandes</a>
+          <a href="#" class="sub"><svg class="i"><use href="#cal"/></svg>Calendrier</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="grp"><svg class="i"><use href="#chat"/></svg>Messages<span class="badge">2</span></div>
+        <div class="pl-3">
+          <a href="#" class="sub"><svg class="i"><use href="#mail"/></svg>Boîte de réception</a>
+          <a href="#" class="sub"><svg class="i"><use href="#chat"/></svg>Nouveau message</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="grp justify-between"><span class="flex items-center gap-3"><svg class="i"><use href="#shield"/></svg>Vérification</span><svg class="i !h-4 !w-4"><use href="#down"/></svg></div>
+        <div class="pl-3">
+          <a href="#" class="sub"><svg class="i"><use href="#doc"/></svg>Mes documents</a>
+          <a href="#" class="sub"><svg class="i"><use href="#doc"/></svg>Suivi de vérification</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="grp justify-between"><span class="flex items-center gap-3"><svg class="i"><use href="#user"/></svg>Profil</span><svg class="i !h-4 !w-4"><use href="#down"/></svg></div>
+        <div class="pl-3"><a href="#" class="sub"><svg class="i"><use href="#user"/></svg>Mes informations</a></div>
+      </div>
+
+      <div>
+        <div class="grp"><svg class="i text-brand"><use href="#crown"/></svg>Premium</div>
+        <div class="pl-3"><a href="#" class="sub"><svg class="i"><use href="#cal"/></svg>Mon abonnement</a></div>
+      </div>
+
+      <div>
+        <div class="grp justify-between"><span class="flex items-center gap-3"><svg class="i"><use href="#mega"/></svg>Booster</span><svg class="i !h-4 !w-4"><use href="#down"/></svg></div>
+        <div class="pl-3">
+          <a href="#" class="sub"><svg class="i"><use href="#mega"/></svg>Campagnes</a>
+          <a href="#" class="sub"><svg class="i"><use href="#mega"/></svg>Créer une campagne</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="mt-auto rounded-2xl border border-orange-100 bg-brand-soft p-4 pt-5">
+      <p class="flex items-center gap-2 text-sm font-bold"><svg class="i h-5 w-5 text-brand"><use href="#crown"/></svg>Passez au Premium</p>
+      <p class="mt-2 text-[11px] text-slate-500">Plus de visibilité, plus de réservations !</p>
+      <a href="#" class="mt-3 block rounded-lg bg-brand py-2 text-center text-xs font-semibold text-white hover:bg-brand-dark">Voir les avantages</a>
+    </div>
+  </aside>
+
+  <!-- ============ CONTENU ============ -->
+  <main class="min-w-0 flex-1 px-4 py-4 lg:px-7">
+
+    <!-- Barre du haut -->
+    <header class="flex items-center gap-4">
+      <label class="card flex max-w-3xl flex-1 items-center gap-3 px-5 py-3 text-slate-400">
+        <svg class="i h-5 w-5"><use href="#search"/></svg>
+        <input type="search" placeholder="Rechercher une chambre, une catégorie…" class="w-full bg-transparent text-sm outline-none placeholder:text-slate-400">
+      </label>
+      <button class="relative ml-auto p-2 text-navy" aria-label="Notifications">
+        <svg class="i h-6 w-6"><use href="#bell"/></svg>
+        <span class="absolute right-0.5 top-0 grid h-4 w-4 place-items-center rounded-full bg-brand text-[10px] font-bold text-white">2</span>
+      </button>
+      <div class="card flex items-center gap-3 py-2 pl-2 pr-4">
+        <span class="avatar h-10 w-10 text-xs">KM</span>
+        <div class="hidden text-xs sm:block"><p class="font-semibold">Koffi Mensah</p><p class="text-slate-400">Gérant</p></div>
+        <svg class="i h-4 w-4"><use href="#down"/></svg>
+      </div>
+    </header>
+
+    <!-- Titre -->
+    <div class="mt-6 flex flex-wrap items-start justify-between gap-2">
+      <div>
+        <h1 class="text-3xl font-extrabold">Bonjour Koffi 👋</h1>
+        <p class="mt-1 text-sm text-slate-500">Voici un aperçu de votre activité sur HabiCI.</p>
+      </div>
+      <div class="text-right text-xs text-slate-500">
+        <p class="flex items-center justify-end gap-2 font-semibold text-navy">Aujourd’hui <svg class="i h-4 w-4"><use href="#cal"/></svg></p>
+        <p>12 novembre 2025</p>
+      </div>
+    </div>
+
+    <div class="mt-5 grid items-start gap-5 xl:grid-cols-[1fr_340px]">
+
+      <!-- ===== Colonne principale ===== -->
+      <div class="min-w-0 space-y-5">
+
+        <!-- Statistiques -->
+        <div class="grid gap-5 sm:grid-cols-3">
+          <div class="card flex items-center gap-4 p-5">
+            <span class="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-sky-100 text-sky-500"><svg class="i h-8 w-8"><use href="#bed"/></svg></span>
+            <div><p class="text-sm text-slate-600">Chambres enregistrées</p><p class="text-3xl font-bold">12</p><p class="mt-1 text-xs font-medium text-sky-500">↗ +2 ce mois</p></div>
+          </div>
+          <div class="card flex items-center gap-4 p-5">
+            <span class="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-emerald-100"><span class="grid h-9 w-9 place-items-center rounded-full bg-emerald-500 text-white"><svg class="i h-5 w-5 !stroke-[2.5]"><use href="#check"/></svg></span></span>
+            <div><p class="text-sm text-slate-600">Chambres disponibles</p><p class="text-3xl font-bold">9</p><p class="mt-1 text-xs font-medium text-emerald-500">↗ +1 ce mois</p></div>
+          </div>
+          <div class="card flex items-center gap-4 p-5">
+            <span class="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-orange-100 text-brand"><svg class="i h-8 w-8"><use href="#home"/></svg></span>
+            <div><p class="text-sm text-slate-600">Chambres occupées</p><p class="text-3xl font-bold">3</p><p class="mt-1 text-xs font-medium text-brand">↗ +1 ce mois</p></div>
+          </div>
+        </div>
+
+        <!-- Catégories -->
+        <section class="card p-5">
+          <div class="mb-4 flex items-center justify-between">
+            <h2 class="text-lg font-bold">Catégories de vos chambres</h2>
+            <a href="#" class="link">Voir tout <svg class="i h-3.5 w-3.5"><use href="#arrow"/></svg></a>
+          </div>
+          <div class="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5">
+            <div class="flex items-center gap-3 rounded-xl border border-slate-100 p-3">
+              <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-sky-100 text-sky-500"><svg class="i h-6 w-6"><use href="#build"/></svg></span>
+              <div class="text-xs"><p class="font-medium">Appartements</p><p class="mt-1 text-slate-500">5</p></div>
+            </div>
+            <div class="flex items-center gap-3 rounded-xl border border-slate-100 p-3">
+              <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-500"><svg class="i h-6 w-6"><use href="#cal"/></svg></span>
+              <div class="text-xs"><p class="font-medium">Studios</p><p class="mt-1 text-slate-500">3</p></div>
+            </div>
+            <div class="flex items-center gap-3 rounded-xl border border-slate-100 p-3">
+              <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-pink-100 text-pink-500"><svg class="i h-6 w-6"><use href="#chat"/></svg></span>
+              <div class="text-xs"><p class="font-medium">Chambres privées</p><p class="mt-1 text-slate-500">2</p></div>
+            </div>
+            <div class="flex items-center gap-3 rounded-xl border border-slate-100 p-3">
+              <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-orange-100 text-brand"><svg class="i h-6 w-6"><use href="#home"/></svg></span>
+              <div class="text-xs"><p class="font-medium">Résidences</p><p class="mt-1 text-slate-500">1</p></div>
+            </div>
+            <div class="flex items-center gap-3 rounded-xl border border-slate-100 p-3">
+              <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-violet-100 text-violet-500"><svg class="i h-6 w-6"><use href="#home"/></svg></span>
+              <div class="text-xs"><p class="font-medium">Villas</p><p class="mt-1 text-slate-500">1</p></div>
+            </div>
+          </div>
+        </section>
+
+        <div class="grid items-start gap-5 2xl:grid-cols-[1.9fr_1fr]">
+
+          <!-- Chambres récentes -->
+          <section class="card p-5">
+            <div class="mb-3 flex items-center justify-between">
+              <h2 class="flex items-center gap-3 text-lg font-bold"><svg class="i h-6 w-6"><use href="#bed"/></svg>Chambres récentes</h2>
+              <a href="#" class="link !text-navy !font-medium">Voir toutes <svg class="i h-3.5 w-3.5"><use href="#arrow"/></svg></a>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full min-w-[520px] text-left text-xs">
+                <thead class="text-slate-600">
+                  <tr><th class="pb-3 font-medium">Photo</th><th class="pb-3 font-medium">Titre</th><th class="pb-3 font-medium">Catégorie</th><th class="pb-3 font-medium">Statut</th><th class="pb-3 text-right font-medium">Actions</th></tr>
+                </thead>
+                <tbody>
+                  <tr class="border-t border-slate-100">
+                    <!-- Remplacez les blocs « dégradé » par : <img src="..." alt="" class="h-12 w-16 rounded-lg object-cover"> -->
+                    <td class="py-3 pr-3"><div class="h-12 w-16 rounded-lg bg-gradient-to-br from-sky-300 to-amber-200"></div></td>
+                    <td class="pr-3"><p class="text-[13px] font-semibold leading-snug">Appartement lumineux<br>avec vue sur la lagune</p><p class="mt-0.5 text-slate-400">Cocody, Abidjan</p></td>
+                    <td><span class="pill bg-sky-100 text-sky-600">Appartement</span></td>
+                    <td><span class="pill bg-emerald-100 text-emerald-600">Disponible</span></td>
+                    <td class="text-right"><button class="p-1 text-slate-400" aria-label="Actions"><svg class="i h-5 w-5"><use href="#dots"/></svg></button></td>
+                  </tr>
+                  <tr class="border-t border-slate-100">
+                    <td class="py-3 pr-3"><div class="h-12 w-16 rounded-lg bg-gradient-to-br from-orange-200 to-rose-300"></div></td>
+                    <td class="pr-3"><p class="text-[13px] font-semibold leading-snug">Studio moderne au Plateau</p><p class="mt-0.5 text-slate-400">Plateau, Abidjan</p></td>
+                    <td><span class="pill bg-indigo-100 text-indigo-500">Studio</span></td>
+                    <td><span class="pill bg-orange-100 text-orange-500">Occupée</span></td>
+                    <td class="text-right"><button class="p-1 text-slate-400" aria-label="Actions"><svg class="i h-5 w-5"><use href="#dots"/></svg></button></td>
+                  </tr>
+                  <tr class="border-t border-slate-100">
+                    <td class="py-3 pr-3"><div class="h-12 w-16 rounded-lg bg-gradient-to-br from-amber-200 to-orange-400"></div></td>
+                    <td class="pr-3"><p class="text-[13px] font-semibold leading-snug">Chambre privée cosy</p><p class="mt-0.5 text-slate-400">Marcory, Abidjan</p></td>
+                    <td><span class="pill bg-pink-100 text-pink-500">Chambre privée</span></td>
+                    <td><span class="pill bg-emerald-100 text-emerald-600">Disponible</span></td>
+                    <td class="text-right"><button class="p-1 text-slate-400" aria-label="Actions"><svg class="i h-5 w-5"><use href="#dots"/></svg></button></td>
+                  </tr>
+                  <tr class="border-t border-slate-100">
+                    <td class="py-3 pr-3"><div class="h-12 w-16 rounded-lg bg-gradient-to-br from-sky-400 to-slate-300"></div></td>
+                    <td class="pr-3"><p class="text-[13px] font-semibold leading-snug">Résidence Les Palmiers</p><p class="mt-0.5 text-slate-400">Riviera, Abidjan</p></td>
+                    <td><span class="pill bg-teal-100 text-teal-600">Résidence</span></td>
+                    <td><span class="pill bg-emerald-100 text-emerald-600">Disponible</span></td>
+                    <td class="text-right"><button class="p-1 text-slate-400" aria-label="Actions"><svg class="i h-5 w-5"><use href="#dots"/></svg></button></td>
+                  </tr>
+                  <tr class="border-t border-slate-100">
+                    <td class="py-3 pr-3"><div class="h-12 w-16 rounded-lg bg-gradient-to-br from-emerald-500 to-sky-400"></div></td>
+                    <td class="pr-3"><p class="text-[13px] font-semibold leading-snug">Villa avec piscine</p><p class="mt-0.5 text-slate-400">Grand-Bassam</p></td>
+                    <td><span class="pill bg-violet-100 text-violet-500">Villa</span></td>
+                    <td><span class="pill bg-orange-100 text-orange-500">Occupée</span></td>
+                    <td class="text-right"><button class="p-1 text-slate-400" aria-label="Actions"><svg class="i h-5 w-5"><use href="#dots"/></svg></button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Colonne de droite : récap + demandes -->
+          <div class="space-y-5">
+            <section class="card p-5">
+              <h2 class="flex items-center gap-3 text-base font-bold"><svg class="i h-5 w-5 text-slate-500"><use href="#chart"/></svg>Récapitulatif rapide</h2>
+              <div class="mt-4 rounded-xl border border-sky-100 bg-sky-50 p-3 text-[11px] leading-relaxed text-slate-600">
+                <div class="mb-1 flex items-center justify-between text-xs font-medium text-sky-600">
+                  <span class="flex items-center gap-2"><svg class="i h-4 w-4"><use href="#bulb"/></svg>Astuce</span>
+                  <button aria-label="Fermer" class="text-slate-400"><svg class="i h-3 w-3"><use href="#x"/></svg></button>
+                </div>
+                Activez une campagne Booster pour attirer plus de voyageurs et augmenter vos réservations !
+              </div>
+            </section>
+
+            <section class="card p-5">
+              <div class="mb-3 flex items-center justify-between">
+                <h2 class="flex items-center gap-3 text-sm font-bold"><svg class="i h-5 w-5 text-slate-500"><use href="#cal"/></svg>Dernières demandes de réservation</h2>
+                <a href="#" class="link !font-medium !text-navy">Voir tout <svg class="i h-3 w-3"><use href="#arrow"/></svg></a>
+              </div>
+              <ul class="divide-y divide-slate-100 text-[11px]">
+                <li class="flex items-center gap-3 py-3">
+                  <span class="avatar h-10 w-10 text-xs">AD</span>
+                  <div class="min-w-0 flex-1"><p class="font-semibold">Aicha Diallo</p><p class="text-slate-500">12 nov. 2025 · 3 nuits · Appartement</p></div>
+                  <span class="pill bg-orange-100 text-orange-500">En attente</span>
+                </li>
+                <li class="flex items-center gap-3 py-3">
+                  <span class="avatar h-10 w-10 text-xs">YK</span>
+                  <div class="min-w-0 flex-1"><p class="font-semibold">Yao Kouassi</p><p class="text-slate-500">11 nov. 2025 · 2 nuits · Studio</p></div>
+                  <span class="pill bg-emerald-100 text-emerald-600">Acceptée</span>
+                </li>
+                <li class="flex items-center gap-3 py-3">
+                  <span class="avatar h-10 w-10 text-xs">FK</span>
+                  <div class="min-w-0 flex-1"><p class="font-semibold">Fatou Koné</p><p class="text-slate-500">10 nov. 2025 · 1 nuit · Chambre privée</p></div>
+                  <span class="pill bg-red-100 text-red-500">Refusée</span>
+                </li>
+                <li class="flex items-center gap-3 py-3">
+                  <span class="avatar h-10 w-10 text-xs">MT</span>
+                  <div class="min-w-0 flex-1"><p class="font-semibold">Mamadou Traoré</p><p class="text-slate-500">09 nov. 2025 · 4 nuits · Villa</p></div>
+                  <span class="pill bg-emerald-100 text-emerald-600">Acceptée</span>
+                </li>
+              </ul>
+            </section>
+          </div>
+        </div>
+
+        <!-- Bandeau Premium -->
+        <section class="flex flex-wrap items-center gap-4 rounded-2xl border border-sky-100 bg-sky-50 p-4">
+          <span class="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-amber-400 text-white"><svg class="i h-6 w-6"><use href="#crown"/></svg></span>
+          <div class="min-w-0 flex-1">
+            <p class="font-bold">Votre activité, plus de visibilité !</p>
+            <p class="text-xs text-slate-600">Avec le Premium, vous bénéficiez d’un meilleur positionnement, plus de réservations et d’outils avancés.</p>
+          </div>
+          <a href="#" class="inline-flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-xs font-semibold text-white hover:bg-brand-dark">Découvrir le Premium <svg class="i h-3.5 w-3.5"><use href="#arrow"/></svg></a>
+        </section>
+      </div>
+
+      <!-- ===== Actions rapides ===== -->
+      <aside class="card p-5">
+        <h2 class="mb-4 flex items-center gap-3 font-bold"><svg class="i h-5 w-5 text-brand"><use href="#bolt"/></svg>Actions rapides</h2>
+        <div class="space-y-3">
+          <a href="#" class="flex items-center gap-4 rounded-xl bg-brand p-4 text-white shadow-lg shadow-orange-200 hover:bg-brand-dark">
+            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/25"><svg class="i h-5 w-5 !stroke-2"><use href="#plus"/></svg></span>
+            <span><span class="block text-sm font-semibold">Ajouter une chambre</span><span class="block text-xs text-orange-100">Avec l’assistant en 4 étapes</span></span>
+          </a>
+          <a href="#" class="flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 hover:bg-slate-100">
+            <svg class="i h-7 w-7 shrink-0 text-slate-500"><use href="#cal"/></svg>
+            <span><span class="block text-sm font-semibold">Voir mes réservations</span><span class="block text-xs text-slate-500">Gérer les demandes (si éligible)</span></span>
+          </a>
+          <a href="#" class="flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 hover:bg-slate-100">
+            <svg class="i h-7 w-7 shrink-0 text-slate-500"><use href="#chat"/></svg>
+            <span><span class="block text-sm font-semibold">Voir mes messages</span><span class="block text-xs text-slate-500">Lire et répondre</span></span>
+          </a>
+          <a href="#" class="flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 hover:bg-slate-100">
+            <svg class="i h-7 w-7 shrink-0 text-slate-500"><use href="#shield"/></svg>
+            <span><span class="block text-sm font-semibold">Vérifier mon compte</span><span class="block text-xs text-slate-500">Obtenir le statut vérifié</span></span>
+          </a>
+          <a href="#" class="flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 hover:bg-slate-100">
+            <svg class="i h-7 w-7 shrink-0 text-slate-500"><use href="#mega"/></svg>
+            <span><span class="block text-sm font-semibold">Créer une campagne</span><span class="block text-xs text-slate-500">Booster votre visibilité</span></span>
+          </a>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -40,7 +40,7 @@ export default function DocumentDropzone({
       {doc ? (
         <>
           <div className="verif-preview">
-            {doc.mime_type?.startsWith('image/') ? (
+            {doc.file_url && doc.mime_type?.startsWith('image/') ? (
               <img src={doc.file_url} alt={config.title} />
             ) : (
               <div className="verif-preview--file">

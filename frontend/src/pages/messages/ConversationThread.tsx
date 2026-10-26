@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiMessages, type Conversation, type Message } from '../../lib/api';
 
@@ -45,6 +45,10 @@ export default function ConversationThread({
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const requestIdRef = useRef(0);
+  const lastRenderedIdRef = useRef<string | null>(null);
+  const preserveScrollRef = useRef<{ height: number; top: number } | null>(null);
+  const scrollToBottomRef = useRef(true);
 
   // Fusion page 1 + pages anciennes, dédupliquée par id (le poll remplace
   // la page 1 ; une page ancienne peut contenir des messages qui y figurent
@@ -57,12 +61,24 @@ export default function ConversationThread({
       ? a.id.localeCompare(b.id)
       : a.created_at.localeCompare(b.created_at),
   );
+  const firstMessageId = messages[0]?.id ?? null;
+  const newestMessageId = messages[messages.length - 1]?.id ?? null;
 
   const loadLatest = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     const [conv, msgs] = await Promise.all([
       apiMessages.getConversation(conversationId),
       apiMessages.listMessages(conversationId, 1),
     ]);
+    if (requestId !== requestIdRef.current) return;
+
+    const newestId = msgs[0]?.id ?? null;
+    if (newestId && newestId !== lastRenderedIdRef.current) {
+      const el = scrollRef.current;
+      const nearBottom = !el || el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+      scrollToBottomRef.current = lastRenderedIdRef.current === null || nearBottom;
+    }
+
     setConversation(conv);
     setLatest(msgs);
     setHasOlder(msgs.length >= PAGE_SIZE);
@@ -70,15 +86,20 @@ export default function ConversationThread({
     const hasUnread = msgs.some((m) => m.sender_role !== role && !m.read_at);
     if (hasUnread) {
       await apiMessages.markRead(conversationId).catch(() => {});
+      if (requestId !== requestIdRef.current) return;
       const refreshed = await apiMessages.listMessages(conversationId, 1).catch(() => null);
-      if (refreshed) setLatest(refreshed);
+      if (refreshed && requestId === requestIdRef.current) setLatest(refreshed);
     }
   }, [conversationId, role]);
 
   useEffect(() => {
     let cancelled = false;
+    lastRenderedIdRef.current = null;
+    preserveScrollRef.current = null;
+    scrollToBottomRef.current = true;
     setLoading(true);
     setError('');
+    setLatest([]);
     setOlder([]);
     setPage(1);
     loadLatest()
@@ -104,16 +125,35 @@ export default function ConversationThread({
     return () => clearInterval(interval);
   }, [loadLatest]);
 
-  useEffect(() => {
+  // Remonter dans le fil ne doit pas être annulé par un rechargement ni par
+  // l'ajout de messages plus anciens : on restaure la position relative, et on
+  // ne colle au bas que pour un nouveau message ou le premier chargement.
+  useLayoutEffect(() => {
     const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages.length]);
+    if (!el) return;
+    const keep = preserveScrollRef.current;
+    if (keep) {
+      preserveScrollRef.current = null;
+      el.scrollTop = keep.top + (el.scrollHeight - keep.height);
+    } else if (scrollToBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
+      scrollToBottomRef.current = false;
+    }
+    lastRenderedIdRef.current = newestMessageId;
+  }, [messages.length, firstMessageId, newestMessageId]);
 
   const loadOlder = async () => {
     const nextPage = page + 1;
+    const el = scrollRef.current;
+    const keep = el ? { height: el.scrollHeight, top: el.scrollTop } : null;
+    const known = new Set(messages.map((message) => message.id));
     setLoadingOlder(true);
+    scrollToBottomRef.current = false;
     try {
       const msgs = await apiMessages.listMessages(conversationId, nextPage);
+      if (keep && msgs.some((message) => !known.has(message.id))) {
+        preserveScrollRef.current = keep;
+      }
       setOlder((prev) => [...msgs, ...prev]);
       setPage(nextPage);
       setHasOlder(msgs.length >= PAGE_SIZE);
@@ -129,9 +169,11 @@ export default function ConversationThread({
     const body = draft.trim();
     if (!body || sending) return;
     setSending(true);
+    setError('');
     try {
       const sent = await apiMessages.sendMessage(conversationId, body);
-      setLatest((prev) => [sent, ...prev]);
+      scrollToBottomRef.current = true;
+      setLatest((prev) => [sent, ...prev.filter((message) => message.id !== sent.id)]);
       setDraft('');
     } catch {
       setError('Envoi impossible, veuillez réessayer.');
@@ -142,22 +184,24 @@ export default function ConversationThread({
 
   if (loading) {
     return (
-      <main className="messages-page">
-        <div className="container">
-          <p className="messages-page__empty">Chargement...</p>
+      <div className="msg-panel msg-panel--thread">
+        <div className="messages-thread__scroll no-scrollbar">
+          <p className="messages-thread__empty">Chargement...</p>
         </div>
-      </main>
+      </div>
     );
   }
 
   if (error && !conversation) {
     return (
-      <main className="messages-page">
-        <div className="container">
-          <Link to={basePath} className="messages-page__back">← Messages</Link>
-          <p className="messages-page__empty">{error}</p>
+      <div className="msg-panel msg-panel--thread">
+        <header className="messages-thread__head">
+          <Link to={basePath} className="messages-thread__back" aria-label="Retour aux messages">←</Link>
+        </header>
+        <div className="messages-thread__scroll no-scrollbar">
+          <p className="messages-thread__empty">{error}</p>
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -169,75 +213,73 @@ export default function ConversationThread({
         : 'le gérant';
 
   return (
-    <main className="messages-page messages-page--thread">
-      <div className="container messages-thread">
-        <header className="messages-thread__head">
-          <Link to={basePath} className="messages-thread__back" aria-label="Retour aux messages">
-            ←
-          </Link>
-          <div className="messages-thread__titles">
-            <h1 className="messages-thread__title">
-              {role === 'gerant' ? counterpart : 'Discussion avec le gérant'}
-            </h1>
-            <p className="messages-thread__subtitle">
-              {role === 'gerant'
-                ? conversation?.room?.title || 'Chambre'
-                : counterpart}
-            </p>
-          </div>
-        </header>
-
-        <div className="messages-thread__scroll" ref={scrollRef}>
-          {hasOlder && (
-            <button
-              type="button"
-              className="messages-thread__older"
-              onClick={loadOlder}
-              disabled={loadingOlder}
-            >
-              {loadingOlder ? 'Chargement...' : 'Charger les messages plus anciens'}
-            </button>
-          )}
-          {messages.length === 0 && (
-            <p className="messages-thread__empty">
-              Écrivez le premier message à votre interlocuteur.
-            </p>
-          )}
-          {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`msg-bubble${m.sender_role === role ? ' msg-bubble--mine' : ''}`}
-            >
-              <p className="msg-bubble__body">{m.body}</p>
-              <span className="msg-bubble__time">
-                {messageTime(m.created_at)}
-                {m.sender_role === role && m.read_at ? ' · Lu' : ''}
-              </span>
-            </div>
-          ))}
+    <div className="msg-panel msg-panel--thread">
+      <header className="messages-thread__head">
+        <Link to={basePath} className="messages-thread__back" aria-label="Retour aux messages">
+          ←
+        </Link>
+        <div className="messages-thread__titles">
+          <h1 className="messages-thread__title">
+            {role === 'gerant' ? counterpart : 'Discussion avec le gérant'}
+          </h1>
+          <p className="messages-thread__subtitle">
+            {role === 'gerant'
+              ? conversation?.room?.title || 'Chambre'
+              : counterpart}
+          </p>
         </div>
+      </header>
 
-        {error && <p className="messages-thread__error" role="alert">{error}</p>}
-
-        <form className="messages-thread__composer" onSubmit={handleSend}>
-          <textarea
-            className="messages-thread__input"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Écrire un message..."
-            rows={1}
-            maxLength={2000}
-            aria-label="Votre message"
-          />
+      <div className="messages-thread__scroll no-scrollbar" ref={scrollRef}>
+        {hasOlder && (
           <button
-            type="submit"
-            className="messages-thread__send"
-            disabled={sending || !draft.trim()}
+            type="button"
+            className="messages-thread__older"
+            onClick={loadOlder}
+            disabled={loadingOlder}
           >
-            {sending ? 'Envoi...' : 'Envoyer'}
+            {loadingOlder ? 'Chargement...' : 'Charger les messages plus anciens'}
           </button>
-        </form>
+        )}
+        {messages.length === 0 && (
+          <p className="messages-thread__empty">
+            Écrivez le premier message à votre interlocuteur.
+          </p>
+        )}
+        {messages.map((m) => (
+          <div
+            key={m.id}
+            className={`msg-bubble${m.sender_role === role ? ' msg-bubble--mine' : ''}`}
+          >
+            <p className="msg-bubble__body">{m.body}</p>
+            <span className="msg-bubble__time">
+              {messageTime(m.created_at)}
+              {m.sender_role === role && m.read_at ? ' · Lu' : ''}
+            </span>
+          </div>
+        ))}
       </div>
-    </main>
+
+      {error && <p className="messages-thread__error" role="alert">{error}</p>}
+
+      <form className="messages-thread__composer" onSubmit={handleSend}>
+        <textarea
+          className="messages-thread__input"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Écrire un message..."
+          rows={1}
+          maxLength={2000}
+          aria-label="Votre message"
+        />
+        <button
+          type="submit"
+          className="messages-thread__send"
+          disabled={sending || !draft.trim()}
+        >
+          {sending ? 'Envoi...' : 'Envoyer'}
+        </button>
+      </form>
+    </div>
   );
 }

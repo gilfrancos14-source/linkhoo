@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopPlus - Messagerie</title>
+    <!-- Google Fonts : Inter est très proche de la police de l'image -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- VARIABLES DE COULEURS --- */
+        :root {
+            --primary: #6b5aed;         /* Violet principal */
+            --primary-light: #f1f0ff;   /* Violet très clair pour les fonds */
+            --bg-body: #f8f9fc;         /* Fond général gris très clair */
+            --bg-white: #ffffff;
+            --text-main: #1e293b;       /* Couleur du texte principal */
+            --text-muted: #64748b;      /* Texte secondaire */
+            --text-light: #94a3b8;      /* Texte discret (heures, placeholders) */
+            --border: #e2e8f0;          /* Couleur des bordures */
+            --green-stock-bg: #dcfce7;
+            --green-stock-text: #166534;
+            --red-notif: #ef4444;
+        }
+
+        /* --- RESET & BASES --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            font-size: 14px;
+        }
+
+        a { text-decoration: none; color: inherit; }
+        ul { list-style: none; }
+        button { cursor: pointer; border: none; background: none; font-family: inherit; outline: none; }
+        input { border: none; outline: none; background: transparent; font-family: inherit; }
+
+        /* --- STRUCTURE GLOBALE --- */
+        .app-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* ==========================================
+           BARRE LATÉRALE GAUCHE (SIDEBAR)
+           ========================================== */
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-white);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 20px;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 700;
+            padding-left: 8px;
+            margin-bottom: 40px;
+            color: var(--text-main);
+        }
+
+        .logo-icon {
+            background-color: var(--primary);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-grow: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 10px;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .nav-item i {
+            width: 24px;
+            font-size: 18px;
+            margin-right: 12px;
+            text-align: center;
+        }
+
+        .nav-item:hover {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+        }
+
+        .nav-item.active {
+            background-color: var(--primary-light);
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .nav-badge {
+            position: absolute;
+            right: 16px;
+            background-color: var(--primary);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            height: 20px;
+            min-width: 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+        }
+
+        .promo-card {
+            background-color: var(--primary-light);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .promo-card .icon-sparkles {
+            color: var(--primary);
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+
+        .promo-card h3 {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-main);
+            line-height: 1.3;
+        }
+
+        .promo-card p {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .promo-btn {
+            background-color: var(--primary);
+            color: white;
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        .promo-btn:hover { opacity: 0.9; }
+
+        /* ==========================================
+           CONTENEUR PRINCIPAL (DROITE)
+           ========================================== */
+        .main-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            background-color: var(--bg-body);
+            border-top-left-radius: 20px;
+            border-left: 1px solid var(--border);
+            border-top: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        /* --- TOP NAVBAR --- */
+        .top-navbar {
+            height: 72px;
+            background-color: var(--bg-white);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background-color: var(--bg-body);
+            padding: 10px 16px;
+            border-radius: 20px;
+            width: 400px;
+        }
+
+        .search-box i {
+            color: var(--text-light);
+            margin-right: 10px;
+        }
+
+        .search-box input {
+            width: 100%;
+            color: var(--text-main);
+        }
+        
+        .search-box input::placeholder { color: var(--text-light); }
+
+        .top-user-actions {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .notification-icon {
+            position: relative;
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .notification-dot {
+            position: absolute;
+            top: 1px;
+            right: 1px;
+            width: 8px;
+            height: 8px;
+            background-color: var(--red-notif);
+            border-radius: 50%;
+            border: 2px solid var(--bg-white);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .user-profile img {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-details .name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .user-details .role {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .user-profile .fa-chevron-down {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
+        /* ==========================================
+           ZONE DE TRAVAIL (MESSAGES)
+           ========================================== */
+        .workspace {
+            display: flex;
+            flex-grow: 1;
+            overflow: hidden;
+            background-color: var(--bg-white);
+        }
+
+        /* --- COLONNE CENTRALE : LISTE DES CHATS --- */
+        .chat-list-panel {
+            width: 380px;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            background-color: var(--bg-white);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px;
+            border-bottom: 1px solid transparent;
+        }
+
+        .panel-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .filter-btn {
+            color: var(--text-muted);
+            font-size: 18px;
+        }
+
+        .chat-list {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        /* Scrollbar custom */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        .chat-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 24px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: background 0.2s;
+        }
+
+        .chat-item:hover { background-color: var(--bg-body); }
+
+        .chat-item.active {
+            background-color: var(--primary-light);
+            border-left-color: var(--primary);
+        }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .chat-info {
+            flex-grow: 1;
+            min-width: 0;
+        }
+
+        .chat-info-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .chat-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .chat-time {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .chat-item.active .chat-time {
+            color: var(--primary);
+        }
+
+        .chat-info-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-snippet {
+            font-size: 13px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 12px;
+        }
+
+        .unread-count {
+            background-color: var(--primary);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .read-icon {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .read-icon.read {
+            color: var(--primary);
+        }
+
+        /* --- COLONNE DE DROITE : DISCUSSION ACTIVE --- */
+        .active-chat-panel {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #fafbfc; /* Gris très subtil */
+            min-width: 0;
+        }
+
+        .active-chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 32px;
+            background-color: var(--bg-white);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .active-user {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .active-user img {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .active-user-info h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .status-online {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #22c55e;
+            border-radius: 50%;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--bg-body);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+
+        .icon-btn:hover { background-color: var(--border); }
+
+        /* --- FIL DE DISCUSSION --- */
+        .chat-messages-area {
+            flex-grow: 1;
+            padding: 32px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .date-divider {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-light);
+            margin: 8px 0;
+        }
+
+        .message-group {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            max-width: 75%;
+        }
+
+        .message-group.received { align-self: flex-start; }
+        .message-group.sent { 
+            align-self: flex-end; 
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 4px;
+        }
+
+        .bubble {
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .received .bubble {
+            background-color: var(--bg-white);
+            color: var(--text-main);
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .sent .bubble {
+            background-color: var(--primary);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .msg-time {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 4px;
+            font-size: 11px;
+            margin-top: 8px;
+        }
+
+        .received .msg-time { color: var(--text-light); }
+        .sent .msg-time { color: rgba(255, 255, 255, 0.8); }
+
+        /* --- CARTE PRODUIT --- */
+        .product-attachment {
+            margin-left: 44px; /* Aligné avec la bulle de texte */
+            margin-top: -8px; /* Rapproché de la bulle du dessus */
+        }
+
+        .product-card {
+            background-color: var(--bg-white);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            gap: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+            width: 320px;
+        }
+
+        .product-card img {
+            width: 72px;
+            height: 72px;
+            border-radius: 8px;
+            object-fit: cover;
+            background-color: var(--bg-body);
+        }
+
+        .product-details {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .product-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .product-price {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .product-stock {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--green-stock-text);
+            background-color: var(--green-stock-bg);
+            padding: 4px 8px;
+            border-radius: 6px;
+            display: inline-block;
+            width: fit-content;
+        }
+
+        /* --- ZONE DE SAISIE (INPUT) --- */
+        .chat-input-wrapper {
+            padding: 20px 32px;
+            background-color: var(--bg-white);
+            border-top: 1px solid var(--border);
+        }
+
+        .input-container {
+            display: flex;
+            align-items: center;
+            background-color: var(--bg-body);
+            border-radius: 24px;
+            padding: 8px 12px 8px 20px;
+            border: 1px solid var(--border);
+        }
+
+        .input-container .fa-paperclip {
+            color: var(--text-muted);
+            font-size: 18px;
+            cursor: pointer;
+            margin-right: 16px;
+        }
+
+        .input-container input {
+            flex-grow: 1;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .input-container input::placeholder { color: var(--text-light); }
+
+        .input-container .fa-face-smile {
+            color: var(--text-muted);
+            font-size: 18px;
+            cursor: pointer;
+            margin: 0 16px;
+        }
+
+        .btn-send {
+            background-color: var(--primary);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+
+        .btn-send:hover { transform: scale(1.05); }
+        .btn-send i { transform: translateX(-1px) translateY(1px); } /* Ajustement de l'icône avion */
+
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+        <div class="logo">
+            <div class="logo-icon"><i class="fa-solid fa-bag-shopping"></i></div>
+            ShopPlus
+        </div>
+
+        <nav class="nav-menu">
+            <a href="#" class="nav-item"><i class="fa-solid fa-house"></i> Tableau de bord</a>
+            <a href="#" class="nav-item"><i class="fa-solid fa-cart-shopping"></i> Commandes</a>
+            <a href="#" class="nav-item"><i class="fa-solid fa-box"></i> Produits</a>
+            <a href="#" class="nav-item active">
+                <i class="fa-solid fa-comment-dots"></i> Messages
+                <span class="nav-badge">3</span>
+            </a>
+            <a href="#" class="nav-item"><i class="fa-solid fa-users"></i> Clients</a>
+            <a href="#" class="nav-item"><i class="fa-solid fa-gear"></i> Paramètres</a>
+        </nav>
+
+        <div class="promo-card">
+            <i class="fa-solid fa-wand-magic-sparkles icon-sparkles"></i>
+            <h3>Restez proche<br>de vos clients</h3>
+            <p>Répondez rapidement à leurs messages et améliorez leur expérience.</p>
+            <button class="promo-btn">Voir les conseils</button>
+        </div>
+    </aside>
+
+    <!-- ================= MAIN WRAPPER ================= -->
+    <main class="main-wrapper">
+        
+        <!-- TOP NAVBAR -->
+        <header class="top-navbar">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Rechercher une conversation, un client...">
+            </div>
+
+            <div class="top-user-actions">
+                <div class="notification-icon">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="notification-dot"></span>
+                </div>
+                <div class="user-profile">
+                    <img src="https://i.pravatar.cc/150?img=11" alt="Admin">
+                    <div class="user-details">
+                        <span class="name">Admin</span>
+                        <span class="role">Gérant</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- WORKSPACE (LIST + CHAT) -->
+        <div class="workspace">
+            
+            <!-- LISTE DES CONVERSATIONS -->
+            <div class="chat-list-panel">
+                <div class="panel-header">
+                    <h2>Messages</h2>
+                    <button class="filter-btn"><i class="fa-solid fa-sliders"></i></button>
+                </div>
+
+                <div class="chat-list">
+                    
+                    <!-- Conversation Active -->
+                    <div class="chat-item active">
+                        <img src="https://i.pravatar.cc/150?img=59" alt="Koffi Mensah" class="avatar">
+                        <div class="chat-info">
+                            <div class="chat-info-top">
+                                <span class="chat-name">Koffi Mensah</span>
+                                <span class="chat-time">10:24</span>
+                            </div>
+                            <div class="chat-info-bottom">
+                                <span class="chat-snippet">Bonjour, est-ce que vous livrez à...</span>
+                                <span class="unread-count">2</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conversation 2 -->
+                    <div class="chat-item">
+                        <img src="https://i.pravatar.cc/150?img=47" alt="Aïcha Diallo" class="avatar">
+                        <div class="chat-info">
+                            <div class="chat-info-top">
+                                <span class="chat-name">Aïcha Diallo</span>
+                                <span class="chat-time">09:17</span>
+                            </div>
+                            <div class="chat-info-bottom">
+                                <span class="chat-snippet">Merci beaucoup pour la rapidité !</span>
+                                <i class="fa-solid fa-check-double read-icon read"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conversation 3 -->
+                    <div class="chat-item">
+                        <img src="https://i.pravatar.cc/150?img=68" alt="Mamadou Traoré" class="avatar">
+                        <div class="chat-info">
+                            <div class="chat-info-top">
+                                <span class="chat-name">Mamadou Traoré</span>
+                                <span class="chat-time">Hier</span>
+                            </div>
+                            <div class="chat-info-bottom">
+                                <span class="chat-snippet">Je voudrais savoir si le produit...</span>
+                                <span class="unread-count">1</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conversation 4 -->
+                    <div class="chat-item">
+                        <img src="https://i.pravatar.cc/150?img=44" alt="Fatou Koné" class="avatar">
+                        <div class="chat-info">
+                            <div class="chat-info-top">
+                                <span class="chat-name">Fatou Koné</span>
+                                <span class="chat-time">Hier</span>
+                            </div>
+                            <div class="chat-info-bottom">
+                                <span class="chat-snippet">D'accord, je passerai la commande</span>
+                                <i class="fa-solid fa-check-double read-icon read"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conversation 5 -->
+                    <div class="chat-item">
+                        <img src="https://i.pravatar.cc/150?img=12" alt="Issa Soumahoro" class="avatar">
+                        <div class="chat-info">
+                            <div class="chat-info-top">
+                                <span class="chat-name">Issa Soumahoro</span>
+                                <span class="chat-time">Mar 12</span>
+                            </div>
+                            <div class="chat-info-bottom">
+                                <span class="chat-snippet">C'est noté, merci !</span>
+                                <i class="fa-solid fa-check-double read-icon read"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conversation 6 -->
+                    <div class="chat-item">
+                        <img src="https://i.pravatar.cc/150?img=32" alt="Elise Bénin" class="avatar">
+                        <div class="chat-info">
+                            <div class="chat-info-top">
+                                <span class="chat-name">Elise Bénin</span>
+                                <span class="chat-time">Mar 11</span>
+                            </div>
+                            <div class="chat-info-bottom">
+                                <span class="chat-snippet">Livraison possible demain ?</span>
+                                <i class="fa-solid fa-check-double read-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                     <!-- Conversation 7 -->
+                     <div class="chat-item">
+                        <img src="https://i.pravatar.cc/150?img=52" alt="Yasmine Toko" class="avatar">
+                        <div class="chat-info">
+                            <div class="chat-info-top">
+                                <span class="chat-name">Yasmine Toko</span>
+                                <span class="chat-time">Mar 10</span>
+                            </div>
+                            <div class="chat-info-bottom">
+                                <span class="chat-snippet">Parfait, je prends 2 articles.</span>
+                                <i class="fa-solid fa-check-double read-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conversation 8 -->
+                    <div class="chat-item">
+                        <img src="https://i.pravatar.cc/150?img=33" alt="David Kpatindé" class="avatar">
+                        <div class="chat-info">
+                            <div class="chat-info-top">
+                                <span class="chat-name">David Kpatindé</span>
+                                <span class="chat-time">Mar 9</span>
+                            </div>
+                            <div class="chat-info-bottom">
+                                <span class="chat-snippet">Merci pour votre aide !</span>
+                                <i class="fa-solid fa-check-double read-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ZONE DE CHAT ACTIVE -->
+            <div class="active-chat-panel">
+                
+                <!-- Header du chat -->
+                <div class="active-chat-header">
+                    <div class="active-user">
+                        <img src="https://i.pravatar.cc/150?img=59" alt="Koffi Mensah">
+                        <div class="active-user-info">
+                            <h3>Koffi Mensah</h3>
+                            <div class="status-online">
+                                <span class="status-dot"></span> En ligne
+                            </div>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button class="icon-btn"><i class="fa-solid fa-phone"></i></button>
+                        <button class="icon-btn"><i class="fa-solid fa-video"></i></button>
+                        <button class="icon-btn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                    </div>
+                </div>
+
+                <!-- Fil de discussion -->
+                <div class="chat-messages-area">
+                    <div class="date-divider">Aujourd'hui</div>
+
+                    <!-- Message reçu -->
+                    <div class="message-group received">
+                        <img src="https://i.pravatar.cc/150?img=59" alt="Koffi" class="message-avatar">
+                        <div class="bubble">
+                            Bonjour, est-ce que vous livrez à Cotonou ?
+                            <div class="msg-time">10:12</div>
+                        </div>
+                    </div>
+
+                    <!-- Message envoyé -->
+                    <div class="message-group sent">
+                        <div class="bubble">
+                            Bonjour ! Oui, nous livrons à Cotonou et dans les environs. Vous pouvez passer votre commande sur notre site ou directement ici.
+                            <div class="msg-time">10:15 <i class="fa-solid fa-check-double"></i></div>
+                        </div>
+                    </div>
+
+                    <!-- Message reçu + Carte Produit -->
+                    <div class="message-group received" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                        <div style="display: flex; gap: 12px; align-items: flex-end;">
+                            <img src="https://i.pravatar.cc/150?img=59" alt="Koffi" class="message-avatar">
+                            <div class="bubble">
+                                Super ! J'aimerais commander ce modèle. Est-il encore disponible ?
+                                <div class="msg-time">10:18</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Carte Produit attachée -->
+                        <div class="product-attachment">
+                            <div class="product-card">
+                                <img src="https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&q=80&w=150&h=150" alt="Baskets Urban">
+                                <div class="product-details">
+                                    <span class="product-title">Baskets Urban</span>
+                                    <span class="product-price">29 000 FCFA</span>
+                                    <span class="product-stock">En stock</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Message envoyé -->
+                    <div class="message-group sent" style="margin-top: 10px;">
+                        <div class="bubble">
+                            Oui, il est disponible ! 😊<br>
+                            Voulez-vous que je vous envoie le lien de commande ?
+                            <div class="msg-time">10:24 <i class="fa-solid fa-check-double"></i></div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Zone de saisie -->
+                <div class="chat-input-wrapper">
+                    <div class="input-container">
+                        <i class="fa-solid fa-paperclip"></i>
+                        <input type="text" placeholder="Écrivez votre message...">
+                        <i class="fa-regular fa-face-smile"></i>
+                        <button class="btn-send"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

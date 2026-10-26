@@ -327,112 +327,165 @@
 
 /* ── Messagerie client ↔ gérant ── */
 .messages-page {
-  /* En-tête du site fixe : on décale le contenu sous la barre de navigation. */
-  --msg-gap-top: calc(var(--header-h) + 1.5rem);
-  --msg-gap-bottom: 4rem;
-  --msg-thread-h: calc(100dvh - var(--msg-gap-top) - var(--msg-gap-bottom) - 0.5rem);
+  /* En-tête du site fixe (top 4px + hauteur) : le plan de travail vient s'y
+     coller, comme sous la topbar du gérant. */
+  --msg-gap-top: calc(var(--header-h) + 4px);
   /* La page ne défile pas : seul le contenu des messages défile. */
   display: flex;
   flex-direction: column;
   height: 100dvh;
   overflow: hidden;
-  padding: var(--msg-gap-top) 0 var(--msg-gap-bottom);
+  padding: var(--msg-gap-top) 0 0;
 }
 
-/* Chaîne de défilement : le <div class="container"> transmet la hauteur à la
-   liste de conversations, seule zone réellement défilable. */
+/* Le plan de travail occupe toute la largeur (on neutralise le max-width de
+   .container) et toute la hauteur restante sous l'en-tête. */
 .messages-page > .container {
+  width: 100%;
+  max-width: none;
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
-/* Espace gérant : la topbar est dans le flux (sticky) et .admin-content
-   fournit déjà ses marges → la page remplit la zone visible, seuls les
-   messages défilent. */
+/* Espace gérant : on neutralise le cadre de .admin-content (padding + max-width)
+   pour que la messagerie remplisse toute la zone de contenu, sous la topbar. */
+.admin-content:has(.messages-page) {
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  max-width: none;
+  margin: 0;
+}
+
 .admin-content .messages-page {
-  --msg-gap-top: 2rem;
-  --msg-gap-bottom: 4rem;
-  --msg-thread-h: calc(100vh - 9rem);
-  height: calc(100vh - 9rem);
+  height: 100%;
   padding: 0;
 }
 
-/* La page admin est teintée (--sky-50) : le bloc de messages reprend la même
-   teinte, sinon il forme un pavé blanc-bleu détonant (le client, lui, a une
-   page blanche où le bloc se fond). */
-.admin-content .messages-thread__scroll {
-  background: var(--sky-50);
+/* ---- Plan de travail : liste (gauche) + discussion (droite) ---- */
+.msg-workspace {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) 1fr;
+  background: var(--white, #fff);
+  overflow: hidden;
 }
 
-.messages-page__title {
+.msg-panel {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.msg-panel--list {
+  border-right: 1px solid var(--line);
+  background: var(--white, #fff);
+}
+
+.msg-panel--thread {
+  background: var(--mist);
+}
+
+.msg-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.95rem 1.15rem;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.msg-panel__title {
+  margin: 0;
   font-family: var(--font-serif);
-  font-size: 1.6rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--ink);
-  margin: 0 0 1.2rem;
 }
 
-.messages-page__empty {
-  color: #64748b;
-  font-size: 0.95rem;
-  padding: 1.5rem 0;
+.msg-panel__action {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--white, #fff);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
 }
 
-.messages-page__back {
-  color: var(--sky);
-  text-decoration: none;
-  font-weight: 500;
+.msg-panel__action:hover {
+  background: var(--mist-2);
+  color: var(--ink);
+}
+
+.msg-panel__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.6rem;
+  scrollbar-width: thin;
+}
+
+.msg-panel__note {
+  margin: 0;
+  padding: 1.25rem 0.75rem;
+  color: var(--ink-soft);
   font-size: 0.9rem;
+  line-height: 1.55;
 }
 
+/* ---- Lignes de conversation ---- */
 .conv-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: none;
-}
-
-.conv-list::-webkit-scrollbar {
-  display: none;
+  gap: 0.15rem;
 }
 
 .conv-row {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  padding: 0.85rem 1rem;
-  background: var(--white, #fff);
-  border: 1px solid var(--line);
+  gap: 0.75rem;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid transparent;
   border-radius: var(--radius);
   text-decoration: none;
   color: inherit;
-  transition: box-shadow 0.2s, border-color 0.2s;
+  transition: background 0.18s, border-color 0.18s;
 }
 
 .conv-row:hover {
-  border-color: #cbd5e1;
-  box-shadow: var(--shadow-card);
+  background: var(--mist);
+}
+
+.conv-row--active {
+  background: var(--sky-pale);
+  border-color: color-mix(in srgb, var(--sky) 25%, transparent);
 }
 
 .conv-row__thumb {
   flex-shrink: 0;
-  width: 56px;
-  height: 56px;
-  border-radius: var(--radius-sm);
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
   overflow: hidden;
   background: var(--mist-2);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
 }
 
 .conv-row__thumb img {
@@ -455,7 +508,7 @@
 
 .conv-row__name {
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
@@ -468,6 +521,10 @@
   color: #94a3b8;
 }
 
+.conv-row--active .conv-row__time {
+  color: var(--sky-dark);
+}
+
 .conv-row__bottom {
   display: flex;
   align-items: center;
@@ -477,8 +534,8 @@
 }
 
 .conv-row__preview {
-  font-size: 0.85rem;
-  color: #64748b;
+  font-size: 0.83rem;
+  color: var(--ink-soft);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -503,31 +560,22 @@
   justify-content: center;
 }
 
-/* Fil de discussion */
-.messages-page--thread {
-  padding-top: var(--msg-gap-top);
-}
-
-.messages-thread {
-  display: flex;
-  flex-direction: column;
-  height: var(--msg-thread-h);
-  max-width: 760px;
-}
-
+/* ---- Fil de discussion ---- */
 .messages-thread__head {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding-bottom: 0.8rem;
+  padding: 0.85rem 1.15rem;
+  background: var(--white, #fff);
   border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
 }
 
 .messages-thread__back {
   flex-shrink: 0;
   width: 38px;
   height: 38px;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
@@ -549,7 +597,7 @@
 .messages-thread__title {
   margin: 0;
   font-family: var(--font-serif);
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--ink);
   white-space: nowrap;
@@ -560,7 +608,7 @@
 .messages-thread__subtitle {
   margin: 0.1rem 0 0;
   font-size: 0.82rem;
-  color: #64748b;
+  color: var(--ink-soft);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -568,18 +616,13 @@
 
 .messages-thread__scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding: 1rem;
-  background: var(--mist);
-  border-radius: 0 0 var(--radius) var(--radius);
-  scrollbar-width: none;
-}
-
-.messages-thread__scroll::-webkit-scrollbar {
-  display: none;
+  padding: 1.15rem;
+  scrollbar-width: thin;
 }
 
 .messages-thread__older {
@@ -639,7 +682,8 @@
 }
 
 .messages-thread__error {
-  margin: 0.5rem 0 0;
+  margin: 0;
+  padding: 0.4rem 1.15rem;
   font-size: 0.85rem;
   color: #dc2626;
 }
@@ -648,7 +692,10 @@
   display: flex;
   align-items: flex-end;
   gap: 0.5rem;
-  padding-top: 0.75rem;
+  padding: 0.85rem 1.15rem;
+  background: var(--white, #fff);
+  border-top: 1px solid var(--line);
+  flex-shrink: 0;
 }
 
 .messages-thread__input {
@@ -694,18 +741,161 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 640px) {
+/* ---- Panneau vide (aucune conversation sélectionnée) ---- */
+.msg-panel--placeholder {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.85rem;
+  padding: 2rem;
+  background: var(--mist);
+  color: var(--ink-soft);
+}
+
+.msg-panel__placeholder-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--white, #fff);
+  border: 1px solid var(--line);
+  color: var(--sky);
+}
+
+.msg-panel__placeholder-text {
+  margin: 0;
+  max-width: 30ch;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+/* ---- Responsive : une seule colonne visible à la fois ---- */
+@media (max-width: 760px) {
   .messages-page {
-    --msg-gap-top: calc(var(--header-h) + 1rem);
-    --msg-gap-bottom: 3rem;
+    --msg-gap-top: calc(var(--header-h) + 4px);
   }
 
   .admin-content .messages-page {
-    --msg-thread-h: calc(100dvh - 7rem);
-    height: calc(100dvh - 7rem);
+    height: 100%;
   }
 
+  .msg-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .msg-workspace .msg-panel--thread {
+    display: none;
+  }
+
+  .messages-page--workspace.is-thread-open .msg-panel--list {
+    display: none;
+  }
+
+  .messages-page--workspace.is-thread-open .msg-panel--thread {
+    display: flex;
+  }
+
+  .messages-thread__back {
+    display: flex;
+  }
+}
+
+@media (max-width: 640px) {
   .msg-bubble {
     max-width: 88%;
   }
 }
+
+/* ==========================================================================
+   Messagerie — raffinement visuel (client & gérant)
+   ========================================================================== */
+
+.msg-panel--list {
+  background: linear-gradient(180deg, var(--white, #fff) 0%, var(--mist) 100%);
+}
+
+.msg-panel__head {
+  background: var(--white, #fff);
+  box-shadow: 0 1px 0 var(--line);
+}
+
+.msg-panel__title {
+  letter-spacing: -0.01em;
+}
+
+.msg-panel__scroll {
+  padding: 0.7rem;
+}
+
+/* Lignes de conversation plus riches */
+.conv-row {
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.conv-row:hover {
+  background: var(--white, #fff);
+  border-color: var(--line);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.07);
+  transform: translateY(-1px);
+}
+
+.conv-row--active {
+  background: var(--sky-pale);
+  border-color: color-mix(in srgb, var(--sky) 30%, transparent);
+  box-shadow: inset 3px 0 0 var(--sky);
+}
+
+.conv-row__thumb {
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.conv-row__unread {
+  background: var(--gradient-primary);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--sky) 35%, transparent);
+}
+
+/* Fil de discussion */
+.msg-panel--thread {
+  background:
+    radial-gradient(600px 260px at 100% 0%, color-mix(in srgb, var(--sky) 6%, transparent), transparent 65%),
+    var(--mist);
+}
+
+.msg-bubble {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.msg-bubble--mine {
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--sky) 28%, transparent);
+}
+
+.messages-thread__composer {
+  gap: 0.6rem;
+}
+
+.messages-thread__input {
+  border-radius: 12px;
+  padding: 0.55rem 0.85rem;
+}
+
+.messages-thread__send {
+  border-radius: 12px;
+  background: var(--gradient-primary);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--sky) 30%, transparent);
+}
+
+/* Panneau vide */
+.msg-panel--placeholder {
+  background:
+    radial-gradient(680px 320px at 50% 0%, color-mix(in srgb, var(--sky) 10%, transparent), transparent 70%),
+    var(--mist);
+}
+
+.msg-panel__placeholder-icon {
+  box-shadow: var(--shadow-card-lg);
+}
+

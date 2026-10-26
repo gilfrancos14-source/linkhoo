@@ -712,6 +712,12 @@ describe('apiBoosts', () => {
     expect(lastHeaders().Authorization).toBeUndefined();
   });
 
+  it('featured transmet le marché demandé', async () => {
+    await api.apiBoosts.featured('SN');
+
+    expect(lastCall().url).toBe('/api/boosts/featured?market=SN');
+  });
+
   it('featured ne déclenche qu’un seul appel pendant le TTL (cache mémoire)', async () => {
     fetchMock.mockResolvedValue(jsonResponse({ items: [], config: {} }));
 

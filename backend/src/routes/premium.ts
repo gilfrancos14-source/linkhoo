@@ -15,6 +15,7 @@ import {
 } from '../utils/premiumTx';
 import { isValidBoostBudget } from '../config/boosts';
 import { flagPaidWithoutCampaign } from '../utils/boostAlerts';
+import { GERANT_COLUMNS } from '../utils/gerantSelect';
 
 const PREMIUM_AMOUNT = 5000;
 const PREMIUM_DURATION_DAYS = 30;
@@ -232,7 +233,7 @@ router.post('/confirm', requireClerkAuth, async (req: Request, res: Response, ne
 
     const { data: gerant } = await supabaseAdmin
       .from('gerants')
-      .select('*')
+      .select(GERANT_COLUMNS)
       .eq('clerk_user_id', clerkUserIdFromMeta)
       .single();
 

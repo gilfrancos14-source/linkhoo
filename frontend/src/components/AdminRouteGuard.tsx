@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import {
-  getAdminToken,
   apiAdmin,
+  AdminUnauthorizedError,
   ADMIN_UNAUTHORIZED_EVENT,
   type AdminData,
 } from '../lib/adminApi';
@@ -20,29 +20,24 @@ function useAdmin(attempt: number) {
   useEffect(() => {
     let cancelled = false;
 
-    if (!getAdminToken()) {
-      setAdmin(null);
-      setNetworkError(false);
-      setLoading(false);
-      return;
-    }
-
+    // F4 : le cookie HttpOnly n'est pas lisible par le JS ; la seule façon de
+    // savoir si la session est valide est d'interroger /admin/me. Un 401 émet
+    // ADMIN_UNAUTHORIZED_EVENT → redirection vers le login.
     setLoading(true);
     setNetworkError(false);
     apiAdmin.getMe()
       .then((data) => {
         if (!cancelled) setAdmin(data);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         if (cancelled) return;
-        // 401 : adminApi a purgé le token (notifyUnauthorized) → login.
+        if (err instanceof AdminUnauthorizedError) {
+          setAdmin(null);
+          return;
+        }
         // Erreur réseau/timeout : on ne déconnecte PAS, on montre un retry
         // (sinon F5 sur coupure 3 s = perte de session + URL profonde).
-        if (!getAdminToken()) {
-          setAdmin(null);
-        } else {
-          setNetworkError(true);
-        }
+        setNetworkError(true);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

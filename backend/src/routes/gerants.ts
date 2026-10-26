@@ -4,10 +4,21 @@ import { supabaseAdmin } from '../config/supabase';
 import { publishNotificationChanged } from '../utils/realtime';
 import { gerantCreateSchema, gerantUpdateSchema, verificationDocumentTypeSchema, propertyAddressSchema } from '../validations/gerant';
 import { idParamsSchema } from '../validations/common';
-import { parseGoogleMapsUrl } from '../utils/googleMaps';
+import { isGoogleMapsUrl, parseGoogleMapsUrl } from '../utils/googleMaps';
+import {
+  isAccessibleVerificationPath,
+  isOwnedVerificationPath,
+} from '../utils/verificationStorage';
+import { GERANT_COLUMNS, VERIFICATION_DOCUMENT_COLUMNS } from '../utils/gerantSelect';
 import { requireProfile } from '../middleware/requireProfile';
 
 const router = Router();
+
+const VERIFICATION_REQUIRED_DOCS = [
+  'national_id',
+  'proof_of_address',
+  'selfie',
+] as const;
 
 router.get('/me', requireProfile('gerant'), async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -18,7 +29,7 @@ router.get('/me', requireProfile('gerant'), async (req: Request, res: Response, 
 
     const { data, error } = await supabaseAdmin
       .from('gerants')
-      .select('*')
+      .select(GERANT_COLUMNS)
       .eq('clerk_user_id', authUserId)
       .maybeSingle();
     if (error) throw error;
@@ -56,7 +67,7 @@ router.patch('/me', requireProfile('gerant'), async (req: Request, res: Response
       .from('gerants')
       .update({ ...parsed.data, updated_at: new Date().toISOString() })
       .eq('clerk_user_id', authUserId)
-      .select()
+      .select(GERANT_COLUMNS)
       .maybeSingle();
     if (error) throw error;
     res.json(data);
@@ -101,7 +112,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     const { data, error } = await supabaseAdmin
       .from('gerants')
       .insert(parsedBody.data)
-      .select()
+      .select(GERANT_COLUMNS)
       .single();
     if (error) throw error;
     res.status(201).json(data);
@@ -138,46 +149,102 @@ router.post('/:id/documents', async (req: Request, res: Response, next: NextFunc
       return res.status(400).json({ error: 'Impossible d\'ajouter un document pendant la révision' });
     }
 
-    const { document_type, file_url, file_path, original_filename, mime_type, file_size } = req.body;
-    if (!document_type || !file_url || !file_path) {
-      return res.status(400).json({ error: 'document_type, file_url et file_path sont requis' });
+    const { document_type, file_path, original_filename, mime_type, file_size, replace } = req.body;
+    if (!document_type || !file_path) {
+      return res.status(400).json({ error: 'document_type et file_path sont requis' });
     }
     const parsedDocType = verificationDocumentTypeSchema.safeParse(document_type);
     if (!parsedDocType.success) {
-      return res.status(400).json({ error: 'document_type doit être id_card_front, id_card_back, national_id ou selfie' });
+      return res.status(400).json({
+        error: 'document_type doit être national_id, proof_of_address ou selfie',
+      });
+    }
+    // La clé storage doit appartenir à l'utilisateur connecté. Sans ce
+    // contrôle, un gérant pouvait inscrire le chemin d'un autre gérant puis
+    // obtenir une URL signée via GET /:id/documents (IDOR pièces d'identité).
+    if (!isOwnedVerificationPath(file_path, authUserId)) {
+      return res.status(403).json({ error: 'Chemin de document non autorisé' });
     }
 
     const { data: existingDoc, error: existingError } = await supabaseAdmin
       .from('verification_documents')
-      .select('id')
+      .select('id, file_path')
       .eq('gerant_id', parsedParams.data.id)
       .eq('document_type', document_type)
       .maybeSingle();
     if (existingError) throw existingError;
 
-    if (existingDoc) {
+    if (existingDoc && replace !== true) {
       // On ne touche JAMAIS à storage avec un chemin fourni par le client :
       // cela permettrait de supprimer le document d'un autre gérant.
-      // Le nettoyage du fichier fraîchement envoyé reste géré côté client
-      // (ou par le DELETE /:id/documents qui, lui, lit file_path en base).
+      // Le remplacement explicite ci-dessous supprime l'ancien chemin lu en
+      // base, jamais celui fourni dans la requête.
       return res.status(409).json({ error: 'Un document de ce type existe déjà. Supprimez-le avant d\'en ajouter un nouveau.' });
     }
 
-    const { data, error } = await supabaseAdmin
-      .from('verification_documents')
-      .insert({
-        gerant_id: parsedParams.data.id,
-        document_type,
-        file_url,
-        file_path,
-        original_filename: original_filename || null,
-        mime_type: mime_type || null,
-        file_size: file_size || null,
-      })
-      .select()
-      .single();
+    // `file_url` est toujours dérivée d'une URL signée à la lecture : on ne
+    // stocke jamais une URL fournie par le client (elle servirait de fallback
+    // et ferait charger une ressource externe au navigateur de l'admin).
+    const safeMimeType =
+      typeof mime_type === 'string' && /^[a-z]+\/[a-z0-9.+-]{1,100}$/i.test(mime_type)
+        ? mime_type
+        : null;
+    const safeFileSize =
+      Number.isInteger(file_size) && file_size >= 0 && file_size <= 10 * 1024 * 1024
+        ? file_size
+        : null;
+    const safeOriginalName =
+      typeof original_filename === 'string' ? original_filename.slice(0, 255) : null;
+
+    const documentPayload = {
+      gerant_id: parsedParams.data.id,
+      document_type,
+      file_url: null,
+      file_path,
+      original_filename: safeOriginalName,
+      mime_type: safeMimeType,
+      file_size: safeFileSize,
+    };
+
+    let data: { file_path: string } | null = null;
+    let error: unknown = null;
+
+    if (existingDoc) {
+      const result = await supabaseAdmin
+        .from('verification_documents')
+        .update({
+          ...documentPayload,
+          status: 'pending',
+          rejection_reason: null,
+          reviewed_by: null,
+          reviewed_at: null,
+        })
+        .eq('id', existingDoc.id)
+        .select(VERIFICATION_DOCUMENT_COLUMNS)
+        .single();
+      data = result.data;
+      error = result.error;
+    } else {
+      const result = await supabaseAdmin
+        .from('verification_documents')
+        .insert(documentPayload)
+        .select(VERIFICATION_DOCUMENT_COLUMNS)
+        .single();
+      data = result.data;
+      error = result.error;
+    }
     if (error) throw error;
-    res.status(201).json(data);
+    if (!data) throw new Error('Document non enregistré');
+
+    if (existingDoc && existingDoc.file_path !== file_path) {
+      await supabaseAdmin.storage.from('verification-docs').remove([existingDoc.file_path]);
+    }
+
+    // Aperçu immédiat : on renvoie une URL signée fraîche sans la persister.
+    const { data: signData } = await supabaseAdmin.storage
+      .from('verification-docs')
+      .createSignedUrl(data.file_path, 3600);
+    res.status(201).json({ ...data, file_url: signData?.signedUrl ?? null });
   } catch (err) {
     next(err);
   }
@@ -208,17 +275,24 @@ router.get('/:id/documents', async (req: Request, res: Response, next: NextFunct
 
     const { data, error } = await supabaseAdmin
       .from('verification_documents')
-      .select('*')
+      .select(VERIFICATION_DOCUMENT_COLUMNS)
       .eq('gerant_id', parsedParams.data.id)
       .order('created_at', { ascending: true });
     if (error) throw error;
 
     const docsWithFreshUrls = await Promise.all(
       (data || []).map(async (doc: any) => {
+        // Défense en profondeur pour les lignes créées avant le correctif :
+        // on refuse de signer un chemin préfixé par un autre propriétaire.
+        if (!isAccessibleVerificationPath(doc.file_path, authUserId)) {
+          return { ...doc, file_url: null };
+        }
         const { data: signData } = await supabaseAdmin.storage
           .from('verification-docs')
           .createSignedUrl(doc.file_path, 3600);
-        return { ...doc, file_url: signData?.signedUrl ?? doc.file_url };
+        // Pas de fallback sur `doc.file_url` (potentiellement client) : en cas
+        // d'échec de signature, on renvoie null et l'UI affiche l'état fichier.
+        return { ...doc, file_url: signData?.signedUrl ?? null };
       })
     );
     res.json(docsWithFreshUrls);
@@ -324,10 +398,21 @@ router.patch('/:id/property-address', async (req: Request, res: Response, next: 
       });
     }
 
+    // Ne jamais persister l'URL brute : si ce n'est pas un lien Google Maps
+    // naviguable (http(s) + hôte Google), on reconstruit une URL canonique à
+    // partir des coordonnées. Une URL arbitraire (`javascript:`, site tiers)
+    // serait sinon réaffichée plus tard dans un `<a href>`.
+    const trimmedMapsUrl = maps_url.trim();
+    const safeMapsUrl = isGoogleMapsUrl(maps_url)
+      ? /^https?:\/\//i.test(trimmedMapsUrl)
+        ? trimmedMapsUrl
+        : `https://${trimmedMapsUrl}`
+      : `https://www.google.com/maps?q=${coords.lat},${coords.lng}`;
+
     const { data, error } = await supabaseAdmin
       .from('gerants')
       .update({
-        property_maps_url: maps_url,
+        property_maps_url: safeMapsUrl,
         property_lat: coords.lat,
         property_lng: coords.lng,
         updated_at: new Date().toISOString(),
@@ -358,7 +443,9 @@ router.post('/:id/submit-verification', async (req: Request, res: Response, next
 
     const { data: gerant, error: fetchError } = await supabaseAdmin
       .from('gerants')
-      .select('clerk_user_id, verification_status, market, property_lat, property_lng, property_maps_url')
+      .select(
+        'clerk_user_id, verification_status, market, nom, prenom, phone, address, date_of_birth, nationality, property_lat, property_lng, property_maps_url',
+      )
       .eq('id', parsedParams.data.id)
       .maybeSingle();
     if (fetchError) throw fetchError;
@@ -371,6 +458,19 @@ router.post('/:id/submit-verification', async (req: Request, res: Response, next
       return res.status(400).json({ error: 'Une demande de vérification est déjà en cours' });
     }
 
+    const hasPersonalInfo =
+      Boolean(gerant.nom?.trim()) &&
+      Boolean(gerant.prenom?.trim()) &&
+      Boolean(gerant.phone?.trim()) &&
+      Boolean(gerant.address?.trim()) &&
+      Boolean(gerant.date_of_birth) &&
+      Boolean(gerant.nationality?.trim());
+    if (!hasPersonalInfo) {
+      return res.status(400).json({
+        error: 'Complétez vos informations personnelles avant de soumettre votre dossier',
+      });
+    }
+
     const { data: docs, error: docsError } = await supabaseAdmin
       .from('verification_documents')
       .select('document_type')
@@ -378,14 +478,11 @@ router.post('/:id/submit-verification', async (req: Request, res: Response, next
     if (docsError) throw docsError;
 
     const docTypes = new Set((docs || []).map((d) => d.document_type));
-    const hasNewPair = docTypes.has('id_card_front') && docTypes.has('id_card_back');
-    const hasLegacyPair = docTypes.has('national_id') && docTypes.has('selfie');
-    if (!hasNewPair && !hasLegacyPair) {
-      return res.status(400).json({ error: 'Vous devez télécharger le recto et le verso de votre carte d\'identité' });
-    }
-
-    if (gerant.property_lat == null || gerant.property_lng == null || !gerant.property_maps_url) {
-      return res.status(400).json({ error: 'Vous devez indiquer l\'adresse Google Maps de l\'appartement' });
+    const hasCurrentSet = VERIFICATION_REQUIRED_DOCS.every((type) => docTypes.has(type));
+    if (!hasCurrentSet) {
+      return res.status(400).json({
+        error: 'Vous devez télécharger votre pièce d\'identité, un justificatif de domicile et une photo de vous',
+      });
     }
 
     const { error: updateError } = await supabaseAdmin
@@ -398,6 +495,18 @@ router.post('/:id/submit-verification', async (req: Request, res: Response, next
       })
       .eq('id', parsedParams.data.id);
     if (updateError) throw updateError;
+
+    // Une nouvelle soumission remet les pièces en file d'examen, notamment
+    // après un rejet où elles portent encore le statut `rejected`.
+    await supabaseAdmin
+      .from('verification_documents')
+      .update({
+        status: 'pending',
+        rejection_reason: null,
+        reviewed_by: null,
+        reviewed_at: null,
+      })
+      .eq('gerant_id', parsedParams.data.id);
 
     await supabaseAdmin.from('notifications').insert({
       id: randomUUID(),
@@ -414,7 +523,7 @@ router.post('/:id/submit-verification', async (req: Request, res: Response, next
 
     const { data: updatedGerant } = await supabaseAdmin
       .from('gerants')
-      .select('*')
+      .select(GERANT_COLUMNS)
       .eq('id', parsedParams.data.id)
       .single();
 

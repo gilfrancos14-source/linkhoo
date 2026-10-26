@@ -5,6 +5,7 @@ import { requireClerkAuth } from '../middleware/clerkAuth';
 import { requireGerantMarket } from '../middleware/requireGerantMarket';
 import { idParamsSchema, marketQuerySchema } from '../validations/common';
 import { categoryCreateSchema, categoryUpdateSchema } from '../validations/category';
+import { CATEGORY_COLUMNS } from '../utils/selects';
 
 const router = Router();
 
@@ -15,7 +16,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       return res.status(400).json({ error: 'Paramètres invalides' });
     }
 
-    let query = supabasePublic.from('categories').select('*');
+    let query = supabasePublic.from('categories').select(CATEGORY_COLUMNS);
     if (parsedQuery.data.market) {
       query = query.eq('market', parsedQuery.data.market);
     }
@@ -45,7 +46,7 @@ router.post('/', requireClerkAuth, async (req: Request, res: Response, next: Nex
     const { data, error } = await supabaseAdmin
       .from('categories')
       .insert({ id: randomUUID(), ...parsedBody.data })
-      .select()
+      .select(CATEGORY_COLUMNS)
       .single();
     if (error) throw error;
     res.status(201).json(data);
@@ -80,7 +81,7 @@ router.put('/:id', requireClerkAuth, async (req: Request, res: Response, next: N
       .from('categories')
       .update(parsedBody.data)
       .eq('id', parsedParams.data.id)
-      .select()
+      .select(CATEGORY_COLUMNS)
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Catégorie introuvable' });

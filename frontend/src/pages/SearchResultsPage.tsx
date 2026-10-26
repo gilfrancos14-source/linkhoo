@@ -1,33 +1,234 @@
-import { useSearchParams, Link } from 'react-router-dom';
-import { useState, useMemo, useEffect, useRef, type FormEvent } from 'react';
+import { useMemo, useState, useEffect, useRef, type FormEvent } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
 import {
   fetchAvailableRooms,
-  fetchRoomsPage,
   fetchVilles,
   fetchQuartiers,
   type Room,
 } from '../data/rooms';
-import { fetchCategoriesByMarket } from '../data/categories';
-import { priceWithCurrency, roomMeta, roomSubtitle } from '../lib/roomDisplay';
-import StayCard from '../components/StayCard';
-import Pagination from '../components/Pagination';
+import { fetchCategoriesByMarket, type Category } from '../data/categories';
+import { priceWithCurrency } from '../lib/roomDisplay';
+import SearchStayCard from '../components/SearchStayCard';
+import LandingFooter from '../components/landing/LandingFooter';
+import LandingHeader from '../components/landing/LandingHeader';
+import { COUNTRIES, DEFAULT_COUNTRY } from '../components/landing/data';
+import Icon from '../components/landing/icons';
 
 const ITEMS_PER_PAGE = 6;
+const PRICE_CEILING = 500_000;
 
-/** Filtre client — n'utilisé qu'en mode dates (liste disponible non paginée). */
+type SortKey = 'recommended' | 'price-asc' | 'price-desc';
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'recommended', label: 'Recommandés' },
+  { value: 'price-asc', label: 'Prix croissant' },
+  { value: 'price-desc', label: 'Prix décroissant' },
+];
+
+const normalize = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+/** Filtre client — n'agit que sur les critères réellement présents dans le bien. */
 function matchesQuery(room: Room, query: string): boolean {
   if (!query) return true;
-  const q = query.toLowerCase();
+  const q = normalize(query);
+  return normalize(
+    [
+      room.title,
+      room.subtitle,
+      room.description,
+      room.ville,
+      room.quartier,
+      room.category,
+      room.info,
+      room.conditions,
+    ].join(' '),
+  ).includes(q);
+}
+
+/** Pastilles factuelles : chambres, salles d'eau, condition d'annulation. */
+function searchMeta(room: Room): string[] {
+  const meta: string[] = [];
+  if (room.chambres > 0) meta.push(`${room.chambres} ch.`);
+  if (room.douches > 0) meta.push(`${room.douches} sdb`);
+  if (room.conditions) meta.push(room.conditions);
+  return meta.slice(0, 3);
+}
+
+function CalendarIcon({ size = 18 }: { size?: number }) {
   return (
-    room.title.toLowerCase().includes(q) ||
-    room.subtitle.toLowerCase().includes(q) ||
-    room.description.toLowerCase().includes(q) ||
-    room.ville.toLowerCase().includes(q) ||
-    room.quartier.toLowerCase().includes(q) ||
-    room.category.toLowerCase().includes(q) ||
-    room.info.toLowerCase().includes(q)
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="3" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+  );
+}
+
+function SlidersIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+      <circle cx="16" cy="7" r="2.2" />
+      <circle cx="8" cy="17" r="2.2" />
+    </svg>
+  );
+}
+
+function EditIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
+function Underline() {
+  return (
+    <svg
+      className="search-page__title-underline"
+      viewBox="0 0 240 12"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M2.5 9.5C65.5 3.5 178.5 2.5 237.5 8"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="4"
+      />
+    </svg>
+  );
+}
+
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}
+
+type PageItem = number | 'ellipsis-start' | 'ellipsis-end';
+
+/**
+ * Fenêtre glissante de pages : garde la pagination lisible sur mobile même
+ * quand le catalogue compte beaucoup de pages.
+ */
+function paginationItems(currentPage: number, totalPages: number): PageItem[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const start = Math.max(2, Math.min(currentPage - 1, totalPages - 4));
+  const end = Math.min(totalPages - 1, Math.max(currentPage + 1, 5));
+  const items: PageItem[] = [1];
+
+  if (start > 2) items.push('ellipsis-start');
+  for (let page = start; page <= end; page += 1) items.push(page);
+  if (end < totalPages - 1) items.push('ellipsis-end');
+
+  items.push(totalPages);
+  return items;
+}
+
+function SearchPagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
+  if (totalPages <= 1) return null;
+
+  return (
+    <nav className="search-page__pagination" aria-label="Pagination">
+      <button
+        type="button"
+        className="search-page__page-btn search-page__page-btn--nav"
+        aria-label="Page précédente"
+        disabled={currentPage === 1}
+        onClick={() => onPageChange(currentPage - 1)}
+      >
+        <Icon name="chevronLeft" size={18} />
+      </button>
+      {paginationItems(currentPage, totalPages).map((item) =>
+        typeof item === 'number' ? (
+          <button
+            key={item}
+            type="button"
+            className={`search-page__page-btn${item === currentPage ? ' is-active' : ''}`}
+            aria-current={item === currentPage ? 'page' : undefined}
+            onClick={() => onPageChange(item)}
+          >
+            {item}
+          </button>
+        ) : (
+          <span key={item} className="search-page__page-ellipsis" aria-hidden="true">
+            …
+          </span>
+        ),
+      )}
+      <button
+        type="button"
+        className="search-page__page-btn search-page__page-btn--nav"
+        aria-label="Page suivante"
+        disabled={currentPage === totalPages}
+        onClick={() => onPageChange(currentPage + 1)}
+      >
+        <Icon name="chevronRight" size={18} />
+      </button>
+    </nav>
+  );
+}
+
+function SearchHeader({ onSearchClick }: { onSearchClick: () => void }) {
+  const { market } = useMarket();
+  const navigate = useNavigate();
+  const country = COUNTRIES.find((item) => item.code === market) ?? DEFAULT_COUNTRY;
+
+  return (
+    <div className="search-header-scope">
+      <LandingHeader
+        country={country}
+        onCountryClick={() => navigate('/')}
+        onSearchClick={onSearchClick}
+      />
+    </div>
+  );
+}
+
+function SearchFooter() {
+  return (
+    <div className="search-footer-scope">
+      <LandingFooter />
+    </div>
   );
 }
 
@@ -37,7 +238,7 @@ export default function SearchResultsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [total, setTotal] = useState(0);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [villes, setVilles] = useState<string[]>([]);
   const [quartiers, setQuartiers] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,8 +252,11 @@ export default function SearchResultsPage() {
   const [selectedVille, setSelectedVille] = useState('');
   const [selectedQuartier, setSelectedQuartier] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(categorieParam);
-  const [priceMax, setPriceMax] = useState(500_000);
+  const [priceMax, setPriceMax] = useState(PRICE_CEILING);
   const [currentPage, setCurrentPage] = useState(1);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<SortKey>('recommended');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Référentiels : catégories, villes, quartiers (endpoints dédiés,
   // pas besoin de tout le catalogue).
@@ -96,58 +300,38 @@ export default function SearchResultsPage() {
     }
   }, [datesKey]);
 
-  // Clé de fetch : en mode dates on ne re-télécharge que si le marché ou les
-  // dates changent (les filtres locaux sont appliqués en mémoire) ; sans dates,
-  // chaque filtre serveur ou page déclenche un nouvel appel.
-  const fetchKey = hasDates
-    ? `d|${market}|${dateArrivee}|${dateDepart}`
-    : `s|${market}|${query}|${selectedVille}|${selectedQuartier}|${selectedCategory}|${priceMax}|${currentPage}`;
+  // Clé de fetch : on ne re-télécharge que si le marché ou les dates changent.
+  // Les filtres (ville, quartier, catégorie, prix) et la pagination sont
+  // appliqués en mémoire sur le sous-ensemble disponible.
+  const fetchKey = `d|${market}|${dateArrivee}|${dateDepart}`;
 
   useEffect(() => {
+    // Sans dates, la page n'affiche que le panneau de sélection : télécharger
+    // le catalogue ne servirait à rien, aucun résultat ne peut être rendu.
+    if (!hasDates) {
+      setRooms([]);
+      setTotal(0);
+      setLoading(false);
+      return;
+    }
+
     let alive = true;
     setLoading(true);
 
-    if (hasDates) {
-      fetchAvailableRooms(market, dateArrivee, dateDepart)
-        .then((data) => {
-          if (!alive) return;
-          setRooms(data);
-          setTotal(data.length);
-        })
-        .catch(() => {
-          if (!alive) return;
-          setRooms([]);
-          setTotal(0);
-        })
-        .finally(() => {
-          if (alive) setLoading(false);
-        });
-    } else {
-      fetchRoomsPage({
-        market,
-        q: query || undefined,
-        ville: selectedVille || undefined,
-        quartier: selectedQuartier || undefined,
-        category: selectedCategory || undefined,
-        prixMax: priceMax < 500_000 ? priceMax : undefined,
-        page: currentPage,
-        limit: ITEMS_PER_PAGE,
+    fetchAvailableRooms(market, dateArrivee, dateDepart)
+      .then((data) => {
+        if (!alive) return;
+        setRooms(data);
+        setTotal(data.length);
       })
-        .then((page) => {
-          if (!alive) return;
-          setRooms(page.items);
-          setTotal(page.total);
-        })
-        .catch(() => {
-          if (!alive) return;
-          setRooms([]);
-          setTotal(0);
-        })
-        .finally(() => {
-          if (!alive) return;
-          setLoading(false);
-        });
-    }
+      .catch(() => {
+        if (!alive) return;
+        setRooms([]);
+        setTotal(0);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
 
     return () => {
       alive = false;
@@ -181,7 +365,16 @@ export default function SearchResultsPage() {
 
   // Mode dates : filtre client sur la liste disponible (sous-ensemble).
   const filteredRooms = useMemo(() => {
-    if (!hasDates) return rooms;
+    if (!hasDates) {
+      return rooms.filter(
+        (room) =>
+          matchesQuery(room, query) &&
+          (!selectedVille || room.ville === selectedVille) &&
+          (!selectedQuartier || room.quartier === selectedQuartier) &&
+          (!selectedCategory || room.category === selectedCategory) &&
+          room.priceNum <= priceMax,
+      );
+    }
     return rooms.filter((room) => {
       if (!matchesQuery(room, query)) return false;
       if (selectedVille && room.ville !== selectedVille) return false;
@@ -199,197 +392,573 @@ export default function SearchResultsPage() {
   const paginatedRooms = hasDates
     ? filteredRooms.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
-        currentPage * ITEMS_PER_PAGE
+        currentPage * ITEMS_PER_PAGE,
       )
     : filteredRooms;
 
+  const sortedRooms = useMemo(() => {
+    if (sortBy === 'recommended') return paginatedRooms;
+    return [...paginatedRooms].sort((a, b) =>
+      sortBy === 'price-asc' ? a.priceNum - b.priceNum : b.priceNum - a.priceNum,
+    );
+  }, [paginatedRooms, sortBy]);
+
   const resultCount = hasDates ? filteredRooms.length : total;
   const displayQuery = query.trim() || 'Tous les biens';
+  const destinationLabel = selectedVille || query.trim() || villes[0] || 'votre séjour';
+  const activeFilterCount = [
+    selectedVille,
+    selectedQuartier,
+    selectedCategory,
+    priceMax < PRICE_CEILING ? 'price' : '',
+  ].filter(Boolean).length;
+
+  const resetFilters = () => {
+    setSelectedVille('');
+    setSelectedQuartier('');
+    setSelectedCategory('');
+    setPriceMax(PRICE_CEILING);
+    setCurrentPage(1);
+  };
+
+  const selectCategory = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    setCurrentPage(1);
+  };
+
+  const roomHref = (room: Room) =>
+    `/${market.toLowerCase()}/chambre/${room.id}?arrivee=${encodeURIComponent(
+      dateArrivee,
+    )}&depart=${encodeURIComponent(dateDepart)}`;
+
+  // Sur mobile les filtres sont repliés : le bouton « Rechercher » de
+  // l'en-tête doit les ouvrir avant de donner le focus au champ ville.
+  const focusSearch = () => {
+    if (hasDates) setFiltersOpen(true);
+    window.requestAnimationFrame(() => {
+      const input = document.getElementById(hasDates ? 'sp-ville' : 'sp-arrivee');
+      input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      input?.focus({ preventScroll: true });
+    });
+  };
 
   if (loading) {
     return (
-      <main className="search-page">
-        <div className="container">
-          <p className="search-page__empty-title">Chargement...</p>
-        </div>
-      </main>
+      <>
+        <SearchHeader onSearchClick={focusSearch} />
+        <main className="search-page">
+          <div className="search-page__shell search-page__loading">
+            <p className="search-page__loading-text">Chargement...</p>
+            <div className="search-page__loading-hero" aria-hidden="true">
+              <span className="search-page__loading-line search-page__loading-line--sm" />
+              <span className="search-page__loading-line search-page__loading-line--lg" />
+              <span className="search-page__loading-line search-page__loading-line--md" />
+            </div>
+            <div className="search-page__loading-grid" aria-hidden="true">
+              {[0, 1, 2, 3].map((item) => (
+                <div className="search-page__loading-card" key={item}>
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
+        <SearchFooter />
+      </>
     );
   }
 
   return (
+    <>
+    <SearchHeader onSearchClick={focusSearch} />
     <main className="search-page">
-      <div className="container">
+      <section className="search-page__shell search-page__breadcrumb-section">
         <nav className="search-page__breadcrumb" aria-label="Fil d'Ariane">
-          <Link to={homePath}>Accueil</Link>
+          <Link to={homePath} className="search-page__breadcrumb-home">
+            <Icon name="house" size={16} />
+            Accueil
+          </Link>
           <span aria-hidden="true">/</span>
-          <span aria-current="page">Recherche</span>
+          <span className="search-page__breadcrumb-muted">Recherche</span>
+          <span aria-hidden="true">/</span>
+          <span className="search-page__breadcrumb-current">
+            {selectedVille || query.trim() || 'Toutes les villes'}
+          </span>
         </nav>
+      </section>
 
-        {needsDates ? (
-          /* ===== PANNEAU DE SÉLECTION DE DATES ===== */
-          <div className="search-page__dates-panel">
-            <div className="search-page__dates-panel-inner">
-              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="var(--sky)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
-              </svg>
-              <h1 className="search-page__dates-title">
-                {query ? <>Recherche pour <em>{query}</em></> : 'Sélectionnez vos dates'}
-              </h1>
-              <p className="search-page__dates-desc">
-                Renseignez vos dates d'arrivée et de départ pour voir les biens disponibles.
-              </p>
+      <section className="search-page__masthead">
+        <span className="search-page__glow search-page__glow--lilac" aria-hidden="true" />
+        <span className="search-page__glow search-page__glow--sand" aria-hidden="true" />
+        <div className="search-page__shell search-page__hero">
+          <div className="search-page__intro">
+            <p className="search-page__eyebrow">
+              <span aria-hidden="true" />
+              Votre prochain séjour
+            </p>
+
+            {needsDates ? (
+              <>
+                <h1 className="search-page__title">
+                  {query ? (
+                    <>
+                      Recherche pour{' '}
+                      <span className="search-page__title-accent">
+                        {query}
+                        <Underline />
+                      </span>
+                    </>
+                  ) : (
+                    'Sélectionnez vos dates'
+                  )}
+                </h1>
+                <p className="search-page__lead">
+                  Renseignez vos dates d&apos;arrivée et de départ pour voir les biens
+                  disponibles. Les disponibilités sont vérifiées en temps réel.
+                </p>
+                <p className="search-page__count-line">
+                  Choisissez vos dates · Tarifs en Francs CFA (XOF)
+                </p>
+              </>
+            ) : (
+              <>
+                <h1 className="search-page__title">
+                  Résultats pour{' '}
+                  <span className="search-page__title-accent">
+                    {displayQuery}
+                    <Underline />
+                  </span>
+                </h1>
+                <p className="search-page__count-line">
+                  <span className="search-page__count">
+                    {resultCount} bien{resultCount !== 1 ? 's' : ''} trouvé
+                    {resultCount !== 1 ? 's' : ''}
+                  </span>{' '}
+                  · Tarifs en Francs CFA (XOF)
+                </p>
+              </>
+            )}
+
+            <div className="search-page__benefits">
+              <span className="search-page__benefit">
+                <Icon name="shieldCheck" size={16} />
+                Annulation flexible
+              </span>
+              <span className="search-page__benefit">
+                <Icon name="badgeCheck" size={16} />
+                Hôtes vérifiés
+              </span>
+              <span className="search-page__benefit">
+                <Icon name="shieldCheck" size={16} />
+                Paiement sécurisé
+              </span>
+            </div>
+          </div>
+
+          {needsDates ? (
+            <div className="search-page__summary-card search-page__dates-card">
+              <div className="search-page__summary-head">
+                <div className="search-page__summary-heading">
+                  <span className="search-page__summary-dot" aria-hidden="true" />
+                  <p>Votre séjour</p>
+                </div>
+              </div>
 
               <form className="search-page__dates-form" onSubmit={handleDatesSubmit} noValidate>
                 <div className="search-page__dates-fields">
                   <div className="search-page__dates-field">
-                    <label htmlFor="sp-arrivee">Arrivée <span aria-hidden="true">*</span></label>
+                    <label htmlFor="sp-arrivee">
+                      Arrivée <span aria-hidden="true">*</span>
+                    </label>
                     <input
                       type="date"
                       id="sp-arrivee"
                       aria-required="true"
                       aria-invalid={!!panelError && !panelArrivee}
                       value={panelArrivee}
-                      onChange={(e) => { setPanelArrivee(e.target.value); if (panelError) setPanelError(''); }}
+                      onChange={(e) => {
+                        setPanelArrivee(e.target.value);
+                        if (panelError) setPanelError('');
+                      }}
                     />
                   </div>
                   <div className="search-page__dates-field">
-                    <label htmlFor="sp-depart">Départ <span aria-hidden="true">*</span></label>
+                    <label htmlFor="sp-depart">
+                      Départ <span aria-hidden="true">*</span>
+                    </label>
                     <input
                       type="date"
                       id="sp-depart"
                       aria-required="true"
                       aria-invalid={!!panelError && !panelDepart}
                       value={panelDepart}
-                      onChange={(e) => { setPanelDepart(e.target.value); if (panelError) setPanelError(''); }}
+                      onChange={(e) => {
+                        setPanelDepart(e.target.value);
+                        if (panelError) setPanelError('');
+                      }}
                     />
                   </div>
                 </div>
-                {panelError && <p className="search-page__dates-error" role="alert">{panelError}</p>}
-                <button type="submit" className="search-page__dates-btn">Voir les disponibilités</button>
+                {panelError && (
+                  <p className="search-page__dates-error" role="alert">
+                    {panelError}
+                  </p>
+                )}
+                <button type="submit" className="search-page__dates-btn">
+                  Voir les disponibilités
+                  <Icon name="arrowRight" size={17} />
+                </button>
               </form>
-            </div>
-          </div>
-        ) : (
-          /* ===== RÉSULTATS ===== */
-          <>
-            <div className="search-page__header">
-              <div>
-                <h1 className="search-page__title">
-                  Résultats pour <em>{displayQuery}</em>
-                </h1>
-                <p className="search-page__count">
-                  {resultCount} bien{resultCount !== 1 ? 's' : ''} trouvé{resultCount !== 1 ? 's' : ''}
-                </p>
-              </div>
-              {dateArrivee && dateDepart && (
-                <div className="search-page__dates-summary">
-                  {dateArrivee} → {dateDepart}
-                  <button type="button" className="search-page__dates-change" onClick={() => setSearchParams({ q: query })}>
-                    Modifier
-                  </button>
-                </div>
-              )}
-            </div>
 
-            <div className="search-page__layout">
-              <aside className="search-page__filters">
-                <h2 className="search-page__filter-title">Filtres</h2>
-                <div className="search-page__filter-group">
-                  <label htmlFor="sp-ville">Ville</label>
-                  <select id="sp-ville" value={selectedVille} onChange={(e) => { setSelectedVille(e.target.value); setCurrentPage(1); }}>
-                    <option value="">Toutes</option>
-                    {villes.map((v) => <option key={v} value={v}>{v}</option>)}
-                  </select>
+              <p className="search-page__dates-foot">
+                <Icon name="shieldCheck" size={14} />
+                Aucun frais caché · Réservation confirmée par l&apos;hôte
+              </p>
+            </div>
+          ) : (
+            <div className="search-page__summary-card" aria-label="Récapitulatif de la recherche">
+              <div className="search-page__summary-head">
+                <div className="search-page__summary-heading">
+                  <span className="search-page__summary-dot" aria-hidden="true" />
+                  <p>Votre recherche</p>
                 </div>
-                <div className="search-page__filter-group">
-                  <label htmlFor="sp-quartier">Quartier</label>
-                  <select id="sp-quartier" value={selectedQuartier} onChange={(e) => { setSelectedQuartier(e.target.value); setCurrentPage(1); }}>
-                    <option value="">Tous</option>
-                    {quartiers.map((q) => <option key={q} value={q}>{q}</option>)}
-                  </select>
+                <button
+                  type="button"
+                  className="search-page__summary-edit"
+                  onClick={() => setSearchParams({ q: query })}
+                >
+                  <EditIcon size={14} />
+                  Modifier
+                </button>
+              </div>
+
+              <div className="search-page__summary-grid">
+                <div className="search-page__summary-item">
+                  <span className="search-page__summary-label">Destination</span>
+                  <div className="search-page__summary-value">
+                    <Icon name="mapPin" size={18} />
+                    <span>{destinationLabel}</span>
+                  </div>
                 </div>
-                <div className="search-page__filter-group">
-                  <label htmlFor="sp-categorie">Catégorie</label>
-                  <select id="sp-categorie" value={selectedCategory} onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}>
-                    <option value="">Toutes</option>
-                    {categories.map((c: any) => <option key={c.id} value={c.id}>{c.title}</option>)}
-                  </select>
+
+                <div className="search-page__summary-item">
+                  <span className="search-page__summary-label">Séjour</span>
+                  <div className="search-page__summary-value search-page__summary-value--dates">
+                    <CalendarIcon size={18} />
+                    <span>
+                      {dateArrivee} → {dateDepart}
+                    </span>
+                  </div>
                 </div>
-                <div className="search-page__filter-group">
-                  <label htmlFor="sp-prix">Prix max : {priceWithCurrency(priceMax)}</label>
-                  <input
-                    type="range"
-                    id="sp-prix"
-                    min={0}
-                    max={500_000}
-                    step={1000}
-                    value={priceMax}
-                    onChange={(e) => { setPriceMax(Number(e.target.value)); setCurrentPage(1); }}
-                  />
-                </div>
-                {(selectedVille || selectedQuartier || selectedCategory || priceMax < 500_000) && (
+
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {!needsDates && (
+        <>
+          <section className="search-page__shell search-page__toolbar-section">
+            <div className="search-page__toolbar">
+              <div className="search-page__toolbar-left">
+                <button
+                  type="button"
+                  className="search-page__filters-toggle"
+                  aria-expanded={filtersOpen}
+                  aria-controls="search-filters"
+                  onClick={() => setFiltersOpen((open) => !open)}
+                >
+                  <SlidersIcon size={18} />
+                  <span>Filtres</span>
+                  {activeFilterCount > 0 && (
+                    <span className="search-page__filters-count">{activeFilterCount}</span>
+                  )}
+                </button>
+
+                <span className="search-page__toolbar-divider" aria-hidden="true" />
+
+                <div
+                  className="search-page__quickfilters"
+                  role="group"
+                  aria-label="Filtrer par catégorie"
+                >
                   <button
                     type="button"
-                    className="search-page__filter-reset"
-                    onClick={() => { setSelectedVille(''); setSelectedQuartier(''); setSelectedCategory(''); setPriceMax(500_000); setCurrentPage(1); }}
+                    className={`search-page__pill${!selectedCategory ? ' is-active' : ''}`}
+                    aria-pressed={!selectedCategory}
+                    onClick={() => selectCategory('')}
                   >
-                    Réinitialiser les filtres
+                    Tous
                   </button>
-                )}
-              </aside>
+                  {categories.map((category) => (
+                    <button
+                      key={category.id}
+                      type="button"
+                      className={`search-page__pill${
+                        selectedCategory === category.id ? ' is-active' : ''
+                      }`}
+                      aria-pressed={selectedCategory === category.id}
+                      onClick={() => selectCategory(category.id)}
+                    >
+                      {category.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-              <div className="search-page__results">
-                {paginatedRooms.length === 0 ? (
-                  <div className="search-page__empty">
-                    <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--ink-2)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+              <div className="search-page__toolbar-right">
+                <div className="search-page__sort-group">
+                  <span>Trier par :</span>
+                  <label className="search-page__sort">
+                    <select
+                      aria-label="Trier par"
+                      value={sortBy}
+                      onChange={(event) => setSortBy(event.target.value as SortKey)}
+                    >
+                      {SORT_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <Icon name="chevronDown" size={16} />
+                  </label>
+                </div>
+
+                <div className="search-page__view" role="group" aria-label="Affichage des résultats">
+                  <button
+                    type="button"
+                    className={viewMode === 'grid' ? 'is-active' : ''}
+                    aria-label="Vue grille"
+                    aria-pressed={viewMode === 'grid'}
+                    onClick={() => setViewMode('grid')}
+                  >
+                    <Icon name="layoutGrid" size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    className={viewMode === 'list' ? 'is-active' : ''}
+                    aria-label="Vue liste"
+                    aria-pressed={viewMode === 'list'}
+                    onClick={() => setViewMode('list')}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="18"
+                      height="18"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
-                    <p className="search-page__empty-title">
-                      {dateArrivee && dateDepart ? 'Aucune disponibilité pour ces dates' : 'Aucun résultat'}
-                    </p>
-                    <p className="search-page__empty-desc">
-                      {dateArrivee && dateDepart
-                        ? 'Essayez d\'autres dates ou modifiez vos critères de recherche.'
-                        : 'Essayez de modifier vos critères de recherche ou réinitialisez les filtres.'}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="search-page__grid">
-                    {paginatedRooms.map((room) => (
-                      <StayCard
-                        key={room.id}
-                        image={room.img}
-                        alt={room.alt}
-                        title={room.title}
-                        rating={room.ville}
-                        ratingType="loc"
-                        description={roomSubtitle(room)}
-                        price={room.price}
-                        priceUnit={room.priceUnit}
-                        href={`/${market.toLowerCase()}/chambre/${room.id}?arrivee=${encodeURIComponent(dateArrivee)}&depart=${encodeURIComponent(dateDepart)}`}
-                        badge={
-                          !room.disponible ? 'Indisponible' : room.gerantPremium ? 'Premium' : undefined
-                        }
-                        badgeVariant={
-                          !room.disponible ? 'unavailable' : room.gerantPremium ? 'premium' : 'default'
-                        }
-                        meta={roomMeta(room)}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                  className="search-page__pagination"
-                />
+                  </button>
+                </div>
               </div>
             </div>
-          </>
-        )}
-      </div>
+          </section>
+
+          <div className="search-page__shell search-page__layout">
+            <aside
+              className={`search-page__filters${filtersOpen ? ' is-open' : ''}`}
+              id="search-filters"
+              aria-labelledby="search-filters-title"
+            >
+              <div className="search-page__filters-head">
+                <div>
+                  <span className="search-page__filters-eyebrow">Affiner</span>
+                  <h2 id="search-filters-title">Filtres</h2>
+                </div>
+                <button
+                  type="button"
+                  className="search-page__filters-reset"
+                  aria-label={activeFilterCount > 0 ? 'Réinitialiser les filtres' : undefined}
+                  disabled={activeFilterCount === 0}
+                  onClick={resetFilters}
+                >
+                  Réinitialiser
+                </button>
+              </div>
+
+              <div className="search-page__filter-section">
+                <label htmlFor="sp-ville">Ville</label>
+                <div className="search-page__select-wrap">
+                  <select
+                    id="sp-ville"
+                    value={selectedVille}
+                    onChange={(e) => {
+                      setSelectedVille(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <option value="">Toutes</option>
+                    {villes.map((ville) => (
+                      <option key={ville} value={ville}>
+                        {ville}
+                      </option>
+                    ))}
+                  </select>
+                  <Icon name="chevronDown" size={18} />
+                </div>
+              </div>
+
+              <div className="search-page__filter-section">
+                <label htmlFor="sp-quartier">Quartier</label>
+                <div className="search-page__select-wrap">
+                  <select
+                    id="sp-quartier"
+                    value={selectedQuartier}
+                    onChange={(e) => {
+                      setSelectedQuartier(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <option value="">Tous</option>
+                    {quartiers.map((quartier) => (
+                      <option key={quartier} value={quartier}>
+                        {quartier}
+                      </option>
+                    ))}
+                  </select>
+                  <Icon name="chevronDown" size={18} />
+                </div>
+              </div>
+
+              <div className="search-page__filter-section">
+                <label htmlFor="sp-categorie">Catégorie</label>
+                <div className="search-page__select-wrap">
+                  <select
+                    id="sp-categorie"
+                    value={selectedCategory}
+                    onChange={(e) => {
+                      setSelectedCategory(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <option value="">Toutes</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.title}
+                      </option>
+                    ))}
+                  </select>
+                  <Icon name="chevronDown" size={18} />
+                </div>
+              </div>
+
+              <div className="search-page__filter-section search-page__filter-section--price">
+                <div className="search-page__price-head">
+                  <label htmlFor="sp-prix">Budget par nuit</label>
+                  <output htmlFor="sp-prix">{priceWithCurrency(priceMax)}</output>
+                </div>
+                <input
+                  type="range"
+                  id="sp-prix"
+                  aria-label="Prix max"
+                  min={0}
+                  max={PRICE_CEILING}
+                  step={1000}
+                  value={priceMax}
+                  onChange={(e) => {
+                    setPriceMax(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                />
+                <div className="search-page__price-scale" aria-hidden="true">
+                  <span>0 FCFA</span>
+                  <span>500 000 FCFA</span>
+                </div>
+              </div>
+
+              <div className="search-page__filters-actions">
+                <button
+                  type="button"
+                  className="search-page__apply"
+                  onClick={() => setFiltersOpen(false)}
+                >
+                  Appliquer les filtres
+                </button>
+              </div>
+            </aside>
+
+            <section className="search-page__results">
+              <div className="search-page__results-head">
+                <p>
+                  {sortedRooms.length} bien{sortedRooms.length !== 1 ? 's' : ''} d&apos;exception à{' '}
+                  {destinationLabel}
+                </p>
+                <span>
+                  Page {Math.min(currentPage, Math.max(totalPages, 1))} sur{' '}
+                  {Math.max(totalPages, 1)}
+                </span>
+              </div>
+
+              {sortedRooms.length === 0 ? (
+                <div className="search-page__empty">
+                  <span className="search-page__empty-icon" aria-hidden="true">
+                    <Icon name="search" size={32} />
+                  </span>
+                  <p className="search-page__empty-title">
+                    {dateArrivee && dateDepart
+                      ? 'Aucune disponibilité pour ces dates'
+                      : 'Aucun résultat'}
+                  </p>
+                  <p className="search-page__empty-desc">
+                    {dateArrivee && dateDepart
+                      ? "Essayez d'autres dates ou modifiez vos critères de recherche."
+                      : 'Essayez de modifier vos critères de recherche ou réinitialisez les filtres.'}
+                  </p>
+                  {activeFilterCount > 0 ? (
+                    <button type="button" className="search-page__empty-btn" onClick={resetFilters}>
+                      Effacer les filtres
+                    </button>
+                  ) : (
+                    dateArrivee &&
+                    dateDepart && (
+                      <button
+                        type="button"
+                        className="search-page__empty-btn"
+                        onClick={() => setSearchParams({ q: query })}
+                      >
+                        Modifier les dates
+                      </button>
+                    )
+                  )}
+                </div>
+              ) : (
+                <div
+                  className={`search-page__grid${
+                    viewMode === 'list' ? ' search-page__grid--list' : ''
+                  }`}
+                >
+                  {sortedRooms.map((room) => (
+                    <SearchStayCard
+                      key={room.id}
+                      room={room}
+                      href={roomHref(room)}
+                      meta={searchMeta(room)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              <SearchPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+
+            </section>
+          </div>
+        </>
+      )}
     </main>
+    <SearchFooter />
+    </>
   );
 }

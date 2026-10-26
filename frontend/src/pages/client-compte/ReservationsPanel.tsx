@@ -43,7 +43,7 @@ export default function ReservationsPanel({
   onSubmitReview: (e: FormEvent) => void;
 }) {
   return (
-    <section className="client-compte__panel" id="cp-panel" role="tabpanel">
+    <section className="client-compte__panel">
       {loading ? (
         <div className="client-compte__loading">
           <div className="auth-loading__spinner" />

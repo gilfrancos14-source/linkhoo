@@ -11,21 +11,36 @@ export const gerantCreateSchema = z
   })
   .strict();
 
+const isoDateSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date de naissance invalide')
+  .refine((value) => {
+    const [year, month, day] = value.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return (
+      date.getUTCFullYear() === year &&
+      date.getUTCMonth() === month - 1 &&
+      date.getUTCDate() === day &&
+      date.getTime() < Date.now()
+    );
+  }, 'Date de naissance invalide');
+
 export const gerantUpdateSchema = z
   .object({
     nom: z.string().trim().max(100).optional(),
     prenom: z.string().trim().max(100).optional(),
     phone: z.string().trim().max(20).optional(),
     address: z.string().trim().max(300).optional(),
-    market: marketSchema.optional(),
+    date_of_birth: isoDateSchema.optional(),
+    nationality: z.string().trim().min(1).max(100).optional(),
   })
   .strict();
 
 export const verificationDocumentTypeSchema = z.enum([
   'national_id',
+  'proof_of_address',
   'selfie',
-  'id_card_front',
-  'id_card_back',
 ]);
 
 export const propertyAddressSchema = z

@@ -16,12 +16,16 @@
   <!-- Polices Lato auto-hébergées (src/fonts.css) : aucune requête externe,
        la typographie survit hors-ligne. -->
 
+  <!-- Landing racine : Plus Jakarta Sans (maquette accueil). Le style est
+       scopé sous .landing dans src/styles/28-landing-accueil.css. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
   <!-- Pré-ouverture des connexions tierces (DNS + TLS payés une fois) -->
   <link rel="preconnect" href="https://epic-sponge-8933.clerk.accounts.dev" crossorigin />
   <link rel="preconnect" href="https://bqzyclhnobizudnhscgv.supabase.co" crossorigin />
-
-  <!-- Fond du Hero racine (LCP) : WebP 87 Ko chargé avant la CSS/JS -->
-  <link rel="preload" as="image" type="image/webp" href="/images/hero-portrait.webp" fetchpriority="high" />
 </head>
 <body>
   <div id="root"></div>

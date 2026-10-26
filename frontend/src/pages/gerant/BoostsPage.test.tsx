@@ -61,6 +61,8 @@ function makeBoost(overrides: Partial<BoostData> = {}): BoostData {
     display_status: 'live',
     budget_total: 3000,
     spent: 500,
+    clicks_count: 10,
+    impressions_count: 120,
     remaining: 2500,
     starts_at: future,
     ends_at: later,
@@ -123,6 +125,8 @@ describe('BoostsPage', () => {
     expect(screen.getByText('Par clic')).toBeInTheDocument();
     expect(screen.getByText('Reste 2 500 F sur 3 000 F')).toBeInTheDocument();
     expect(screen.getByText('500 F consommés')).toBeInTheDocument();
+    expect(screen.getByText('clics')).toBeInTheDocument();
+    expect(screen.getByText('impressions')).toBeInTheDocument();
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '17');
   });
 

@@ -22,6 +22,8 @@ export interface BoostLikeRow {
   status: BoostRawStatus;
   budget_total: number;
   spent: number;
+  clicks_count?: number;
+  impressions_count?: number;
   starts_at: string;
   ends_at: string;
   activated_at?: string | null;
@@ -79,6 +81,8 @@ export function mapBoostRow(row: BoostLikeRow) {
     display_status: deriveBoostDisplayStatus(row),
     budget_total: row.budget_total,
     spent: row.spent,
+    clicks_count: row.clicks_count ?? 0,
+    impressions_count: row.impressions_count ?? 0,
     remaining: Math.max(row.budget_total - row.spent, 0),
     starts_at: row.starts_at,
     ends_at: row.ends_at,

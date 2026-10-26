@@ -9,7 +9,7 @@ test.describe('page de recherche', () => {
 
     await page.goto('/ci/recherche');
 
-    await expect(page.locator('h1.search-page__dates-title')).toBeVisible();
+    await expect(page.locator('h1.search-page__title')).toContainText('Sélectionnez vos dates');
     await page.getByRole('button', { name: 'Voir les disponibilités' }).click();
     await expect(page.locator('p.search-page__dates-error')).toHaveText(
       'Veuillez renseigner les deux dates.',

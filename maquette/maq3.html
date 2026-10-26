@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HabiCI – Ajouter une chambre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: { extend: {
+    fontFamily: { sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+    colors: { navy: '#0f2a5c', brand: { DEFAULT: '#f97316', dark: '#ea580c', soft: '#fff1e6' } }
+  } }
+}
+</script>
+<style type="text/tailwindcss">
+@layer components {
+  .i { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .card { @apply bg-white rounded-2xl border border-slate-100 shadow-[0_2px_12px_rgba(15,42,92,.05)]; }
+  .grp { @apply flex items-center gap-3 px-3 py-2 text-sm font-semibold text-navy; }
+  .grp svg { @apply w-5 h-5; }
+  .sub { @apply flex items-center gap-3 rounded-lg px-2 py-2 text-xs text-slate-500 hover:text-navy; }
+  .sub svg { @apply w-4 h-4 text-slate-400; }
+  .sub.on { @apply bg-brand-soft text-brand-dark; }
+  .sub.on svg { @apply text-brand; }
+  .badge { @apply ml-auto grid h-5 w-5 place-items-center rounded-full bg-brand text-[11px] font-bold text-white; }
+  .avatar { @apply grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-slate-300 to-slate-500 font-bold text-white; }
+  .field { @apply relative flex items-center rounded-xl border border-slate-200 bg-white text-sm text-slate-600; }
+  .field select { @apply w-full appearance-none bg-transparent py-3.5 pl-4 pr-9 outline-none; }
+  .field > svg { @apply pointer-events-none absolute right-3 h-4 w-4 text-slate-500; }
+  .input { @apply w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none placeholder:text-slate-400 focus:border-brand focus:ring-2 focus:ring-orange-100; }
+  .hint { @apply mt-2 flex items-center gap-3 rounded-lg border border-sky-100 bg-sky-50 px-4 py-3 text-[11px] text-slate-500; }
+  .hint svg { @apply h-4 w-4 shrink-0 text-slate-400; }
+  .lbl { @apply mb-1.5 block text-sm font-semibold; }
+  .step { @apply flex items-center gap-3; }
+  .step > span:first-child { @apply grid h-10 w-10 shrink-0 place-items-center rounded-full border border-slate-200 bg-white font-bold; }
+  .step b { @apply block text-sm font-semibold; }
+  .step small { @apply block text-xs text-slate-500; }
+  .step.on > span:first-child { @apply border-brand bg-brand text-white shadow-lg shadow-orange-200; }
+  .step.on b, .step.on small { @apply text-brand-dark; }
+  .sum { @apply flex items-center gap-3 py-3 text-xs; }
+  .sum svg { @apply h-5 w-5 shrink-0 text-slate-500; }
+  .sum dd { @apply ml-auto text-right text-slate-500; }
+  .promise { @apply flex flex-1 items-center gap-4; }
+  .promise > span { @apply grid h-12 w-12 shrink-0 place-items-center rounded-full border-2 border-brand text-brand; }
+  .promise svg { @apply h-5 w-5; }
+  .promise b { @apply block text-sm font-semibold; }
+  .promise small { @apply block text-xs text-slate-500; }
+}
+</style>
+</head>
+
+<body class="bg-[#f5f8fc] font-sans text-navy antialiased">
+
+<!-- Icônes (sprite SVG) -->
+<svg class="absolute h-0 w-0" aria-hidden="true">
+  <symbol id="home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-5h4v5"/></symbol>
+  <symbol id="bed" viewBox="0 0 24 24"><path d="M3 20V5M3 16h18v4M21 16v-4a3 3 0 0 0-3-3h-7v7"/><circle cx="7" cy="11" r="1.5"/></symbol>
+  <symbol id="cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-5.4A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6zM9 12l2 2 4-4"/></symbol>
+  <symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
+  <symbol id="crown" viewBox="0 0 24 24"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5z" fill="currentColor"/></symbol>
+  <symbol id="mega" viewBox="0 0 24 24"><path d="M3 11v3l12 5V6zM15 9a3 3 0 0 1 0 6M6 15l1 5h3l-1-4"/></symbol>
+  <symbol id="down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="tag" viewBox="0 0 24 24"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></symbol>
+  <symbol id="doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM9 13h6M9 17h6"/></symbol>
+  <symbol id="okdoc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM9 14l2 2 4-4"/></symbol>
+  <symbol id="mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+  <symbol id="list" viewBox="0 0 24 24"><path d="M4 6h2M4 12h2M4 18h2M9 6h11M9 12h11M9 18h11"/></symbol>
+  <symbol id="back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+  <symbol id="next" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="box" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4"/></symbol>
+  <symbol id="lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="bot" viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 8V4M9 13h.01M15 13h.01M9 16.5h6"/></symbol>
+</svg>
+
+<div class="flex min-h-screen">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white px-4 py-5 lg:flex">
+    <a href="#" class="mb-6 flex items-center gap-2.5 px-2">
+      <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand text-white"><svg class="i h-5 w-5"><use href="#home"/></svg></span>
+      <span class="text-2xl font-extrabold">Habi<span class="text-brand">CI</span></span>
+    </a>
+
+    <nav class="space-y-3">
+      <a href="#" class="grp"><svg class="i"><use href="#home"/></svg>Aperçu</a>
+
+      <div>
+        <div class="grp justify-between"><span class="flex items-center gap-3"><svg class="i"><use href="#bed"/></svg>Chambres</span><svg class="i !h-4 !w-4"><use href="#up"/></svg></div>
+        <div class="pl-2">
+          <a href="#" class="sub"><svg class="i"><use href="#list"/></svg>Toutes les chambres</a>
+          <a href="#" class="sub on" aria-current="page"><svg class="i"><use href="#plus"/></svg>Ajouter une chambre</a>
+          <a href="#" class="sub"><svg class="i"><use href="#tag"/></svg>Catégories</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="grp"><svg class="i"><use href="#cal"/></svg>Réservations<span class="badge">3</span></div>
+        <div class="pl-2">
+          <a href="#" class="sub"><svg class="i"><use href="#user"/></svg>Demandes</a>
+          <a href="#" class="sub"><svg class="i"><use href="#cal"/></svg>Calendrier</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="grp"><svg class="i"><use href="#chat"/></svg>Messages<span class="badge">2</span></div>
+        <div class="pl-2">
+          <a href="#" class="sub"><svg class="i"><use href="#mail"/></svg>Boîte de réception</a>
+          <a href="#" class="sub"><svg class="i"><use href="#chat"/></svg>Nouveau message</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="grp justify-between"><span class="flex items-center gap-3"><svg class="i"><use href="#shield"/></svg>Vérification</span><svg class="i !h-4 !w-4"><use href="#down"/></svg></div>
+        <div class="pl-2">
+          <a href="#" class="sub"><svg class="i"><use href="#doc"/></svg>Mes documents</a>
+          <a href="#" class="sub"><svg class="i"><use href="#doc"/></svg>Suivi de vérification</a>
+        </div>
+      </div>
+
+      <div>
+        <div class="grp justify-between"><span class="flex items-center gap-3"><svg class="i"><use href="#user"/></svg>Profil</span><svg class="i !h-4 !w-4"><use href="#down"/></svg></div>
+        <div class="pl-2"><a href="#" class="sub"><svg class="i"><use href="#user"/></svg>Mes informations</a></div>
+      </div>
+
+      <div>
+        <div class="grp"><svg class="i text-brand"><use href="#crown"/></svg>Premium</div>
+        <div class="pl-2"><a href="#" class="sub"><svg class="i"><use href="#cal"/></svg>Mon abonnement</a></div>
+      </div>
+
+      <div>
+        <div class="grp justify-between"><span class="flex items-center gap-3"><svg class="i"><use href="#mega"/></svg>Booster</span><svg class="i !h-4 !w-4"><use href="#down"/></svg></div>
+        <div class="pl-2">
+          <a href="#" class="sub"><svg class="i"><use href="#mega"/></svg>Campagnes</a>
+          <a href="#" class="sub"><svg class="i"><use href="#mega"/></svg>Créer une campagne</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="mt-auto rounded-2xl border border-orange-100 bg-brand-soft p-4 pt-5">
+      <p class="flex items-center gap-2 text-sm font-bold"><svg class="i h-5 w-5 text-brand"><use href="#crown"/></svg>Passez au Premium</p>
+      <p class="mt-2 text-[11px] text-slate-500">Plus de visibilité, plus de réservations !</p>
+      <a href="#" class="mt-3 block rounded-lg bg-brand py-2 text-center text-xs font-semibold text-white hover:bg-brand-dark">Voir les avantages</a>
+    </div>
+  </aside>
+
+  <!-- ============ CONTENU ============ -->
+  <main class="min-w-0 flex-1 px-4 py-4 lg:px-7">
+
+    <!-- Barre du haut -->
+    <header class="flex items-center gap-4">
+      <label class="card flex max-w-3xl flex-1 items-center gap-3 px-5 py-3 text-slate-400">
+        <svg class="i h-5 w-5"><use href="#search"/></svg>
+        <input type="search" placeholder="Rechercher une chambre, une catégorie…" class="w-full bg-transparent text-sm outline-none placeholder:text-slate-400">
+      </label>
+      <button class="relative ml-auto p-2 text-navy" aria-label="Notifications">
+        <svg class="i h-6 w-6"><use href="#bell"/></svg>
+        <span class="absolute right-0.5 top-0 grid h-4 w-4 place-items-center rounded-full bg-brand text-[10px] font-bold text-white">2</span>
+      </button>
+      <div class="card flex items-center gap-3 py-2 pl-2 pr-4">
+        <span class="avatar h-10 w-10 text-xs">KM</span>
+        <div class="hidden text-xs sm:block"><p class="font-semibold">Koffi Mensah</p><p class="text-slate-400">Gérant</p></div>
+        <svg class="i h-4 w-4"><use href="#down"/></svg>
+      </div>
+    </header>
+
+    <!-- Titre -->
+    <a href="#" class="mt-7 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-navy"><svg class="i h-4 w-4 text-brand-dark"><use href="#back"/></svg>Retour</a>
+    <h1 class="mt-3 text-3xl font-extrabold">Ajouter une chambre</h1>
+    <p class="mt-1 text-sm text-slate-500">Suivez les étapes pour publier votre chambre rapidement.</p>
+
+    <div class="mt-5 grid items-start gap-5 xl:grid-cols-[1fr_340px]">
+
+      <div class="min-w-0 space-y-5">
+
+        <!-- Étapes -->
+        <ol class="card flex flex-wrap items-center gap-x-4 gap-y-4 p-5" aria-label="Étapes">
+          <li class="step on" aria-current="step"><span>1</span><div><b>Identification</b><small>Type et catégorie</small></div></li>
+          <li class="hidden h-px flex-1 bg-slate-200 md:block"></li>
+          <li class="step"><span>2</span><div><b class="!font-medium">Détails</b><small>Description et équipements</small></div></li>
+          <li class="hidden h-px flex-1 bg-slate-200 md:block"></li>
+          <li class="step"><span>3</span><div><b class="!font-medium">Photos</b><small>Ajoutez vos photos</small></div></li>
+          <li class="hidden h-px flex-1 bg-slate-200 md:block"></li>
+          <li class="step"><span>4</span><div><b class="!font-medium">Aperçu</b><small>Vérifiez et publiez</small></div></li>
+        </ol>
+
+        <!-- Formulaire étape 1 -->
+        <form class="card p-6" onsubmit="return false">
+          <div class="flex items-start gap-4">
+            <span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand font-bold text-white">1</span>
+            <div>
+              <h2 class="text-lg font-bold">Identification de la chambre</h2>
+              <p class="mt-1 text-sm text-slate-500">Choisissez le type de chambre et sa catégorie.</p>
+            </div>
+          </div>
+
+          <div class="mt-6 grid gap-5 md:grid-cols-2">
+            <div>
+              <label for="type" class="lbl">Type de chambre <span class="text-red-500">*</span></label>
+              <div class="field">
+                <select id="type" required><option value="">Sélectionnez un type</option><option>Chambre simple</option><option>Chambre double</option><option>Suite</option><option>Studio</option></select>
+                <svg class="i"><use href="#down"/></svg>
+              </div>
+              <p class="hint"><svg class="i"><use href="#info"/></svg>Exemples : Chambre simple, Chambre double, Suite, Studio…</p>
+            </div>
+            <div>
+              <label for="cat" class="lbl">Catégorie <span class="text-red-500">*</span></label>
+              <div class="field">
+                <select id="cat" required><option value="">Sélectionnez une catégorie</option><option>Appartements</option><option>Studios</option><option>Chambres privées</option><option>Résidences</option><option>Villas</option></select>
+                <svg class="i"><use href="#down"/></svg>
+              </div>
+              <p class="hint"><svg class="i"><use href="#info"/></svg>Exemples : Appartements, Studios, Villas, Chambres privées…</p>
+            </div>
+          </div>
+
+          <div class="mt-5">
+            <label for="titre" class="lbl">Titre de votre chambre <span class="text-red-500">*</span></label>
+            <input id="titre" class="input" placeholder="Ex: Chambre moderne avec balcon" required>
+          </div>
+
+          <div class="mt-5">
+            <label for="desc" class="lbl">Description courte <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <textarea id="desc" rows="4" maxlength="200" class="input resize-none" placeholder="Décrivez en quelques mots les atouts de votre chambre…" required></textarea>
+              <span id="cnt" class="absolute bottom-3 right-4 text-[11px] text-slate-400">0/200</span>
+            </div>
+          </div>
+
+          <div class="mt-5 flex items-start gap-3 rounded-xl border border-orange-100 bg-orange-50 px-4 py-3 text-xs text-brand-dark">
+            <svg class="i mt-0.5 h-5 w-5 shrink-0"><use href="#bulb"/></svg>
+            <div><p class="font-medium">Un bon titre et une description claire attirent plus de voyageurs !</p><p class="mt-1 text-[11px] opacity-80">Mettez en avant les équipements, la vue, la proximité des lieux d’intérêt…</p></div>
+          </div>
+
+          <div class="mt-8 flex justify-end">
+            <button type="submit" class="inline-flex items-center gap-3 rounded-lg bg-brand px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 hover:bg-brand-dark">Suivant <svg class="i h-4 w-4"><use href="#next"/></svg></button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ===== Aperçu ===== -->
+      <aside class="card p-5">
+        <h2 class="mb-4 text-lg font-bold">Aperçu de votre chambre</h2>
+
+        <!-- Remplacez les dégradés par des <img class="h-full w-full rounded-xl object-cover" src="..." alt=""> -->
+        <div class="relative h-52 rounded-xl bg-gradient-to-br from-amber-200 via-orange-200 to-sky-300">
+          <span class="absolute left-3 top-3 rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white">Aperçu</span>
+        </div>
+        <div class="mt-2.5 grid grid-cols-5 gap-2">
+          <div class="h-12 rounded-lg bg-gradient-to-br from-amber-200 to-sky-300 ring-2 ring-brand ring-offset-1"></div>
+          <div class="h-12 rounded-lg bg-gradient-to-br from-stone-200 to-stone-400"></div>
+          <div class="h-12 rounded-lg bg-gradient-to-br from-amber-100 to-orange-300"></div>
+          <div class="h-12 rounded-lg bg-gradient-to-br from-sky-300 to-emerald-300"></div>
+          <div class="h-12 rounded-lg bg-gradient-to-br from-sky-200 to-amber-200"></div>
+        </div>
+
+        <dl class="mt-3 divide-y divide-slate-100">
+          <div class="sum"><svg class="i"><use href="#box"/></svg><dt class="font-medium">Type</dt><dd>Chambre double</dd></div>
+          <div class="sum"><svg class="i"><use href="#bed"/></svg><dt class="font-medium">Catégorie</dt><dd>Appartements</dd></div>
+          <div class="sum"><svg class="i"><use href="#doc"/></svg><dt class="font-medium">Titre</dt><dd>Chambre moderne avec balcon</dd></div>
+          <div class="sum"><svg class="i"><use href="#coin"/></svg><dt class="font-medium">Prix</dt><dd>45 000 FCFA / nuit</dd></div>
+        </dl>
+
+        <div class="mt-4 rounded-xl border border-sky-100 bg-sky-50 p-4">
+          <div class="flex items-start gap-3">
+            <svg class="i h-6 w-6 shrink-0 text-sky-500"><use href="#chat"/></svg>
+            <div><p class="text-sm font-semibold">Besoin d’aide ?</p><p class="mt-1 text-[11px] leading-relaxed text-slate-500">Notre assistant peut vous guider pas à pas pour ajouter votre chambre.</p></div>
+          </div>
+          <button type="button" class="mt-3 flex w-full items-center justify-center gap-3 rounded-lg border border-sky-100 bg-white py-3 text-xs font-semibold text-blue-700 hover:bg-sky-50"><svg class="i h-6 w-6"><use href="#bot"/></svg>Ouvrir l’assistant</button>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Engagements -->
+    <section class="card mt-5 flex flex-col gap-5 p-5 md:flex-row md:items-center md:gap-0">
+      <div class="promise"><span><svg class="i"><use href="#okdoc"/></svg></span><div><b>Votre annonce en ligne en quelques minutes</b><small>Simple, rapide et sécurisé.</small></div></div>
+      <div class="hidden h-12 w-px bg-slate-200 md:mx-6 md:block"></div>
+      <div class="promise"><span><svg class="i"><use href="#shield"/></svg></span><div><b>Une équipe à votre écoute</b><small>En cas de besoin, nous sommes là pour vous.</small></div></div>
+      <div class="hidden h-12 w-px bg-slate-200 md:mx-6 md:block"></div>
+      <div class="promise"><span><svg class="i"><use href="#lock"/></svg></span><div><b>Vos informations sont protégées</b><small>Confidentialité garantie.</small></div></div>
+    </section>
+  </main>
+</div>
+
+<script>
+  // Compteur de caractères de la description
+  const desc = document.getElementById('desc'), cnt = document.getElementById('cnt');
+  desc.addEventListener('input', () => cnt.textContent = desc.value.length + '/200');
+</script>
+</body>
+</html>

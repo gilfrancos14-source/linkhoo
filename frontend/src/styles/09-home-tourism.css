@@ -303,7 +303,7 @@
 .tourism__small-card {
   position: relative;
   width: 100%;
-  min-height: 245px;
+  min-height: 330px;
   padding: 0;
   overflow: hidden;
   text-align: left;
@@ -324,7 +324,7 @@
 .tourism__small-card img {
   display: block;
   width: 100%;
-  height: 145px;
+  height: 205px;
   object-fit: cover;
   transition: transform 0.5s var(--ease);
 }
@@ -335,10 +335,10 @@
 
 .tourism__small-card-shade {
   position: absolute;
-  top: 70px;
+  top: 118px;
   left: 0;
   right: 0;
-  height: 100px;
+  height: 125px;
   background: linear-gradient(transparent, var(--tourism-panel));
   pointer-events: none;
 }
@@ -478,7 +478,7 @@
   }
 
   .tourism__small-card {
-    min-height: 270px;
+    min-height: 360px;
   }
 }
 

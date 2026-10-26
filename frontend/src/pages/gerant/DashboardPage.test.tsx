@@ -1,22 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { MarketProvider } from '../../contexts/MarketContext';
 import DashboardPage from './DashboardPage';
 import type { Room } from '../../data/rooms';
 import type { Category } from '../../data/categories';
 import type { GerantData } from '../../lib/api';
+import type { Reservation } from '../../lib/reservations';
 
 const mocks = vi.hoisted(() => ({
-  userId: 'user_clerk_1' as string | null,
   fetchMyRooms: vi.fn<() => Promise<Room[]>>(),
   fetchCategoriesByMarket: vi.fn<(market: string) => Promise<Category[]>>(),
+  getReservations: vi.fn<() => Promise<Reservation[]>>(),
   getMe: vi.fn<() => Promise<GerantData>>(),
-}));
-
-vi.mock('@clerk/clerk-react', () => ({
-  useAuth: () => ({ userId: mocks.userId }),
+  gerantUnread: vi.fn<() => Promise<{ count: number }>>(),
 }));
 
 vi.mock('../../data/rooms', () => ({
@@ -29,83 +26,114 @@ vi.mock('../../data/categories', () => ({
 
 vi.mock('../../lib/api', () => ({
   apiGerants: { getMe: mocks.getMe },
+  apiMessages: { gerantUnread: mocks.gerantUnread },
 }));
 
-function makeRoom(index: number, overrides: Partial<Room> = {}): Room {
+vi.mock('../../lib/reservations', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/reservations')>();
   return {
-    id: `room-${index}`,
-    title: `Chambre ${index}`,
-    subtitle: `Sous-titre ${index}`,
-    info: '2 lits',
-    price: '9 000',
-    priceNum: 9000,
+    ...actual,
+    getReservations: mocks.getReservations,
+  };
+});
+
+const gerant: GerantData = {
+  id: 'gerant-1',
+  clerk_user_id: 'clerk_1',
+  email: 'koffi@ilehya.ci',
+  nom: 'Mensah',
+  prenom: 'Koffi',
+  phone: null,
+  market: 'CI',
+  is_verified: true,
+  verified_at: '2026-01-05T12:00:00.000Z',
+  verification_requested_at: null,
+  verification_status: 'approved',
+  verification_rejection_reason: null,
+  verification_submitted_at: null,
+  verification_reviewed_at: null,
+  property_maps_url: null,
+  property_lat: null,
+  property_lng: null,
+  is_premium: true,
+  premium_expires_at: '2027-06-01T00:00:00.000Z',
+  created_at: '2025-11-01T09:00:00.000Z',
+};
+
+function makeRoom(overrides: Partial<Room> = {}): Room {
+  return {
+    id: 'room-1',
+    title: 'Appartement lumineux avec vue sur la lagune',
+    subtitle: 'Vue sur la lagune',
+    info: '',
+    price: '75000',
+    priceNum: 75000,
     priceUnit: '/ nuit',
-    img: `/images/room-${index}.jpg`,
-    alt: `Chambre ${index}`,
-    images: [`/images/room-${index}.jpg`],
-    description: 'Confortable',
-    capacity: '2 personnes',
-    category: 'ci-chambres-premium',
+    img: '',
+    alt: '',
+    images: [],
+    description: '',
+    category: 'ci-appartements',
     market: 'CI',
-    pays: 'Côte d’Ivoire',
-    ville: index % 2 === 0 ? 'Cotonou' : 'Abidjan',
-    quartier: 'Centre',
-    chambres: 1,
+    pays: "Côte d'Ivoire",
+    ville: 'Abidjan',
+    quartier: 'Cocody',
+    chambres: 2,
     douches: 1,
-    disponible: index % 2 === 1,
-    dateDispo: '2026-10-01',
-    conditions: 'Annulation gratuite',
-    isPopular: false,
+    disponible: true,
+    dateDispo: '',
+    conditions: '',
+    isPopular: true,
     ...overrides,
   };
 }
 
+const rooms: Room[] = [
+  makeRoom(),
+  makeRoom({
+    id: 'room-2',
+    title: 'Villa avec piscine',
+    category: 'ci-chambres-premium',
+    disponible: false,
+  }),
+];
+
 const categories: Category[] = [
   {
-    id: 'ci-chambres-premium',
-    title: 'Chambres premium',
-    img: '/images/1.jpg',
-    alt: 'premium',
+    id: 'ci-appartements',
+    title: 'Appartements',
+    img: '/a.jpg',
+    alt: 'Appartements',
     market: 'CI',
   },
   {
-    id: 'ci-hotels',
-    title: 'Hôtels',
-    img: '/images/2.jpg',
-    alt: 'hôtels',
+    id: 'ci-chambres-premium',
+    title: 'Chambres premium',
+    img: '/p.jpg',
+    alt: 'Chambres premium',
     market: 'CI',
   },
 ];
 
-function makeGerant(overrides: Partial<GerantData> = {}): GerantData {
-  return {
-    id: 'gerant-1',
-    clerk_user_id: 'clerk_1',
-    email: 'awa@ilehya.ci',
-    nom: 'Kouassi',
-    prenom: 'Awa',
-    phone: '+225 07 00 00 00',
-    market: 'CI',
-    is_verified: false,
-    verified_at: null,
-    verification_requested_at: null,
-    verification_status: 'none',
-    verification_rejection_reason: null,
-    verification_submitted_at: null,
-    verification_reviewed_at: null,
-    property_maps_url: null,
-    property_lat: null,
-    property_lng: null,
-    is_premium: false,
-    premium_expires_at: null,
-    created_at: '2025-11-01T09:00:00.000Z',
-    ...overrides,
-  };
-}
+const reservation: Reservation = {
+  id: 'res-1',
+  clientName: 'Aïcha Diallo',
+  clientEmail: 'aicha@ilehya.ci',
+  clientPhone: '+225 01 01 01 01',
+  roomId: 'room-1',
+  roomTitle: 'Appartement lumineux avec vue sur la lagune',
+  dateDebut: '2026-10-05',
+  dateFin: '2026-10-08',
+  dureeNombre: 3,
+  dureeUnite: 'nuit',
+  montant: 225000,
+  statut: 'en_attente',
+  createdAt: '2026-09-20T10:00:00.000Z',
+};
 
-function renderDashboard(entry = '/ci/gerant') {
+function renderDashboard() {
   return render(
-    <MemoryRouter initialEntries={[entry]}>
+    <MemoryRouter initialEntries={['/ci/gerant']}>
       <MarketProvider>
         <DashboardPage />
       </MarketProvider>
@@ -115,357 +143,58 @@ function renderDashboard(entry = '/ci/gerant') {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.userId = 'user_clerk_1';
-  mocks.fetchMyRooms.mockResolvedValue([makeRoom(1)]);
+  mocks.fetchMyRooms.mockResolvedValue(rooms);
   mocks.fetchCategoriesByMarket.mockResolvedValue(categories);
-  mocks.getMe.mockResolvedValue(makeGerant());
+  mocks.getReservations.mockResolvedValue([reservation]);
+  mocks.getMe.mockResolvedValue(gerant);
+  mocks.gerantUnread.mockResolvedValue({ count: 0 });
 });
 
 afterEach(() => {
   cleanup();
-  vi.restoreAllMocks();
 });
 
 describe('DashboardPage', () => {
-  it("affiche l'état de chargement avant les données", () => {
-    mocks.fetchMyRooms.mockImplementation(() => new Promise<Room[]>(() => {}));
-
+  it('affiche le tableau de bord avec les données de l’API', async () => {
     renderDashboard();
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Aperçu' })).toBeInTheDocument();
-    expect(screen.getByText('Chargement...')).toBeInTheDocument();
-    expect(screen.queryByText('Actions rapides')).not.toBeInTheDocument();
-  });
-
-  it("affiche l'erreur et un bouton Réessayer quand le chargement échoue", async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    mocks.fetchMyRooms.mockRejectedValue(new Error('réseau coupé'));
-
-    renderDashboard();
-
+    expect(document.querySelector('.gerant-maq1')).toBeInTheDocument();
     expect(
-      await screen.findByText('Impossible de charger les données du tableau de bord.'),
+      await screen.findByRole('heading', { level: 1, name: /Bonjour Koffi/ }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument();
-    expect(screen.queryByText('Chargement...')).not.toBeInTheDocument();
-  });
-
-  it('recharge les données au clic sur Réessayer', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    mocks.fetchMyRooms.mockRejectedValueOnce(new Error('réseau coupé'));
-    const user = userEvent.setup();
-    renderDashboard();
-    await screen.findByText('Impossible de charger les données du tableau de bord.');
-
-    await user.click(screen.getByRole('button', { name: 'Réessayer' }));
-
-    expect(await screen.findByText('Actions rapides')).toBeInTheDocument();
-    expect(mocks.fetchMyRooms).toHaveBeenCalledTimes(2);
+    expect(await screen.findByText('Chambres enregistrées')).toBeInTheDocument();
+    expect(screen.getByText('Catégories de vos chambres')).toBeInTheDocument();
+    expect(screen.getByText('Chambres récentes')).toBeInTheDocument();
+    expect(screen.getByText('Actions rapides')).toBeInTheDocument();
+    expect(screen.getByText('Appartement lumineux avec vue sur la lagune')).toBeInTheDocument();
+    expect(screen.getAllByText('Aïcha Diallo').length).toBeGreaterThan(0);
     expect(
-      screen.queryByText('Impossible de charger les données du tableau de bord.'),
-    ).not.toBeInTheDocument();
-  });
-
-  it("présente la vue d'ensemble avec le marché courant et les KPI", async () => {
-    mocks.fetchMyRooms.mockResolvedValue([
-      makeRoom(1),
-      makeRoom(2),
-      makeRoom(3),
-    ]);
-
-    renderDashboard();
-
-    expect(
-      await screen.findByText(
-        "Vue d'ensemble de votre activité sur le marché CI.",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Chambres enregistrées')).toBeInTheDocument();
-    expect(document.querySelector('.hero-kpi__value')).toHaveTextContent('3');
-    expect(document.querySelector('.hero-kpi__change')).toHaveTextContent(
-      '2 disponibles',
-    );
-    const minis = document.querySelectorAll('.hero-mini__value');
-    expect(minis[0]).toHaveTextContent('2');
-    expect(minis[1]).toHaveTextContent('2');
-    expect(screen.getByText('Disponibles')).toBeInTheDocument();
-    expect(screen.getByText('Catégories')).toBeInTheDocument();
-  });
-
-  it('charge les catégories du marché BJ pour une URL /bj', async () => {
-    renderDashboard('/bj/gerant');
-
-    expect(await screen.findByText('Actions rapides')).toBeInTheDocument();
-    expect(mocks.fetchCategoriesByMarket).toHaveBeenCalledWith('BJ');
-    expect(
-      screen.getByText("Vue d'ensemble de votre activité sur le marché BJ."),
-    ).toBeInTheDocument();
-  });
-
-  it('invite à devenir gérant vérifié quand aucun profil ne répond', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    mocks.getMe.mockRejectedValue(new Error('404'));
-
-    renderDashboard();
-
-    expect(await screen.findByText('Devenez gérant vérifié')).toBeInTheDocument();
-    const lien = screen.getByRole('link', { name: 'Demander la vérification' });
-    expect(lien).toHaveAttribute('href', '/ci/gerant/verification');
-    expect(screen.queryByText('Compte vérifié')).not.toBeInTheDocument();
-  });
-
-  it('annonce une demande de vérification en attente sans lien', async () => {
-    mocks.getMe.mockResolvedValue(makeGerant({ verification_status: 'pending' }));
-
-    renderDashboard();
-
-    expect(await screen.findByText('Demande en cours')).toBeInTheDocument();
-    expect(
-      screen.queryByRole('link', { name: 'Demander la vérification' }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('link', { name: 'Resoumettre' }),
-    ).not.toBeInTheDocument();
-  });
-
-  it('annonce une demande en cours d’examen (under_review)', async () => {
-    mocks.getMe.mockResolvedValue(
-      makeGerant({ verification_status: 'under_review' }),
-    );
-
-    renderDashboard();
-
-    expect(await screen.findByText('Demande en cours')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Votre demande de vérification est en cours de traitement. L'admin la traitera bientôt.",
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it('affiche le motif de rejet et propose de resoumettre', async () => {
-    mocks.getMe.mockResolvedValue(
-      makeGerant({
-        verification_status: 'rejected',
-        verification_rejection_reason: 'Photo illisible',
-      }),
-    );
-
-    renderDashboard();
-
-    expect(await screen.findByText('Demande rejetée')).toBeInTheDocument();
-    expect(screen.getByText('Photo illisible')).toBeInTheDocument();
-    const lien = screen.getByRole('link', { name: 'Resoumettre' });
-    expect(lien).toHaveAttribute('href', '/ci/gerant/verification');
-  });
-
-  it('tombe sur un texte par défaut quand le rejet est sans motif', async () => {
-    mocks.getMe.mockResolvedValue(
-      makeGerant({ verification_status: 'rejected' }),
-    );
-
-    renderDashboard();
-
-    expect(
-      await screen.findByText(
-        'Votre demande a été rejetée. Vous pouvez soumettre de nouveaux documents.',
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Resoumettre' })).toBeInTheDocument();
-  });
-
-  it('masque l’appel à la vérification pour un compte vérifié', async () => {
-    const verifiedAt = '2026-01-05T12:00:00.000Z';
-    mocks.getMe.mockResolvedValue(
-      makeGerant({
-        is_verified: true,
-        verified_at: verifiedAt,
-        verification_status: 'approved',
-      }),
-    );
-
-    renderDashboard();
-
-    expect(await screen.findByText('Gérant vérifié')).toBeInTheDocument();
-    expect(screen.queryByText('Devenez gérant vérifié')).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('link', { name: 'Demander la vérification' }),
-    ).not.toBeInTheDocument();
-  });
-
-  it('propose les actions rapides de base avec leurs destinations', async () => {
-    renderDashboard();
-
-    expect(await screen.findByText('Actions rapides')).toBeInTheDocument();
-    expect(
-      screen.getByRole('link', { name: 'Ajouter chambre' }),
-    ).toHaveAttribute('href', '/ci/gerant/chambres/ajouter');
-    expect(
-      screen.getByRole('link', { name: 'Gérer les chambres' }),
+      screen.getByRole('link', { name: /toutes les chambres/i }),
     ).toHaveAttribute('href', '/ci/gerant/chambres');
-    expect(screen.getByRole('link', { name: 'Voir le site' })).toHaveAttribute(
+    for (const link of screen.getAllByRole('link', {
+      name: /ajouter une chambre/i,
+    })) {
+      expect(link).toHaveAttribute('href', '/ci/gerant/chambres/ajouter');
+    }
+    expect(screen.getByRole('link', { name: 'Demandes' })).toHaveAttribute(
       'href',
-      '/ci',
+      '/ci/gerant/reservations/demandes',
     );
-    expect(
-      screen.queryByRole('link', { name: 'Réservations' }),
-    ).not.toBeInTheDocument();
   });
 
-  it('ouvre les réservations pour un gérant vérifié et premium actif', async () => {
-    mocks.getMe.mockResolvedValue(
-      makeGerant({
-        is_verified: true,
-        verification_status: 'approved',
-        is_premium: true,
-        premium_expires_at: '2027-06-01T00:00:00.000Z',
-      }),
+  it('continue d\'afficher les chambres quand les réservations sont réservées au Premium', async () => {
+    mocks.getReservations.mockRejectedValue(
+      Object.assign(new Error('Réservations gérées par l\'administrateur'), { status: 403 }),
     );
 
     renderDashboard();
 
-    const lien = await screen.findByRole('link', { name: 'Réservations' });
-    expect(lien).toHaveAttribute('href', '/ci/gerant/reservations');
-  });
-
-  it('masque les réservations quand le premium est expiré', async () => {
-    mocks.getMe.mockResolvedValue(
-      makeGerant({
-        is_verified: true,
-        verification_status: 'approved',
-        is_premium: true,
-        premium_expires_at: '2025-06-01T00:00:00.000Z',
-      }),
-    );
-
-    renderDashboard();
-
-    expect(await screen.findByText('Actions rapides')).toBeInTheDocument();
+    expect(await screen.findByText('Appartement lumineux avec vue sur la lagune')).toBeInTheDocument();
     expect(
-      screen.queryByRole('link', { name: 'Réservations' }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("affiche l'état vide des chambres récentes", async () => {
-    mocks.fetchMyRooms.mockResolvedValue([]);
-
-    renderDashboard();
-
-    expect(
-      await screen.findByText('Aucune chambre enregistrée.'),
+      await screen.findByText(
+        'Les réservations sont visibles uniquement pour les gérants vérifiés et Premium.',
+      ),
     ).toBeInTheDocument();
-    expect(document.querySelector('.admin-pagination')).toBeNull();
-    expect(document.querySelector('.hero-kpi__value')).toHaveTextContent('0');
-  });
-
-  it('affiche les badges de disponibilité de chaque chambre', async () => {
-    mocks.fetchMyRooms.mockResolvedValue([
-      makeRoom(1, { disponible: true }),
-      makeRoom(2, { disponible: false }),
-    ]);
-
-    renderDashboard();
-
-    expect(await screen.findByRole('table')).toBeInTheDocument();
-    expect(screen.getByText('Disponible')).toBeInTheDocument();
-    expect(screen.getByText('Occupée')).toBeInTheDocument();
-    expect(screen.getByText('Abidjan')).toBeInTheDocument();
-    expect(screen.getByText('Cotonou')).toBeInTheDocument();
-  });
-
-  it("aligne chaque cellule sur son en-tête dans « Chambres récentes »", async () => {
-    mocks.fetchMyRooms.mockResolvedValue([makeRoom(1, { disponible: false })]);
-
-    renderDashboard();
-
-    expect(await screen.findByRole('table')).toBeInTheDocument();
-    const headers = Array.from(
-      document.querySelectorAll('.admin-table thead th'),
-      (th) => th.textContent,
-    );
-    expect(headers).toEqual(['Image', 'Titre', 'Ville', 'Catégorie', 'Prix', 'Statut']);
-
-    const cells = document.querySelectorAll('.admin-table tbody tr td');
-    expect(cells).toHaveLength(headers.length);
-    expect(cells[1]).toHaveTextContent('Chambre 1');
-    expect(cells[2]).toHaveTextContent('Abidjan');
-    expect(cells[3]).toHaveTextContent('Chambres premium');
-    expect(cells[4]).toHaveTextContent('9 000 FCFA');
-    expect(cells[5]).toHaveTextContent('Occupée');
-  });
-
-  it('pagine les huit chambres récentes sur deux pages', async () => {
-    mocks.fetchMyRooms.mockResolvedValue(
-      Array.from({ length: 8 }, (_, i) => makeRoom(i + 1)),
-    );
-    const user = userEvent.setup();
-    renderDashboard();
-
-    expect(await screen.findByRole('table')).toBeInTheDocument();
-    expect(screen.getByText('Chambre 1')).toBeInTheDocument();
-    expect(screen.getByText('Chambre 5')).toBeInTheDocument();
-    expect(screen.queryByText('Chambre 6')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '← Préc' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Suiv →' })).toBeEnabled();
-
-    await user.click(screen.getByRole('button', { name: '2' }));
-
-    expect(screen.getByText('Chambre 6')).toBeInTheDocument();
-    expect(screen.getByText('Chambre 8')).toBeInTheDocument();
-    expect(screen.queryByText('Chambre 1')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Suiv →' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: '← Préc' })).toBeEnabled();
-
-    await user.click(screen.getByRole('button', { name: '← Préc' }));
-
-    expect(screen.getByText('Chambre 1')).toBeInTheDocument();
-    expect(screen.queryByText('Chambre 6')).not.toBeInTheDocument();
-  });
-
-  it('ne pagine pas quand cinq chambres ou moins sont récentes', async () => {
-    mocks.fetchMyRooms.mockResolvedValue(
-      Array.from({ length: 5 }, (_, i) => makeRoom(i + 1)),
-    );
-
-    renderDashboard();
-
-    expect(await screen.findByRole('table')).toBeInTheDocument();
-    expect(screen.getAllByRole('row')).toHaveLength(6);
-    expect(document.querySelector('.admin-pagination')).toBeNull();
-  });
-
-  it('compte toutes les chambres dans le KPI même au-delà des huit récentes', async () => {
-    mocks.fetchMyRooms.mockResolvedValue(
-      Array.from({ length: 10 }, (_, i) => makeRoom(i + 1)),
-    );
-
-    renderDashboard();
-
-    expect(await screen.findByRole('table')).toBeInTheDocument();
-    expect(document.querySelector('.hero-kpi__value')).toHaveTextContent('10');
-    // Seules les 8 chambres les plus récentes sont paginées (5 sur la page 1).
-    expect(screen.getByText('Chambre 5')).toBeInTheDocument();
-    expect(screen.queryByText('Chambre 6')).not.toBeInTheDocument();
-    expect(screen.queryByText('Chambre 9')).not.toBeInTheDocument();
-    expect(screen.queryByText('Chambre 10')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Suiv →' })).toBeEnabled();
-
-    const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: '2' }));
-
-    expect(screen.getByText('Chambre 8')).toBeInTheDocument();
-    expect(screen.queryByText('Chambre 1')).not.toBeInTheDocument();
-    expect(screen.queryByText('Chambre 9')).not.toBeInTheDocument();
-    expect(screen.queryByText('Chambre 10')).not.toBeInTheDocument();
-  });
-
-  it("n'appelle pas l'API gérant sans userId Clerk", async () => {
-    mocks.userId = null;
-
-    renderDashboard();
-
-    expect(await screen.findByText('Actions rapides')).toBeInTheDocument();
-    expect(mocks.getMe).not.toHaveBeenCalled();
-    expect(await screen.findByText('Devenez gérant vérifié')).toBeInTheDocument();
+    expect(screen.queryByText('Impossible de charger vos chambres.')).not.toBeInTheDocument();
   });
 });

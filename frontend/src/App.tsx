@@ -1,6 +1,6 @@
 import { Routes, Route, useLocation, useParams, Navigate } from 'react-router-dom';
-import { lazy, Suspense, useEffect, type ReactNode } from 'react';
-import { MarketProvider } from './contexts/MarketContext';
+import { lazy, Suspense, useEffect } from 'react';
+import { MarketProvider, useMarket } from './contexts/MarketContext';
 import { isMarketSlug } from './config/markets';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -23,6 +23,7 @@ import OfflineBanner from './components/OfflineBanner';
 import RoleRouteGuard from './components/RoleRouteGuard';
 import AdminRouteGuard from './components/AdminRouteGuard';
 import LandingPage from './pages/LandingPage';
+import MaquettePage from './pages/MaquettePage';
 import { useRevealOnScroll } from './hooks/useRevealOnScroll';
 
 // Routes hors accueil : chargées à la demande pour ne pas embarquer Leaflet,
@@ -44,17 +45,21 @@ const AdminLayout = lazy(() => import('./pages/gerant/AdminLayout'));
 const DashboardPage = lazy(() => import('./pages/gerant/DashboardPage'));
 const ChambresPage = lazy(() => import('./pages/gerant/ChambresPage'));
 const ReservationsPage = lazy(() => import('./pages/gerant/ReservationsPage'));
-const AjouterChambre = lazy(() => import('./pages/gerant/AjouterChambre'));
+const AjouterChambre = lazy(() => import('./pages/gerant/AjouterChambreMaq3'));
+const DemandesReservationMaq4 = lazy(() => import('./pages/gerant/DemandesReservationMaq4'));
 const PremiumPage = lazy(() => import('./pages/gerant/PremiumPage'));
 const PremiumSuccessPage = lazy(() => import('./pages/gerant/PremiumSuccessPage'));
 const BoostsPage = lazy(() => import('./pages/gerant/BoostsPage'));
 const BoostCreatePage = lazy(() => import('./pages/gerant/BoostCreatePage'));
 const BoostSuccessPage = lazy(() => import('./pages/gerant/BoostSuccessPage'));
 const ProfilPage = lazy(() => import('./pages/gerant/ProfilPage'));
-const GerantMessagesPage = lazy(() => import('./pages/messages/GerantMessagesPage'));
+const MesInformationsMaq = lazy(() => import('./pages/gerant/MesInformationsMaq'));
 const VerificationPage = lazy(() => import('./pages/gerant/VerificationPage'));
+const SuiviVerificationPage = lazy(() => import('./pages/gerant/SuiviVerificationPage'));
 const GerantLogin = lazy(() => import('./pages/gerant/GerantLogin'));
 const OAuthCallback = lazy(() => import('./pages/gerant/OAuthCallback'));
+const CalendrierMaq5 = lazy(() => import('./pages/gerant/CalendrierMaq5'));
+const BoiteReceptionMaq6 = lazy(() => import('./pages/gerant/BoiteReceptionMaq6'));
 
 const SuperAdminLayout = lazy(() => import('./pages/admin/SuperAdminLayout'));
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
@@ -143,23 +148,36 @@ function MarketRoute() {
 
 function MarketContent() {
   const { pathname } = useLocation();
+  const { market } = useMarket();
+  // Accueil du marché : la maquette statique remplace le contenu React.
+  // Elle est identique pour tous les marchés — seules les données de l'API changent.
+  const marketHome = `/${market.toLowerCase()}`;
+  const isMaquetteHome =
+    pathname === marketHome || pathname === `${marketHome}/`;
+  // Espace client (/compte, /messages) : la page porte sa propre sidebar et
+  // occupe toute la hauteur → aucun chrome du site (en-tête, pied, bannière).
+  const isClientSpace = /\/compte(\/|$)/.test(pathname) || /\/messages(\/|$)/.test(pathname);
+  // La recherche porte le footer éditorial de la page d'accueil.
+  const isSearchPage = /\/recherche(\/|$)/.test(pathname);
+  // La fiche chambre reproduit la maquette HabiCI : elle embarque son propre
+  // en-tête, son pied de page et sa navigation mobile.
+  const isRoomDetail = /\/chambre(\/|$)/.test(pathname);
   const hideChrome =
+    isMaquetteHome ||
+    isRoomDetail ||
+    isClientSpace ||
     pathname.includes('/gerant') ||
     pathname.includes('/admin') ||
     pathname.includes('/login') ||
     pathname.includes('/inscription') ||
     pathname.includes('/sso-callback');
-  // Messagerie : la page occupe toute la hauteur de l'écran et seule la zone
-  // des messages défile (fil ou boîte de réception) → le pied de page suivrait
-  // juste en dessous et ferait défiler la page, on le retire.
-  const hideFooter = /\/messages(\/[^/]+)?$/.test(pathname);
   return (
     <>
-      <OfflineBanner />
-      {!hideChrome && <Header />}
+      {!isMaquetteHome && !isRoomDetail && <OfflineBanner />}
+      {!hideChrome && !isSearchPage && <Header />}
       <Suspense fallback={<RouteFallback />}>
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={isMaquetteHome ? <MaquettePage /> : <HomePage />} />
         <Route path="/mentions-legales" element={<MentionsLegales />} />
         <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialite />} />
         <Route path="/a-propos" element={<Navigate to="/a-propos" replace />} />
@@ -202,46 +220,35 @@ function MarketContent() {
           <Route path="chambres" element={<ChambresPage />} />
           <Route path="chambres/ajouter" element={<AjouterChambre />} />
           <Route path="reservations" element={<ReservationsPage />} />
+          <Route path="reservations/demandes" element={<DemandesReservationMaq4 />} />
+          <Route path="reservations/calendrier" element={<CalendrierMaq5 />} />
           <Route path="premium" element={<PremiumPage />} />
           <Route path="premium/success" element={<PremiumSuccessPage />} />
           <Route path="boosts" element={<BoostsPage />} />
           <Route path="boosts/new" element={<BoostCreatePage />} />
           <Route path="boosts/success" element={<BoostSuccessPage />} />
           <Route path="verification" element={<VerificationPage />} />
-          <Route path="messages" element={<GerantMessagesPage />} />
-          <Route path="messages/:conversationId" element={<GerantMessagesPage />} />
-          <Route path="profil" element={<ProfilPage />} />
+          <Route path="verification/suivi" element={<SuiviVerificationPage />} />
+          <Route path="messages/boite-reception" element={<BoiteReceptionMaq6 />} />
+          <Route path="profil" element={<MesInformationsMaq />} />
+          <Route path="profil/modifier" element={<ProfilPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
       {!hideChrome && <ClientNotificationBanner />}
-      {!hideChrome && !hideFooter && <Footer />}
+      {!hideChrome && !isSearchPage && <Footer />}
       {!hideChrome && <BackToTop />}
     </>
   );
 }
 
-// Chrome du site (bandeau, en-tête, notifications, pied de page, retour haut)
-// partagé par l'accueil racine et les pages de contenu servies hors marché.
-function SiteChrome({ children }: { children: ReactNode }) {
-  return (
-    <>
-      <OfflineBanner />
-      <Header />
-      {children}
-      <ClientNotificationBanner />
-      <Footer />
-      <BackToTop />
-    </>
-  );
-}
-
-// Page d'accueil racine : squelette CoinAfrique (hero + recherche, choix du
-// pays, carrousel, témoignages) enveloppé du chrome du site.
+// Page d'accueil racine : la maquette linkhoo.html est reproduite à
+// l'identique (header, bandeau, sections et footer inclus dans le fragment),
+// donc aucun chrome du site n'est ajouté par-dessus.
 function RootRedirect() {
-  return <SiteChrome><LandingPage /></SiteChrome>;
+  return <LandingPage />;
 }
 
 function CatchAllRedirect() {
@@ -258,8 +265,8 @@ function AppRoutes() {
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/" element={<RootRedirect />} />
-            <Route path="/a-propos" element={<SiteChrome><AProposPage /></SiteChrome>} />
-            <Route path="/contact" element={<SiteChrome><ContactPage /></SiteChrome>} />
+            <Route path="/a-propos" element={<AProposPage />} />
+            <Route path="/contact" element={<ContactPage />} />
             {adminSectionRoutes}
             <Route path="/:market/*" element={<MarketRoute />} />
             <Route path="*" element={<CatchAllRedirect />} />

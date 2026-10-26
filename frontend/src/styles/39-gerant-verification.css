@@ -1,0 +1,108 @@
+/* ==========================================================================
+   VÉRIFICATION GÉRANT — reproduction de maquette/habici-verification.html
+   Les utilitaires viennent de Tailwind ; ce fichier rétablit le reset local
+   (preflight Tailwind est désactivé globalement) et le cadre de la page.
+   ========================================================================== */
+
+html:has(.verif-maq)::before {
+  display: none;
+}
+
+body:has(.verif-maq) {
+  background-color: #f5f7fb;
+}
+
+.admin-content:has(.verif-maq) {
+  flex: 1;
+  padding: 0;
+  max-width: none;
+  margin: 0;
+  background: #f5f7fb;
+}
+
+.admin:has(.verif-maq) .topbar {
+  background: #f5f7fb;
+  border-bottom: 0;
+}
+
+.verif-maq {
+  min-height: 100%;
+  background: #f5f7fb;
+  color: #0f2150;
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.verif-maq,
+.verif-maq *,
+.verif-maq *::before,
+.verif-maq *::after {
+  box-sizing: border-box;
+  border-width: 0;
+  border-style: solid;
+  border-color: #e5e7eb;
+}
+
+.verif-maq svg {
+  display: block;
+  vertical-align: middle;
+}
+
+.verif-maq :where(.ic) {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.verif-maq main {
+  overflow: visible;
+}
+
+.verif-maq aside {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.verif-maq aside::-webkit-scrollbar {
+  display: none;
+}
+
+.verif-maq :where(h1, h2, h3, h4, h5, h6) {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.verif-maq :where(ol, ul) {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.verif-maq :where(button, input, select, textarea) {
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+}
+
+.verif-maq :where(button) {
+  cursor: pointer;
+}
+
+.verif-maq :focus-visible {
+  outline: revert;
+  outline-offset: revert;
+  border-radius: revert;
+}
+
+.verif-maq ::selection {
+  background: Highlight;
+  color: HighlightText;
+}

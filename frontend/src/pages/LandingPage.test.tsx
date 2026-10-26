@@ -1,201 +1,192 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import LandingPage from './LandingPage';
 
 const mocks = vi.hoisted(() => ({
-  featured: vi.fn<() => Promise<unknown[]>>(),
-  boostFeatured: vi.fn<() => Promise<unknown>>(),
-  boostImpression: vi.fn<() => Promise<unknown>>(),
-  boostClick: vi.fn<() => Promise<unknown>>(),
-  fetchCategoriesByMarket: vi.fn<(market: string) => Promise<unknown[]>>(),
+  featuredBoosts: vi.fn(),
+  featuredReviews: vi.fn(),
+  impression: vi.fn(),
+  click: vi.fn(),
+  cachedGet: vi.fn(),
 }));
 
 vi.mock('../lib/api', () => ({
-  apiReviews: { featured: mocks.featured },
   apiBoosts: {
-    featured: mocks.boostFeatured,
-    impression: mocks.boostImpression,
-    click: mocks.boostClick,
+    featured: mocks.featuredBoosts,
+    impression: mocks.impression,
+    click: mocks.click,
   },
-  apiGerants: { getMe: vi.fn(() => Promise.resolve(null)) },
-  cachedGet: vi.fn(() => Promise.resolve([])),
+  apiReviews: {
+    featured: mocks.featuredReviews,
+  },
+  cachedGet: mocks.cachedGet,
 }));
 
-vi.mock('@clerk/clerk-react', () => ({
-  useAuth: () => ({ isLoaded: true, isSignedIn: false, userId: null }),
-}));
-
-vi.mock('../data/categories', () => ({
-  fetchCategoriesByMarket: mocks.fetchCategoriesByMarket,
-}));
-
-function LocationProbe() {
-  const { pathname, search } = useLocation();
-  return (
-    <span data-testid="location">
-      {pathname}
-      {search}
-    </span>
-  );
+function boost(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'boost-1',
+    room_id: 'room-1',
+    market: 'CI',
+    mode: 'cpc',
+    title: 'Studio moderne à Cocody',
+    price: '25 000 FCFA',
+    price_num: 25000,
+    img: '/images/listings/cocody.jpg',
+    ville: 'Abidjan',
+    quartier: 'Cocody',
+    category: 'appartements',
+    rating: 4.8,
+    reviews_count: 124,
+    ...overrides,
+  };
 }
 
-function renderLanding(entry = '/') {
+function review(index: number, name: string) {
+  return {
+    id: `review-${index}`,
+    client_name: name,
+    note_appartement: 4,
+    commentaire: 'Un séjour très agréable.',
+    created_at: '2026-01-10',
+    room: { title: 'Studio', ville: 'Abidjan', market: 'CI' },
+    room_avg: 4.8,
+  };
+}
+
+const REVIEWS = [
+  review(1, 'Adama Diallo'),
+  review(2, 'Mariama Koné'),
+  review(3, 'Brice Tchibozo'),
+  review(4, 'Fatou Diop'),
+  review(5, 'Issa Lamine'),
+  review(6, 'Sophie Laurent'),
+];
+
+function renderLanding() {
   return render(
-    <MemoryRouter initialEntries={[entry]}>
-      <LocationProbe />
+    <MemoryRouter>
       <LandingPage />
     </MemoryRouter>,
   );
 }
 
-function countrySelect(): HTMLSelectElement {
-  return screen.getByLabelText('Pays') as HTMLSelectElement;
-}
-
-function categorySelect(): HTMLSelectElement {
-  return screen.getByLabelText('Catégories') as HTMLSelectElement;
-}
-
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.featured.mockResolvedValue([]);
-  mocks.boostFeatured.mockResolvedValue({ items: [], config: {} });
-  mocks.fetchCategoriesByMarket.mockResolvedValue([]);
+  mocks.cachedGet.mockResolvedValue([]);
+  mocks.featuredBoosts.mockResolvedValue({
+    items: [
+      boost(),
+      boost({
+        id: 'boost-2',
+        room_id: 'room-2',
+        title: 'Villa de luxe',
+        price: '120 000 FCFA',
+        price_num: 120000,
+        ville: 'Assinie',
+        quartier: null,
+      }),
+    ],
+    config: {},
+  });
+  mocks.featuredReviews.mockResolvedValue(REVIEWS);
+  mocks.impression.mockResolvedValue({ counted: true });
+  mocks.click.mockResolvedValue({ counted: true });
 });
 
 afterEach(() => {
   cleanup();
 });
 
-describe('LandingPage', () => {
-  it('présente le hero CoinAfrique et sa recherche multicritères', () => {
+describe('LandingPage — maquette accueil', () => {
+  it("affiche le bandeau, l'en-tête et le hero", async () => {
     renderLanding();
 
     expect(
-      screen.getByRole('heading', {
-        level: 1,
-        name: 'Linkhoo — La location directe en Afrique de l’Ouest',
-      }),
+      screen.getByText(
+        'Vous êtes actuellement hors ligne. Certaines fonctionnalités peuvent être limitées.',
+      ),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText('Des biens proches de chez vous, sans intermédiaire'),
-    ).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Chercher sur Linkhoo')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Lancer la recherche' })).toBeInTheDocument();
+    expect(screen.getAllByText('Linkhoo').length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'Accueil' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'À propos' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'Contact' }).length).toBeGreaterThan(0);
 
-    // Les catégories restent bloquées tant qu'aucun pays n'est choisi.
-    expect(categorySelect()).toBeDisabled();
-    expect(within(categorySelect()).getByText('Choisissez un pays')).toBeInTheDocument();
-    expect(countrySelect()).toBeEnabled();
-  });
-
-  it('refuse la recherche sans pays choisi', async () => {
-    renderLanding();
-
-    await userEvent.click(screen.getByRole('button', { name: 'Lancer la recherche' }));
-
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'Choisissez un pays pour lancer la recherche.',
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      "La location directe en Afrique de l'Ouest",
     );
-    expect(screen.getByTestId('location')).toHaveTextContent('/');
-  });
+    expect(screen.getByText('Mot-clé')).toBeInTheDocument();
+    expect(screen.getByText('Catégorie')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /Pays/ })).toBeInTheDocument();
+    await screen.findByText('Studio moderne à Cocody');
+  }, 20000);
 
-  it('charge les catégories du pays puis lance la recherche', async () => {
-    mocks.fetchCategoriesByMarket.mockResolvedValue([
-      { id: 'cat-chambres', title: 'Chambres' },
-    ]);
+  it('affiche les 12 pays et permet d’en sélectionner un', () => {
     renderLanding();
 
-    await userEvent.selectOptions(countrySelect(), 'ci');
-    expect(mocks.fetchCategoriesByMarket).toHaveBeenCalledWith('CI');
+    expect(screen.getByRole('heading', { level: 2, name: 'Choisissez un Pays' })).toBeInTheDocument();
+    const countryGrid = document.querySelector('.acc-country-grid');
+    expect(countryGrid).not.toBeNull();
+    expect(within(countryGrid as HTMLElement).getAllByRole('button')).toHaveLength(12);
 
-    await waitFor(() =>
-      expect(within(categorySelect()).getByRole('option', { name: 'Chambres' })).toBeInTheDocument(),
-    );
-    expect(categorySelect()).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: /^Sénégal$/ }));
 
-    await userEvent.selectOptions(categorySelect(), 'cat-chambres');
-    await userEvent.type(screen.getByPlaceholderText('Chercher sur Linkhoo'), 'Abidjan');
-    await userEvent.click(screen.getByRole('button', { name: 'Lancer la recherche' }));
+    expect(screen.getByRole('button', { name: /^Sénégal$/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('combobox', { name: /Pays/ })).toHaveValue('SN');
+    expect(screen.getByRole('button', { name: 'Pays : Sénégal' })).toBeInTheDocument();
+  }, 20000);
 
-    expect(screen.getByTestId('location')).toHaveTextContent(
-      '/ci/recherche?q=Abidjan&categorie=cat-chambres',
-    );
-  });
-
-  it('ouvre les 12 marchés : plus aucun pays « Bientôt »', () => {
+  it('affiche les annonces en vedette, le carrousel et les six avis', async () => {
     renderLanding();
 
     expect(
-      screen.getByRole('heading', { level: 2, name: 'Choisissez un Pays' }),
+      screen.getByRole('heading', { level: 2, name: 'Des chambres en vedette' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Côte d’Ivoire/ })).toHaveAttribute('href', '/ci');
-    expect(screen.getByRole('link', { name: /Bénin/ })).toHaveAttribute('href', '/bj');
-    expect(screen.getByRole('link', { name: /Sénégal/ })).toHaveAttribute('href', '/sn');
-    expect(screen.getByRole('link', { name: /RDC/ })).toHaveAttribute('href', '/cd');
-
-    // Les 12 pays du registre sont des liens actifs, aucun « Bientôt ».
-    expect(document.querySelectorAll('.landing-countries__item')).toHaveLength(12);
-    expect(document.querySelectorAll('.landing-countries__card.is-disabled')).toHaveLength(0);
-    expect(screen.queryAllByText('Bientôt')).toHaveLength(0);
-  });
-
-  it('affiche le carrousel et les témoignages', async () => {
-    renderLanding();
-
-    expect(screen.getByRole('region', { name: 'En images' })).toBeInTheDocument();
-    expect(screen.getByAltText('Chambre lumineuse prête pour un séjour')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Image 1 sur 4' })).toBeInTheDocument();
+    expect(await screen.findByText('Studio moderne à Cocody')).toBeInTheDocument();
+    expect(screen.getByText('Villa de luxe')).toBeInTheDocument();
 
     expect(
-      screen.getByRole('heading', { level: 2, name: 'Nos utilisateurs en parlent' }),
+      screen.getByRole('heading', { level: 2, name: 'Des séjours inoubliables vous attendent' }),
     ).toBeInTheDocument();
-    // L'API ne renvoie rien : repli sur les six témoignages statiques.
-    expect(await screen.findByText('Awa Kouassi')).toBeInTheDocument();
-    expect(document.querySelectorAll('.landing-testimonials__card')).toHaveLength(6);
-  });
+    expect(screen.getByRole('button', { name: 'Explorer maintenant' })).toBeInTheDocument();
 
-  it('place les annonces sponsorisées entre les pays et le carrousel', async () => {
-    mocks.boostFeatured.mockResolvedValue({
-      items: [
-        {
-          id: 'boost-1',
-          room_id: 'room-9',
-          market: 'CI',
-          mode: 'cpi',
-          title: 'Suite Plateau',
-          price: '45 000 FCFA',
-          price_num: 45000,
-          img: '/images/suite.jpg',
-          ville: 'Abidjan',
-          quartier: 'Plateau',
-          category: 'chambres',
-        },
-      ],
-      config: { currency: 'XOF', price_cpc: 50, price_cpi: 5 },
+    expect(await screen.findByText('Adama Diallo')).toBeInTheDocument();
+    const reviews = document.querySelector('.acc-reviews__grid');
+    expect(reviews).not.toBeNull();
+    expect(within(reviews as HTMLElement).getAllByRole('article')).toHaveLength(6);
+    expect(screen.getByText('Sophie Laurent')).toBeInTheDocument();
+  }, 20000);
+
+  it('bascule le cœur d’une annonce en favori', async () => {
+    renderLanding();
+
+    const heart = (await screen.findAllByRole('button', { name: 'Ajouter aux favoris' }))[0];
+    fireEvent.click(heart);
+
+    expect(screen.getByRole('button', { name: 'Retirer des favoris' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  }, 20000);
+
+  it('masque les sections sans données API', async () => {
+    mocks.featuredBoosts.mockResolvedValue({ items: [], config: {} });
+    mocks.featuredReviews.mockResolvedValue([]);
+
+    renderLanding();
+
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'Des chambres en vedette' })).toBeNull();
+      expect(screen.queryByRole('heading', { name: 'Nos utilisateurs en parlent' })).toBeNull();
     });
+  }, 20000);
 
+  it('conserve le footer sombre et le copyright', () => {
     renderLanding();
 
-    expect(
-      await screen.findByRole('heading', { level: 3, name: 'Suite Plateau' }),
-    ).toBeInTheDocument();
-    // Surtitre de section + pastille de carte.
-    expect(screen.getAllByText('Sponsorisé')).toHaveLength(2);
-
-    const children = Array.from(document.querySelector('main.landing')?.children ?? []);
-    const order = children.map((el) => el.className.split(' ')[0]);
-    expect(order.indexOf('landing-countries')).toBeGreaterThanOrEqual(0);
-    expect(order.indexOf('landing-countries')).toBeLessThan(order.indexOf('landing-boosts'));
-    expect(order.indexOf('landing-boosts')).toBeLessThan(order.indexOf('landing-slider'));
-  });
-
-  it('masque la bande sponsorisée sans campagne en ligne', async () => {
-    renderLanding();
-
-    await screen.findByRole('heading', { level: 2, name: 'Choisissez un Pays' });
-    expect(document.querySelector('.landing-boosts')).not.toBeInTheDocument();
-  });
+    expect(screen.queryByText('Revue de presse')).toBeNull();
+    expect(screen.getByText('Application mobile')).toBeInTheDocument();
+    expect(screen.getByText('Newsletter')).toBeInTheDocument();
+    expect(screen.getByText('© 2025 Linkhoo. Tous droits réservés.')).toBeInTheDocument();
+  }, 20000);
 });
