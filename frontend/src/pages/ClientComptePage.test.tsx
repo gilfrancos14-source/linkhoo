@@ -154,9 +154,15 @@ function renderPage(entry = '/ci/compte') {
   );
 }
 
-async function renderLoaded(entry = '/ci/compte') {
+async function renderLoaded(entry = '/ci/compte?view=stays') {
   const view = renderPage(entry);
   await screen.findByText('Suite vue mer');
+  return view;
+}
+
+async function renderProfile(entry = '/ci/compte?view=profile') {
+  const view = renderPage(entry);
+  await screen.findByLabelText('Prénom');
   return view;
 }
 
@@ -201,7 +207,7 @@ describe('ClientComptePage — états de chargement', () => {
   it('affiche le chargement des réservations', () => {
     mocks.getMyReservations.mockReturnValue(new Promise<ClientMineReservationData[]>(() => {}));
 
-    renderPage();
+    renderPage('/ci/compte?view=stays');
 
     expect(screen.getByText('Chargement de vos réservations…')).toBeInTheDocument();
     expect(document.querySelector('.client-compte__card--res')).toBeNull();
@@ -210,7 +216,7 @@ describe('ClientComptePage — états de chargement', () => {
   it("n'interroge rien tant que Clerk n'est pas chargé", () => {
     mocks.clerk = { isLoaded: false, isSignedIn: true, user: CLERK_USER };
 
-    renderPage();
+    renderPage('/ci/compte?view=stays');
 
     expect(screen.getByText('Chargement de vos réservations…')).toBeInTheDocument();
     expect(mocks.getMyReservations).not.toHaveBeenCalled();
@@ -219,7 +225,7 @@ describe('ClientComptePage — états de chargement', () => {
   it("affiche l'état vide avec un lien vers l'accueil", async () => {
     mocks.getMyReservations.mockResolvedValue([]);
 
-    renderPage();
+    renderPage('/ci/compte?view=stays');
 
     expect(await screen.findByText('Aucune réservation pour le moment')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Parcourir les appartements' })).toHaveAttribute('href', '/ci');
@@ -228,7 +234,7 @@ describe('ClientComptePage — états de chargement', () => {
   it("affiche l'erreur de l'API lors du chargement", async () => {
     mocks.getMyReservations.mockRejectedValue(new Error('Service indisponible'));
 
-    renderPage();
+    renderPage('/ci/compte?view=stays');
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Service indisponible');
   });
@@ -236,42 +242,40 @@ describe('ClientComptePage — états de chargement', () => {
   it("affiche un message générique si l'erreur n'est pas une instance d'Error", async () => {
     mocks.getMyReservations.mockRejectedValue('boom');
 
-    renderPage();
+    renderPage('/ci/compte?view=stays');
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Impossible de charger vos données.');
   });
 });
 
-describe('ClientComptePage — rail de navigation', () => {
-  it("affiche l'avatar, le nom et l'email du compte Clerk", async () => {
+describe('ClientComptePage — navigation du compte', () => {
+  it("affiche l'avatar et le nom du compte Clerk dans la sidebar", async () => {
     await renderLoaded();
 
-    expect(mustFind('.compte-rail__avatar')).toHaveTextContent('AK');
-    expect(mustFind('.compte-rail__name')).toHaveTextContent('Aya');
-    expect(mustFind('.compte-rail__email')).toHaveTextContent('aya@test.com');
+    expect(mustFind('.sidebar__avatar')).toHaveTextContent('A');
+    expect(mustFind('.sidebar__user-name')).toHaveTextContent('Aya');
   });
 
-  it('affiche la date de création du compte', async () => {
-    await renderLoaded();
+  it("affiche l'email du compte sur la vue profil", async () => {
+    await renderProfile();
 
-    expect(screen.getByText(/Membre depuis janvier 2024/)).toBeInTheDocument();
+    expect(mustFind('.client-compte__profile-aside-email')).toHaveTextContent('aya@test.com');
   });
 
-  it("retombe sur « à vous » et l'initiale U sans compte Clerk", async () => {
+  it("retombe sur « Client » et l'initiale C sans compte Clerk", async () => {
     mocks.clerk = { isLoaded: true, isSignedIn: true, user: null };
     mocks.getMe.mockResolvedValue({ nom: '', prenom: '', telephone: '' });
 
-    renderPage();
+    await renderLoaded();
 
-    expect(await screen.findByText('à vous')).toBeInTheDocument();
-    expect(mustFind('.compte-rail__avatar')).toHaveTextContent('U');
-    expect(screen.queryByText(/Membre depuis/)).not.toBeInTheDocument();
+    expect(mustFind('.sidebar__user-name')).toHaveTextContent('Client');
+    expect(mustFind('.sidebar__avatar')).toHaveTextContent('C');
   });
 
   it('déconnecte et revient vers le marché', async () => {
     await renderLoaded();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Se déconnecter' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Déconnexion' }));
 
     expect(await screen.findByTestId('home')).toBeInTheDocument();
     expect(mocks.signOut).toHaveBeenCalledTimes(1);
@@ -290,32 +294,41 @@ describe('ClientComptePage — rail de navigation', () => {
     await renderLoaded();
 
     const link = screen.getByRole('link', { name: /Messages/ });
-    expect(link.querySelector('.compte-rail__pill')).toBeNull();
+    expect(link.querySelector('.sidebar__pill')).toBeNull();
   });
 });
 
-describe('ClientComptePage — onglets', () => {
-  it('ouvre sur l’onglet des réservations', async () => {
+describe('ClientComptePage — vues', () => {
+  it("ouvre sur la vue d'ensemble", async () => {
+    renderPage('/ci/compte');
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: "Vue d'ensemble" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: "Vue d'ensemble" })).toHaveClass('sidebar__link--active');
+    expect(screen.getByRole('link', { name: /Mes séjours/ })).not.toHaveClass('sidebar__link--active');
+  });
+
+  it('affiche la vue « Mes séjours »', async () => {
     await renderLoaded();
 
-    expect(screen.getByRole('tab', { name: /Mes réservations/ })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tab', { name: /Mon profil/ })).toHaveAttribute('aria-selected', 'false');
-    expect(screen.getByRole('heading', { level: 1, name: 'Mes réservations' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Mes séjours' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Mes séjours/ })).toHaveClass('sidebar__link--active');
   });
 
   it('affiche le nombre de réservations en pastille', async () => {
     await renderLoaded();
 
-    expect(mustFind('.compte-rail__pill')).toHaveTextContent('4');
+    expect(mustFind('.sidebar__pill')).toHaveTextContent('4');
   });
 
-  it("bascule sur l'onglet profil et change le titre", async () => {
+  it("bascule sur la vue profil et change le titre", async () => {
     await renderLoaded();
 
-    fireEvent.click(screen.getByRole('tab', { name: /Mon profil/ }));
+    fireEvent.click(screen.getByRole('link', { name: 'Mon profil' }));
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Mon profil' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /Mon profil/ })).toHaveAttribute('aria-selected', 'true');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Mon profil' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Mon profil' })).toHaveClass('sidebar__link--active');
     expect(document.querySelector('.client-compte__card--res')).toBeNull();
   });
 });
@@ -544,8 +557,7 @@ describe('ClientComptePage — avis', () => {
 
 describe('ClientComptePage — profil', () => {
   it('pré-remplit le profil depuis l’API client', async () => {
-    await renderLoaded();
-    fireEvent.click(screen.getByRole('tab', { name: /Mon profil/ }));
+    await renderProfile();
 
     expect(mocks.getMe).toHaveBeenCalledTimes(1);
     expect(screen.getByLabelText('Prénom')).toHaveValue('Aya');
@@ -554,8 +566,7 @@ describe('ClientComptePage — profil', () => {
   });
 
   it('désactive le champ email géré par le compte', async () => {
-    await renderLoaded();
-    fireEvent.click(screen.getByRole('tab', { name: /Mon profil/ }));
+    await renderProfile();
 
     expect(screen.getByLabelText(/^Email/)).toBeDisabled();
     expect(screen.getByLabelText(/^Email/)).toHaveValue('aya@test.com');
@@ -563,8 +574,7 @@ describe('ClientComptePage — profil', () => {
 
   it('retombe sur les informations Clerk si le profil est indisponible', async () => {
     mocks.getMe.mockRejectedValue(new Error('404'));
-    await renderLoaded();
-    fireEvent.click(screen.getByRole('tab', { name: /Mon profil/ }));
+    await renderProfile();
 
     expect(screen.getByLabelText('Prénom')).toHaveValue('Aya');
     expect(screen.getByLabelText('Nom')).toHaveValue('Kouassi');
@@ -572,8 +582,7 @@ describe('ClientComptePage — profil', () => {
   });
 
   it('enregistre les modifications du profil', async () => {
-    await renderLoaded();
-    fireEvent.click(screen.getByRole('tab', { name: /Mon profil/ }));
+    await renderProfile();
 
     fireEvent.change(screen.getByLabelText('Téléphone'), { target: { value: '+2250505050505' } });
     fireEvent.submit(mustFind<HTMLFormElement>('.client-compte__profile-form'));
@@ -588,8 +597,7 @@ describe('ClientComptePage — profil', () => {
 
   it("affiche l'erreur quand la mise à jour échoue", async () => {
     mocks.updateMe.mockRejectedValue(new Error('Profil verrouillé'));
-    await renderLoaded();
-    fireEvent.click(screen.getByRole('tab', { name: /Mon profil/ }));
+    await renderProfile();
 
     fireEvent.submit(mustFind<HTMLFormElement>('.client-compte__profile-form'));
 
@@ -603,8 +611,7 @@ describe('ClientComptePage — profil', () => {
         resolveUpdate = resolve;
       }),
     );
-    await renderLoaded();
-    fireEvent.click(screen.getByRole('tab', { name: /Mon profil/ }));
+    await renderProfile();
 
     fireEvent.submit(mustFind<HTMLFormElement>('.client-compte__profile-form'));
 
