@@ -57,9 +57,6 @@ export function clearApiCache(): void {
   publicCache.clear();
 }
 
-/** Mutations qui ne changent aucun contenu public : pas de purge de cache. */
-const NO_CACHE_PURGE_PATHS = new Set(['/boosts/impression', '/boosts/click']);
-
 export async function cachedGet<T>(path: string, ttlMs = PUBLIC_CACHE_TTL_MS): Promise<T> {
   const now = Date.now();
   const hit = publicCache.get(path);
@@ -156,10 +153,7 @@ export async function request<T>(path: string, options?: RequestOptions): Promis
   }
   // Toute mutation invalide le cache public : une création/édition ne doit
   // jamais être masquée par une réponse mise en cache 60 s plus tôt.
-  // Exception m5 : les événements de tracking Boost ne changent AUCUN contenu
-  // public — 6 impressions sur la landing ne doivent pas purger bannières,
-  // salles et avis.
-  if ((rest.method ?? 'GET').toUpperCase() !== 'GET' && !NO_CACHE_PURGE_PATHS.has(path)) {
+  if ((rest.method ?? 'GET').toUpperCase() !== 'GET') {
     clearApiCache();
   }
   return parseJsonBody<T>(res);
@@ -607,149 +601,6 @@ export const apiPremium = {
     }>('/premium/confirm', {
       method: 'POST',
       body: JSON.stringify({ transaction_id: transactionId }),
-    }),
-};
-
-// ── Boost (sponsorisation de chambres) ──
-export type BoostMode = 'cpc' | 'cpi';
-
-export type BoostDisplayStatus =
-  | 'pending'
-  | 'scheduled'
-  | 'live'
-  | 'paused'
-  | 'ended'
-  | 'exhausted'
-  | 'canceled';
-
-export interface BoostRoomRef {
-  id: string;
-  title: string;
-  price: string | null;
-  price_num: number | null;
-  img: string | null;
-  ville: string | null;
-  quartier: string | null;
-  market: string;
-  disponible: boolean;
-}
-
-export interface BoostData {
-  id: string;
-  market: string;
-  room_id: string;
-  mode: BoostMode;
-  status: string;
-  display_status: BoostDisplayStatus;
-  budget_total: number;
-  spent: number;
-  clicks_count: number;
-  impressions_count: number;
-  remaining: number;
-  starts_at: string;
-  ends_at: string;
-  activated_at: string | null;
-  created_at: string | null;
-  room: BoostRoomRef | null;
-}
-
-export interface BoostFeaturedItem {
-  id: string;
-  room_id: string;
-  market: string;
-  mode: BoostMode;
-  title: string;
-  price: string | null;
-  price_num: number | null;
-  img: string | null;
-  ville: string | null;
-  quartier: string | null;
-  category: string | null;
-  /** Moyenne des avis de la chambre (null si aucun avis). */
-  rating: number | null;
-  reviews_count: number;
-}
-
-export interface BoostConfig {
-  currency: string;
-  price_cpc: number;
-  price_cpi: number;
-  /** Budget libre du gérant : bornes serveur (entier, FCFA). */
-  budget_min: number;
-  budget_max: number;
-  max_duration_days: number;
-}
-
-export interface BoostFeaturedResponse {
-  items: BoostFeaturedItem[];
-  config: { currency: string; price_cpc: number; price_cpi: number };
-}
-
-export interface BoostChargeResponse {
-  counted: boolean;
-  billed: boolean;
-  exhausted: boolean;
-  remaining: number | null;
-  /** Serveur qui vient de poser le cookie visiteur : l'événement n'a pas été
-      facturé, il faut relancer UNE fois (voir `trackEvent`). */
-  visitor_issued?: boolean;
-}
-
-/**
- * Envoie un événement de tracking. Si le serveur répond `visitor_issued`
- * (cookie visiteur absent/forgé, il vient d'en émettre un), on repasse une
- * seule fois avec le cookie — jamais de boucle.
- */
-async function trackEvent(
-  path: '/boosts/impression' | '/boosts/click',
-  boostId: string,
-  visitorId: string,
-): Promise<BoostChargeResponse> {
-  const send = () =>
-    request<BoostChargeResponse>(path, {
-      method: 'POST',
-      body: JSON.stringify({ boost_id: boostId, visitor_id: visitorId }),
-      public: true,
-    });
-  const first = await send();
-  if (first?.visitor_issued) return send();
-  return first;
-}
-
-export const apiBoosts = {
-  config: () => cachedGet<BoostConfig>('/boosts/config'),
-  // Cache mémoire 300 s : la rotation aléatoire serveur reste vivante sans
-  // re-faire un tour complet de la base à chaque navigation.
-  featured: (market?: string) =>
-    cachedGet<BoostFeaturedResponse>(
-      `/boosts/featured${market ? `?market=${encodeURIComponent(market)}` : ''}`,
-      300_000,
-    ),
-  impression: (boostId: string, visitorId: string) =>
-    trackEvent('/boosts/impression', boostId, visitorId),
-  click: (boostId: string, visitorId: string) =>
-    trackEvent('/boosts/click', boostId, visitorId),
-  initiate: (data: {
-    room_id: string;
-    mode: BoostMode;
-    budget_total: number;
-    starts_at: string;
-    ends_at: string;
-  }) =>
-    request<{ transaction_id: number; payment_url: string; boost_id: string }>('/boosts/initiate', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-  confirm: (transactionId: number) =>
-    request<{ success: boolean; already_activated: boolean; boost: BoostData }>(
-      '/boosts/confirm',
-      { method: 'POST', body: JSON.stringify({ transaction_id: transactionId }) }
-    ),
-  mine: () => request<{ items: BoostData[] }>('/boosts/mine'),
-  updateSchedule: (id: string, data: { starts_at: string; ends_at: string }) =>
-    request<{ boost: BoostData }>(`/boosts/${id}/schedule`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
     }),
 };
 

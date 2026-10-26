@@ -39,7 +39,6 @@ const catalog: AdminPermissionDef[] = [
   { key: 'evenements', label: 'Événements', description: 'Gérer les événements' },
   { key: 'destinations', label: 'Destinations', description: 'Gérer les destinations' },
   { key: 'promotions', label: 'Promotions', description: 'Gérer les promotions' },
-  { key: 'boosts', label: 'Booster', description: 'Gérer les boosts de visibilité' },
   { key: 'stats', label: 'Tableau de bord', description: 'Consulter les statistiques' },
 ];
 

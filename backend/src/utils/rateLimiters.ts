@@ -32,22 +32,13 @@ export function isAuthRequest(req: Request): boolean {
 }
 
 /**
- * Chemins à fort volume qui disposent déjà de leur PROPRE limiteur dédié
- * (voir index.ts : boostIssue/boostTrackIp/boostTrackBoost). Les recompter dans
- * le quota global « write » le vide inutilement : quelques cartes boostées sur
- * la home génèrent assez d'impressions/clics pour épuiser les 200 écritures et
- * bloquer, par ricochet, des connexions ou des écritures sans rapport.
- */
-const SELF_LIMITED_PATHS = new Set(['/api/boosts/impression', '/api/boosts/click']);
-
-/**
  * Prédicat `skip` du limiteur global d'écritures (index.ts) : ne compte que les
- * vraies écritures. Les GET, la connexion et le tracking boost en sont exclus.
+ * vraies écritures. Les GET et la connexion en sont exclus.
  */
 export function skipWriteQuota(req: Request): boolean {
   if (req.method === 'GET') return true;
   if (isAuthRequest(req)) return true;
-  return SELF_LIMITED_PATHS.has(fullPath(req));
+  return false;
 }
 
 export const createClientLimiter = (options: { limit?: number; prefix: string }) =>

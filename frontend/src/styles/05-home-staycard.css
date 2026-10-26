@@ -77,12 +77,6 @@
   color: var(--ink);
 }
 
-/* Annonce sponsorisée de la landing : indigo fixe, lisble sur photo. */
-.stay-card__badge--sponsored {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-  color: #fff;
-}
-
 .stay-card__body {
   display: flex;
   flex-direction: column;

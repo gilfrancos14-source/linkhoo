@@ -1046,11 +1046,6 @@
   color: var(--sp-white);
 }
 
-.search-page .stay-card__badge--sponsored {
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--sp-purple);
-}
-
 .search-page .stay-card__favorite {
   position: absolute;
   top: 0.75rem;

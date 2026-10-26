@@ -37,9 +37,6 @@ const AjouterChambre = lazy(() => import('./pages/gerant/AjouterChambreMaq3'));
 const DemandesReservationMaq4 = lazy(() => import('./pages/gerant/DemandesReservationMaq4'));
 const PremiumPage = lazy(() => import('./pages/gerant/PremiumPage'));
 const PremiumSuccessPage = lazy(() => import('./pages/gerant/PremiumSuccessPage'));
-const BoostsPage = lazy(() => import('./pages/gerant/BoostsPage'));
-const BoostCreatePage = lazy(() => import('./pages/gerant/BoostCreatePage'));
-const BoostSuccessPage = lazy(() => import('./pages/gerant/BoostSuccessPage'));
 const ProfilPage = lazy(() => import('./pages/gerant/ProfilPage'));
 const MesInformationsMaq = lazy(() => import('./pages/gerant/MesInformationsMaq'));
 const VerificationPage = lazy(() => import('./pages/gerant/VerificationPage'));
@@ -60,7 +57,6 @@ const AdminDestinationsPage = lazy(() => import('./pages/admin/AdminDestinations
 const AdminEscapadesPage = lazy(() => import('./pages/admin/AdminEscapadesPage'));
 const AdminReservationsPage = lazy(() => import('./pages/admin/AdminReservationsPage'));
 const AdminPromotionsPage = lazy(() => import('./pages/admin/AdminPromotionsPage'));
-const AdminBoostsPage = lazy(() => import('./pages/admin/AdminBoostsPage'));
 const AdminEquipePage = lazy(() => import('./pages/admin/AdminEquipePage'));
 
 function RouteFallback() {
@@ -100,7 +96,6 @@ const adminSectionRoutes = (
       <Route path="destinations" element={<AdminDestinationsPage />} />
       <Route path="escapades" element={<AdminEscapadesPage />} />
       <Route path="promotions" element={<AdminPromotionsPage />} />
-      <Route path="boosts" element={<AdminBoostsPage />} />
       <Route path="equipe" element={<AdminEquipePage />} />
     </Route>
   </>
@@ -194,9 +189,6 @@ function MarketContent() {
           <Route path="reservations/calendrier" element={<CalendrierMaq5 />} />
           <Route path="premium" element={<PremiumPage />} />
           <Route path="premium/success" element={<PremiumSuccessPage />} />
-          <Route path="boosts" element={<BoostsPage />} />
-          <Route path="boosts/new" element={<BoostCreatePage />} />
-          <Route path="boosts/success" element={<BoostSuccessPage />} />
           <Route path="verification" element={<VerificationPage />} />
           <Route path="verification/suivi" element={<SuiviVerificationPage />} />
           <Route path="messages/boite-reception" element={<BoiteReceptionMaq6 />} />

@@ -122,14 +122,6 @@ export default function AjouterChambreMaq3() {
               <div className="grp"><Icon id="crown" className="i text-dash-brand" />Premium</div>
               <div className="pl-2"><a href="#" className="sub"><Icon id="cal" />Mon abonnement</a></div>
             </div>
-
-            <div>
-              <div className="grp justify-between"><span className="flex items-center gap-3"><Icon id="mega" />Booster</span><Icon id="down" className="i !h-4 !w-4" /></div>
-              <div className="pl-2">
-                <a href="#" className="sub"><Icon id="mega" />Campagnes</a>
-                <a href="#" className="sub"><Icon id="mega" />Créer une campagne</a>
-              </div>
-            </div>
           </nav>
 
           <div className="mt-auto rounded-2xl border border-orange-100 bg-dash-brand-soft p-4 pt-5">

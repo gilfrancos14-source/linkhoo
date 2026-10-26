@@ -1,15 +1,12 @@
 // Helpers partagés du ledger premium_transactions : le webhook FedaPay
-// unique (/api/premium/webhook) crédite à la fois les abonnements premium
-// et les campagnes boost — les deux vivent dans la même table d'audit,
-// distinguées par la colonne `type`.
-//
-// Extrait de routes/premium.ts pour que routes/boosts.ts réutilise
-// l'upsert sans dépendre d'un routeur (ni de cycles d'import).
+// unique (/api/premium/webhook) crédite les abonnements premium et les
+// vérifications — les deux vivent dans la même table d'audit, distinguées
+// par la colonne `type`.
 
 import { supabaseAdmin } from '../config/supabase';
 import type { PremiumTxStatus } from '../smoke/fedapayRiskTests.helpers';
 
-export const TX_TYPES = ['premium', 'verification', 'boost'] as const;
+export const TX_TYPES = ['premium', 'verification'] as const;
 export type TxType = (typeof TX_TYPES)[number];
 
 /**
@@ -88,36 +85,5 @@ export async function upsertPremiumTransaction(input: {
     id: data.id,
     status: data.status as PremiumTxStatus,
     activated: !!data.activated_at,
-  };
-}
-
-/**
- * Claim atomique de la transaction d'une campagne boost (RPC
- * activate_boost_checked) : webhook et page de retour arrivent souvent
- * ensemble, un seul crédite la campagne.
- *
- * BOOST_NOT_FOUND (transaction sans ligne boosts correspondante — campagne
- * remplacée ou annulée) est renvoyé tel quel : la RPC a annulé le claim,
- * aucun budget n'est crédité à tort.
- */
-export async function activateBoostForTransaction(
-  premiumTransactionId: string
-): Promise<{ alreadyActivated: boolean; boostId: string | null }> {
-  const { data, error } = await supabaseAdmin.rpc('activate_boost_checked', {
-    p_transaction_id: premiumTransactionId,
-  });
-  if (error) {
-    if (error.message?.includes('BOOST_NOT_FOUND')) {
-      return { alreadyActivated: false, boostId: null };
-    }
-    throw error;
-  }
-
-  const row = Array.isArray(data) ? data[0] : data;
-  if (!row) throw new Error('Activation boost échouée (réponse vide)');
-
-  return {
-    alreadyActivated: Boolean(row.already_activated),
-    boostId: row.boost_id ?? null,
   };
 }

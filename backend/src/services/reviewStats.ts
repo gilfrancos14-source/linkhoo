@@ -15,8 +15,8 @@ interface ReviewNoteRow {
 /**
  * Agrège les notes d'appartement pour un ensemble de chambres.
  *
- * Les moyennes affichées sur la landing (cartes sponsorisées et avis) portent
- * sur TOUS les avis de la chambre, pas seulement sur les avis commentés.
+ * Les moyennes affichées sur la landing (avis) portent sur TOUS les avis de la
+ * chambre, pas seulement sur les avis commentés.
  * Une chambre sans avis n'apparaît pas dans la Map : l'appelant décide du
  * repli (note individuelle ou null).
  */

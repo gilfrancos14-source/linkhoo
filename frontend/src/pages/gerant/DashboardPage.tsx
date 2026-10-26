@@ -256,17 +256,6 @@ export default function DashboardPage() {
               <div className="grp"><Icon id="crown" className="i text-dash-brand" />Premium</div>
               <div className="pl-3"><Link to={`${gerantPath}/premium`} className="sub"><Icon id="cal" />Mon abonnement</Link></div>
             </div>
-
-            <div>
-              <div className="grp justify-between">
-                <span className="flex items-center gap-3"><Icon id="mega" />Booster</span>
-                <Icon id="down" className="i !h-4 !w-4" />
-              </div>
-              <div className="pl-3">
-                <Link to={`${gerantPath}/boosts`} className="sub"><Icon id="mega" />Campagnes</Link>
-                <Link to={`${gerantPath}/boosts/new`} className="sub"><Icon id="mega" />Créer une campagne</Link>
-              </div>
-            </div>
           </nav>
 
           <div className="mt-auto rounded-2xl border border-orange-100 bg-dash-brand-soft p-4 pt-5">
@@ -385,17 +374,6 @@ export default function DashboardPage() {
 
                 <div className="space-y-5">
                   <section className="card p-5">
-                    <h2 className="flex items-center gap-3 text-base font-bold"><Icon id="chart" className="i h-5 w-5 text-slate-500" />Récapitulatif rapide</h2>
-                    <div className="mt-4 rounded-xl border border-sky-100 bg-sky-50 p-3 text-[11px] leading-relaxed text-slate-600">
-                      <div className="mb-1 flex items-center justify-between text-xs font-medium text-sky-600">
-                        <span className="flex items-center gap-2"><Icon id="bulb" className="i h-4 w-4" />Astuce</span>
-                        <button type="button" aria-label="Fermer" className="text-slate-400"><Icon id="x" className="i h-3 w-3" /></button>
-                      </div>
-                      Activez une campagne Booster pour attirer plus de voyageurs et augmenter vos réservations !
-                    </div>
-                  </section>
-
-                  <section className="card p-5">
                     <div className="mb-3 flex items-center justify-between">
                       <h2 className="flex items-center gap-3 text-sm font-bold"><Icon id="cal" className="i h-5 w-5 text-slate-500" />Dernières demandes de réservation</h2>
                       <Link to={demandesPath} className="link !font-medium !text-dash-navy">Voir tout <Icon id="arrow" className="i h-3 w-3" /></Link>
@@ -453,10 +431,6 @@ export default function DashboardPage() {
                 <Link to={`${gerantPath}/verification`} className="flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 hover:bg-slate-100">
                   <Icon id="shield" className="i h-7 w-7 shrink-0 text-slate-500" />
                   <span><span className="block text-sm font-semibold">{chrome.gerant?.is_verified ? 'Compte vérifié' : 'Vérifier mon compte'}</span><span className="block text-xs text-slate-500">{chrome.gerant?.is_verified ? 'Statut confirmé' : 'Obtenir le statut vérifié'}</span></span>
-                </Link>
-                <Link to={`${gerantPath}/boosts/new`} className="flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 hover:bg-slate-100">
-                  <Icon id="mega" className="i h-7 w-7 shrink-0 text-slate-500" />
-                  <span><span className="block text-sm font-semibold">Créer une campagne</span><span className="block text-xs text-slate-500">Booster votre visibilité</span></span>
                 </Link>
               </div>
             </aside>

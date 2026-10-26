@@ -269,16 +269,6 @@ export default function MesInformationsMaq() {
               <Link to={`${gerantPath}/premium`} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-calendar" /></svg>Mon abonnement</Link>
             </div>
           </div>
-
-          <div className="mt-[18px]">
-            <Link to={`${gerantPath}/boosts`} className="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
-              <svg className="ic h-[19px] w-[19px] shrink-0"><use href="#i-megaphone" /></svg>Booster
-            </Link>
-            <div className="mt-[5px]">
-              <Link to={`${gerantPath}/boosts`} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-megaphone" /></svg>Campagnes</Link>
-              <Link to={`${gerantPath}/boosts/new`} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-user-check" /></svg>Créer une campagne</Link>
-            </div>
-          </div>
         </nav>
 
         <div className="ml-[19px] mr-[16px] mt-[41px] h-[118px] rounded-xl border border-[#FEE3D1] bg-[#FFF2EA] px-[17px] pt-[14px]">
@@ -499,7 +489,7 @@ export default function MesInformationsMaq() {
                     <svg className="ic mt-[1px] h-6 w-6 shrink-0 fill-[#F26B1D] stroke-[1.75] text-[#F26B1D]"><use href="#i-crown" /></svg>
                     <div>
                       <h3 className="text-[14px] font-bold leading-5">{premium ? 'Votre abonnement Premium' : 'Passez au Premium'}</h3>
-                      <p className="mt-1 text-[11.5px] leading-[18px] text-[#5F7396]">Boostez la visibilité de vos annonces et<br />attirez plus de voyageurs !</p>
+                      <p className="mt-1 text-[11.5px] leading-[18px] text-[#5F7396]">Augmentez la visibilité de vos annonces et<br />attirez plus de voyageurs !</p>
                     </div>
                   </div>
                   <ul className="ml-[41px] mt-[10px] text-[10px] text-[#3D4F73]">

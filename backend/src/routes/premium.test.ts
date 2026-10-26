@@ -36,7 +36,7 @@ const FUTURE = '2099-01-01T00:00:00Z';
 let gerants: FakeChain;
 let transactions: FakeChain;
 
-function stubTables(tables: Partial<{ gerants: FakeChain | FakeChain[]; premium_transactions: FakeChain | FakeChain[]; notifications: FakeChain | FakeChain[] }> = {}): void {
+function stubTables(tables: Partial<{ gerants: FakeChain | FakeChain[]; premium_transactions: FakeChain | FakeChain[] }> = {}): void {
   useSupabaseTables(supabaseAdmin.from, {
     gerants,
     premium_transactions: transactions,
@@ -486,72 +486,6 @@ describe('POST /api/premium/webhook', () => {
     expect(approved.select).toHaveBeenCalled();
     expect(approved.upsert).not.toHaveBeenCalled();
     expect(supabaseAdmin.rpc).not.toHaveBeenCalled();
-  });
-
-  it('200 : alerte le support quand un boost approuvé n’a plus de campagne (M4)', async () => {
-    vi.mocked(Webhook.constructEvent).mockReturnValue({
-      name: 'transaction.approved',
-      entity: {
-        id: 4244,
-        amount: 3000,
-        status: 'approved',
-        customer: { email: 'gerant@example.ci' },
-        metadata: { clerk_user_id: 'user_1', market: 'CI', type: 'boost' },
-      },
-    } as never);
-    vi.mocked(supabaseAdmin.rpc).mockResolvedValueOnce({
-      data: null,
-      error: { message: 'BOOST_NOT_FOUND' },
-    } as never);
-    const notifications = fakeChain({ data: null, error: null });
-    stubTables({ notifications });
-
-    const res = await request(app)
-      .post('/api/premium/webhook')
-      .set('x-fedapay-signature', 'sig')
-      .send({ name: 'transaction.approved' });
-
-    expect(res.status).toBe(200);
-    expect(supabaseAdmin.rpc).toHaveBeenCalledWith('activate_boost_checked', {
-      p_transaction_id: 'pt-1',
-    });
-    expect(notifications.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'boost_paid_without_campaign',
-        gerant_id: 'user_1',
-        id: 'boost-paid-4244',
-      }),
-    );
-  });
-
-  it('200 : refuse d’activer un boost au montant hors intervalle ET alerte le support (m6/M4)', async () => {
-    vi.mocked(Webhook.constructEvent).mockReturnValue({
-      name: 'transaction.approved',
-      entity: {
-        id: 4244,
-        amount: 2000, // hors intervalle [3000; 100000]
-        status: 'approved',
-        customer: { email: 'gerant@example.ci' },
-        metadata: { clerk_user_id: 'user_1', market: 'CI', type: 'boost' },
-      },
-    } as never);
-    const notifications = fakeChain({ data: null, error: null });
-    stubTables({ notifications });
-
-    const res = await request(app)
-      .post('/api/premium/webhook')
-      .set('x-fedapay-signature', 'sig')
-      .send({ name: 'transaction.approved' });
-
-    expect(res.status).toBe(200);
-    expect(supabaseAdmin.rpc).not.toHaveBeenCalled();
-    expect(notifications.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'boost_paid_without_campaign',
-        gerant_id: 'user_1',
-        id: 'boost-paid-4244',
-      }),
-    );
   });
 
   it('200 : ignore un événement inconnu', async () => {

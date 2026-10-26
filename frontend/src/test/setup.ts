@@ -7,8 +7,8 @@ import { configure } from '@testing-library/react';
 // chargées à la demande.
 configure({ asyncUtilTimeout: 5000 });
 
-// JSDOM n'implémente ni IntersectionObserver (LandingListings) ni
-// scrollTo : sans ces stubs, tout render de page ou section lève.
+// JSDOM n'implémente ni IntersectionObserver ni scrollTo : sans ces stubs,
+// tout render de page ou section lève.
 if (!('IntersectionObserver' in globalThis)) {
   class IntersectionObserverStub {
     observe() {}

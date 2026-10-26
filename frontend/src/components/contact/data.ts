@@ -50,7 +50,7 @@ export const CONTACT_FAQS: readonly ContactFaqItem[] = [
   {
     question: 'Comment se règle le loyer ?',
     answer:
-      'Le loyer se paie directement au gérant, selon les modalités convenues lors de la réservation : Linkhoo ne prélève pas le montant de la location. Les paiements en ligne concernent uniquement les services gérants (Premium et Boost) et sont traités par FedaPay.',
+      'Le loyer se paie directement au gérant, selon les modalités convenues lors de la réservation : Linkhoo ne prélève pas le montant de la location. Les paiements en ligne concernent uniquement l’abonnement Premium des gérants et sont traités par FedaPay.',
   },
   {
     question: 'Comment publier mon logement en tant que gérant ?',
@@ -65,7 +65,7 @@ export const CONTACT_FAQS: readonly ContactFaqItem[] = [
   {
     question: 'Comment rendre mon annonce plus visible ?',
     answer:
-      'Le Boost place vos annonces dans les emplacements sponsorisés à partir de 3 000 XOF, au clic ou à l’impression. L’abonnement Premium (5 000 XOF par mois) ajoute un badge et fait remonter une de vos annonces en tête des résultats sur votre marché.',
+      'L’abonnement Premium (5 000 XOF par mois) ajoute un badge et fait remonter une de vos annonces en tête des résultats sur votre marché.',
   },
   {
     question: 'Comment laisser un avis après un séjour ?',

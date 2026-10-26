@@ -91,7 +91,6 @@ function layoutRoute(path: string) {
       <Route path="destinations" element={<p>Contenu destinations</p>} />
       <Route path="escapades" element={<p>Contenu escapades</p>} />
       <Route path="promotions" element={<p>Contenu promotions</p>} />
-      <Route path="boosts" element={<p>Contenu boosts</p>} />
       <Route path="equipe" element={<p>Contenu équipe</p>} />
       <Route path="mot-de-passe" element={<p>Contenu mot de passe</p>} />
     </Route>
@@ -184,7 +183,6 @@ describe('SuperAdminLayout — navigation de la barre latérale', () => {
     expect(navLink(/Destinations/)).toHaveAttribute('href', '/admin/destinations');
     expect(navLink(/Escapades/)).toHaveAttribute('href', '/admin/escapades');
     expect(navLink(/Promotions/)).toHaveAttribute('href', '/admin/promotions');
-    expect(navLink(/Booster/)).toHaveAttribute('href', '/admin/boosts');
     expect(navLink(/Équipe/)).toHaveAttribute('href', '/admin/equipe');
     expect(navLink(/Mot de passe/)).toHaveAttribute('href', '/admin/mot-de-passe');
   });
@@ -202,7 +200,6 @@ describe('SuperAdminLayout — navigation de la barre latérale', () => {
     expect(navLink(/Destinations/)).toHaveAttribute('href', '/ci/admin/destinations');
     expect(navLink(/Escapades/)).toHaveAttribute('href', '/ci/admin/escapades');
     expect(navLink(/Promotions/)).toHaveAttribute('href', '/ci/admin/promotions');
-    expect(navLink(/Booster/)).toHaveAttribute('href', '/ci/admin/boosts');
     expect(navLink(/Équipe/)).toHaveAttribute('href', '/ci/admin/equipe');
     expect(navLink(/Mot de passe/)).toHaveAttribute('href', '/ci/admin/mot-de-passe');
   });
@@ -223,7 +220,6 @@ describe('SuperAdminLayout — navigation de la barre latérale', () => {
     expect(screen.queryByRole('link', { name: /Destinations/ })).toBeNull();
     expect(screen.queryByRole('link', { name: /Escapades/ })).toBeNull();
     expect(screen.queryByRole('link', { name: /Promotions/ })).toBeNull();
-    expect(screen.queryByRole('link', { name: /Booster/ })).toBeNull();
     expect(screen.queryByRole('link', { name: /Équipe/ })).toBeNull();
     expect(navLink(/Mot de passe/)).toHaveAttribute('href', '/admin/mot-de-passe');
   });

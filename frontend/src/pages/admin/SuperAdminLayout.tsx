@@ -159,7 +159,6 @@ export default function SuperAdminLayout() {
     { to: `${adminPath}/destinations`, label: 'Destinations', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>, show: can('destinations') },
     { to: `${adminPath}/escapades`, label: 'Escapades', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>, show: can('escapades') },
     { to: `${adminPath}/promotions`, label: 'Promotions', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>, show: can('promotions') },
-    { to: `${adminPath}/boosts`, label: 'Booster', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>, show: can('boosts') },
     { to: `${adminPath}/equipe`, label: 'Équipe', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 011.92 2.76"/></svg>, show: Boolean(admin?.is_superadmin) },
     { to: `${adminPath}/mot-de-passe`, label: 'Mot de passe', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>, show: true },
   ].filter((item) => item.show);
@@ -249,19 +248,12 @@ export default function SuperAdminLayout() {
                             </div>
                             <div className="notif-item__body">
                               <p className="notif-item__text">
-                                {n.type === 'boost_paid_without_campaign' ? (
-                                  <>Paiement <strong>boost</strong> encaissé — campagne introuvable</>
-                                ) : n.type === 'reservation_cancelled' ? (
+                                {n.type === 'reservation_cancelled' ? (
                                   <>Réservation <strong>annulée</strong> pour <strong>{n.room_title}</strong></>
                                 ) : (
                                   <>Demande de réservation pour <strong>{n.room_title}</strong></>
                                 )}
                               </p>
-                              {n.type === 'boost_paid_without_campaign' && n.message && (
-                                <span className="notif-item__dates">
-                                  {n.message}
-                                </span>
-                              )}
                               {n.client_name && (
                                 <span className="notif-item__dates">
                                   {n.client_name}{n.client_email ? ` · ${n.client_email}` : ''}

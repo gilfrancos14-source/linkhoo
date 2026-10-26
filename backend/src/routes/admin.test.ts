@@ -39,7 +39,6 @@ let admins: FakeChain;
 let documents: FakeChain;
 let notifications: FakeChain;
 let clientNotifications: FakeChain;
-let boosts: FakeChain;
 
 type TableName =
   | 'gerants'
@@ -48,8 +47,7 @@ type TableName =
   | 'admins'
   | 'verification_documents'
   | 'notifications'
-  | 'client_notifications'
-  | 'boosts';
+  | 'client_notifications';
 
 function stubTables(tables: Partial<Record<TableName, FakeChain | FakeChain[]>> = {}): void {
   useSupabaseTables(supabaseAdmin.from, {
@@ -60,7 +58,6 @@ function stubTables(tables: Partial<Record<TableName, FakeChain | FakeChain[]>> 
     verification_documents: documents,
     notifications,
     client_notifications: clientNotifications,
-    boosts,
     ...tables,
   });
 }
@@ -86,7 +83,6 @@ beforeEach(() => {
   documents = fakeChain({ data: null, error: null });
   notifications = fakeChain({ data: null, error: null });
   clientNotifications = fakeChain({ data: null, error: null });
-  boosts = fakeChain({ data: null, error: null });
   stubTables();
 });
 
@@ -861,38 +857,6 @@ describe('GET /api/admin/notifications', () => {
     expect(res.body.unread_count).toBe(1);
     expect(res.body.notifications).toHaveLength(2);
   });
-
-  it('200 : inclut les incidents de paiement boost sans chambre (M4)', async () => {
-    gerants = fakeChain({
-      data: [{ clerk_user_id: 'user_1', is_verified: true, is_premium: false, premium_expires_at: null }],
-      error: null,
-    });
-    rooms = fakeChain({ data: [{ id: 'room-1' }], error: null });
-    notifications = fakeChain({
-      data: [
-        { id: 'n1', type: 'reservation', read: false, date: '2026-01-01' },
-        {
-          id: 'boost-paid-4244',
-          type: 'boost_paid_without_campaign',
-          read: false,
-          date: '2026-01-03',
-          message: 'Paiement boost de 3000 XOF reçu sans campagne correspondante.',
-        },
-      ],
-      error: null,
-    });
-    stubTables();
-
-    const res = await request(app).get('/api/admin/notifications').set(auth(adminToken()));
-
-    expect(res.status).toBe(200);
-    expect(res.body.notifications).toHaveLength(2);
-    expect(res.body.notifications[0]).toMatchObject({
-      id: 'boost-paid-4244',
-      type: 'boost_paid_without_campaign',
-    });
-    expect(res.body.unread_count).toBe(2);
-  });
 });
 
 describe('PATCH /api/admin/notifications/:id/read', () => {
@@ -966,206 +930,3 @@ describe('PATCH /api/admin/rooms/:id/promo-group', () => {
   });
 });
 
-describe('Supervision des campagnes Boost', () => {
-  const liveBoost = {
-    id: 'b-1',
-    market: 'CI',
-    room_id: 'room-1',
-    gerant_id: 'user_1',
-    mode: 'cpi',
-    status: 'active',
-    budget_total: 3000,
-    spent: 500,
-    starts_at: new Date(Date.now() - 3600_000).toISOString(),
-    ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    activated_at: new Date().toISOString(),
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    transaction_id: 'tx-uuid-1',
-    room: { id: 'room-1', title: 'Studio Plateau', ville: 'Abidjan', market: 'CI', disponible: true },
-    gerant: { nom: 'Koffi', prenom: 'Aya', email: 'g@example.ci', phone: '0707070707' },
-  };
-
-  it('GET /boosts : 401 sans token', async () => {
-    const res = await request(app).get('/api/admin/boosts');
-    expect(res.status).toBe(401);
-  });
-
-  it('GET /boosts : liste mappée avec chambre et gérant', async () => {
-    stubTables({ boosts: fakeChain({ data: [liveBoost], error: null }) });
-
-    const res = await request(app).get('/api/admin/boosts').set(auth(adminToken()));
-
-    expect(res.status).toBe(200);
-    expect(res.body.items).toHaveLength(1);
-    expect(res.body.items[0]).toMatchObject({
-      id: 'b-1',
-      display_status: 'live',
-      remaining: 2500,
-      gerant: { nom: 'Koffi' },
-      room: { title: 'Studio Plateau' },
-    });
-  });
-
-  it('GET /boosts : 400 sur un statut de filtre invalide', async () => {
-    const res = await request(app)
-      .get('/api/admin/boosts?status=inconnu')
-      .set(auth(adminToken()));
-    expect(res.status).toBe(400);
-  });
-
-  it('PATCH /boosts/:id/status : 409 si budget épuisé', async () => {
-    stubTables({
-      boosts: fakeChain({
-        data: { id: 'b-1', status: 'exhausted', spent: 3000, budget_total: 3000 },
-        error: null,
-      }),
-    });
-
-    const res = await request(app)
-      .patch('/api/admin/boosts/b-1/status')
-      .set(auth(adminToken()))
-      .send({ status: 'active' });
-
-    expect(res.status).toBe(409);
-    expect(res.body.error).toContain('épuisé');
-  });
-
-  it('PATCH /boosts/:id/status : 409 si la campagne n\'est pas encore payée', async () => {
-    stubTables({
-      boosts: fakeChain({
-        data: { id: 'b-1', status: 'pending', spent: 0, budget_total: 1000 },
-        error: null,
-      }),
-    });
-
-    const res = await request(app)
-      .patch('/api/admin/boosts/b-1/status')
-      .set(auth(adminToken()))
-      .send({ status: 'active' });
-
-    expect(res.status).toBe(409);
-  });
-
-  it('PATCH /boosts/:id/status : met en pause une campagne en ligne', async () => {
-    const fetched = fakeChain({
-      data: { id: 'b-1', status: 'active', spent: 500, budget_total: 3000 },
-      error: null,
-    });
-    const updated = fakeChain({
-      data: {
-        id: 'b-1',
-        status: 'paused',
-        spent: 500,
-        budget_total: 3000,
-        starts_at: new Date(Date.now() - 3600_000).toISOString(),
-        ends_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      error: null,
-    });
-    stubTables({ boosts: [fetched, updated] });
-
-    const res = await request(app)
-      .patch('/api/admin/boosts/b-1/status')
-      .set(auth(adminToken()))
-      .send({ status: 'paused' });
-
-    expect(res.status).toBe(200);
-    expect(updated.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'paused' }),
-    );
-    expect(res.body).toMatchObject({ id: 'b-1', status: 'paused', display_status: 'paused', remaining: 2500 });
-  });
-
-  it('PATCH /boosts/:id/status : reprise d\'une campagne programmée', async () => {
-    const fetched = fakeChain({
-      data: { id: 'b-1', status: 'paused', spent: 0, budget_total: 1000 },
-      error: null,
-    });
-    const updated = fakeChain({
-      data: {
-        id: 'b-1',
-        status: 'active',
-        spent: 0,
-        budget_total: 1000,
-        starts_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        ends_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      error: null,
-    });
-    // 1. lecture, 2. contrôle de conflit (M2), 3. UPDATE
-    stubTables({ boosts: [fetched, fakeChain({ data: [], error: null }), updated] });
-
-    const res = await request(app)
-      .patch('/api/admin/boosts/b-1/status')
-      .set(auth(adminToken()))
-      .send({ status: 'active' });
-
-    expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ status: 'active', display_status: 'scheduled' });
-  });
-
-  it('PATCH /boosts/:id/status : 409 si une autre campagne occupe la chambre (M2)', async () => {
-    const fetched = fakeChain({
-      data: { id: 'b-1', status: 'paused', spent: 0, budget_total: 1000, room_id: 'room-1' },
-      error: null,
-    });
-    const conflict = fakeChain({ data: [{ id: 'b-other' }], error: null });
-    stubTables({ boosts: [fetched, conflict] });
-
-    const res = await request(app)
-      .patch('/api/admin/boosts/b-1/status')
-      .set(auth(adminToken()))
-      .send({ status: 'active' });
-
-    expect(res.status).toBe(409);
-    expect(res.body.error).toContain('déjà en cours');
-    expect(conflict.update).not.toHaveBeenCalled();
-  });
-
-  it('PATCH /boosts/:id/status : 409 sur course 23505 (l\'UPDATE perd la course)', async () => {
-    const fetched = fakeChain({
-      data: { id: 'b-1', status: 'paused', spent: 0, budget_total: 1000, room_id: 'room-1' },
-      error: null,
-    });
-    const noConflict = fakeChain({ data: [], error: null });
-    const raced = fakeChain({
-      data: null,
-      error: { message: 'duplicate key value violates unique constraint', code: '23505' },
-    });
-    stubTables({ boosts: [fetched, noConflict, raced] });
-
-    const res = await request(app)
-      .patch('/api/admin/boosts/b-1/status')
-      .set(auth(adminToken()))
-      .send({ status: 'active' });
-
-    expect(res.status).toBe(409);
-    expect(res.body.error).toContain('déjà en cours');
-  });
-
-  it('PATCH /boosts/:id/status : 409 sur une campagne terminée (M1)', async () => {
-    stubTables({
-      boosts: fakeChain({
-        data: { id: 'b-1', status: 'ended', spent: 1000, budget_total: 1000, room_id: 'room-1' },
-        error: null,
-      }),
-    });
-
-    const res = await request(app)
-      .patch('/api/admin/boosts/b-1/status')
-      .set(auth(adminToken()))
-      .send({ status: 'active' });
-
-    expect(res.status).toBe(409);
-    expect(res.body.error).toContain('terminée');
-  });
-
-  it('PATCH /boosts/:id/status : 400 sur un statut hors supervision', async () => {
-    const res = await request(app)
-      .patch('/api/admin/boosts/b-1/status')
-      .set(auth(adminToken()))
-      .send({ status: 'exhausted' });
-    expect(res.status).toBe(400);
-  });
-});

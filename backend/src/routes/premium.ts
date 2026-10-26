@@ -11,10 +11,7 @@ import { mapFedaPayStatus, isNotFoundError, type PremiumTxStatus } from '../smok
 import {
   normalizeTxType,
   upsertPremiumTransaction,
-  activateBoostForTransaction,
 } from '../utils/premiumTx';
-import { isValidBoostBudget } from '../config/boosts';
-import { flagPaidWithoutCampaign } from '../utils/boostAlerts';
 import { GERANT_COLUMNS } from '../utils/gerantSelect';
 
 const PREMIUM_AMOUNT = 5000;
@@ -330,44 +327,6 @@ router.post('/webhook', async (req: Request, res: Response, _next: NextFunction)
         } else {
           console.warn(`[premium] webhook: activation refusée, montant insuffisant (${amount}) pour tx ${entity.id}`);
         }
-      } else if (status === 'approved' && !persisted.activated && txType === 'boost') {
-        // Chemin prioritaire du boost : le webhook crédite la campagne avant
-        // même que le gérant ne voie sa page de succès. BOOST_NOT_FOUND =
-        // campagne remplacée/annulée entre-temps → claim déjà annulé par la
-        // RPC, on ne crédite rien et on alerte le support (M4).
-        if (!isValidBoostBudget(amount)) {
-          // m6 : défense en profondeur — un montant hors intervalle n'active rien,
-          // même en cas de webhook forgeé ou de montant corrompu. L'argent
-          // étant encaissé, on alerte le support comme sur BOOST_NOT_FOUND.
-          console.warn(
-            `[premium] webhook: activation boost refusée, montant inattendu (${amount}) pour tx ${entity.id}`,
-          );
-          await flagPaidWithoutCampaign({
-            clerkUserId,
-            market,
-            transactionId: entity.id,
-            amount,
-            source: 'webhook-amount',
-          });
-        } else {
-          const activation = await activateBoostForTransaction(persisted.id);
-          if (activation.boostId) {
-            console.log(
-              activation.alreadyActivated
-                ? `[premium] webhook: boost tx ${entity.id} déjà consommée, aucun double crédit`
-                : `[premium] webhook: boost activé pour ${clerkUserId} (tx ${entity.id}, boost ${activation.boostId})`
-            );
-          } else {
-            console.warn(`[premium] webhook: boost tx ${entity.id} sans campagne correspondante (remplacée ou annulée)`);
-            await flagPaidWithoutCampaign({
-              clerkUserId,
-              market,
-              transactionId: entity.id,
-              amount,
-              source: 'webhook',
-            });
-          }
-        }
       } else {
         console.log(`[premium] webhook: tx ${entity.id} status=${status} type=${txType} (déjà activée=${persisted.activated})`);
       }
@@ -384,7 +343,7 @@ router.post('/webhook', async (req: Request, res: Response, _next: NextFunction)
         if (clerkUserId && market && txType) {
           const newStatus: PremiumTxStatus =
             eventName === 'transaction.declined' ? 'declined' : 'canceled';
-          const persisted = await upsertPremiumTransaction({
+          await upsertPremiumTransaction({
             fedapayTransactionId: entity.id,
             clerkUserId,
             market,
@@ -400,16 +359,6 @@ router.post('/webhook', async (req: Request, res: Response, _next: NextFunction)
             // encore 'pending'.
             onlyIfPending: true,
           });
-          if (txType === 'boost') {
-            // Paiement refusé : la campagne ne doit jamais passer active.
-            const { data: canceled } = await supabaseAdmin
-              .from('boosts')
-              .update({ status: 'canceled', updated_at: new Date().toISOString() })
-              .eq('transaction_id', persisted.id)
-              .eq('status', 'pending')
-              .select('id');
-            console.log(`[premium] webhook ${eventName}: boost ${canceled?.[0]?.id ?? 'introuvable'} annulée (tx ${entity.id})`);
-          }
         }
       }
       console.log(`[premium] webhook ${eventName} reçu (id=${entity?.id})`);

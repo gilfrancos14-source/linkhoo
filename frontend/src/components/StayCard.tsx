@@ -15,7 +15,7 @@ interface StayCardProps {
   tag?: string;
   eyebrow?: string;
   badge?: string;
-  badgeVariant?: 'default' | 'unavailable' | 'premium' | 'sponsored';
+  badgeVariant?: 'default' | 'unavailable' | 'premium';
   meta?: string[];
 }
 

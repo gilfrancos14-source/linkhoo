@@ -3,10 +3,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import rateLimit from 'express-rate-limit';
 import { createRateLimitStore } from './utils/rateLimitStore';
 import { skipWriteQuota, userOrIpKey } from './utils/rateLimiters';
-import { readTrackVisitor } from './utils/trackVisitor';
 import { usesAdminCookie } from './utils/adminCookie';
 import { errorHandler } from './middleware/errorHandler';
 import { requireClerkAuth } from './middleware/clerkAuth';
@@ -27,7 +26,6 @@ import clientsRouter from './routes/clients';
 import reviewsRouter from './routes/reviews';
 import messagesRouter from './routes/messages';
 import premiumRouter from './routes/premium';
-import boostsRouter from './routes/boosts';
 import adminRouter from './routes/admin';
 import authRouter from './routes/auth';
 import { startNotificationPurge } from './utils/notificationPurge';
@@ -93,7 +91,7 @@ if (isProduction && allowedOrigins.length === 0) {
   process.exit(1);
 }
 
-// m3 : le callback FedaPay (premium + boost) n'utilise plus l'`Origin` du
+// m3 : le callback FedaPay (premium) n'utilise plus l'`Origin` du
 // navigateur mais APP_PUBLIC_URL. Sans cette variable, le gérant serait
 // redirigé après paiement vers http://localhost:5173 : la page de succès ne
 // se charge pas, /confirm ne tourne pas, le paiement reste invisible côté
@@ -109,10 +107,9 @@ const writeLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   store: createRateLimitStore('write'),
-  // Ne compte QUE les vraies écritures : les GET, la connexion
-  // (/api/auth/*) et le tracking boost (dont le propre limiteur existe plus
-  // bas) en sont exclus — sinon un pic de ces requêtes épuise le quota et
-  // bloque, par contagion, des écritures et des connexions légitimes.
+  // Ne compte QUE les vraies écritures : les GET et la connexion
+  // (/api/auth/*) en sont exclus — sinon un pic de ces requêtes épuise le
+  // quota et bloque, par contagion, des écritures et des connexions légitimes.
   skip: skipWriteQuota,
   message: { error: 'Trop de requêtes, veuillez réessayer plus tard' },
 });
@@ -159,85 +156,6 @@ const webhookLimiter = rateLimit({
   message: { error: 'Trop de requêtes webhook' },
 });
 
-// C1 (docs/reports/REVUE_BOOST.md) : /boosts/impression et /boosts/click sont publics et
-// débitent un budget prépayé. Trois ceintures :
-//  - émission d'identité : ~10 nouvelles identités / 15 min / IP. C'est LA
-//    ceinture qui ferme C1 : sans elle, 2 requêtes (émission + facturation)
-//    suffisent pour un événement facturé et 40 req/15 min = 20 clics =
-//    un budget d'entrée de 1 000 F vidé par une seule IP. Un visiteur
-//    légitime n'émet qu'une identité par an (cookie 365 j) ;
-//  - par IP : ~40 événements / 15 min → une rafale native ne facture pas
-//    plus de 40 événements ;
-//  - par campagne : 150 / 15 min → une campagne ciblée reste protégée même
-//    répartie sur plusieurs IP (plafond de fait du débit).
-// Chaque clé est un store dédié (express-rate-limit refuse les stores partagés).
-const boostIssueLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 10,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-  store: createRateLimitStore('boost-track-issue'),
-  // Ne compte QUE les requêtes sans cookie valide : les événements déjà
-  // identifiés ne consomment pas le quota d'émission.
-  skip: (req) => readTrackVisitor(req) !== null,
-  message: { error: 'Trop de nouvelles sessions de suivi, veuillez réessayer plus tard' },
-});
-
-const boostTrackIpLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 40,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-  store: createRateLimitStore('boost-track-ip'),
-  message: { error: 'Trop de requêtes de suivi, veuillez réessayer plus tard' },
-});
-
-const boostTrackBoostLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 150,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-  store: createRateLimitStore('boost-track-boost'),
-  // Volontairement SANS req.ip : la clé est la campagne ciblée.
-  keyGenerator: (req) => `boost:${String((req.body as { boost_id?: unknown } | undefined)?.boost_id ?? 'none')}`,
-  message: { error: 'Trop de requêtes pour cette campagne, veuillez réessayer plus tard' },
-});
-
-// M4 : un budget clic peut être vidé par une seule IP qui forge de nouvelles
-// identités visiteur (10 cookies / 15 min). On borne en plus les clics
-// facturables par couple IP + campagne : le minting ne suffit plus à financer
-// une rafale. Le plafond reste large pour un NAT légitime.
-const boostClickIpLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  limit: 10,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-  store: createRateLimitStore('boost-click-ip-campaign'),
-  keyGenerator: (req) => {
-    const boostId = String(
-      (req.body as { boost_id?: unknown } | undefined)?.boost_id ?? 'none',
-    );
-    return `${ipKeyGenerator(req.ip ?? '')}:${boostId}`;
-  },
-  message: { error: 'Trop de clics pour cette campagne, veuillez réessayer plus tard' },
-});
-
-// M4 (suite) : le limiteur de campagne ci-dessus (150 / 15 min, impressions ET
-// clics confondus) laisse une campagne vidée très vite en clics. Le clic est
-// l'événement cher (50 F) : on le borne séparément par campagne à 60 / 15 min
-// (≤ 3 000 F, soit le budget minimal) — très au-dessus d'un trafic légitime
-// (une campagne à budget max 100 000 F = 2 000 clics sur 90 jours ≈ 22/jour).
-const boostClickCampaignLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 60,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-  store: createRateLimitStore('boost-click-campaign'),
-  // Volontairement SANS req.ip : la clé est la campagne ciblée.
-  keyGenerator: (req) => `boost:${String((req.body as { boost_id?: unknown } | undefined)?.boost_id ?? 'none')}`,
-  message: { error: 'Trop de clics pour cette campagne, veuillez réessayer plus tard' },
-});
-
 // F5 : les routes de paiement appellent FedaPay et permettent d'énumérer des
 // transactions. Elles étaient absentes de tout limiteur dédié (le quota global
 // « write » ne comptait que 200 requêtes / 15 min / IP).
@@ -275,7 +193,6 @@ const PUBLIC_CACHE_PATHS = [
   '/api/escapades',
   '/api/reviews/featured',
   '/api/rooms/popular',
-  '/api/boosts/featured',
 ];
 app.use((req, res, next) => {
   if (req.method === 'GET' && PUBLIC_CACHE_PATHS.includes(req.path)) {
@@ -303,21 +220,7 @@ app.use((req, res, next) => {
 });
 app.use('/api', writeLimiter);
 app.use('/api/upload', uploadLimiter);
-// Placés APRÈS express.json() (sinon req.body est encore vide) et AVANT le
-// routeur boosts : une rafale de tracking est refusée avant toute lecture base.
-// L'émission d'identité est aussi bornée sur /featured : c'est là que le
-// serveur pose le cookie, donc la porte d'entrée du minting en masse.
-app.use(
-  ['/api/boosts/impression', '/api/boosts/click'],
-  boostIssueLimiter,
-  boostTrackIpLimiter,
-  boostTrackBoostLimiter,
-);
-app.use('/api/boosts/click', boostClickIpLimiter, boostClickCampaignLimiter);
-app.use(
-  ['/api/boosts/initiate', '/api/boosts/confirm', '/api/premium/confirm'],
-  paymentFlowLimiter,
-);
+app.use('/api/premium/confirm', paymentFlowLimiter);
 
 app.use('/api/rooms', roomsRouter);
 app.use('/api/categories', categoriesRouter);
@@ -336,9 +239,6 @@ app.use('/api/clients', requireClerkAuth, clientsRouter);
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/messages', messagesRouter);
 app.use('/api/premium', premiumRouter);
-// /featured pose aussi le cookie de visiteur : même quota d'émission (C1).
-app.use('/api/boosts/featured', boostIssueLimiter);
-app.use('/api/boosts', boostsRouter);
 // Le limiteur ne couvre que la route de connexion ; le routeur admin n'est
 // monté qu'une fois (ci-dessous). Un second montage du routeur sous
 // `/api/admin/login` exposait inutilement tout le back-office à cette URL.

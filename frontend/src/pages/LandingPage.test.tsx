@@ -4,43 +4,16 @@ import { MemoryRouter } from 'react-router-dom';
 import LandingPage from './LandingPage';
 
 const mocks = vi.hoisted(() => ({
-  featuredBoosts: vi.fn(),
   featuredReviews: vi.fn(),
-  impression: vi.fn(),
-  click: vi.fn(),
   cachedGet: vi.fn(),
 }));
 
 vi.mock('../lib/api', () => ({
-  apiBoosts: {
-    featured: mocks.featuredBoosts,
-    impression: mocks.impression,
-    click: mocks.click,
-  },
   apiReviews: {
     featured: mocks.featuredReviews,
   },
   cachedGet: mocks.cachedGet,
 }));
-
-function boost(overrides: Record<string, unknown> = {}) {
-  return {
-    id: 'boost-1',
-    room_id: 'room-1',
-    market: 'CI',
-    mode: 'cpc',
-    title: 'Studio moderne à Cocody',
-    price: '25 000 FCFA',
-    price_num: 25000,
-    img: '/images/listings/cocody.jpg',
-    ville: 'Abidjan',
-    quartier: 'Cocody',
-    category: 'appartements',
-    rating: 4.8,
-    reviews_count: 124,
-    ...overrides,
-  };
-}
 
 function review(index: number, name: string) {
   return {
@@ -74,24 +47,7 @@ function renderLanding() {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.cachedGet.mockResolvedValue([]);
-  mocks.featuredBoosts.mockResolvedValue({
-    items: [
-      boost(),
-      boost({
-        id: 'boost-2',
-        room_id: 'room-2',
-        title: 'Villa de luxe',
-        price: '120 000 FCFA',
-        price_num: 120000,
-        ville: 'Assinie',
-        quartier: null,
-      }),
-    ],
-    config: {},
-  });
   mocks.featuredReviews.mockResolvedValue(REVIEWS);
-  mocks.impression.mockResolvedValue({ counted: true });
-  mocks.click.mockResolvedValue({ counted: true });
 });
 
 afterEach(() => {
@@ -118,7 +74,6 @@ describe('LandingPage — maquette accueil', () => {
     expect(screen.getByText('Mot-clé')).toBeInTheDocument();
     expect(screen.getByText('Catégorie')).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /Pays/ })).toBeInTheDocument();
-    await screen.findByText('Studio moderne à Cocody');
   }, 20000);
 
   it('affiche les 12 pays et permet d’en sélectionner un', () => {
@@ -136,14 +91,8 @@ describe('LandingPage — maquette accueil', () => {
     expect(screen.getByRole('button', { name: 'Pays : Sénégal' })).toBeInTheDocument();
   }, 20000);
 
-  it('affiche les annonces en vedette, le carrousel et les six avis', async () => {
+  it('affiche le carrousel et les six avis', async () => {
     renderLanding();
-
-    expect(
-      screen.getByRole('heading', { level: 2, name: 'Des chambres en vedette' }),
-    ).toBeInTheDocument();
-    expect(await screen.findByText('Studio moderne à Cocody')).toBeInTheDocument();
-    expect(screen.getByText('Villa de luxe')).toBeInTheDocument();
 
     expect(
       screen.getByRole('heading', { level: 2, name: 'Des séjours inoubliables vous attendent' }),
@@ -157,26 +106,12 @@ describe('LandingPage — maquette accueil', () => {
     expect(screen.getByText('Sophie Laurent')).toBeInTheDocument();
   }, 20000);
 
-  it('bascule le cœur d’une annonce en favori', async () => {
-    renderLanding();
-
-    const heart = (await screen.findAllByRole('button', { name: 'Ajouter aux favoris' }))[0];
-    fireEvent.click(heart);
-
-    expect(screen.getByRole('button', { name: 'Retirer des favoris' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-  }, 20000);
-
   it('masque les sections sans données API', async () => {
-    mocks.featuredBoosts.mockResolvedValue({ items: [], config: {} });
     mocks.featuredReviews.mockResolvedValue([]);
 
     renderLanding();
 
     await waitFor(() => {
-      expect(screen.queryByRole('heading', { name: 'Des chambres en vedette' })).toBeNull();
       expect(screen.queryByRole('heading', { name: 'Nos utilisateurs en parlent' })).toBeNull();
     });
   }, 20000);

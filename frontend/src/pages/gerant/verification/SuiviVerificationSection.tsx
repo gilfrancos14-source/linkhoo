@@ -356,16 +356,6 @@ export default function SuiviVerificationSection({ gerantPath }: SuiviVerificati
               <Link to={`${gerantPath}/premium`} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-calendar" /></svg>Mon abonnement</Link>
             </div>
           </div>
-
-          <div className="mt-[18px]">
-            <Link to={`${gerantPath}/boosts`} className="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
-              <svg className="ic h-[19px] w-[19px] shrink-0"><use href="#i-megaphone" /></svg>Booster
-            </Link>
-            <div className="mt-[5px]">
-              <Link to={`${gerantPath}/boosts`} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-megaphone" /></svg>Campagnes</Link>
-              <Link to={`${gerantPath}/boosts/new`} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-user-check" /></svg>Créer une campagne</Link>
-            </div>
-          </div>
         </nav>
 
         <div className="ml-[19px] mr-[16px] mt-[41px] h-[118px] rounded-xl border border-[#FEE3D1] bg-[#FFF2EA] px-[17px] pt-[14px]">

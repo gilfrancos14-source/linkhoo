@@ -13,10 +13,9 @@ import {
   adminCreateSchema,
   adminUpdateSchema,
 } from '../validations/admin';
-import { idParamsSchema, marketSchema } from '../validations/common';
+import { idParamsSchema } from '../validations/common';
 import { verificationReviewSchema, verificationRejectSchema } from '../validations/gerant';
 import { isQualifiedGerant } from '../utils/gerantQualification';
-import { BOOST_ROOM_EMBED, deriveBoostDisplayStatus, mapBoostRow } from '../utils/boostDisplay';
 import { fetchAllRows } from '../utils/fetchAll';
 import { isMarketCode } from '../config/markets';
 import { isAccessibleVerificationPath } from '../utils/verificationStorage';
@@ -823,24 +822,10 @@ router.get('/notifications', requireAdminAuth, async (req: Request, res: Respons
       }
     }
 
-    // M4 : incidents boost — paiement encaissé sans campagne correspondante.
-    // Ces lignes n'ont ni room_id ni client : elles concernent le support
-    // indépendamment de la qualification du gérant, donc on les relit à part
-    // (le filtre SQL n'est pas seulement par type, il est aussi par chambre).
-    const incidentsRaw = await fetchAllRows<any>((from, to) =>
-      supabaseAdmin
-        .from('notifications')
-        .select(NOTIFICATION_COLUMNS)
-        .eq('type', 'boost_paid_without_campaign')
-        .order('date', { ascending: false })
-        .order('id', { ascending: true })
-        .range(from, to));
-
-    const incidents = (incidentsRaw || []).filter((n) => n.type === 'boost_paid_without_campaign');
     const reservations = (reservationRows || []).filter(
       (n) => n.type === 'reservation' || n.type === 'reservation_cancelled');
 
-    const notifications = [...incidents, ...reservations]
+    const notifications = reservations
       .map((n) => ({
         id: n.id,
         type: n.type,
@@ -929,148 +914,6 @@ router.patch('/rooms/:id/promo-group', requireAdminAuth, requirePermission('prom
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Chambre introuvable' });
     res.json(data);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// ── Supervision des campagnes Boost ──
-
-// m9 : pas de .strict() — un simple `?utm_source=…` (ou tout paramètre de
-// suivi ajouté par le navigateur) renvoyait 400 « Paramètres invalides ».
-// Les clés inconnues sont ignorées, seules celles déclarées sont lues.
-const adminBoostsQuerySchema = z.object({
-  status: z
-    .enum(['pending', 'active', 'paused', 'exhausted', 'canceled', 'ended'])
-    .optional(),
-  market: marketSchema.optional(),
-});
-
-const adminBoostStatusSchema = z
-  .object({
-    status: z.enum(['active', 'paused']),
-  })
-  .strict();
-
-router.get('/boosts', requireAdminAuth, requirePermission('boosts'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const parsedQuery = adminBoostsQuerySchema.safeParse(req.query);
-    if (!parsedQuery.success) {
-      return res.status(400).json({ error: 'Paramètres invalides' });
-    }
-
-    let query = supabaseAdmin
-      .from('boosts')
-      .select(`*, ${BOOST_ROOM_EMBED}, gerant:gerants(nom, prenom, email, phone)`);
-    if (parsedQuery.data.status) query = query.eq('status', parsedQuery.data.status);
-    if (parsedQuery.data.market) query = query.eq('market', parsedQuery.data.market);
-
-    const { data, error } = await query
-      .order('created_at', { ascending: false })
-      .limit(100);
-    if (error) throw error;
-
-    const rows: any[] = Array.isArray(data) ? data : [];
-    res.json({
-      items: rows.map((row) => ({
-        ...mapBoostRow(row),
-        gerant: row.gerant ?? null,
-      })),
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.patch('/boosts/:id/status', requireAdminAuth, requirePermission('boosts'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const parsedParams = idParamsSchema.safeParse(req.params);
-    if (!parsedParams.success) {
-      return res.status(400).json({ error: 'Identifiant invalide' });
-    }
-    const parsedBody = adminBoostStatusSchema.safeParse(req.body);
-    if (!parsedBody.success) {
-      return res.status(400).json({ error: 'Données invalides', details: parsedBody.error.flatten() });
-    }
-
-    const { data: boost, error } = await supabaseAdmin
-      .from('boosts')
-      .select('id, status, spent, budget_total, room_id')
-      .eq('id', parsedParams.data.id)
-      .maybeSingle();
-    if (error) throw error;
-    if (!boost) return res.status(404).json({ error: 'Campagne introuvable' });
-
-    // Uniquement pause/reprise d'une campagne payée : on n'active pas un
-    // paiement en attente, on ne ressuscite pas un budget épuisé.
-    if (boost.status === 'pending') {
-      return res.status(409).json({ error: 'Campagne non encore payée : activation impossible manuellement.' });
-    }
-    if (boost.status === 'canceled') {
-      return res.status(409).json({ error: 'Campagne annulée.' });
-    }
-    if (boost.status === 'ended') {
-      return res.status(409).json({
-        error: "Campagne terminée : reprogrammez-la depuis l'espace gérant.",
-      });
-    }
-    if (boost.status === 'exhausted' || boost.spent >= boost.budget_total) {
-      return res.status(409).json({ error: 'Budget épuisé : reprise impossible.' });
-    }
-
-    // M2 : l'index partiel uq_boosts_room_live ne couvre PAS `paused` —
-    // une campagne B a pu être payée pendant que celle-ci était en pause.
-    // Sans ce contrôle, l'UPDATE lèverait 23505 et rendrait un 500 muet.
-    if (parsedBody.data.status === 'active') {
-      const { data: conflictRows, error: conflictError } = await supabaseAdmin
-        .from('boosts')
-        .select('id')
-        .eq('room_id', boost.room_id)
-        .in('status', ['pending', 'active'])
-        .neq('id', boost.id);
-      if (conflictError) throw conflictError;
-      const conflict = Array.isArray(conflictRows) ? conflictRows[0] : null;
-      if (conflict) {
-        return res.status(409).json({
-          error:
-            'Une autre campagne est déjà en cours pour cette chambre : ' +
-            'terminez-la avant de reprendre celle-ci.',
-        });
-      }
-    }
-
-    const { data: updated, error: updateError } = await supabaseAdmin
-      .from('boosts')
-      .update({
-        status: parsedBody.data.status,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', boost.id)
-      .select('id, status, spent, budget_total, starts_at, ends_at')
-      .single();
-    if (updateError) {
-      // Course check-then-update : entre le contrôle de conflit et cet UPDATE,
-      // le gérant a pu payer une nouvelle campagne sur la même chambre →
-      // l'index partiel unique lève 23505. Même réponse que le contrôle
-      // (et identique à PATCH /:id/schedule) plutôt qu'un 500 muet.
-      if (updateError.code === '23505') {
-        return res.status(409).json({
-          error:
-            'Une autre campagne est déjà en cours pour cette chambre : terminez-la avant de reprendre celle-ci.',
-        });
-      }
-      throw updateError;
-    }
-
-    res.json({
-      id: updated.id,
-      status: updated.status,
-      // Dérivé par le helper partagé : pause / programmée / en ligne / terminée
-      // au même endroit que la liste gérant et la page admin.
-      display_status: deriveBoostDisplayStatus(updated),
-      spent: updated.spent,
-      remaining: Math.max(updated.budget_total - updated.spent, 0),
-    });
   } catch (err) {
     next(err);
   }

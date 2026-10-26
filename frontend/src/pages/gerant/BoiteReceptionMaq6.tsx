@@ -329,10 +329,6 @@ export default function BoiteReceptionMaq6() {
           <Link to={`${gerantPath}/premium`} className={`${navCls} mt-1`}><Icon id="crown" className="ico w-5 h-5 shrink-0 text-[#F26A21]" />Premium</Link>
           <Link to={`${gerantPath}/premium`} className={subCls}><Icon id="cal" className="ico h-4 w-4 shrink-0" />Mon abonnement</Link>
 
-          <Link to={`${gerantPath}/boosts`} className={`${navCls} mt-1`}><Icon id="mega" />Booster<Icon id="down" className="ico ml-auto h-4 w-4" /></Link>
-          <Link to={`${gerantPath}/boosts`} className={subCls}><Icon id="mega" className="ico h-4 w-4 shrink-0" />Campagnes</Link>
-          <Link to={`${gerantPath}/boosts/new`} className={subCls}><Icon id="plus" className="ico h-4 w-4 shrink-0" />Créer une campagne</Link>
-
           <div className="mt-auto pt-4">
             <div className="rounded-xl border border-orange-100 bg-[#FDEBDF] p-4">
               <p className="flex items-center gap-2 text-sm font-bold"><Icon id="crown" className="ico w-5 h-5 shrink-0 text-[#F26A21]" />Passez au Premium</p>

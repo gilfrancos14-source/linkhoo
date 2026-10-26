@@ -152,11 +152,9 @@ describe('isAuthRequest', () => {
 });
 
 describe('skipWriteQuota', () => {
-  it('exclut les GET, la connexion et le tracking boost (limiteurs dédiés)', () => {
+  it('exclut les GET et la connexion', () => {
     expect(skipWriteQuota(fakeReq({ method: 'GET', url: '/api/rooms' }))).toBe(true);
     expect(skipWriteQuota(fakeReq({ method: 'POST', url: '/api/auth/bootstrap' }))).toBe(true);
-    expect(skipWriteQuota(fakeReq({ method: 'POST', url: '/api/boosts/impression' }))).toBe(true);
-    expect(skipWriteQuota(fakeReq({ method: 'POST', url: '/api/boosts/click?x=1' }))).toBe(true);
   });
 
   it('compte les vraies écritures', () => {

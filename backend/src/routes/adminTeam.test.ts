@@ -70,7 +70,7 @@ describe('GET /api/admin/admins/permissions', () => {
     const res = await request(app).get('/api/admin/admins/permissions').set(LIMIT_AUTH);
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(9);
+    expect(res.body).toHaveLength(8);
     expect(res.body.map((p: { key: string }) => p.key)).toEqual([
       'gerants',
       'reservations',
@@ -79,7 +79,6 @@ describe('GET /api/admin/admins/permissions', () => {
       'destinations',
       'escapades',
       'promotions',
-      'boosts',
       'stats',
     ]);
     expect(res.body[0]).toMatchObject({ label: expect.any(String), description: expect.any(String) });

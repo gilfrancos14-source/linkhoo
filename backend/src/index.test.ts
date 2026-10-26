@@ -297,20 +297,6 @@ describe('montage de src/index.ts', () => {
     expect(blocked.headers['retry-after']).toBeDefined();
   });
 
-  it('plafonne l’émission d’identités de visiteur sur /featured (C1)', async () => {
-    for (let index = 0; index < 10; index++) {
-      const res = await request(app).get('/api/boosts/featured');
-      expect(res.status).toBe(200);
-    }
-
-    const blocked = await request(app).get('/api/boosts/featured');
-
-    expect(blocked.status).toBe(429);
-    expect(blocked.body).toEqual({
-      error: 'Trop de nouvelles sessions de suivi, veuillez réessayer plus tard',
-    });
-  });
-
   it('compresse en gzip les réponses plus lourdes que le seuil', async () => {
     const rooms = Array.from({ length: 20 }, (_, index) => ({
       id: `room-${index}`,

@@ -77,7 +77,6 @@ export default function AdminLayout() {
 
   const navAbonnement = [
     { to: `${gerantPath}/premium`, label: 'Premium', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> },
-    { to: `${gerantPath}/boosts`, label: 'Booster', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg> },
   ];
 
   const loadNotifs = useCallback(async () => {
@@ -381,17 +380,10 @@ export default function AdminLayout() {
                                     )
                                   ) : n.type === 'reservation_cancelled' ? (
                                     <>Réservation <strong>annulée</strong> pour <strong>{n.roomTitle}</strong></>
-                                  ) : n.type === 'boost_paid_without_campaign' ? (
-                                    <>Paiement <strong>boost</strong> encaissé — campagne introuvable</>
                                   ) : (
                                     <>Demande de réservation pour <strong>{n.roomTitle}</strong></>
                                   )}
                                 </p>
-                                {n.type === 'boost_paid_without_campaign' && (
-                                  <span className="notif-item__dates">
-                                    {n.message}
-                                  </span>
-                                )}
                                 {n.type === 'reservation' && (
                                   <span className="notif-item__dates">
                                     Réservation en attente
