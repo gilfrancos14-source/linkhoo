@@ -6,15 +6,9 @@
 @import "./styles/01-tokens.css";
 @import "./styles/02-base.css";
 @import "./styles/03-header.css";
-@import "./styles/04-home-hero.css";
 @import "./styles/05-home-staycard.css";
-@import "./styles/06-home-promo.css";
-@import "./styles/07-home-categories-events.css";
-@import "./styles/08-home-events-detail.css";
-@import "./styles/09-home-tourism.css";
 @import "./styles/10-home-avis-footer.css";
 @import "./styles/11-responsive-global.css";
-@import "./styles/14-escapade.css";
 @import "./styles/15-room-detail.css";
 @import "./styles/16-category.css";
 @import "./styles/17-search-results.css";
