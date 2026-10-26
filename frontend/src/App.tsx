@@ -3,18 +3,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { MarketProvider, useMarket } from './contexts/MarketContext';
 import { isMarketSlug } from './config/markets';
 import Header from './components/Header';
-import Hero from './components/Hero';
-import PopularSection from './components/PopularSection';
-import PromosSection from './components/PromosSection';
-import CategoriesSection from './components/CategoriesSection';
 import Footer from './components/Footer';
-
-// Sections sous la ligne de flottaison : chargées après le premier rendu
-// pour alléger le chunk d'entrée de la home (~40 % du JS critique).
-const EventsSection = lazy(() => import('./components/EventsSection'));
-const TourismSection = lazy(() => import('./components/TourismSection'));
-const EscapadeSection = lazy(() => import('./components/EscapadeSection'));
-const ReviewsSection = lazy(() => import('./components/ReviewsSection'));
 import BackToTop from './components/BackToTop';
 import ErrorBoundary from './components/ErrorBoundary';
 import NotFoundPage from './pages/NotFoundPage';
@@ -24,7 +13,6 @@ import RoleRouteGuard from './components/RoleRouteGuard';
 import AdminRouteGuard from './components/AdminRouteGuard';
 import LandingPage from './pages/LandingPage';
 import MaquettePage from './pages/MaquettePage';
-import { useRevealOnScroll } from './hooks/useRevealOnScroll';
 
 // Routes hors accueil : chargées à la demande pour ne pas embarquer Leaflet,
 // le back-office et l'espace gérant dans le premier chunk de la home.
@@ -118,24 +106,6 @@ const adminSectionRoutes = (
   </>
 );
 
-function HomePage() {
-  useRevealOnScroll();
-  return (
-    <main>
-      <Hero />
-      <PopularSection />
-      <PromosSection />
-      <CategoriesSection />
-      <Suspense fallback={<div className="route-loading" aria-hidden="true" />}>
-        <EventsSection />
-        <TourismSection />
-        <EscapadeSection />
-        <ReviewsSection />
-      </Suspense>
-    </main>
-  );
-}
-
 function MarketRoute() {
   const { market } = useParams<{ market: string }>();
 
@@ -177,7 +147,7 @@ function MarketContent() {
       {!hideChrome && !isSearchPage && <Header />}
       <Suspense fallback={<RouteFallback />}>
         <Routes>
-          <Route path="/" element={isMaquetteHome ? <MaquettePage /> : <HomePage />} />
+          <Route path="/" element={<MaquettePage />} />
         <Route path="/mentions-legales" element={<MentionsLegales />} />
         <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialite />} />
         <Route path="/a-propos" element={<Navigate to="/a-propos" replace />} />
@@ -244,7 +214,7 @@ function MarketContent() {
   );
 }
 
-// Page d'accueil racine : la maquette linkhoo.html est reproduite à
+// Page d'accueil racine : la maquette d'accueil est reproduite à
 // l'identique (header, bandeau, sections et footer inclus dans le fragment),
 // donc aucun chrome du site n'est ajouté par-dessus.
 function RootRedirect() {

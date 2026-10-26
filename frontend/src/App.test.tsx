@@ -89,8 +89,6 @@ const mocks = vi.hoisted(() => {
     fetchRoomsByMarket: vi.fn<() => Promise<unknown[]>>(),
     fetchAvailableRooms: vi.fn<() => Promise<unknown[]>>(),
     fetchCategoriesByMarket: vi.fn<() => Promise<unknown[]>>(),
-    fetchBannersBySection: vi.fn<() => Promise<unknown[]>>(),
-    fetchEventsByMarket: vi.fn<() => Promise<unknown[]>>(),
     // --- drapeaux de test ---
     throwOnCategory: false,
     resolveRoomDetail: (() => {}) as () => void,
@@ -189,16 +187,6 @@ vi.mock('./data/categories', async (importOriginal) => {
   return { ...original, fetchCategoriesByMarket: mocks.fetchCategoriesByMarket };
 });
 
-vi.mock('./data/banners', async (importOriginal) => {
-  const original = await importOriginal<typeof import('./data/banners')>();
-  return { ...original, fetchBannersBySection: mocks.fetchBannersBySection };
-});
-
-vi.mock('./data/events', async (importOriginal) => {
-  const original = await importOriginal<typeof import('./data/events')>();
-  return { ...original, fetchEventsByMarket: mocks.fetchEventsByMarket };
-});
-
 // --- Pages lazy remplacées par de légers doubles de test -------------------
 vi.mock('./pages/ClientComptePage', () => ({
   default: () => <div data-testid="page-compte">Espace client (stub)</div>,
@@ -290,8 +278,6 @@ beforeEach(() => {
   mocks.fetchRoomsByMarket.mockResolvedValue([]);
   mocks.fetchAvailableRooms.mockResolvedValue([]);
   mocks.fetchCategoriesByMarket.mockResolvedValue([]);
-  mocks.fetchBannersBySection.mockResolvedValue([]);
-  mocks.fetchEventsByMarket.mockResolvedValue([]);
   mocks.throwOnCategory = false;
 });
 
