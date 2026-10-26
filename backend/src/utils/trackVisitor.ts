@@ -1,4 +1,4 @@
-// Identité visiteur des événements Boost (C1 de REVUE_BOOST.md).
+// Identité visiteur des événements Boost (C1 de docs/reports/REVUE_BOOST.md).
 //
 // `POST /api/boosts/impression` et `/click` sont publics : sans identité
 // infalsifiable, un script qui envoie un `visitor_id` différent à chaque

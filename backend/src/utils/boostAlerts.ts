@@ -1,4 +1,4 @@
-// M4 de REVUE_BOOST.md — « paiement encaissé, campagne absente ».
+// M4 de docs/reports/REVUE_BOOST.md — « paiement encaissé, campagne absente ».
 //
 // Cas atteignables : tentative supersédée (> 10 min) puis paiement terminé
 // sur l'onglet restant, ou chambre supprimée pendant le paiement (cascade

@@ -159,7 +159,7 @@ const webhookLimiter = rateLimit({
   message: { error: 'Trop de requêtes webhook' },
 });
 
-// C1 (REVUE_BOOST.md) : /boosts/impression et /boosts/click sont publics et
+// C1 (docs/reports/REVUE_BOOST.md) : /boosts/impression et /boosts/click sont publics et
 // débitent un budget prépayé. Trois ceintures :
 //  - émission d'identité : ~10 nouvelles identités / 15 min / IP. C'est LA
 //    ceinture qui ferme C1 : sans elle, 2 requêtes (émission + facturation)

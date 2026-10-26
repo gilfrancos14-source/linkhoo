@@ -5,6 +5,9 @@
 ```
 ├── frontend/   → React + TypeScript + Vite
 ├── backend/    → Node.js + Express + Supabase
+├── docs/
+│   ├── maquettes/  → maquettes HTML de référence
+│   └── reports/    → rapports d'analyse et de tests
 └── README.md
 ```
 
