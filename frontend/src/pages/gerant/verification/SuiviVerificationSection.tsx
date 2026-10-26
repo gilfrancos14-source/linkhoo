@@ -1,15 +1,223 @@
 import { Link } from 'react-router-dom';
 import GerantLogoutButton from '../../../components/GerantLogoutButton';
+import { useGerantChrome } from '../../../hooks/useGerantChrome';
+import { useSuiviVerification } from './useSuiviVerification';
+import {
+  DOCUMENT_LABELS,
+  DOCUMENT_ORDER,
+  TONE_BADGE,
+  detailTones,
+  documentBadge,
+  documentsByType,
+  formatMoment,
+  headline,
+  lastUpdate,
+  overallBadge,
+  stepTones,
+  submittedCount,
+  toVerificationStatus,
+  type Badge,
+  type BadgeTone,
+  type StepTone,
+} from './suiviVerificationModel';
 
 interface SuiviVerificationSectionProps {
   gerantPath: string;
 }
+
+const BADGE_CLASS: Record<BadgeTone, string> = {
+  done: 'bg-[#E6F6EF] text-[#2E9E78]',
+  current: 'bg-[#FFEBDD] text-[#F26B1D]',
+  waiting: 'bg-[#EEF2F8] text-[#8B9BB8]',
+  rejected: 'bg-[#FDE8E8] text-[#D64545]',
+};
+
+const MARKER_CLASS: Record<StepTone, string> = {
+  done: 'bg-[#21A872] text-white',
+  current: 'border-2 border-[#F26B1D] bg-white text-[#F26B1D]',
+  upcoming: 'border border-[#D3DBEA] bg-[#E7ECF5] text-[#4A5B80]',
+  rejected: 'bg-[#D64545] text-white',
+};
+
+function BadgePill({ badge, className = '' }: { badge: Badge; className?: string }) {
+  return (
+    <span
+      className={`inline-flex h-[21px] shrink-0 items-center justify-center whitespace-nowrap rounded-full px-2.5 text-[10.5px] font-semibold ${BADGE_CLASS[badge.tone]} ${className}`}
+    >
+      {badge.label}
+    </span>
+  );
+}
+
+function StepItem({
+  number,
+  title,
+  caption,
+  tone,
+  widthClass,
+  className = '',
+}: {
+  number: number;
+  title: string;
+  caption: string;
+  tone: StepTone;
+  widthClass: string;
+  className?: string;
+}) {
+  const current = tone === 'current';
+
+  return (
+    <li
+      className={`flex shrink-0 items-center ${className} ${
+        current ? 'h-[46px] rounded-xl bg-gradient-to-r from-[#FFF0E5] to-[#FFF7F2] pl-[7px]' : ''
+      }`}
+      aria-current={current ? 'step' : undefined}
+    >
+      <span
+        className={`relative grid h-[36px] w-[36px] shrink-0 place-items-center rounded-full text-[14px] font-bold ${
+          current
+            ? 'bg-[#F26B1D] text-white ring-4 ring-[#FFE0CC]'
+            : tone === 'rejected'
+              ? 'border-[1.5px] border-[#F3C6C6] bg-[#FDF1F1] text-[#D64545]'
+              : 'border-[1.5px] border-[#D5DEEE] bg-white text-[#1F3566]'
+        }`}
+      >
+        {number}
+        {tone === 'done' && (
+          <svg
+            aria-hidden="true"
+            className="absolute -right-[10px] -top-[9px] h-[18px] w-[18px] rounded-full ring-2 ring-white"
+          >
+            <use href="#i-ok" />
+          </svg>
+        )}
+      </span>
+      <div className={`ml-[13px] ${widthClass}`}>
+        <p
+          className={`text-[12.5px] leading-4 ${
+            current
+              ? 'font-bold text-[#F26B1D]'
+              : tone === 'rejected'
+                ? 'font-semibold text-[#D64545]'
+                : 'font-semibold text-[#12285A]'
+          }`}
+        >
+          {title}
+        </p>
+        <p
+          className={`mt-[5px] text-[10px] leading-[14px] ${
+            current ? 'text-[#F4905A]' : tone === 'rejected' ? 'text-[#D64545]' : 'text-[#8A99B5]'
+          }`}
+        >
+          {caption}
+        </p>
+      </div>
+    </li>
+  );
+}
+
+function connectorClass(tone: StepTone): string {
+  if (tone === 'rejected') return 'bg-[#F3C6C6]';
+  if (tone === 'done' || tone === 'current') return 'bg-[#7FD3B0]';
+  return 'bg-[#CBD3E3]';
+}
+
+function DetailMarker({
+  tone,
+  position,
+  icon,
+}: {
+  tone: StepTone;
+  position: string;
+  icon: 'check' | 'search' | 'clock' | 'circle-check';
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`absolute z-10 grid place-items-center rounded-full ${position} ${MARKER_CLASS[tone]}`}
+    >
+      <svg
+        className={`ic h-[17px] w-[17px] ${
+          icon === 'check' ? 'stroke-[3]' : icon === 'search' ? 'stroke-[2.2]' : 'stroke-[1.8]'
+        }`}
+      >
+        <use href={`#i-${icon}`} />
+      </svg>
+    </span>
+  );
+}
+
+function LoadingCard() {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="mt-[18px] flex min-h-[320px] flex-col items-center justify-center rounded-xl border border-[#EEF2F8] bg-white shadow-[0_2px_10px_rgba(20,40,90,0.04)]"
+    >
+      <span
+        aria-hidden="true"
+        className="h-8 w-8 animate-spin rounded-full border-2 border-[#F26B1D] border-t-transparent"
+      />
+      <p className="mt-3 text-[12.5px] text-[#5F7396]">Chargement de votre dossier…</p>
+    </div>
+  );
+}
+
+function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div
+      role="alert"
+      className="mt-[18px] rounded-xl border border-[#F5C2C2] bg-[#FDF1F1] px-5 py-4"
+    >
+      <p className="text-[12.5px] leading-5 text-[#C23B3B]">{message}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="mt-3 inline-flex h-8 items-center rounded-lg border border-[#F5C2C2] bg-white px-3 text-[11.5px] font-bold text-[#C23B3B] transition hover:bg-[#FCEAEA]"
+      >
+        Réessayer
+      </button>
+    </div>
+  );
+}
+
+const DOC_ICONS = ['file-pen', 'file-text', 'user'] as const;
+const DOC_ICON_CLASS = ['text-[#2F5FC4]', 'text-[#F26B1D]', 'text-[#E5457B]'] as const;
 
 export default function SuiviVerificationSection({ gerantPath }: SuiviVerificationSectionProps) {
   const chambresPath = `${gerantPath}/chambres`;
   const reservationsPath = `${gerantPath}/reservations`;
   const messagesPath = `${gerantPath}/messages/boite-reception`;
   const suiviPath = `${gerantPath}/verification/suivi`;
+  const verificationPath = `${gerantPath}/verification`;
+
+  const chrome = useGerantChrome();
+  const { gerant, status, documents, loading, error, reload } = useSuiviVerification();
+
+  const overall = toVerificationStatus(status?.verification_status);
+  const submittedAt = status?.verification_submitted_at ?? null;
+  const reviewedAt = status?.verification_reviewed_at ?? null;
+  const summary = headline(overall, status?.verification_rejection_reason ?? null);
+  const steps = stepTones(overall, submittedAt);
+  const details = detailTones(overall, submittedAt);
+  const docsByType = documentsByType(documents);
+  const docsCount = submittedCount(documents);
+  const email = gerant?.email ?? chrome.gerant?.email ?? '';
+
+  const reviewTitle =
+    overall === 'approved'
+      ? 'Examen terminé'
+      : overall === 'rejected'
+        ? 'Dossier refusé'
+        : "En cours d'examen";
+  const reviewCaption =
+    overall === 'approved' || overall === 'rejected'
+      ? formatMoment(reviewedAt, '—')
+      : formatMoment(submittedAt);
+  const finalCaption = formatMoment(reviewedAt, 'À venir');
+  // Profil et activation ne sont datés que si le dossier a réellement abouti :
+  // un refus s'arrête à l'examen, ces étapes n'ont donc pas eu lieu.
+  const completedCaption = overall === 'approved' ? formatMoment(reviewedAt) : 'À venir';
 
   return (
     <div className="verif-maq flex min-h-screen">
@@ -95,7 +303,9 @@ export default function SuiviVerificationSection({ gerantPath }: SuiviVerificati
           <div className="mt-[18px]">
             <Link to={reservationsPath} className="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
               <svg className="ic h-[19px] w-[19px] shrink-0"><use href="#i-calendar" /></svg>Réservations
-              <span className="-mr-2.5 ml-auto grid h-4 w-4 place-items-center rounded-full bg-[#FFE4D2] text-[10px] font-bold text-[#F26B1D]">3</span>
+              {chrome.reservationsCount > 0 && (
+                <span className="-mr-2.5 ml-auto grid h-4 w-4 place-items-center rounded-full bg-[#FFE4D2] text-[10px] font-bold text-[#F26B1D]">{chrome.reservationsCount}</span>
+              )}
             </Link>
             <div className="mt-[5px]">
               <Link to={`${reservationsPath}/demandes`} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-lock-user" /></svg>Demandes</Link>
@@ -106,7 +316,9 @@ export default function SuiviVerificationSection({ gerantPath }: SuiviVerificati
           <div className="mt-[18px]">
             <Link to={messagesPath} className="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
               <svg className="ic h-[19px] w-[19px] shrink-0"><use href="#i-chat" /></svg>Messages
-              <span className="-mr-2.5 ml-auto grid h-4 w-4 place-items-center rounded-full bg-[#FFE4D2] text-[10px] font-bold text-[#F26B1D]">2</span>
+              {chrome.messagesUnread > 0 && (
+                <span className="-mr-2.5 ml-auto grid h-4 w-4 place-items-center rounded-full bg-[#FFE4D2] text-[10px] font-bold text-[#F26B1D]">{chrome.messagesUnread}</span>
+              )}
             </Link>
             <div className="mt-[5px]">
               <Link to={messagesPath} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-inbox" /></svg>Boîte de réception</Link>
@@ -115,14 +327,14 @@ export default function SuiviVerificationSection({ gerantPath }: SuiviVerificati
           </div>
 
           <div className="mt-[18px]">
-            <Link to={`${gerantPath}/verification`} className="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg bg-[#FDEDE2] px-[11px] text-[12.5px] font-bold text-[#F26B1D]">
+            <Link to={verificationPath} className="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg bg-[#FDEDE2] px-[11px] text-[12.5px] font-bold text-[#F26B1D]">
               <svg viewBox="0 0 24 24" className="h-[19px] w-[19px] shrink-0" aria-hidden="true">
                 <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" fill="#F26B1D" stroke="#F26B1D" strokeWidth="2" strokeLinejoin="round" />
                 <path d="m9 12 2 2 4-4" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>Vérification
             </Link>
             <div className="mt-[5px]">
-              <Link to={`${gerantPath}/verification`} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-file-text" /></svg>Mes documents</Link>
+              <Link to={verificationPath} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-file-text" /></svg>Mes documents</Link>
               <Link to={suiviPath} aria-current="page" className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#F26B1D]"><svg className="ic h-[14px] w-[14px] shrink-0"><use href="#i-user-check" /></svg>Suivi de vérification</Link>
             </div>
           </div>
@@ -176,7 +388,9 @@ export default function SuiviVerificationSection({ gerantPath }: SuiviVerificati
           <div className="flex items-center gap-[28px]">
             <button type="button" aria-label="Notifications" className="relative text-[#0F2150]">
               <svg className="ic h-[20px] w-[20px]"><use href="#i-bell" /></svg>
-              <span className="absolute -right-[9px] -top-[8px] grid h-[15px] w-[15px] place-items-center rounded-full bg-[#F26B1D] text-[9px] font-bold text-white">2</span>
+              {chrome.messagesUnread > 0 && (
+                <span className="absolute -right-[9px] -top-[8px] grid h-[15px] w-[15px] place-items-center rounded-full bg-[#F26B1D] text-[9px] font-bold text-white">{chrome.messagesUnread}</span>
+              )}
             </button>
 
             <div className="flex h-[46px] w-[190px] items-center rounded-xl bg-white pl-[7px] pr-[9px] text-left shadow-[0_1px_6px_rgba(20,40,90,0.06)] ring-1 ring-[#EEF2F8]">
@@ -184,7 +398,7 @@ export default function SuiviVerificationSection({ gerantPath }: SuiviVerificati
                 <svg viewBox="0 0 100 100" className="h-full w-full"><use href="#portrait" /></svg>
               </span>
               <span className="ml-[11px] leading-none">
-                <span className="block max-w-[95px] truncate text-[12px] font-bold">Koffi Mensah</span>
+                <span className="block max-w-[95px] truncate text-[12px] font-bold">{chrome.displayName}</span>
                 <span className="mt-[7px] block text-[11px] text-[#8A99B5]">Gérant</span>
               </span>
               <GerantLogoutButton className="ml-auto" />
@@ -192,227 +406,246 @@ export default function SuiviVerificationSection({ gerantPath }: SuiviVerificati
           </div>
         </header>
 
-        <main className="pb-10 pl-[23px] pr-[25px]">
-          <Link to={`${gerantPath}/verification`} className="ml-[5px] mt-[15px] inline-flex h-5 items-center gap-[10px] text-[12.5px] font-bold">
+        <main className="pb-10 pl-[23px] pr-[25px]" aria-busy={loading}>
+          <Link to={verificationPath} className="ml-[5px] mt-[15px] inline-flex h-5 items-center gap-[10px] text-[12.5px] font-bold">
             <svg className="ic h-[13px] w-[13px] stroke-[2.4]"><use href="#i-arrow-left" /></svg>Retour
           </Link>
           <h1 className="mt-[5px] text-[30px] font-extrabold leading-[34px] tracking-[-0.01em] text-[#0D2150]">Suivi de votre vérification</h1>
           <p className="text-[16px] leading-[22px] text-[#5F7396]">Suivez en temps réel l&apos;avancement de votre dossier de vérification.</p>
 
-          <div className="mt-[18px] grid items-start gap-x-[19px] xl:grid-cols-[minmax(0,1fr)_364px]">
-            <div>
-              <ol className="flex h-[88px] items-center overflow-hidden rounded-xl border border-[#EEF2F8] bg-white pl-4 shadow-[0_2px_10px_rgba(20,40,90,0.04)]">
-                <li className="flex shrink-0 items-center">
-                  <span className="relative block h-[47px] w-[65px] rounded-xl bg-[#F4F6FB]">
-                    <span className="absolute left-[7px] top-[6px] grid h-[34px] w-[34px] place-items-center rounded-full border-[1.5px] border-[#D5DEEE] bg-white text-[14px] font-bold text-[#1F3566]">1</span>
-                    <svg className="absolute left-[46px] top-[6px] h-[18px] w-[18px] rounded-full ring-2 ring-[#F4F6FB]"><use href="#i-ok" /></svg>
-                  </span>
-                  <div className="ml-[14px] w-[108px]">
-                    <p className="text-[12.5px] font-semibold leading-4 text-[#12285A]">Documents soumis</p>
-                    <p className="mt-[5px] text-[10px] leading-[14px] text-[#8A99B5]">20 oct. 2026 <span className="mx-[3px]">•</span> 10:24</p>
-                  </div>
-                </li>
-                <li aria-hidden="true" className="ml-[10px] h-px w-[40px] shrink-0 bg-[#DDE4F0]"></li>
+          {loading && !status ? (
+            <LoadingCard />
+          ) : error ? (
+            <ErrorCard message={error} onRetry={reload} />
+          ) : (
+            <div className="mt-[18px] grid items-start gap-x-[19px] xl:grid-cols-[minmax(0,1fr)_364px]">
+              <div>
+                <ol
+                  className="flex h-[88px] items-center overflow-hidden rounded-xl border border-[#EEF2F8] bg-white pl-4 shadow-[0_2px_10px_rgba(20,40,90,0.04)]"
+                  aria-label="Étapes de la vérification"
+                >
+                  <StepItem
+                    number={1}
+                    title="Documents soumis"
+                    caption={formatMoment(submittedAt)}
+                    tone={steps.submitted}
+                    widthClass="w-[108px]"
+                  />
+                  <li aria-hidden="true" className="ml-[10px] h-px w-[40px] shrink-0 bg-[#DDE4F0]" />
 
-                <li className="ml-[12px] flex h-[46px] w-[197px] shrink-0 items-center rounded-xl bg-gradient-to-r from-[#FFF0E5] to-[#FFF7F2] pl-[7px]" aria-current="step">
-                  <span className="grid h-[36px] w-[36px] shrink-0 place-items-center rounded-full bg-[#F26B1D] text-[14px] font-bold text-white ring-4 ring-[#FFE0CC]">2</span>
-                  <div className="ml-[11px]">
-                    <p className="text-[12.5px] font-bold leading-4 text-[#F26B1D]">En cours d&apos;examen</p>
-                    <p className="mt-[5px] text-[10px] leading-[14px] text-[#F4905A]">20 oct. 2026 <span className="mx-[3px]">•</span> 14:32</p>
-                  </div>
-                </li>
+                  <StepItem
+                    number={2}
+                    title={reviewTitle}
+                    caption={reviewCaption}
+                    tone={steps.review}
+                    widthClass="w-[150px]"
+                    className="ml-[12px]"
+                  />
 
-                <li className="ml-[27px] flex shrink-0 items-center">
-                  <span className="grid h-[36px] w-[36px] shrink-0 place-items-center rounded-full border-[1.5px] border-[#D5DEEE] bg-white text-[14px] font-bold text-[#1F3566]">3</span>
-                  <div className="ml-[13px] w-[99px]">
-                    <p className="text-[12.5px] font-semibold leading-4 text-[#1F3566]">Validation finale</p>
-                    <p className="mt-[5px] text-[10px] leading-[14px] text-[#8A99B5]">À venir</p>
-                  </div>
-                </li>
-                <li aria-hidden="true" className="h-px w-[39px] shrink-0 bg-[#DDE4F0]"></li>
+                  <StepItem
+                    number={3}
+                    title="Validation finale"
+                    caption={finalCaption}
+                    tone={steps.final}
+                    widthClass="w-[99px]"
+                    className="ml-[27px]"
+                  />
+                  <li aria-hidden="true" className="h-px w-[39px] shrink-0 bg-[#DDE4F0]" />
 
-                <li className="ml-[10px] flex shrink-0 items-center">
-                  <span className="grid h-[36px] w-[36px] shrink-0 place-items-center rounded-full border-[1.5px] border-[#D5DEEE] bg-white text-[14px] font-bold text-[#1F3566]">4</span>
-                  <div className="ml-[13px]">
-                    <p className="text-[12.5px] font-semibold leading-4 text-[#1F3566]">Compte vérifié</p>
-                    <p className="mt-[5px] text-[10px] leading-[14px] text-[#8A99B5]">À venir</p>
-                  </div>
-                </li>
-              </ol>
+                  <StepItem
+                    number={4}
+                    title="Compte vérifié"
+                    caption={overall === 'approved' ? finalCaption : 'À venir'}
+                    tone={steps.verified}
+                    widthClass=""
+                    className="ml-[10px]"
+                  />
+                </ol>
 
-              <section className="mt-[14px] rounded-xl border border-[#EEF2F8] bg-white pb-[17px] pl-4 pr-[16px] pt-[13px] shadow-[0_2px_10px_rgba(20,40,90,0.04)]">
-                <div className="relative flex h-[94px] items-start rounded-lg border border-[#D6E6F8] bg-[#EAF3FD] pl-[11px] pt-[11px]">
-                  <span className="grid h-[61px] w-[61px] shrink-0 place-items-center rounded-full bg-[#D5E6FA]">
-                    <svg className="ic h-[34px] w-[34px] stroke-[1.6] text-[#2F6BD6]"><use href="#i-clipboard" /></svg>
-                  </span>
-                  <div className="ml-[15px] pt-1">
-                    <h2 className="text-[14px] font-bold leading-5">Votre dossier est en cours d&apos;examen</h2>
-                    <p className="mt-[3px] whitespace-nowrap text-[12px] leading-5 text-[#5F7396]">Notre équipe vérifie actuellement les documents que vous avez fournis. Cette étape peut prendre<br />entre 24 et 48 heures selon la complexité de votre dossier.</p>
-                  </div>
-                  <span className="absolute right-4 top-[16px] flex h-6 w-[78px] items-center justify-center rounded-full bg-[#FFEBDD] text-[12px] font-bold text-[#F26B1D]">En cours</span>
-                </div>
-
-                <h2 className="ml-[2px] mt-[17px] text-[15px] font-bold leading-5">Détails de votre vérification</h2>
-
-                <div className="relative mt-3 h-[404px] rounded-lg border border-[#E8EDF6] bg-white">
-                  <span aria-hidden="true" className="absolute left-[30px] top-[45px] h-[57px] w-[2px] bg-[#7FD3B0]"></span>
-                  <span aria-hidden="true" className="absolute left-[30px] top-[138px] h-[77px] w-[2px] bg-[#CBD3E3]"></span>
-                  <span aria-hidden="true" className="absolute left-[30px] top-[251px] h-[60px] w-[2px] bg-[#CBD3E3]"></span>
-
-                  <span className="absolute left-[14px] top-[11px] z-10 grid h-[34px] w-[34px] place-items-center rounded-full bg-[#21A872]">
-                    <svg className="ic h-[17px] w-[17px] stroke-white stroke-[3]"><use href="#i-check" /></svg>
-                  </span>
-                  <span className="absolute left-[13px] top-[102px] z-10 grid h-[36px] w-[36px] place-items-center rounded-full border-2 border-[#F26B1D] bg-white">
-                    <svg className="ic h-[17px] w-[17px] stroke-[2.2] text-[#F26B1D]"><use href="#i-search" /></svg>
-                  </span>
-                  <span className="absolute left-[13px] top-[215px] z-10 grid h-[36px] w-[36px] place-items-center rounded-full border border-[#D3DBEA] bg-[#E7ECF5]">
-                    <svg className="ic h-[18px] w-[18px] stroke-[1.8] text-[#4A5B80]"><use href="#i-clock" /></svg>
-                  </span>
-                  <span className="absolute left-[13px] top-[311px] z-10 grid h-[36px] w-[36px] place-items-center rounded-full border border-[#D3DBEA] bg-[#E7ECF5]">
-                    <svg className="ic h-[18px] w-[18px] stroke-[1.8] text-[#4A5B80]"><use href="#i-circle-check" /></svg>
-                  </span>
-
-                  <div className="relative h-[90px] pl-[66px] pr-4 pt-[11px]">
-                    <h3 className="text-[13px] font-bold leading-[18px]">Documents soumis</h3>
-                    <p className="mt-1 text-[11px] leading-4 text-[#5F7396]">20 oct. 2026 <span className="mx-[3px]">•</span> 10:24</p>
-                    <p className="mt-1 text-[11.5px] leading-[18px] text-[#5F7396]">Vos documents ont été bien réceptionnés. Merci !</p>
-                    <span className="absolute right-4 top-[16px] flex h-5 w-[63px] items-center justify-center rounded-full bg-[#E6F6EF] text-[11px] font-semibold text-[#2E9E78]">Terminé</span>
-                  </div>
-
-                  <div className="relative h-[116px] pl-[66px] pr-4 pt-[14px]">
-                    <span aria-hidden="true" className="absolute left-[66px] right-4 top-0 h-px bg-[#EEF1F7]"></span>
-                    <h3 className="text-[13px] font-bold leading-[18px]">Examen des documents</h3>
-                    <p className="mt-[2px] text-[11px] leading-4 text-[#5F7396]">20 oct. 2026 <span className="mx-[3px]">•</span> 14:32</p>
-                    <p className="mt-[3px] text-[11.5px] leading-[18px] text-[#5F7396]">Notre équipe vérifie l&apos;authenticité et la conformité de vos documents<br />(pièce d&apos;identité, justificatif de domicile, etc.).</p>
-                    <span className="absolute right-4 top-[18px] flex h-[21px] w-[68px] items-center justify-center rounded-full bg-[#FFEBDD] text-[11px] font-semibold text-[#F26B1D]">En cours</span>
-                  </div>
-
-                  <div className="relative h-[95px] pl-[66px] pr-4 pt-3">
-                    <span aria-hidden="true" className="absolute left-[66px] right-4 top-0 h-px bg-[#EEF1F7]"></span>
-                    <h3 className="text-[13px] font-medium leading-[18px] text-[#2A3F6E]">Validation de votre profil</h3>
-                    <p className="mt-[2px] text-[11px] leading-4 text-[#8A99B5]">À venir</p>
-                    <p className="mt-1 text-[11px] leading-[18px] text-[#8A99B5]">Nous confirmons les informations de votre profil et de votre hébergement.</p>
-                    <span className="absolute right-4 top-4 flex h-[21px] w-[71px] items-center justify-center rounded-full bg-[#EEF2F8] text-[10.5px] font-medium text-[#8B9BB8]">En attente</span>
-                  </div>
-
-                  <div className="relative h-[101px] pl-[66px] pr-4 pt-[13px]">
-                    <span aria-hidden="true" className="absolute left-[66px] right-4 top-0 h-px bg-[#EEF1F7]"></span>
-                    <h3 className="text-[13px] font-medium leading-[18px] text-[#2A3F6E]">Activation de votre compte</h3>
-                    <p className="mt-[2px] text-[11px] leading-4 text-[#8A99B5]">À venir</p>
-                    <p className="mt-1 text-[10.5px] leading-[15px] text-[#8A99B5]">Une fois la vérification terminée, votre compte sera activé et vous pourrez<br />publier des annonces.</p>
-                    <span className="absolute right-4 top-[17px] flex h-[21px] w-[71px] items-center justify-center rounded-full bg-[#EEF2F8] text-[10.5px] font-medium text-[#8B9BB8]">En attente</span>
-                  </div>
-                </div>
-
-                <div className="mt-[23px] flex h-[74px] items-center rounded-lg border border-[#DCE7F6] bg-[#EEF4FC] pl-5 pr-4">
-                  <svg className="h-[26px] w-[26px] shrink-0"><use href="#i-info" /></svg>
-                  <div className="ml-[17px]">
-                    <h3 className="text-[12.5px] font-bold leading-4">Besoin d&apos;aide ?</h3>
-                    <p className="mt-[5px] whitespace-nowrap text-[10.5px] leading-4 text-[#5F7396]">Si vous avez des questions ou si vous constatez un problème, notre équipe est là pour vous aider.</p>
-                  </div>
-                  <Link to="/contact" className="ml-auto flex h-10 w-[148px] shrink-0 items-center rounded-lg border border-[#E1E8F4] bg-white pl-[13px] text-[10.5px] font-bold text-[#2447A5] shadow-sm transition hover:bg-[#F7F9FD]">
-                    <svg className="ic h-[18px] w-[18px] stroke-[1.75]"><use href="#i-headset" /></svg>
-                    <span className="ml-[10px]">Contacter le support</span>
-                  </Link>
-                </div>
-              </section>
-            </div>
-
-            <aside className="space-y-[14.5px]">
-              <section className="h-[295px] rounded-xl border border-[#EEF2F8] bg-white shadow-[0_2px_10px_rgba(20,40,90,0.04)]">
-                <header className="flex h-[54px] items-center justify-between pl-[21px] pr-4">
-                  <h2 className="flex items-center gap-[17px] text-[14.5px] font-bold tracking-[-0.01em]">
-                    <svg className="ic h-6 w-6 stroke-[1.7] text-[#1B3A82]"><use href="#i-shield" /></svg>Résumé de votre dossier
-                  </h2>
-                  <span className="flex h-5 w-[62px] items-center justify-center rounded-full bg-[#E6F6EF] text-[10.5px] font-semibold text-[#2E9E78]">En cours</span>
-                </header>
-
-                <div className="mx-4 flex h-[85px] items-center rounded-lg border border-[#E8EDF6] bg-white pl-[13px]">
-                  <span className="grid h-[61px] w-[61px] shrink-0 place-items-center rounded-full bg-[#FDE8DA]">
-                    <svg className="ic h-[30px] w-[30px] stroke-[1.7] text-[#F26B1D]"><use href="#i-user" /></svg>
-                  </span>
-                  <div className="ml-[17px]">
-                    <p className="text-[14px] font-bold leading-5">Koffi Mensah</p>
-                    <p className="text-[11.5px] leading-5 text-[#3D4F73]">Gérant</p>
-                    <p className="text-[10.5px] leading-5 text-[#5F7396]">koffi.mensah@exemple.com</p>
-                  </div>
-                </div>
-
-                <ul className="mx-5 mt-[5px]">
-                  <li className="flex h-[44px] items-center border-b border-[#EEF2F8]">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-[#E6ECF5] bg-[#F7F9FD]"><svg className="ic h-[14px] w-[14px] stroke-[1.8] text-[#2F4C8F]"><use href="#i-calendar-check" /></svg></span>
-                    <span className="ml-[15px] flex-1 text-[11.5px] text-[#3D4F73]">Type de compte</span>
-                    <span className="text-[11.5px] font-medium">Gérant</span>
-                  </li>
-                  <li className="flex h-[44px] items-center border-b border-[#EEF2F8]">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-[#E6ECF5] bg-[#F7F9FD]"><svg className="ic h-[14px] w-[14px] stroke-[1.8] text-[#2F4C8F]"><use href="#i-file-text" /></svg></span>
-                    <span className="ml-[15px] flex-1 text-[11.5px] text-[#3D4F73]">Documents soumis</span>
-                    <span className="text-[11.5px] font-medium">3 / 3</span>
-                  </li>
-                  <li className="flex h-[44px] items-center">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-[#E6ECF5] bg-[#F7F9FD]"><svg className="ic h-[14px] w-[14px] stroke-[1.8] text-[#2F4C8F]"><use href="#i-clock" /></svg></span>
-                    <span className="ml-[15px] flex-1 text-[11.5px] text-[#3D4F73]">Dernière mise à jour</span>
-                    <span className="text-[11.5px] font-medium">20 oct. 2026 <span className="mx-[2px]">•</span> 14:32</span>
-                  </li>
-                </ul>
-              </section>
-
-              <section className="h-[213px] rounded-xl border border-[#EEF2F8] bg-white shadow-[0_2px_10px_rgba(20,40,90,0.04)]">
-                <header className="flex h-11 items-center justify-between pl-[18px] pr-[18px] pt-1">
-                  <h2 className="text-[14.5px] font-bold tracking-[-0.01em]">Vos documents</h2>
-                  <Link to={`${gerantPath}/verification`} className="text-[11px] font-medium text-[#2F5FC4] hover:underline">Voir tous</Link>
-                </header>
-
-                <ul className="mx-4 mt-[8px] space-y-[6px]">
-                  <li>
-                    <Link to={`${gerantPath}/verification`} className="flex h-[45px] items-center rounded-lg border border-[#E6ECF5] bg-white pl-[10px] pr-[11px] shadow-sm transition hover:bg-[#F9FAFD]">
-                      <span className="grid h-8 w-8 shrink-0 place-items-center"><svg className="ic h-5 w-5 stroke-[1.7] text-[#2F5FC4]"><use href="#i-file-pen" /></svg></span>
-                      <span className="ml-3 flex-1 text-[11.5px] font-semibold">Pièce d&apos;identité</span>
-                      <span className="flex h-[18px] w-[50px] items-center justify-center rounded-full bg-[#E6F6EF] text-[10.5px] font-medium text-[#2E9E78]">Validé</span>
-                      <svg className="ic ml-[9px] h-3 w-3 shrink-0 stroke-[2.2] text-[#0F2150]"><use href="#i-chev-right" /></svg>
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to={`${gerantPath}/verification`} className="flex h-[45px] items-center rounded-lg border border-[#E6ECF5] bg-white pl-[10px] pr-[11px] shadow-sm transition hover:bg-[#F9FAFD]">
-                      <span className="grid h-8 w-8 shrink-0 place-items-center"><svg className="ic h-5 w-5 stroke-[1.7] text-[#F26B1D]"><use href="#i-file-text" /></svg></span>
-                      <span className="ml-3 flex-1 text-[11.5px] font-semibold">Justificatif de domicile</span>
-                      <span className="flex h-[18px] w-[50px] items-center justify-center rounded-full bg-[#E6F6EF] text-[10.5px] font-medium text-[#2E9E78]">Validé</span>
-                      <svg className="ic ml-[9px] h-3 w-3 shrink-0 stroke-[2.2] text-[#0F2150]"><use href="#i-chev-right" /></svg>
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to={`${gerantPath}/verification`} className="flex h-[45px] items-center rounded-lg border border-[#E6ECF5] bg-white pl-[10px] pr-[11px] shadow-sm transition hover:bg-[#F9FAFD]">
-                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#FCE2EC]"><svg className="ic h-[18px] w-[18px] stroke-[1.8] text-[#E5457B]"><use href="#i-user" /></svg></span>
-                      <span className="ml-3 flex-1 text-[11.5px] font-semibold">Photo de vous</span>
-                      <span className="flex h-[18px] w-[57px] items-center justify-center rounded-full bg-[#FFEBDD] text-[10.5px] font-medium text-[#F26B1D]">En cours</span>
-                      <svg className="ic ml-[9px] h-3 w-3 shrink-0 stroke-[2.2] text-[#0F2150]"><use href="#i-chev-right" /></svg>
-                    </Link>
-                  </li>
-                </ul>
-              </section>
-
-              <section className="h-[242px] rounded-xl border border-[#EEF2F8] bg-white pb-[13px] pl-[9px] pr-[10px] pt-[7px] shadow-[0_2px_10px_rgba(20,40,90,0.04)]">
-                <div className="h-[220px] rounded-lg border border-[#DCE7F6] bg-[#EEF4FC] p-[10px] pt-[6px]">
-                  <div className="flex items-start gap-[11px]">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#DAE8FA]">
-                      <svg className="ic h-5 w-5 stroke-[1.8] text-[#2F5FC4]"><use href="#i-shield-check" /></svg>
+                <section className="mt-[14px] rounded-xl border border-[#EEF2F8] bg-white pb-[17px] pl-4 pr-[16px] pt-[13px] shadow-[0_2px_10px_rgba(20,40,90,0.04)]">
+                  <div className="relative flex min-h-[94px] items-start rounded-lg border border-[#D6E6F8] bg-[#EAF3FD] py-[11px] pl-[11px] pr-[104px]">
+                    <span className="grid h-[61px] w-[61px] shrink-0 place-items-center rounded-full bg-[#D5E6FA]">
+                      <svg className="ic h-[34px] w-[34px] stroke-[1.6] text-[#2F6BD6]"><use href="#i-clipboard" /></svg>
                     </span>
-                    <div className="pt-[6px]">
-                      <h3 className="text-[12px] font-bold leading-4">Pourquoi cette vérification ?</h3>
-                      <p className="mt-[6px] whitespace-nowrap text-[10.5px] leading-[17.5px] text-[#5F7396]">La vérification permet de sécuriser la plateforme,<br />de protéger les voyageurs et de vous offrir plus<br />de visibilité.</p>
+                    <div className="ml-[15px] pt-1">
+                      <h2 className="text-[14px] font-bold leading-5">{summary.title}</h2>
+                      <p className="mt-[3px] text-[12px] leading-5 text-[#5F7396]">{summary.description}</p>
+                      {summary.actionLabel && (
+                        <Link
+                          to={verificationPath}
+                          className="mt-2 inline-flex h-7 items-center rounded-lg bg-[#F26B1D] px-3 text-[11px] font-bold text-white transition hover:bg-[#E05A0C]"
+                        >
+                          {summary.actionLabel}
+                        </Link>
+                      )}
+                    </div>
+                    <BadgePill
+                      badge={summary.badge}
+                      className="absolute right-4 top-[16px] h-6 text-[12px] font-bold"
+                    />
+                  </div>
+
+                  <h2 className="ml-[2px] mt-[17px] text-[15px] font-bold leading-5">Détails de votre vérification</h2>
+
+                  <div className="relative mt-3 rounded-lg border border-[#E8EDF6] bg-white">
+                    <span aria-hidden="true" className={`absolute left-[30px] top-[45px] h-[57px] w-[2px] ${connectorClass(details.review)}`} />
+                    <span aria-hidden="true" className={`absolute left-[30px] top-[138px] h-[77px] w-[2px] ${connectorClass(details.profile)}`} />
+                    <span aria-hidden="true" className={`absolute left-[30px] top-[251px] h-[60px] w-[2px] ${connectorClass(details.activation)}`} />
+
+                    <DetailMarker
+                      tone={details.submitted}
+                      position="left-[14px] top-[11px] h-[34px] w-[34px]"
+                      icon={details.submitted === 'done' ? 'check' : 'clock'}
+                    />
+                    <DetailMarker
+                      tone={details.review}
+                      position="left-[13px] top-[102px] h-[36px] w-[36px]"
+                      icon={details.review === 'current' ? 'search' : details.review === 'done' ? 'check' : 'clock'}
+                    />
+                    <DetailMarker
+                      tone={details.profile}
+                      position="left-[13px] top-[215px] h-[36px] w-[36px]"
+                      icon={details.profile === 'done' ? 'check' : 'clock'}
+                    />
+                    <DetailMarker
+                      tone={details.activation}
+                      position="left-[13px] top-[311px] h-[36px] w-[36px]"
+                      icon={details.activation === 'done' ? 'check' : 'circle-check'}
+                    />
+
+                    <div className="relative h-[90px] pl-[66px] pr-4 pt-[11px]">
+                      <h3 className="text-[13px] font-bold leading-[18px]">Documents soumis</h3>
+                      <p className="mt-1 text-[11px] leading-4 text-[#5F7396]">{formatMoment(submittedAt)}</p>
+                      <p className="mt-1 text-[11.5px] leading-[18px] text-[#5F7396]">Vos documents ont été bien réceptionnés. Merci !</p>
+                      <BadgePill badge={TONE_BADGE[details.submitted]} className="absolute right-4 top-[16px]" />
+                    </div>
+
+                    <div className="relative h-[116px] pl-[66px] pr-4 pt-[14px]">
+                      <span aria-hidden="true" className="absolute left-[66px] right-4 top-0 h-px bg-[#EEF1F7]" />
+                      <h3 className="text-[13px] font-bold leading-[18px]">{reviewTitle}</h3>
+                      <p className="mt-[2px] text-[11px] leading-4 text-[#5F7396]">{reviewCaption}</p>
+                      <p className="mt-[3px] text-[11.5px] leading-[18px] text-[#5F7396]">Notre équipe vérifie l&apos;authenticité et la conformité de vos documents (pièce d&apos;identité, justificatif de domicile, etc.).</p>
+                      <BadgePill badge={TONE_BADGE[details.review]} className="absolute right-4 top-[18px]" />
+                    </div>
+
+                    <div className="relative h-[95px] pl-[66px] pr-4 pt-3">
+                      <span aria-hidden="true" className="absolute left-[66px] right-4 top-0 h-px bg-[#EEF1F7]" />
+                      <h3 className="text-[13px] font-medium leading-[18px] text-[#2A3F6E]">Validation de votre profil</h3>
+                      <p className="mt-[2px] text-[11px] leading-4 text-[#8A99B5]">{completedCaption}</p>
+                      <p className="mt-1 text-[11px] leading-[18px] text-[#8A99B5]">Nous confirmons les informations de votre profil et de votre hébergement.</p>
+                      <BadgePill badge={TONE_BADGE[details.profile]} className="absolute right-4 top-4" />
+                    </div>
+
+                    <div className="relative h-[101px] pl-[66px] pr-4 pt-[13px]">
+                      <span aria-hidden="true" className="absolute left-[66px] right-4 top-0 h-px bg-[#EEF1F7]" />
+                      <h3 className="text-[13px] font-medium leading-[18px] text-[#2A3F6E]">Activation de votre compte</h3>
+                      <p className="mt-[2px] text-[11px] leading-4 text-[#8A99B5]">{completedCaption}</p>
+                      <p className="mt-1 text-[10.5px] leading-[15px] text-[#8A99B5]">Une fois la vérification terminée, votre compte sera activé et vous pourrez publier des annonces.</p>
+                      <BadgePill badge={TONE_BADGE[details.activation]} className="absolute right-4 top-[17px]" />
                     </div>
                   </div>
-                  <ul className="ml-[48px] mt-[10px] text-[10px] text-[#5F7396]">
-                    {['Confiance des voyageurs', 'Moins de risques de fraude', 'Accès aux fonctionnalités Premium', 'Meilleure visibilité de vos annonces'].map((item) => (
-                      <li key={item} className="flex h-[27px] items-center gap-[11px]">
-                        <svg className="h-[14px] w-[14px] shrink-0"><use href="#i-ok" /></svg>{item}
-                      </li>
-                    ))}
+
+                  <div className="mt-[23px] flex min-h-[74px] items-center rounded-lg border border-[#DCE7F6] bg-[#EEF4FC] py-3 pl-5 pr-4">
+                    <svg className="h-[26px] w-[26px] shrink-0"><use href="#i-info" /></svg>
+                    <div className="ml-[17px]">
+                      <h3 className="text-[12.5px] font-bold leading-4">Besoin d&apos;aide ?</h3>
+                      <p className="mt-[5px] text-[10.5px] leading-4 text-[#5F7396]">Si vous avez des questions ou si vous constatez un problème, notre équipe est là pour vous aider.</p>
+                    </div>
+                    <Link to="/contact" className="ml-auto flex h-10 w-[148px] shrink-0 items-center rounded-lg border border-[#E1E8F4] bg-white pl-[13px] text-[10.5px] font-bold text-[#2447A5] shadow-sm transition hover:bg-[#F7F9FD]">
+                      <svg className="ic h-[18px] w-[18px] stroke-[1.75]"><use href="#i-headset" /></svg>
+                      <span className="ml-[10px]">Contacter le support</span>
+                    </Link>
+                  </div>
+                </section>
+              </div>
+
+              <aside className="space-y-[14.5px]">
+                <section className="rounded-xl border border-[#EEF2F8] bg-white shadow-[0_2px_10px_rgba(20,40,90,0.04)]">
+                  <header className="flex h-[54px] items-center justify-between pl-[21px] pr-4">
+                    <h2 className="flex items-center gap-[17px] text-[14.5px] font-bold tracking-[-0.01em]">
+                      <svg className="ic h-6 w-6 stroke-[1.7] text-[#1B3A82]"><use href="#i-shield" /></svg>Résumé de votre dossier
+                    </h2>
+                    <BadgePill badge={overallBadge(overall)} className="h-5" />
+                  </header>
+
+                  <div className="mx-4 flex min-h-[85px] items-center rounded-lg border border-[#E8EDF6] bg-white py-3 pl-[13px] pr-3">
+                    <span className="grid h-[61px] w-[61px] shrink-0 place-items-center rounded-full bg-[#FDE8DA]">
+                      <svg className="ic h-[30px] w-[30px] stroke-[1.7] text-[#F26B1D]"><use href="#i-user" /></svg>
+                    </span>
+                    <div className="ml-[17px] min-w-0">
+                      <p className="truncate text-[14px] font-bold leading-5">{chrome.displayName}</p>
+                      <p className="text-[11.5px] leading-5 text-[#3D4F73]">Gérant</p>
+                      <p className="truncate text-[10.5px] leading-5 text-[#5F7396]">{email || '—'}</p>
+                    </div>
+                  </div>
+
+                  <ul className="mx-5 mb-[13px] mt-[5px]">
+                    <li className="flex h-[44px] items-center border-b border-[#EEF2F8]">
+                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-[#E6ECF5] bg-[#F7F9FD]"><svg className="ic h-[14px] w-[14px] stroke-[1.8] text-[#2F4C8F]"><use href="#i-calendar-check" /></svg></span>
+                      <span className="ml-[15px] flex-1 text-[11.5px] text-[#3D4F73]">Type de compte</span>
+                      <span className="text-[11.5px] font-medium">Gérant</span>
+                    </li>
+                    <li className="flex h-[44px] items-center border-b border-[#EEF2F8]">
+                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-[#E6ECF5] bg-[#F7F9FD]"><svg className="ic h-[14px] w-[14px] stroke-[1.8] text-[#2F4C8F]"><use href="#i-file-text" /></svg></span>
+                      <span className="ml-[15px] flex-1 text-[11.5px] text-[#3D4F73]">Documents soumis</span>
+                      <span className="text-[11.5px] font-medium">{docsCount} / 3</span>
+                    </li>
+                    <li className="flex h-[44px] items-center">
+                      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-[#E6ECF5] bg-[#F7F9FD]"><svg className="ic h-[14px] w-[14px] stroke-[1.8] text-[#2F4C8F]"><use href="#i-clock" /></svg></span>
+                      <span className="ml-[15px] flex-1 text-[11.5px] text-[#3D4F73]">Dernière mise à jour</span>
+                      <span className="text-[11.5px] font-medium">{lastUpdate(status)}</span>
+                    </li>
                   </ul>
-                </div>
-              </section>
-            </aside>
-          </div>
+                </section>
+
+                <section className="rounded-xl border border-[#EEF2F8] bg-white pb-3 shadow-[0_2px_10px_rgba(20,40,90,0.04)]">
+                  <header className="flex h-11 items-center justify-between pl-[18px] pr-[18px] pt-1">
+                    <h2 className="text-[14.5px] font-bold tracking-[-0.01em]">Vos documents</h2>
+                    <Link to={verificationPath} className="text-[11px] font-medium text-[#2F5FC4] hover:underline">Voir tous</Link>
+                  </header>
+
+                  <ul className="mx-4 mt-[8px] space-y-[6px]">
+                    {DOCUMENT_ORDER.map((type, index) => {
+                      const badge = documentBadge(docsByType.get(type), overall);
+                      return (
+                        <li key={type}>
+                          <Link to={verificationPath} className="flex h-[45px] items-center rounded-lg border border-[#E6ECF5] bg-white pl-[10px] pr-[11px] shadow-sm transition hover:bg-[#F9FAFD]">
+                            <span className={`grid h-8 w-8 shrink-0 place-items-center ${index === 2 ? 'rounded-full bg-[#FCE2EC]' : ''}`}>
+                              <svg className={`ic h-5 w-5 stroke-[1.7] ${DOC_ICON_CLASS[index]}`}><use href={`#i-${DOC_ICONS[index]}`} /></svg>
+                            </span>
+                            <span className="ml-3 flex-1 text-[11.5px] font-semibold">{DOCUMENT_LABELS[type]}</span>
+                            <BadgePill badge={badge} className="h-[18px] font-medium" />
+                            <svg className="ic ml-[9px] h-3 w-3 shrink-0 stroke-[2.2] text-[#0F2150]"><use href="#i-chev-right" /></svg>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+
+                <section className="rounded-xl border border-[#EEF2F8] bg-white pb-[13px] pl-[9px] pr-[10px] pt-[7px] shadow-[0_2px_10px_rgba(20,40,90,0.04)]">
+                  <div className="rounded-lg border border-[#DCE7F6] bg-[#EEF4FC] p-[10px] pt-[6px]">
+                    <div className="flex items-start gap-[11px]">
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#DAE8FA]">
+                        <svg className="ic h-5 w-5 stroke-[1.8] text-[#2F5FC4]"><use href="#i-shield-check" /></svg>
+                      </span>
+                      <div className="pt-[6px]">
+                        <h3 className="text-[12px] font-bold leading-4">Pourquoi cette vérification ?</h3>
+                        <p className="mt-[6px] text-[10.5px] leading-[17.5px] text-[#5F7396]">La vérification permet de sécuriser la plateforme, de protéger les voyageurs et de vous offrir plus de visibilité.</p>
+                      </div>
+                    </div>
+                    <ul className="ml-[48px] mt-[10px] text-[10px] text-[#5F7396]">
+                      {['Confiance des voyageurs', 'Moins de risques de fraude', 'Accès aux fonctionnalités Premium', 'Meilleure visibilité de vos annonces'].map((item) => (
+                        <li key={item} className="flex h-[27px] items-center gap-[11px]">
+                          <svg className="h-[14px] w-[14px] shrink-0"><use href="#i-ok" /></svg>{item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </section>
+              </aside>
+            </div>
+          )}
         </main>
       </div>
     </div>

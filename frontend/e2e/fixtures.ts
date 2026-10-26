@@ -197,6 +197,10 @@ export interface MockApiOptions {
   conversations?: Record<string, unknown>[];
   /** Messages servis par GET /messages/conversations/:id/messages. */
   messages?: Record<string, unknown>[];
+  /** Profil gérant servi par GET /gerants/me (suivi de vérification). */
+  gerant?: Record<string, unknown>;
+  /** Dossier servi par GET /gerants/:id/verification-status. */
+  verification?: Record<string, unknown>;
 }
 
 async function respond(route: Route, body: unknown, status = 200): Promise<void> {
@@ -361,8 +365,15 @@ export async function mockApi(page: Page, options: MockApiOptions = {}): Promise
     if (path === '/auth/me') {
       return respond(route, { role: null, client: null, gerant: null });
     }
-    if (path === '/clients/me' || path === '/gerants/me') {
+    if (path === '/clients/me') {
       return respond(route, {});
+    }
+    if (path === '/gerants/me') {
+      return respond(route, options.gerant ?? {});
+    }
+    // Dossier de vérification du gérant connecté (page de suivi).
+    if (/^\/gerants\/[^/]+\/verification-status$/.test(path)) {
+      return respond(route, options.verification ?? {});
     }
     if (path === '/gerants/verification-status') {
       return respond(route, { status: 'none' });

@@ -29,3 +29,19 @@ export function formatDateLong(value: DateInput): string {
     }) ?? ''
   );
 }
+
+/** « 20 oct. 2026 • 10:24 » — date et heure compactes (suivi, historique). */
+export function formatDateTimeShort(value: DateInput): string {
+  const date = toDate(value);
+  if (!date) return '';
+  const day = date.toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+  const time = date.toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  return `${day} • ${time}`;
+}

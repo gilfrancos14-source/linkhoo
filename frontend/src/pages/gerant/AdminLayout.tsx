@@ -269,7 +269,7 @@ export default function AdminLayout() {
           <div className="sidebar__group">
             <span className="sidebar__label">Gestion</span>
             {navGestion.map((item) => (
-              <NavLink key={item.to} to={item.to} end={item.to === `${gerantPath}/messages`}
+              <NavLink key={`${item.to}::${item.label}`} to={item.to} end={item.to === `${gerantPath}/messages`}
                 className={({ isActive }) => `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`}>
                 {item.icon}
                 <span>{item.label}</span>
