@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HabiCI – Mes messages</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://unpkg.com/lucide@0.453.0"></script>
+<script>
+tailwind.config = {
+  theme: { extend: {
+    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+    colors: { brand: '#ff5a14', ink: '#0b1b3f', bl: '#1d3f8f', blue2: '#2f5bbf', soft: '#5f86d1', line: '#e6ebf5', tint: '#fff1e8' }
+  } }
+}
+</script>
+<style type="text/tailwindcss">
+  @layer components {
+    .card { @apply bg-white border border-line rounded-xl shadow-[0_2px_10px_rgba(20,50,120,.04)]; }
+    /* Sidebar */
+    .nv { @apply flex items-center gap-3.5 h-[40px] px-3 rounded-lg text-[14px] font-medium text-bl; }
+    .nv > svg { @apply w-6 h-6 flex-none; }
+    .nv.on { @apply bg-tint text-brand; }
+    .bd { @apply ml-auto grid place-items-center w-5 h-5 rounded-full bg-[#ff4d1a] text-white text-[11px] font-bold; }
+    .btn { @apply grid place-items-center h-[30px] rounded-md border border-blue2 bg-white text-[11.5px] font-semibold text-blue2; }
+    /* Liste de conversations */
+    .tb { @apply flex h-[54px] items-center gap-2.5 border-b-[3px] border-transparent px-3 text-[12.5px] font-medium text-bl; }
+    .tb.on { @apply border-brand text-brand; }
+    .tb b { @apply grid h-5 w-5 place-items-center rounded-full bg-[#e5eefc] text-[11px] font-semibold text-blue2; }
+    .tb.on b { @apply bg-tint text-brand; }
+    .cv { @apply flex items-start gap-3.5 border-b border-line/70 px-4 py-[15px]; }
+    .cv.on { @apply bg-tint; }
+    .cv .av { @apply relative h-12 w-12 flex-none; }
+    .cv .av img { @apply h-full w-full rounded-full object-cover; }
+    .cv .av img.sq { @apply rounded-lg; }
+    .cv .av i.dot { @apply absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-emerald-500; }
+    .cv .lg { @apply grid h-12 w-12 place-items-center rounded-xl bg-brand text-white; }
+    .cv h4 { @apply mt-1 text-[12.5px] font-bold text-ink; }
+    .cv p { @apply mt-1.5 truncate text-[11.5px] text-blue2; }
+    .cv time { @apply mt-1 text-[11px] text-soft; }
+    .cv.on time { @apply text-brand; }
+    .cv em { @apply grid h-4 w-4 place-items-center rounded-full bg-[#ff4d1a] text-[10px] font-bold not-italic text-white; }
+    /* Bulles */
+    .bm { @apply w-fit max-w-[80%] rounded-xl px-4 pb-2 pt-3 text-[12.5px] leading-[1.5]; }
+    .bm time { @apply mt-1.5 flex items-center justify-end gap-1 text-[10.5px]; }
+    .bm.me { @apply ml-auto bg-[#e4edfd] text-blue2; }
+    .bm.ot { @apply bg-[#f2f4f8] text-[#3d4f78]; }
+    .rw { @apply flex items-start gap-3; }
+    .rw > img { @apply h-7 w-7 flex-none rounded-full object-cover; }
+    /* Panneau droit */
+    .qa { @apply flex items-center gap-3.5 border-b border-line py-[10px] text-[11.5px] text-bl last:border-0; }
+    .qa > span { @apply grid h-9 w-9 flex-none place-items-center rounded-full bg-[#eaf0fb] text-blue2; }
+    .qa svg { @apply h-[18px] w-[18px]; }
+  }
+@layer components {
+    @media (max-height: 860px) {
+      .cv { padding-top: 10px; padding-bottom: 10px; }
+      .cv .av, .cv .lg { width: 40px; height: 40px; }
+      .cv .lg svg { width: 22px; height: 22px; }
+      .bm { padding-top: 8px; font-size: 12px; }
+      .qa { padding-top: 6px; padding-bottom: 6px; }
+    }
+  }
+</style>
+</head>
+
+<body class="bg-[#f8faff] font-sans text-ink antialiased">
+
+<!-- ============ SIDEBAR ============ -->
+<aside class="fixed inset-y-0 left-0 z-20 flex w-[247px] flex-col overflow-y-auto border-r border-line bg-white">
+  <div class="flex h-[70px] flex-none items-center gap-2.5 px-[34px]">
+    <span class="grid h-[36px] w-[36px] place-items-center rounded-[10px] bg-brand text-white"><i data-lucide="home" class="h-6 w-6 fill-white"></i></span>
+    <span class="text-[28px] font-extrabold tracking-tight text-bl">Habi<span class="text-brand">CI</span></span>
+  </div>
+  <nav class="mt-3 space-y-[4px] px-[15px]">
+    <a href="#" class="nv"><i data-lucide="home"></i>Accueil</a>
+    <a href="#" class="nv"><i data-lucide="calendar-check"></i>Mes réservations<span class="bd">5</span></a>
+    <a href="#" class="nv on"><i data-lucide="message-circle"></i>Mes messages<span class="bd">2</span></a>
+    <a href="#" class="nv"><i data-lucide="heart"></i>Mes favoris</a>
+    <a href="#" class="nv"><i data-lucide="user"></i>Mon profil</a>
+    <a href="#" class="nv"><i data-lucide="settings"></i>Paramètres</a>
+  </nav>
+  <div class="mx-[18px] mt-[56px] rounded-xl border border-line bg-[#f5f8ff] p-3">
+    <div class="flex gap-3">
+      <i data-lucide="headset" class="mt-1 h-8 w-8 flex-none text-bl"></i>
+      <div><div class="text-[12.5px] font-bold">Besoin d’aide ?</div><p class="mt-1 text-[11px] leading-[1.45] text-soft">Notre équipe est disponible pour vous accompagner.</p></div>
+    </div>
+    <a href="#" class="btn mt-3 !h-[34px] !text-[12px]">Contacter le support</a>
+  </div>
+  <div class="mt-auto pb-12 text-center [@media(max-height:820px)]:hidden">
+    <div class="flex items-end justify-center gap-0.5 text-blue-400">
+      <i data-lucide="building" class="h-10 w-10 stroke-[1.2]"></i><i data-lucide="building-2" class="h-16 w-16 stroke-[1.2]"></i><i data-lucide="building" class="h-9 w-9 stroke-[1.2]"></i>
+    </div>
+    <div class="text-[18px] font-extrabold tracking-tight text-bl">Habi<span class="text-brand">CI</span></div>
+    <p class="mt-1 text-[13px] text-soft">Votre séjour, notre priorité !</p>
+  </div>
+</aside>
+
+<!-- ============ MAIN ============ -->
+<div class="ml-[247px] lg:flex lg:h-screen lg:flex-col">
+
+  <header class="flex h-[67px] flex-none items-center justify-between border-b border-line/70 pl-[21px] pr-[22px]">
+    <label class="flex h-[38px] w-[590px] max-w-full items-center gap-3 rounded-lg border border-line bg-white px-4">
+      <i data-lucide="search" class="h-[18px] w-[18px] text-blue2"></i>
+      <input class="flex-1 bg-transparent text-[12.5px] outline-none placeholder:text-soft" placeholder="Rechercher une chambre, une ville, une catégorie...">
+    </label>
+    <div class="flex items-center gap-8">
+      <button class="relative" aria-label="Notifications">
+        <i data-lucide="bell" class="h-6 w-6 text-blue2"></i>
+        <span class="absolute -right-2 -top-2 grid h-[18px] w-[18px] place-items-center rounded-full bg-brand text-[10px] font-bold text-white">2</span>
+      </button>
+      <div class="flex h-[54px] w-[198px] items-center gap-3 rounded-xl border border-line bg-white pl-2 pr-4">
+        <img src="https://i.pravatar.cc/80?img=12" alt="" class="h-10 w-10 rounded-full object-cover">
+        <div class="leading-tight"><div class="text-[13px] font-semibold">Koffi Mensah</div><div class="text-[11px] text-soft">Client</div></div>
+        <i data-lucide="chevron-down" class="ml-auto h-4 w-4"></i>
+      </div>
+    </div>
+  </header>
+
+  <div class="grid min-h-0 flex-1 grid-cols-[391fr_516fr_317fr] gap-x-2 pb-4 pl-[18px] pr-[22px] pt-[18px] lg:grid-rows-[auto_minmax(0,1fr)] max-xl:grid-cols-[360fr_516fr] max-lg:grid-cols-1">
+
+    <!-- Titre -->
+    <div class="col-span-2 flex items-start gap-4 max-lg:col-span-1">
+      <i data-lucide="message-circle-more" class="mt-1 h-[34px] w-[34px] flex-none text-bl"></i>
+      <div>
+        <h1 class="text-[26px] font-extrabold leading-tight tracking-tight text-bl">Mes messages</h1>
+        <p class="mt-0.5 text-[13px] text-blue2">Retrouvez tous vos échanges avec les propriétaires et l’équipe HabiCI.</p>
+      </div>
+    </div>
+
+    <!-- ===== Panneau droit (démarre en haut) ===== -->
+    <aside class="row-span-2 ml-[9px] min-h-0 space-y-[14px] overflow-y-auto max-xl:hidden">
+
+      <section class="card p-4">
+        <h2 class="flex items-center gap-3 text-[13.5px] font-bold text-bl"><i data-lucide="message-circle" class="h-5 w-5 text-blue2"></i>Détails de la chambre</h2>
+        <div class="relative mt-3.5 h-[clamp(90px,15vh,130px)] overflow-hidden rounded-lg bg-gradient-to-br from-amber-200 to-orange-300">
+          <img src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=600&q=70" alt="" class="h-full w-full object-cover">
+          <i data-lucide="heart" class="absolute right-2.5 top-2.5 h-6 w-6 fill-white text-white"></i>
+        </div>
+        <h3 class="mt-3.5 text-[16px] font-bold text-bl">Studio moderne - Plateau</h3>
+        <p class="mt-2 flex items-center gap-2 text-[12px] text-bl"><i data-lucide="map-pin" class="h-4 w-4"></i>Plateau, Abidjan</p>
+        <p class="mt-3 text-[13px] font-semibold"><b class="text-[18px] font-extrabold">60 000</b> FCFA / nuit</p>
+        <p class="mt-3 flex items-center gap-2 text-[12px] text-soft"><i data-lucide="star" class="h-4 w-4 fill-amber-400 text-amber-400"></i><b class="font-semibold text-bl">4.6</b> (8 avis)</p>
+        <div class="mt-3.5 flex gap-2.5">
+          <a href="#" class="btn !h-[36px] flex-1">Voir la chambre</a>
+          <a href="#" class="btn !h-[36px] w-[44px]" aria-label="Ouvrir"><i data-lucide="external-link" class="h-4 w-4"></i></a>
+        </div>
+      </section>
+
+      <section class="card px-4 pb-3 pt-4">
+        <h2 class="flex items-center gap-3 text-[13px] font-bold text-bl"><i data-lucide="zap" class="h-5 w-5 text-blue2"></i>Actions rapides</h2>
+        <div class="mt-2">
+          <a href="#" class="qa"><span><i data-lucide="calendar"></i></span>Voir les détails de la réservation</a>
+          <a href="#" class="qa"><span><i data-lucide="share-2"></i></span>Partager la conversation</a>
+          <a href="#" class="qa"><span><i data-lucide="triangle-alert"></i></span>Signaler un problème</a>
+        </div>
+      </section>
+
+      <section class="card px-4 pb-5 pt-4">
+        <h2 class="flex items-center gap-3 text-[13px] font-bold text-bl"><i data-lucide="lightbulb" class="h-6 w-6 text-blue2"></i>Conseils</h2>
+        <p class="ml-9 mt-2.5 text-[11px] leading-[1.7] text-soft">Pour une réservation en toute sérénité, posez toutes vos questions au propriétaire avant de confirmer.</p>
+        <a href="#" class="ml-9 mt-3 flex items-center gap-2.5 text-[11px] font-semibold text-blue2">Voir nos conseils<i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></a>
+      </section>
+    </aside>
+
+    <!-- ===== Liste des conversations ===== -->
+    <section class="card mt-[13px] flex h-full min-h-0 max-lg:h-[640px] flex-col overflow-hidden">
+      <div class="flex gap-3 px-[6px]">
+        <a href="#" class="tb on">Tous<b>6</b></a>
+        <a href="#" class="tb">Non lus<b>2</b></a>
+        <a href="#" class="tb">Propriétaires</a>
+        <a href="#" class="tb">HabiCI</a>
+      </div>
+      <div class="flex items-center gap-2.5 px-3.5 pb-3.5 pt-3.5">
+        <label class="flex h-[38px] flex-1 items-center gap-3 rounded-lg border border-line bg-white px-3.5"><i data-lucide="search" class="h-4 w-4 text-blue2"></i><input class="w-full bg-transparent text-[11.5px] outline-none placeholder:text-soft" placeholder="Rechercher une conversation..."></label>
+        <button class="grid h-[38px] w-[38px] place-items-center rounded-lg border border-blue2 text-blue2" aria-label="Filtrer"><i data-lucide="filter" class="h-4 w-4"></i></button>
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-y-auto">
+        <a href="#" class="cv on">
+          <span class="av"><img class="sq" src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=120&q=70" alt=""></span>
+          <div class="min-w-0 flex-1"><h4>Studio moderne - Plateau</h4><p>Bonjour, la chambre est toujours disponible...</p></div>
+          <div class="flex flex-col items-end gap-1"><time>10:24</time><em>2</em></div>
+        </a>
+        <a href="#" class="cv">
+          <span class="av"><img src="https://i.pravatar.cc/100?img=15" alt=""><i class="dot"></i></span>
+          <div class="min-w-0 flex-1"><h4>Chambre Deluxe - Cocody</h4><p>D’accord, je vous envoie les informations.</p></div>
+          <div class="flex flex-col items-end gap-1"><time>Hier</time><em>1</em></div>
+        </a>
+        <a href="#" class="cv">
+          <span class="lg"><i data-lucide="home" class="h-7 w-7 fill-white"></i></span>
+          <div class="min-w-0 flex-1"><h4>HabiCI - Support</h4><p>Votre demande a bien été prise en compte.</p></div>
+          <div class="flex flex-col items-end gap-1"><time>Hier</time></div>
+        </a>
+        <a href="#" class="cv">
+          <span class="av"><img class="sq" src="https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=120&q=70" alt=""></span>
+          <div class="min-w-0 flex-1"><h4>Chambre Confort - Marcory</h4><p>Merci beaucoup !</p></div>
+          <div class="flex flex-col items-end gap-1"><time>Mer. 22 oct.</time></div>
+        </a>
+        <a href="#" class="cv">
+          <span class="av"><img src="https://i.pravatar.cc/100?img=47" alt=""><i class="dot"></i></span>
+          <div class="min-w-0 flex-1"><h4>Studio lumineux - Treichville</h4><p>Est-ce que la chambre est toujours disponible ?</p></div>
+          <div class="flex flex-col items-end gap-1"><time>Mar. 21 oct.</time></div>
+        </a>
+        <a href="#" class="cv">
+          <span class="av"><img src="https://i.pravatar.cc/100?img=52" alt=""></span>
+          <div class="min-w-0 flex-1"><h4>Chambre Standard - Yopougon</h4><p>Très bien, merci pour votre retour.</p></div>
+          <div class="flex flex-col items-end gap-1"><time>Lun. 20 oct.</time></div>
+        </a>
+        <a href="#" class="cv border-0">
+          <span class="lg"><i data-lucide="home" class="h-7 w-7 fill-white"></i></span>
+          <div class="min-w-0 flex-1"><h4>Assistance HabiCI</h4><p>Bonjour ! Comment pouvons-nous vous aider ?</p></div>
+          <div class="flex flex-col items-end gap-1"><time>Sam. 18 oct.</time></div>
+        </a>
+      </div>
+
+      <div class="m-3.5 flex items-center gap-3.5 rounded-lg bg-[#f5f8ff] px-4 py-3.5">
+        <i data-lucide="shield-check" class="h-6 w-6 flex-none text-blue2"></i>
+        <div><div class="text-[11.5px] font-bold text-bl">Votre messagerie est sécurisée</div><p class="mt-1 text-[10.5px] text-soft">Vos échanges sont protégés et confidentiels.</p></div>
+      </div>
+    </section>
+
+    <!-- ===== Conversation ===== -->
+    <section class="card mt-[13px] flex h-full min-h-0 max-lg:h-[640px] flex-col overflow-hidden">
+      <div class="flex h-[64px] flex-none items-center gap-3.5 border-b border-line px-4">
+        <img src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=140&q=70" alt="" class="h-[48px] w-[60px] rounded-md object-cover">
+        <div class="min-w-0 flex-1">
+          <div class="text-[14.5px] font-bold text-bl">Studio moderne - Plateau</div>
+          <div class="mt-1 text-[11.5px] text-blue2">60 000 FCFA / nuit <span class="mx-2">•</span> Plateau, Abidjan</div>
+        </div>
+        <button class="grid h-9 w-9 place-items-center rounded-lg border border-blue2 text-blue2" aria-label="Appeler"><i data-lucide="phone" class="h-4 w-4"></i></button>
+        <button class="grid h-9 w-9 place-items-center rounded-lg border border-line text-bl" aria-label="Plus"><i data-lucide="ellipsis-vertical" class="h-4 w-4"></i></button>
+      </div>
+
+      <div id="msgs" class="min-h-0 flex-1 space-y-[22px] overflow-y-auto px-[18px] py-5 [@media(max-height:860px)]:space-y-3.5 [@media(max-height:860px)]:py-3">
+        <div class="text-center"><span class="rounded-full bg-[#e9f0fc] px-3 py-1 text-[11px] text-bl">Aujourd’hui</span></div>
+
+        <div class="bm me">Bonjour, est-ce que la chambre est toujours<br>disponible pour les dates du 25 au 27 octobre ?<time>09:42 <i data-lucide="check-check" class="h-3.5 w-3.5"></i></time></div>
+
+        <div class="rw"><img src="https://i.pravatar.cc/60?img=13" alt=""><div class="bm ot">Bonjour Koffi,<br>Oui, la chambre est toujours disponible pour ces dates.<br>Souhaitez-vous la réserver ?<time>09:58</time></div></div>
+
+        <div class="bm me">Oui, je suis intéressé. Pourriez-vous me confirmer<br>le prix total avec les frais ?<time>10:12 <i data-lucide="check-check" class="h-3.5 w-3.5"></i></time></div>
+
+        <div class="rw"><img src="https://i.pravatar.cc/60?img=13" alt=""><div class="bm ot">Bien sûr !<br>Le prix est de 60 000 FCFA / nuit.<br>Pour 2 nuits, le total est de 120 000 FCFA.<br>Les frais de service sont déjà inclus.<br><br>Voulez-vous que je bloque la chambre pour vous ?<time>10:15</time></div></div>
+
+        <div class="bm me">Oui, merci beaucoup !<br>Je confirme la réservation.<time>10:24 <i data-lucide="check-check" class="h-3.5 w-3.5"></i></time></div>
+
+        <div class="rw"><img src="https://i.pravatar.cc/60?img=13" alt=""><div class="bm ot">Parfait !<br>Je viens de bloquer la chambre pour vous.<br>Vous recevrez un email de confirmation avec tous les détails de votre réservation.<time>10:26</time></div></div>
+      </div>
+
+      <div class="flex flex-none items-center gap-3 border-t border-line px-4 py-3.5">
+        <button class="text-soft" aria-label="Joindre un fichier"><i data-lucide="paperclip" class="h-5 w-5"></i></button>
+        <label class="flex h-[40px] flex-1 items-center gap-3 rounded-lg border border-line bg-white px-3.5">
+          <input class="w-full bg-transparent text-[11.5px] outline-none placeholder:text-soft" placeholder="Écrivez votre message...">
+          <i data-lucide="smile" class="h-5 w-5 flex-none text-soft"></i>
+        </label>
+        <button class="grid h-[36px] w-[36px] place-items-center rounded-lg bg-[#1a6cf0] text-white shadow-[0_4px_10px_rgba(26,108,240,.35)]" aria-label="Envoyer"><i data-lucide="send" class="h-[18px] w-[18px]"></i></button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>lucide.createIcons();const m=document.getElementById("msgs");m.scrollTop=m.scrollHeight;</script>
+</body>
+</html>

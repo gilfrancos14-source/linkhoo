@@ -1,6 +1,12 @@
 import type { CSSProperties } from 'react';
 import type { ClientMineReservationData } from '../../lib/api';
-import { statutLabels, statutColors } from '../../lib/reservations';
+import {
+  canPayReservation,
+  paymentColors,
+  paymentLabels,
+  statutLabels,
+  statutColors,
+} from '../../lib/reservations';
 import { formatPrice } from '../../lib/roomDisplay';
 import Glyph, { glyphCalendar } from './Glyph';
 import { formatStayDates } from './stayDates';
@@ -11,17 +17,24 @@ export default function ReservationCard({
   canReview,
   isReviewed,
   cancellingId,
+  payingId,
   onCancel,
   onReview,
+  onPay,
 }: {
   reservation: ClientMineReservationData;
   canReview: boolean;
   isReviewed: boolean;
   cancellingId: string | null;
+  payingId?: string | null;
   onCancel: (id: string) => void;
   onReview: (reservation: ClientMineReservationData) => void;
+  onPay?: (reservation: ClientMineReservationData) => void;
 }) {
   const statutColor = statutColors[r.statut] || 'var(--ink-soft)';
+  const paymentStatus = r.payment_status;
+  const paymentColor = paymentStatus ? paymentColors[paymentStatus] : undefined;
+  const showPay = Boolean(onPay) && r.statut !== 'annulee' && canPayReservation(paymentStatus);
   return (
     <article className="client-compte__card client-compte__card--res">
       <div className="client-compte__card-media">
@@ -73,9 +86,32 @@ export default function ReservationCard({
               </span>
             </span>
           ) : null}
+          {paymentStatus && (
+            <span
+              className="client-compte__chip client-compte__chip--muted"
+              style={paymentColor ? { color: paymentColor, borderColor: paymentColor } : undefined}
+            >
+              {paymentLabels[paymentStatus]}
+            </span>
+          )}
+          {typeof r.refunded_amount === 'number' && r.refunded_amount > 0 && (
+            <span className="client-compte__chip client-compte__chip--muted">
+              Remboursé : {formatPrice(r.refunded_amount)} FCFA
+            </span>
+          )}
         </div>
 
         <div className="client-compte__card-actions">
+          {showPay && (
+            <button
+              type="button"
+              className="client-compte__btn client-compte__btn--primary"
+              onClick={() => onPay?.(r)}
+              disabled={payingId === r.id}
+            >
+              {payingId === r.id ? 'Redirection…' : 'Payer'}
+            </button>
+          )}
           {r.statut !== 'annulee' && (
             <button
               type="button"

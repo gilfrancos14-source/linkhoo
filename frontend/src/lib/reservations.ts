@@ -1,4 +1,10 @@
-import { apiReservations, type ReservationData, type ClientMineReservationData } from './api';
+import {
+  apiReservations,
+  type BookingPaymentInfo,
+  type ReservationData,
+  type ClientMineReservationData,
+  type ReservationPaymentStatus,
+} from './api';
 import type { DureeUnite } from './duration';
 
 export interface Reservation {
@@ -23,6 +29,13 @@ export interface Reservation {
   gerantIsPremium?: boolean;
   /** Clé d'idempotence (anti doublon des rejeux hors-ligne/timeout). */
   clientKey?: string;
+  /** Vie financière, distincte de la décision du gérant. */
+  paymentStatus?: ReservationPaymentStatus;
+  paidAt?: string | null;
+  /** Somme déjà remboursée par la plateforme. */
+  refundedAmount?: number;
+  /** Checkout ouvert (ou état payé) renvoyé à la création. */
+  payment?: BookingPaymentInfo | null;
 }
 
 export const statutLabels: Record<Reservation['statut'], string> = {
@@ -35,6 +48,33 @@ export const statutColors: Record<Reservation['statut'], string> = {
   en_attente: 'var(--sun)',
   confirmee: '#22c55e',
   annulee: '#ef4444',
+};
+
+export const paymentLabels: Record<ReservationPaymentStatus, string> = {
+  unpaid: 'Paiement à effectuer',
+  pending: 'Paiement en cours',
+  deposit_paid: 'Acompte versé',
+  paid: 'Payée',
+  refund_pending: 'Remboursement en cours',
+  partially_refunded: 'Partiellement remboursée',
+  refunded: 'Remboursée',
+  failed: 'Paiement échoué',
+};
+
+/** Un bouton « Payer » n'a de sens que tant que rien n'est encaissé. */
+export function canPayReservation(status: ReservationPaymentStatus | undefined): boolean {
+  return status === 'unpaid' || status === 'failed';
+}
+
+export const paymentColors: Record<ReservationPaymentStatus, string> = {
+  unpaid: '#D97706',
+  pending: '#D97706',
+  deposit_paid: '#0EA5E9',
+  paid: '#22c55e',
+  refund_pending: '#0EA5E9',
+  partially_refunded: '#0EA5E9',
+  refunded: '#64748B',
+  failed: '#ef4444',
 };
 
 function mapReservation(d: ReservationData): Reservation {
@@ -58,6 +98,10 @@ function mapReservation(d: ReservationData): Reservation {
     gerantPrenom: d.gerant_prenom ?? undefined,
     gerantIsVerified: d.gerant_is_verified ?? false,
     gerantIsPremium: d.gerant_is_premium ?? false,
+    paymentStatus: d.payment_status,
+    paidAt: d.paid_at ?? null,
+    refundedAmount: d.refunded_amount ?? undefined,
+    payment: d.payment ?? null,
   };
 }
 
@@ -90,8 +134,18 @@ export async function getMyReservations(): Promise<ClientMineReservationData[]> 
   return apiReservations.listMine();
 }
 
-export async function cancelMyReservation(id: string): Promise<void> {
-  await apiReservations.cancelMine(id);
+export async function cancelMyReservation(id: string) {
+  return apiReservations.cancelMine(id);
+}
+
+/** (Ré)ouvre le checkout d'une réservation ; renvoie l'URL hébergée Hub2. */
+export async function startReservationPayment(id: string) {
+  return apiReservations.startPayment(id);
+}
+
+/** Confirme le retour de checkout (le webhook reste le chemin nominal). */
+export async function confirmReservationPayment(reference: string) {
+  return apiReservations.confirmPayment(reference);
 }
 
 export async function updateReservationStatut(id: string, statut: 'confirmee' | 'annulee'): Promise<void> {

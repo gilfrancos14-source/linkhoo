@@ -165,7 +165,7 @@ describe('DemandesReservationMaq4', () => {
     );
   });
 
-  it('explique l\'accès réservé aux gérants vérifiés et Premium', async () => {
+  it('explique l\'accès réservé aux gérants vérifiés', async () => {
     mocks.getReservations.mockRejectedValue(
       Object.assign(new Error('Réservations gérées par l\'administrateur'), { status: 403 }),
     );
@@ -174,7 +174,7 @@ describe('DemandesReservationMaq4', () => {
 
     expect(
       await screen.findByText(
-        'Les réservations sont visibles uniquement pour les gérants vérifiés et Premium.',
+        'Les réservations sont visibles uniquement pour les gérants vérifiés.',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText('Aucune demande de réservation pour le moment.')).not.toBeInTheDocument();

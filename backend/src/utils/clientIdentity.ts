@@ -2,7 +2,7 @@
  * Identité du client qui réserve : nom, email, téléphone.
  *
  * Règle produit : cette identité n'est révélée qu'à la plateforme (routes
- * admin) et à un gérant **vérifié + premium actif** — `isQualifiedGerantUser`.
+ * admin) et à un gérant **vérifié** — `isQualifiedGerantUser`.
  * Ailleurs, en particulier le fil de notifications d'un gérant non qualifié
  * (la seule route de ce profil qui renvoie des données de réservation), elle
  * est masquée : celui-ci voit une demande de dates, pas une personne.

@@ -13,12 +13,50 @@ import {
   upsertPremiumTransaction,
 } from '../utils/premiumTx';
 import { GERANT_COLUMNS } from '../utils/gerantSelect';
+import { Hub2ConfigError } from '../payments/config';
+import { PaymentServiceError } from '../payments/errors';
+import { Hub2Error } from '../payments/hub2/client';
+import { getPaymentsProvider } from '../payments/provider';
+import { confirmPremiumPayment, createPremiumCheckout } from '../payments/service/premium';
 
 const PREMIUM_AMOUNT = 5000;
 const PREMIUM_DURATION_DAYS = 30;
 const PREMIUM_CURRENCY = 'XOF';
 
 const router = Router();
+
+/**
+ * Traduit une erreur du domaine paiement en réponse HTTP.
+ *
+ * Renvoie `true` quand l'erreur a été traitée : l'appelant s'arrête, sinon il
+ * laisse passer les erreurs FedaPay vers `next(err)`.
+ */
+function sendPaymentError(res: Response, err: unknown): boolean {
+  if (err instanceof PaymentServiceError) {
+    res.status(err.status).json({
+      error: err.message,
+      code: err.code,
+      ...err.details,
+    });
+    return true;
+  }
+  if (err instanceof Hub2ConfigError) {
+    console.error(`[premium] Hub2 non configuré : ${err.code}`);
+    res.status(503).json({ error: 'Paiement indisponible', code: err.code });
+    return true;
+  }
+  if (err instanceof Hub2Error) {
+    // Ni la clé ni le corps Hub2 ne doivent apparaître dans la réponse.
+    console.error(`[premium] erreur Hub2 : ${err.code} (${err.status ?? 'réseau'})`);
+    res.status(502).json({
+      error: 'Le prestataire de paiement est momentanément indisponible.',
+      code: err.code,
+    });
+    return true;
+  }
+  return false;
+}
+
 
 function getCallbackUrl(market: string): string {
   // m3 : uniquement APP_PUBLIC_URL (allow-list serveur). L'entête Origin est
@@ -112,6 +150,22 @@ router.post('/initiate', requireClerkAuth, async (req: Request, res: Response, n
       });
     }
 
+    if (getPaymentsProvider() === 'hub2') {
+      const session = await createPremiumCheckout({
+        market,
+        clerkUserId: clerk_user_id,
+        email: customerEmail,
+      });
+      return res.json({
+        reference: session.reference,
+        checkout_url: session.checkoutUrl,
+        amount: session.amount,
+        currency: session.currency,
+        amount_xof: session.amountXof,
+        expires_at: session.expiresAt,
+      });
+    }
+
     const transaction = await withFedapayTimeout(
       Transaction.create({
         description: `Abonnement Premium ${market} - ${PREMIUM_DURATION_DAYS} jours`,
@@ -145,6 +199,7 @@ router.post('/initiate', requireClerkAuth, async (req: Request, res: Response, n
       payment_url: paymentUrl,
     });
   } catch (err: any) {
+    if (sendPaymentError(res, err)) return;
     if (isNotFoundError(err)) {
       return res.status(404).json({ error: 'Ressource FedaPay introuvable' });
     }
@@ -165,7 +220,24 @@ router.post('/confirm', requireClerkAuth, async (req: Request, res: Response, ne
       return res.status(401).json({ error: 'Non autorisé' });
     }
 
-    const { transaction_id } = parsedBody.data;
+    const { transaction_id, reference } = parsedBody.data;
+
+    if (getPaymentsProvider() === 'hub2') {
+      if (!reference) {
+        return res.status(400).json({ error: 'reference requise pour un paiement Hub2' });
+      }
+      const confirmation = await confirmPremiumPayment(reference, authUserId);
+      return res.json({
+        success: true,
+        already_active: confirmation.alreadyActive,
+        premium_expires_at: confirmation.expiresAt,
+        gerant: confirmation.gerant,
+      });
+    }
+
+    if (transaction_id === undefined) {
+      return res.status(400).json({ error: 'transaction_id requis pour un paiement FedaPay' });
+    }
 
     let transaction: any;
     try {
@@ -241,6 +313,7 @@ router.post('/confirm', requireClerkAuth, async (req: Request, res: Response, ne
       gerant,
     });
   } catch (err: any) {
+    if (sendPaymentError(res, err)) return;
     if (isNotFoundError(err)) {
       return res.status(404).json({ error: 'Transaction introuvable' });
     }

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { dateStringSchema, emailSchema, idSchema } from './common';
+import { paymentReferenceSchema } from './payments';
 import { computeDateFin, DUREE_MAX_MOIS, DUREE_MAX_NUIT, type DureeUnite } from '../utils/duration';
 
 const phoneSchema = z
@@ -73,6 +74,19 @@ export const reservationCreateSchema = z
 export const reservationStatusSchema = z
   .object({
     statut: z.enum(['confirmee', 'annulee']),
+  })
+  .strict();
+
+/**
+ * Confirmation du retour de checkout d'une réservation.
+ *
+ * La `reference` (`PAY-…`) est la clé de corrélation de bout en bout : elle
+ * identifie le paiement, donc la réservation. Aucune donnée personnelle n'est
+ * demandée au navigateur.
+ */
+export const reservationPaymentConfirmSchema = z
+  .object({
+    reference: paymentReferenceSchema,
   })
   .strict();
 

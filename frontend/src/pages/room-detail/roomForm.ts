@@ -42,9 +42,9 @@ export function validateForm(
   } else if (!isValidEmail(data.email)) {
     errors.email = 'Adresse email invalide.';
   }
-  if (!data.phone.trim()) {
-    errors.phone = 'Veuillez renseigner votre téléphone.';
-  } else if (!/^[\d\s+()-]{6,}$/.test(data.phone)) {
+  // `client_phone` peut être vide en base : le numéro reste facultatif, mais
+  // s'il est renseigné il doit être exploitable pour recontacter le client.
+  if (data.phone.trim() && !/^[\d\s+()-]{6,}$/.test(data.phone)) {
     errors.phone = 'Numéro de téléphone invalide.';
   }
   if (!data.dateDebut) {

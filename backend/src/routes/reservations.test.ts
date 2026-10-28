@@ -167,7 +167,7 @@ describe('POST /api/reservations', () => {
     const res = await request(app).post('/api/reservations').send(validReservation);
 
     expect(res.status).toBe(201);
-    expect(res.body).toEqual({ id: 'resa-1', statut: 'en_attente' });
+    expect(res.body).toEqual({ id: 'resa-1', statut: 'en_attente', payment: null });
     expect(supabaseAdmin.rpc).toHaveBeenCalledWith(
       'create_reservation_checked',
       expect.objectContaining({
@@ -252,7 +252,7 @@ describe('POST /api/reservations', () => {
       .send({ ...validReservation, client_key: 'ck-idem-12345678' });
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual(existing);
+    expect(res.body).toEqual({ ...existing, payment: null });
     expect(supabaseAdmin.rpc).not.toHaveBeenCalled();
     expect(notifications.insert).not.toHaveBeenCalled();
     expect(publishNotificationChanged).not.toHaveBeenCalled();
@@ -270,7 +270,7 @@ describe('POST /api/reservations', () => {
       .send({ ...validReservation, client_key: 'ck-idem-12345678' });
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ id: 'resa-concurrente', statut: 'en_attente' });
+    expect(res.body).toEqual({ id: 'resa-concurrente', statut: 'en_attente', payment: null });
     expect(notifications.insert).not.toHaveBeenCalled();
   });
 
@@ -289,7 +289,7 @@ describe('POST /api/reservations', () => {
       .send({ ...validReservation, client_key: 'ck-idem-12345678' });
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual(winner);
+    expect(res.body).toEqual({ ...winner, payment: null });
     expect(notifications.insert).not.toHaveBeenCalled();
   });
 });
@@ -300,14 +300,14 @@ describe('GET /api/reservations', () => {
     expect(res.status).toBe(401);
   });
 
-  it('403 pour un gérant non qualifié (ni vérifié ni premium)', async () => {
+  it('403 pour un gérant non vérifié', async () => {
     const res = await request(app)
       .get('/api/reservations')
       .set('Authorization', clerkBearer('user_1'));
     expect(res.status).toBe(403);
   });
 
-  it('200 pour un gérant qualifié', async () => {
+  it('200 pour un gérant vérifié', async () => {
     gerants = fakeChain({ data: qualifiedGerant, error: null });
     rooms = fakeChain({ data: [{ id: 'room-1' }], error: null });
     reservations = fakeChain({ data: [{ id: 'resa-1', room_id: 'room-1' }], error: null });
@@ -320,6 +320,20 @@ describe('GET /api/reservations', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual([{ id: 'resa-1', room_id: 'room-1' }]);
     expect(reservations.in).toHaveBeenCalledWith('room_id', ['room-1']);
+  });
+
+  it('200 pour un gérant vérifié sans premium', async () => {
+    gerants = fakeChain({ data: { is_verified: true, is_premium: false }, error: null });
+    rooms = fakeChain({ data: [{ id: 'room-1' }], error: null });
+    reservations = fakeChain({ data: [{ id: 'resa-1', room_id: 'room-1' }], error: null });
+    stubTables({});
+
+    const res = await request(app)
+      .get('/api/reservations')
+      .set('Authorization', clerkBearer('user_1'));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([{ id: 'resa-1', room_id: 'room-1' }]);
   });
 
   it('200 avec une liste vide quand le gérant n’a aucune chambre', async () => {
@@ -360,6 +374,12 @@ describe('GET /api/reservations/mine', () => {
 
     expect(res.status).toBe(200);
     expect(reservations.eq).toHaveBeenCalledWith('client_email', 'jean@example.ci');
+    expect(reservations.select).toHaveBeenCalledWith(
+      expect.stringContaining('payment_status'),
+    );
+    expect(reservations.select).toHaveBeenCalledWith(
+      expect.stringContaining('refunded_amount'),
+    );
   });
 });
 
@@ -416,7 +436,7 @@ describe('PATCH /api/reservations/:id', () => {
     expect(res.status).toBe(400);
   });
 
-  it('403 pour un gérant non qualifié', async () => {
+  it('403 pour un gérant non vérifié', async () => {
     const res = await request(app)
       .patch('/api/reservations/r1')
       .set('Authorization', clerkBearer('user_1'))

@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   userId: 'user_clerk_1' as string | null,
   isLoaded: true,
   confirm: vi.fn<(transactionId: number) => Promise<unknown>>(),
+  confirmReference: vi.fn<(reference: string) => Promise<unknown>>(),
 }));
 
 vi.mock('@clerk/clerk-react', () => ({
@@ -16,7 +17,10 @@ vi.mock('@clerk/clerk-react', () => ({
 }));
 
 vi.mock('../../lib/api', () => ({
-  apiPremium: { confirm: mocks.confirm },
+  apiPremium: {
+    confirm: mocks.confirm,
+    confirmReference: mocks.confirmReference,
+  },
 }));
 
 function renderSuccess(entry = '/ci/premium/success?id=123') {
@@ -43,6 +47,11 @@ beforeEach(() => {
     already_active: false,
     premium_expires_at: '2027-01-01T00:00:00.000Z',
   });
+  mocks.confirmReference.mockResolvedValue({
+    success: true,
+    already_active: false,
+    premium_expires_at: '2027-01-01T00:00:00.000Z',
+  });
   setSearch('?id=123');
 });
 
@@ -61,7 +70,7 @@ describe('PremiumSuccessPage', () => {
       screen.getByRole('heading', { name: 'Confirmation en cours...' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('Vérification de votre paiement avec FedaPay...'),
+      screen.getByText('Vérification de votre paiement...'),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: 'Retour au tableau de bord' }),
@@ -77,6 +86,43 @@ describe('PremiumSuccessPage', () => {
     ).toBeInTheDocument();
     expect(mocks.confirm).toHaveBeenCalledTimes(1);
     expect(mocks.confirm).toHaveBeenCalledWith(123);
+    expect(mocks.confirmReference).not.toHaveBeenCalled();
+  });
+
+  it('confirme une référence Hub2 sans appeler le flux FedaPay', async () => {
+    setSearch('?reference=PAY-2026-ABC123');
+
+    renderSuccess();
+
+    expect(await screen.findByText('Paiement confirmé')).toBeInTheDocument();
+    expect(mocks.confirmReference).toHaveBeenCalledTimes(1);
+    expect(mocks.confirmReference).toHaveBeenCalledWith('PAY-2026-ABC123');
+    expect(mocks.confirm).not.toHaveBeenCalled();
+  });
+
+  it('préfère reference à id quand les deux paramètres sont présents', async () => {
+    setSearch('?id=123&reference=PAY-2026-ABC123');
+
+    renderSuccess();
+
+    expect(await screen.findByText('Paiement confirmé')).toBeInTheDocument();
+    expect(mocks.confirmReference).toHaveBeenCalledWith('PAY-2026-ABC123');
+    expect(mocks.confirm).not.toHaveBeenCalled();
+  });
+
+  it('traduit un paiement Hub2 en attente en message d’aide', async () => {
+    setSearch('?reference=PAY-2026-ABC123');
+    mocks.confirmReference.mockRejectedValue(
+      new Error("Le paiement n'a pas encore été confirmé par Hub2."),
+    );
+
+    renderSuccess();
+
+    expect(
+      await screen.findByText(
+        "Le paiement n'a pas encore été confirmé. Si vous venez de payer, réessayez dans quelques secondes.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it('propose le retour au tableau de bord du marché CI après confirmation', async () => {
@@ -116,6 +162,18 @@ describe('PremiumSuccessPage', () => {
       await screen.findByText('Paramètres de paiement invalides.'),
     ).toBeInTheDocument();
     expect(mocks.confirm).not.toHaveBeenCalled();
+    expect(screen.getByRole('heading', { name: 'Erreur' })).toBeInTheDocument();
+  });
+
+  it('signale des paramètres invalides quand la référence est vide', async () => {
+    setSearch('?reference=');
+
+    renderSuccess();
+
+    expect(
+      await screen.findByText('Paramètres de paiement invalides.'),
+    ).toBeInTheDocument();
+    expect(mocks.confirmReference).not.toHaveBeenCalled();
     expect(screen.getByRole('heading', { name: 'Erreur' })).toBeInTheDocument();
   });
 

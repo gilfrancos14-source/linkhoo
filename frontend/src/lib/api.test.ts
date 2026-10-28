@@ -695,6 +695,14 @@ describe('apiPremium', () => {
     expect(lastCall().init.method).toBe('POST');
     expect(lastBody()).toEqual({ transaction_id: 1234 });
   });
+
+  it('confirmReference POST /premium/confirm avec reference (Hub2)', async () => {
+    await api.apiPremium.confirmReference('PAY-2026-ABC123');
+
+    expect(lastCall().url).toBe('/api/premium/confirm');
+    expect(lastCall().init.method).toBe('POST');
+    expect(lastBody()).toEqual({ reference: 'PAY-2026-ABC123' });
+  });
 });
 
 describe('apiAuth', () => {

@@ -779,6 +779,19 @@
   font-style: italic;
 }
 
+.admin-table__payment {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.admin-table__refund {
+  color: var(--admin-ink-soft);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
 .admin-content {
   padding: 28px;
   max-width: 1280px;

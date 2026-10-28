@@ -43,7 +43,7 @@ export default function MaquetteHome({ market, data }: MaquetteHomeProps) {
       <HeroSection market={market} />
       <PopularSection market={market} cards={popular} banners={banners.popular} />
       <PromosSection market={market} cards={promos} banners={banners.promos} />
-      <CategoriesSection market={market} cards={categories} banners={banners.categories} />
+      <CategoriesSection cards={categories} banners={banners.categories} />
       <EventsSection
         market={market}
         cities={events.cities}

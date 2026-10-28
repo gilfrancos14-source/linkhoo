@@ -193,6 +193,15 @@ export interface AdminGerant {
   property_lng: number | null;
   is_premium: boolean;
   premium_expires_at: string | null;
+  /** Coordonnées de reversement déclarées par le gérant (phase 4). */
+  payout_method?: 'mobile_money' | 'bank_transfer' | null;
+  payout_phone?: string | null;
+  payout_provider?: string | null;
+  payout_bank_code?: string | null;
+  payout_bank_name?: string | null;
+  payout_account_number?: string | null;
+  payout_holder_name?: string | null;
+  payout_verified_at?: string | null;
   created_at: string;
 }
 
@@ -358,6 +367,13 @@ export const apiAdmin = {
 
   revokeGerantVerification: (id: string) =>
     adminRequest<AdminGerant>(`/admin/gerants/${id}/revoke-verification`, { method: 'PATCH' }),
+
+  /** Valide (ou révoque) les coordonnées de reversement d'un gérant. */
+  setPayoutVerification: (id: string, verified: boolean) =>
+    adminRequest<{ verified: boolean; verified_at: string | null }>(
+      `/admin/gerants/${id}/payout-verification`,
+      { method: 'PATCH', body: JSON.stringify({ verified }) },
+    ),
 
   getVerificationDocuments: (gerantId: string) =>
     adminRequest<VerificationDocument[]>(`/admin/gerants/${gerantId}/documents`),

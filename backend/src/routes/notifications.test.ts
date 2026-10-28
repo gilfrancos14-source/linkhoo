@@ -138,7 +138,7 @@ describe('GET /api/notifications', () => {
     date: '2026-01-05T00:00:00Z',
   };
 
-  it("200 : masque l'identité du client pour un gérant non qualifié", async () => {
+  it("200 : masque l'identité du client pour un gérant non vérifié", async () => {
     rooms = fakeChain({ data: [{ id: 'room-1' }], error: null });
     notifications = fakeChain({ data: [reservationNotification], error: null });
     stubTables();
@@ -158,14 +158,14 @@ describe('GET /api/notifications', () => {
     });
   });
 
-  it('200 : révèle lidentité à un gérant vérifié + premium actif', async () => {
+  it('200 : révèle l’identité à un gérant vérifié, sans premium requis', async () => {
     rooms = fakeChain({ data: [{ id: 'room-1' }], error: null });
     gerants = fakeChain(
       {
         data: {
           is_verified: true,
-          is_premium: true,
-          premium_expires_at: '2099-01-01T00:00:00.000Z',
+          is_premium: false,
+          premium_expires_at: null,
         },
         error: null,
       },
@@ -186,7 +186,7 @@ describe('GET /api/notifications', () => {
     });
   });
 
-  it("200 : non qualifié → le texte des notifications de vérification reste lisible", async () => {
+  it("200 : non vérifié → le texte des notifications de vérification reste lisible", async () => {
     rooms = fakeChain({ data: [], error: null });
     notifications = fakeChain({
       data: [

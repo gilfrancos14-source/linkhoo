@@ -26,12 +26,25 @@ import clientsRouter from './routes/clients';
 import reviewsRouter from './routes/reviews';
 import messagesRouter from './routes/messages';
 import premiumRouter from './routes/premium';
+import paymentsRouter from './routes/payments';
+import payoutsRouter from './routes/payouts';
+import hub2WebhookRouter from './routes/hub2Webhook';
 import adminRouter from './routes/admin';
 import authRouter from './routes/auth';
 import { startNotificationPurge } from './utils/notificationPurge';
 import { warmUpImageCheck } from './services/apartmentImageCheck';
+import { getPaymentsProvider } from './payments/provider';
+import { startPaymentJobs } from './payments/jobs';
 
-const requiredEnvVars = ['CLERK_SECRET_KEY', 'ADMIN_JWT_SECRET', 'FEDAPAY_PUBLIC_KEY', 'FEDAPAY_SECRET_KEY'];
+// Les clés du prestataire inactif ne sont pas exigées : après bascule sur
+// Hub2, FedaPay peut être retiré de l'environnement sans bloquer le démarrage.
+// Le rollback (`PAYMENTS_PROVIDER=fedapay`) les redemande.
+const requiredEnvVars = ['CLERK_SECRET_KEY', 'ADMIN_JWT_SECRET'];
+if (getPaymentsProvider() === 'hub2') {
+  requiredEnvVars.push('HUB2_API_KEY', 'HUB2_MERCHANT_ID');
+} else {
+  requiredEnvVars.push('FEDAPAY_PUBLIC_KEY', 'FEDAPAY_SECRET_KEY');
+}
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
     console.error(`[FATAL] Missing required environment variable: ${envVar}`);
@@ -206,6 +219,15 @@ app.use('/api/premium/webhook', webhookLimiter, express.json({
     (req as RawBodyRequest).rawBody = buf.toString('utf8');
   },
 }));
+// Hub2 signe le corps BRUT : ce parseur dédié doit précéder l'express.json
+// global, sinon la re-sérialisation invalide la signature. 256 Ko suffisent
+// largement pour un événement ; la limite basse protège d'un envoi massif.
+app.use('/api/webhooks/hub2', webhookLimiter, express.json({
+  limit: '256kb',
+  verify: (req, _res, buf) => {
+    (req as RawBodyRequest).rawBody = buf.toString('utf8');
+  },
+}));
 app.use(express.json({ limit: '1mb' }));
 // F4 : une requête admin authentifiée par cookie doit venir d'une origine
 // autorisée. SameSite=Strict bloque déjà le cross-site ; cette garde couvre les
@@ -239,6 +261,9 @@ app.use('/api/clients', requireClerkAuth, clientsRouter);
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/messages', messagesRouter);
 app.use('/api/premium', premiumRouter);
+app.use('/api/payments', paymentsRouter);
+app.use('/api/payouts', requireClerkAuth, payoutsRouter);
+app.use('/api/webhooks/hub2', hub2WebhookRouter);
 // Le limiteur ne couvre que la route de connexion ; le routeur admin n'est
 // monté qu'une fois (ci-dessous). Un second montage du routeur sous
 // `/api/admin/login` exposait inutilement tout le back-office à cette URL.
@@ -263,6 +288,9 @@ const server = app.listen(port, () => {
   // P1 #8 : purge quotidienne des notifications de plus de 30 jours
   // (timers unref, jamais bloquant pour l'arrêt du process).
   startNotificationPurge();
+  // Réconciliation Hub2, expiration des checkouts et remboursement à 48 h.
+  // Inactif en test : les suites pilotent explicitement chaque job.
+  if (process.env.NODE_ENV !== 'test') startPaymentJobs();
   if (process.env.NODE_ENV !== 'test') void warmUpImageCheck();
 });
 

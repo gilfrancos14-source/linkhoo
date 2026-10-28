@@ -18,7 +18,7 @@ export const BANNER_COLUMNS = 'id, section, img, alt, link, market, "order", cre
 
 // `client_key` est une clé d'idempotence interne : jamais renvoyée au client.
 export const RESERVATION_COLUMNS =
-  'id, client_name, client_email, client_phone, room_id, room_title, date_debut, date_fin, montant, duree_nombre, duree_unite, message, statut, created_at, responded_at';
+  'id, client_name, client_email, client_phone, room_id, room_title, date_debut, date_fin, montant, duree_nombre, duree_unite, message, statut, created_at, responded_at, payment_status, paid_at, refunded_amount';
 
 export const NOTIFICATION_COLUMNS =
   'id, type, room_title, room_id, client_name, client_email, client_phone, message, date, read, reservation_id, gerant_id';

@@ -31,11 +31,18 @@ export default function AdminGerantDrawer({ gerant, onClose, onUpdated }: AdminG
   const [docRejectReason, setDocRejectReason] = useState('');
   const [showDocRejectInput, setShowDocRejectInput] = useState<string | null>(null);
   const [visible, setVisible] = useState(false);
+  const [payoutVerifiedAt, setPayoutVerifiedAt] = useState<string | null>(
+    gerant.payout_verified_at ?? null,
+  );
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
     loadDocuments();
   }, [gerant.id]);
+
+  useEffect(() => {
+    setPayoutVerifiedAt(gerant.payout_verified_at ?? null);
+  }, [gerant.id, gerant.payout_verified_at]);
 
   const handleClose = () => {
     setVisible(false);
@@ -102,6 +109,20 @@ export default function AdminGerantDrawer({ gerant, onClose, onUpdated }: AdminG
       handleClose();
     } catch (err: any) {
       setError(err.message || 'Erreur');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handlePayoutVerification = async (verified: boolean) => {
+    setActionLoading('payout');
+    setError('');
+    try {
+      const result = await apiAdmin.setPayoutVerification(gerant.id, verified);
+      setPayoutVerifiedAt(result.verified_at);
+      onUpdated({ ...gerant, payout_verified_at: result.verified_at });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur');
     } finally {
       setActionLoading(null);
     }
@@ -177,6 +198,75 @@ export default function AdminGerantDrawer({ gerant, onClose, onUpdated }: AdminG
               <dt style={{ color: 'var(--admin-ink-soft)' }}>Adresse</dt>
               <dd style={{ margin: 0 }}>{gerant.address || '—'}</dd>
             </dl>
+          </div>
+
+          <div style={{ border: '1px solid var(--admin-line)', borderRadius: '10px', padding: '16px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Coordonnées de reversement</h3>
+              <span className={`admin-badge ${payoutVerifiedAt ? 'admin-badge--success' : 'admin-badge--warning'}`}>
+                <span className="badge-dot"></span>
+                {payoutVerifiedAt ? 'Vérifiées' : gerant.payout_method ? 'À vérifier' : 'Non renseignées'}
+              </span>
+            </div>
+
+            {gerant.payout_method ? (
+              <>
+                <dl style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '8px 12px', margin: 0, fontSize: '13px' }}>
+                  <dt style={{ color: 'var(--admin-ink-soft)' }}>Moyen</dt>
+                  <dd style={{ margin: 0 }}>
+                    {gerant.payout_method === 'mobile_money' ? 'Mobile money' : 'Virement bancaire'}
+                  </dd>
+                  <dt style={{ color: 'var(--admin-ink-soft)' }}>Titulaire</dt>
+                  <dd style={{ margin: 0 }}>{gerant.payout_holder_name || '—'}</dd>
+                  <dt style={{ color: 'var(--admin-ink-soft)' }}>Numéro</dt>
+                  <dd style={{ margin: 0 }}>{gerant.payout_phone || '—'}</dd>
+                  {gerant.payout_method === 'mobile_money' ? (
+                    <>
+                      <dt style={{ color: 'var(--admin-ink-soft)' }}>Opérateur</dt>
+                      <dd style={{ margin: 0 }}>{gerant.payout_provider || '—'}</dd>
+                    </>
+                  ) : (
+                    <>
+                      <dt style={{ color: 'var(--admin-ink-soft)' }}>Banque</dt>
+                      <dd style={{ margin: 0 }}>
+                        {[gerant.payout_bank_name, gerant.payout_bank_code].filter(Boolean).join(' · ') || '—'}
+                      </dd>
+                      <dt style={{ color: 'var(--admin-ink-soft)' }}>Compte</dt>
+                      <dd style={{ margin: 0 }}>{gerant.payout_account_number || '—'}</dd>
+                    </>
+                  )}
+                  {payoutVerifiedAt && (
+                    <>
+                      <dt style={{ color: 'var(--admin-ink-soft)' }}>Vérifiées le</dt>
+                      <dd style={{ margin: 0 }}>{new Date(payoutVerifiedAt).toLocaleDateString('fr-FR')}</dd>
+                    </>
+                  )}
+                </dl>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '14px' }}>
+                  {payoutVerifiedAt ? (
+                    <button
+                      className="admin-btn admin-btn--danger admin-btn--sm"
+                      onClick={() => handlePayoutVerification(false)}
+                      disabled={actionLoading === 'payout'}
+                    >
+                      {actionLoading === 'payout' ? '...' : 'Révoquer'}
+                    </button>
+                  ) : (
+                    <button
+                      className="admin-btn admin-btn--success admin-btn--sm"
+                      onClick={() => handlePayoutVerification(true)}
+                      disabled={actionLoading === 'payout'}
+                    >
+                      {actionLoading === 'payout' ? '...' : 'Valider les coordonnées'}
+                    </button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--admin-ink-soft)' }}>
+                Le gérant n&apos;a pas encore déclaré de coordonnées de reversement.
+              </p>
+            )}
           </div>
 
           <div style={{ border: '1px solid var(--admin-line)', borderRadius: '10px', padding: '16px', marginBottom: '16px' }}>

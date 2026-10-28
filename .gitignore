@@ -23,3 +23,7 @@ linkhoo-messagerie.html
 
 # Artefacts TypeScript
 *.tsbuildinfo
+
+# Configuration d'outils locale et scripts jetables
+.kilo/
+frontend/.tmp-*.cjs

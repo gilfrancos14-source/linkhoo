@@ -14,19 +14,145 @@ import {
   clientReservationQuerySchema,
   reservationCheckQuerySchema,
   reservationCreateSchema,
+  reservationPaymentConfirmSchema,
   reservationStatusSchema,
 } from '../validations/reservation';
+import { Hub2ConfigError } from '../payments/config';
+import { PaymentServiceError } from '../payments/errors';
+import { Hub2Error } from '../payments/hub2/client';
+import { startBookingPayment, confirmBookingPayment } from '../payments/service/booking';
+import { requestReservationRefund, type RefundOutcome } from '../payments/service/refund';
 
 const router = Router();
 const clientLimiter = createClientLimiter({ prefix: 'reservations' });
 // Anti-DoS : une trentaine de POST anonymes gèle une annonce pour toujours
 // (en_attente bloque les dates). Plafond serré sur les écritures.
 const reserveLimiter = createClientLimiter({ limit: 10, prefix: 'reservations-create' });
+// Retour de checkout / réouverture d'un lien : plus fréquent qu'une création,
+// mais toujours borné (un attaquant ne doit pas marteler Hub2).
+const paymentLimiter = createClientLimiter({ limit: 30, prefix: 'reservations-payment' });
+
+/** Réponse de paiement jointe à une réservation (aucune clé n'y figure). */
+interface BookingPaymentPayload {
+  state: 'checkout' | 'paid';
+  reference?: string;
+  checkout_url?: string;
+  amount?: number;
+  currency?: string;
+  amount_xof?: number;
+  expires_at?: string;
+}
+
+/**
+ * Ajoute l'état de paiement à une réservation.
+ *
+ * Ne fait jamais échouer la réservation : un prestataire indisponible laisse
+ * simplement le circuit en paiement direct.
+ */
+async function withBookingPayment<T extends { id: string }>(
+  reservation: T,
+): Promise<T & { payment: BookingPaymentPayload | null }> {
+  try {
+    const start = await startBookingPayment(reservation.id);
+    if (start.state === 'checkout') {
+      return {
+        ...reservation,
+        payment: {
+          state: 'checkout',
+          reference: start.session.reference,
+          checkout_url: start.session.checkoutUrl,
+          amount: start.session.amount,
+          currency: start.session.currency,
+          amount_xof: start.session.amountXof,
+          expires_at: start.session.expiresAt,
+        },
+      };
+    }
+    if (start.state === 'paid') {
+      return {
+        ...reservation,
+        payment: { state: 'paid', reference: start.reference ?? undefined },
+      };
+    }
+    return { ...reservation, payment: null };
+  } catch (error) {
+    console.error(
+      '[reservations] paiement indisponible:',
+      error instanceof Error ? error.message : error,
+    );
+    return { ...reservation, payment: null };
+  }
+}
+
+/**
+ * Rembourse une réservation payée sans jamais faire échouer l'annulation.
+ *
+ * Un remboursement refusé est journalisé et reste visible dans
+ * `payment_refunds` (statut `failed` ou `manual_required`) pour le back-office.
+ */
+async function refundIfPaid(
+  reservation: { id: string; payment_status?: string | null },
+  reason: 'client_cancellation' | 'gerant_refusal' | 'gerant_cancellation',
+  requestedBy: string,
+): Promise<RefundOutcome | null> {
+  const status = reservation.payment_status ?? 'unpaid';
+  if (!['paid', 'deposit_paid', 'partially_refunded'].includes(status)) return null;
+
+  try {
+    const outcome = await requestReservationRefund({
+      reservationId: reservation.id,
+      reason,
+      requestedBy,
+    });
+    if (outcome.reason && outcome.reason !== 'already_refunded') {
+      console.warn(
+        `[reservations] remboursement ${reservation.id}: ${outcome.reason}`,
+        outcome.details ?? '',
+      );
+    }
+    return outcome;
+  } catch (error) {
+    console.error(
+      `[reservations] remboursement ${reservation.id} impossible:`,
+      error instanceof Error ? error.message : error,
+    );
+    return null;
+  }
+}
+
+function sendPaymentError(res: Response, err: unknown): boolean {
+  if (err instanceof PaymentServiceError) {
+    res.status(err.status).json({ error: err.message, code: err.code, ...err.details });
+    return true;
+  }
+  if (err instanceof Hub2ConfigError) {
+    console.error(`[reservations] Hub2 non configuré : ${err.code}`);
+    res.status(503).json({ error: 'Paiement indisponible', code: err.code });
+    return true;
+  }
+  if (err instanceof Hub2Error) {
+    console.error(`[reservations] erreur Hub2 : ${err.code} (${err.status ?? 'réseau'})`);
+    res.status(502).json({
+      error: 'Le prestataire de paiement est momentanément indisponible.',
+      code: err.code,
+    });
+    return true;
+  }
+  return false;
+}
 
 // Une demande en_attente non traitée par le gérant ne doit pas réserver les
 // dates indéfiniment : après 48 h elle est auto-annulée et cesse de bloquer.
 const PENDING_TTL_MS = 48 * 60 * 60 * 1000;
 
+/**
+ * Libère les dates d'une demande jamais payée au bout de 48 h.
+ *
+ * Ne touche jamais une réservation dont l'argent est engagé : `pending`
+ * (checkout ouvert) est traité par le job d'expiration, `paid` et les états de
+ * remboursement par `expirePaidPendingBookings`. Sans ce filtre, une
+ * réservation payée sans réponse du gérant serait annulée sans remboursement.
+ */
 async function expireStalePending(roomId: string): Promise<void> {
   const cutoff = new Date(Date.now() - PENDING_TTL_MS).toISOString();
   const { error } = await supabaseAdmin
@@ -34,6 +160,7 @@ async function expireStalePending(roomId: string): Promise<void> {
     .update({ statut: 'annulee', responded_at: new Date().toISOString() })
     .eq('room_id', roomId)
     .eq('statut', 'en_attente')
+    .in('payment_status', ['unpaid', 'failed'])
     .lt('created_at', cutoff);
   if (error) console.error('[reservations] expireStalePending échoué:', error.message);
 }
@@ -92,7 +219,7 @@ router.get('/mine', requireClerkAuth, async (req: Request, res: Response, next: 
     const data = await fetchAllRows<any>((from, to) =>
       supabaseAdmin
         .from('reservations')
-        .select('id, room_id, room_title, date_debut, date_fin, montant, duree_nombre, duree_unite, statut, created_at, responded_at, room:rooms(img, alt, description)')
+        .select('id, room_id, room_title, date_debut, date_fin, montant, duree_nombre, duree_unite, statut, created_at, responded_at, payment_status, paid_at, refunded_amount, room:rooms(img, alt, description)')
         .eq('client_email', client.email)
         .order('created_at', { ascending: false })
         .order('id', { ascending: true })
@@ -129,7 +256,7 @@ router.get('/client', requireClerkAuth, clientLimiter, async (req: Request, res:
     const data = await fetchAllRows<any>((from, to) =>
       supabaseAdmin
         .from('reservations')
-        .select('id, room_title, date_debut, date_fin, montant, duree_nombre, duree_unite, statut, created_at')
+        .select('id, room_title, date_debut, date_fin, montant, duree_nombre, duree_unite, statut, created_at, payment_status, paid_at, refunded_amount')
         .eq('client_email', client.email)
         .order('created_at', { ascending: false })
         .order('id', { ascending: true })
@@ -160,7 +287,11 @@ router.post('/', reserveLimiter, async (req: Request, res: Response, next: NextF
         .eq('client_key', clientKey)
         .maybeSingle();
       if (replayError) throw replayError;
-      if (replayed) return res.status(200).json(replayed);
+      if (replayed) {
+        // Un rejeu doit renvoyer le même checkout (ou l'état payé) : sans cela
+        // le client qui retente après un timeout perdrait son lien.
+        return res.status(200).json(await withBookingPayment(replayed as { id: string }));
+      }
     }
 
     const { data: room, error: roomError } = await supabaseAdmin
@@ -212,7 +343,9 @@ router.post('/', reserveLimiter, async (req: Request, res: Response, next: NextF
           .select(RESERVATION_COLUMNS)
           .eq('client_key', clientKey)
           .maybeSingle();
-        if (winner) return res.status(200).json(winner);
+        if (winner) {
+          return res.status(200).json(await withBookingPayment(winner as { id: string }));
+        }
       }
       throw rpcError;
     }
@@ -240,7 +373,7 @@ router.post('/', reserveLimiter, async (req: Request, res: Response, next: NextF
       else void publishNotificationChanged('admin', 'gerant');
     }
 
-    res.status(isReplay ? 200 : 201).json(data);
+    res.status(isReplay ? 200 : 201).json(await withBookingPayment(data as { id: string }));
   } catch (err) {
     next(err);
   }
@@ -265,7 +398,7 @@ router.patch('/:id', requireClerkAuth, async (req: Request, res: Response, next:
 
     const { data: currentReservation, error: fetchError } = await supabaseAdmin
       .from('reservations')
-      .select('id, room_id, date_debut, date_fin, statut')
+      .select('id, room_id, date_debut, date_fin, statut, payment_status')
       .eq('id', parsedParams.data.id)
       .maybeSingle();
     if (fetchError) throw fetchError;
@@ -308,6 +441,17 @@ router.patch('/:id', requireClerkAuth, async (req: Request, res: Response, next:
     }
     if (!data) return res.status(404).json({ error: 'Réservation introuvable' });
 
+    // Refus d'une réservation déjà payée : remboursement TOTAL automatique.
+    // Le motif distingue un refus (avant confirmation) d'une annulation.
+    const refund =
+      parsedBody.data.statut === 'annulee'
+        ? await refundIfPaid(
+            { id: parsedParams.data.id, payment_status: currentReservation.payment_status },
+            currentReservation.statut === 'confirmee' ? 'gerant_cancellation' : 'gerant_refusal',
+            `gerant:${authUserId}`,
+          )
+        : null;
+
     const { data: gerantData } = await supabaseAdmin
       .from('gerants')
       .select('phone, nom, prenom, is_verified, is_premium, premium_expires_at')
@@ -316,7 +460,7 @@ router.patch('/:id', requireClerkAuth, async (req: Request, res: Response, next:
 
     // is_premium est calculé ici (et non brut) : le badge ne doit jamais
     // montrer un abonnement expiré comme actif.
-    res.json({ ...data, gerant_phone: gerantData?.phone || null, gerant_nom: gerantData?.nom || null, gerant_prenom: gerantData?.prenom || null, gerant_is_verified: gerantData?.is_verified || false, gerant_is_premium: isPremiumActive(gerantData) });
+    res.json({ ...data, gerant_phone: gerantData?.phone || null, gerant_nom: gerantData?.nom || null, gerant_prenom: gerantData?.prenom || null, gerant_is_verified: gerantData?.is_verified || false, gerant_is_premium: isPremiumActive(gerantData), ...(refund ? { refund } : {}) });
   } catch (err) {
     next(err);
   }
@@ -342,7 +486,7 @@ router.post('/:id/cancel', requireClerkAuth, async (req: Request, res: Response,
 
     const { data: reservation, error: fetchError } = await supabaseAdmin
       .from('reservations')
-      .select('id, client_name, client_email, client_phone, room_id, room_title, date_debut, date_fin, statut')
+      .select('id, client_name, client_email, client_phone, room_id, room_title, date_debut, date_fin, statut, payment_status')
       .eq('id', parsedParams.data.id)
       .maybeSingle();
     if (fetchError) throw fetchError;
@@ -383,8 +527,78 @@ router.post('/:id/cancel', requireClerkAuth, async (req: Request, res: Response,
     });
     void publishNotificationChanged('admin', 'gerant');
 
-    res.json(data);
+    // Annulation par le client d'une réservation déjà payée : remboursement
+    // total. Ne fait jamais échouer l'annulation (voir refundIfPaid).
+    const refund = await refundIfPaid(
+      { id: parsedParams.data.id, payment_status: reservation.payment_status },
+      'client_cancellation',
+      `client:${authUserId}`,
+    );
+
+    res.json(refund ? { ...data, refund } : data);
   } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/reservations/:id/payment — (ré)ouvre le checkout d'une réservation.
+// Public : l'identifiant est un UUID non devinable, et payer ne peut que
+// bénéficier à la réservation. Aucun montant n'est accepté du corps.
+router.post('/:id/payment', paymentLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsedParams = idParamsSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      return res.status(400).json({ error: 'Identifiant invalide' });
+    }
+
+    const start = await startBookingPayment(parsedParams.data.id);
+    if (start.state === 'unavailable') {
+      return res.status(422).json({
+        error: "Le paiement en ligne n'est pas disponible pour cette réservation.",
+        code:
+          start.reason === 'online_payment_disabled'
+            ? 'ONLINE_PAYMENT_DISABLED'
+            : 'PAYMENT_PROVIDER_DISABLED',
+      });
+    }
+    if (start.state === 'paid') {
+      return res.json({ state: 'paid', reference: start.reference });
+    }
+
+    return res.json({
+      state: 'checkout',
+      reference: start.session.reference,
+      checkout_url: start.session.checkoutUrl,
+      amount: start.session.amount,
+      currency: start.session.currency,
+      amount_xof: start.session.amountXof,
+      expires_at: start.session.expiresAt,
+    });
+  } catch (err) {
+    if (sendPaymentError(res, err)) return;
+    next(err);
+  }
+});
+
+// POST /api/reservations/payment/confirm — retour du checkout hébergé.
+// Le webhook reste le chemin nominal ; ceci ne fait que le doubler.
+router.post('/payment/confirm', paymentLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsedBody = reservationPaymentConfirmSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      return res.status(400).json({ error: 'Référence de paiement invalide' });
+    }
+
+    const confirmation = await confirmBookingPayment(parsedBody.data.reference);
+    return res.json({
+      success: true,
+      already_paid: confirmation.alreadyPaid,
+      payment_status: confirmation.paymentStatus,
+      paid_at: confirmation.paidAt,
+      reservation: confirmation.reservation,
+    });
+  } catch (err) {
+    if (sendPaymentError(res, err)) return;
     next(err);
   }
 });

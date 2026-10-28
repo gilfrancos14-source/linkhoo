@@ -1,16 +1,14 @@
-import { isPremiumActive, type PremiumFlags } from './premium';
-
-interface GerantQualificationFields extends PremiumFlags {
+interface GerantQualificationFields {
   is_verified: boolean | null;
 }
 
 /**
- * Un gérant peut gérer ses réservations s'il est vérifié ET premium.
- * La partie premium est déléguée à `isPremiumActive` : la même règle doit
- * piloter l'accès, les badges et les statistiques (sinon un abonnement expiré
- * reste affiché « actif » quelque part).
+ * Un gérant peut gérer ses réservations dès qu'il est vérifié.
+ *
+ * Le premium ne conditionne plus l'accès aux réservations : il reste réservé
+ * à la visibilité (badge, mise en avant dans les résultats) et ne doit donc
+ * pas être interrogé ici.
  */
 export function isQualifiedGerant(gerant: GerantQualificationFields | null | undefined): boolean {
-  if (!gerant || !gerant.is_verified) return false;
-  return isPremiumActive(gerant);
+  return Boolean(gerant?.is_verified);
 }

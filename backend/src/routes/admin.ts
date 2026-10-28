@@ -27,6 +27,9 @@ import {
   adminCookieOptions,
 } from '../utils/adminCookie';
 import { logAdminAction } from '../utils/adminAudit';
+import { setPayoutVerification } from '../payments/service/payout';
+import { PaymentServiceError } from '../payments/errors';
+import { payoutVerificationSchema } from '../validations/payments';
 import { z } from 'zod';
 
 const promoGroupSchema = z.object({
@@ -339,7 +342,7 @@ router.get('/gerants', requireAdminAuth, requirePermission('gerants'), async (re
     const runQuery = (from: number, to: number) => {
       let query = supabaseAdmin
         .from('gerants')
-        .select('id, email, nom, prenom, phone, market, is_verified, verified_at, verification_requested_at, verification_status, verification_rejection_reason, verification_submitted_at, verification_reviewed_at, is_premium, property_maps_url, property_lat, property_lng, created_at')
+        .select('id, email, nom, prenom, phone, market, is_verified, verified_at, verification_requested_at, verification_status, verification_rejection_reason, verification_submitted_at, verification_reviewed_at, is_premium, property_maps_url, property_lat, property_lng, payout_method, payout_phone, payout_provider, payout_bank_code, payout_bank_name, payout_account_number, payout_holder_name, payout_verified_at, created_at')
         .order('created_at', { ascending: false })
         // created_at n'est pas unique : sans second critère, deux pages
         // peuvent se chevaucher ou se sauter des lignes.
@@ -655,6 +658,50 @@ router.patch('/gerants/:id/reject-verification', requireAdminAuth, requirePermis
 
     res.json(data);
   } catch (err) {
+    next(err);
+  }
+});
+
+router.patch('/gerants/:id/payout-verification', requireAdminAuth, requirePermission('gerants'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsedParams = idParamsSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      return res.status(400).json({ error: 'Identifiant invalide' });
+    }
+
+    const parsedBody = payoutVerificationSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      return res.status(400).json({ error: 'Données invalides' });
+    }
+
+    const settings = await setPayoutVerification(
+      parsedParams.data.id,
+      parsedBody.data.verified,
+    );
+
+    await supabaseAdmin.from('notifications').insert({
+      id: randomUUID(),
+      type: parsedBody.data.verified ? 'payout_details_verified' : 'payout_details_required',
+      room_title: null,
+      room_id: null,
+      client_name: null,
+      client_email: null,
+      client_phone: null,
+      message: parsedBody.data.verified
+        ? 'Vos coordonnées de reversement ont été vérifiées.'
+        : 'Vos coordonnées de reversement doivent être vérifiées à nouveau.',
+      gerant_id: settings.clerk_user_id,
+    });
+    void publishNotificationChanged('admin', 'gerant');
+
+    res.json({
+      verified: Boolean(settings.payout_verified_at),
+      verified_at: settings.payout_verified_at,
+    });
+  } catch (err) {
+    if (err instanceof PaymentServiceError) {
+      return res.status(err.status).json({ error: err.message, code: err.code });
+    }
     next(err);
   }
 });

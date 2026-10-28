@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useHomePath } from '../../hooks/useHomePath';
-import { getReservations, updateReservationStatut, checkDateConflict, statutLabels, type Reservation } from '../../lib/reservations';
+import { getReservations, updateReservationStatut, checkDateConflict, statutLabels, paymentLabels, paymentColors, type Reservation } from '../../lib/reservations';
 import { addClientNotification } from '../../lib/notifications';
 import { apiGerants, type GerantData } from '../../lib/api';
-import { isPremiumActive } from '../../lib/premium';
 import { priceWithCurrency } from '../../lib/roomDisplay';
 import { formatDate } from '../../lib/formatDate';
 
@@ -31,13 +30,13 @@ export default function ReservationsPage() {
   const [loadError, setLoadError] = useState('');
   const itemsPerPage = 8;
 
-  const isQualified = !!gerant?.is_verified && isPremiumActive(gerant);
+  const isQualified = !!gerant?.is_verified;
 
   const loadData = async () => {
     try {
       const me = await apiGerants.getMe();
       setGerant(me);
-      if (!me?.is_verified || !isPremiumActive(me)) {
+      if (!me?.is_verified) {
         setAccessDenied(true);
         setLoading(false);
         return;
@@ -96,7 +95,7 @@ export default function ReservationsPage() {
   const handleConfirmFromPopup = async () => {
     if (!verify) return;
     const r = verify.reservation;
-    const gerantLabel = r.gerantIsVerified && r.gerantIsPremium && r.gerantPrenom
+    const gerantLabel = r.gerantIsVerified && r.gerantPrenom
       ? `${r.gerantPrenom} ${r.gerantNom || ''}`.trim()
       : "l'administrateur";
     setVerify((prev) => prev ? { ...prev, actionLoading: true, actionError: undefined } : null);
@@ -191,6 +190,7 @@ export default function ReservationsPage() {
               <th>Chambre</th>
               <th>Dates</th>
               <th>Montant</th>
+              <th>Paiement</th>
               <th>Statut</th>
               <th>Actions</th>
             </tr>
@@ -211,6 +211,25 @@ export default function ReservationsPage() {
                 </td>
                 <td className="admin-table__price">{priceWithCurrency(res.montant)}</td>
                 <td>
+                  {res.paymentStatus ? (
+                    <div className="admin-table__payment">
+                      <span
+                        className={`admin-badge admin-badge--${res.paymentStatus === 'paid' ? 'success' : res.paymentStatus === 'failed' ? 'danger' : res.paymentStatus === 'refunded' ? 'muted' : 'warning'}`}
+                        style={{ color: paymentColors[res.paymentStatus], borderColor: paymentColors[res.paymentStatus] }}
+                      >
+                        {paymentLabels[res.paymentStatus]}
+                      </span>
+                      {res.refundedAmount ? (
+                        <span className="admin-table__refund">
+                          Remboursé : {priceWithCurrency(res.refundedAmount)}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <span className="admin-table__pending">—</span>
+                  )}
+                </td>
+                <td>
                   <span className={`admin-badge admin-badge--${res.statut === 'confirmee' ? 'success' : res.statut === 'annulee' ? 'danger' : 'warning'}`}>
                     {statutLabels[res.statut]}
                   </span>
@@ -228,7 +247,7 @@ export default function ReservationsPage() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} className="admin-table__empty">Aucune réservation trouvée</td>
+                <td colSpan={6} className="admin-table__empty">Aucune réservation trouvée</td>
               </tr>
             )}
           </tbody>

@@ -182,7 +182,7 @@ describe('DashboardPage', () => {
     );
   });
 
-  it('continue d\'afficher les chambres quand les réservations sont réservées au Premium', async () => {
+  it('continue d\'afficher les chambres quand les réservations sont réservées aux gérants vérifiés', async () => {
     mocks.getReservations.mockRejectedValue(
       Object.assign(new Error('Réservations gérées par l\'administrateur'), { status: 403 }),
     );
@@ -192,7 +192,7 @@ describe('DashboardPage', () => {
     expect(await screen.findByText('Appartement lumineux avec vue sur la lagune')).toBeInTheDocument();
     expect(
       await screen.findByText(
-        'Les réservations sont visibles uniquement pour les gérants vérifiés et Premium.',
+        'Les réservations sont visibles uniquement pour les gérants vérifiés.',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText('Impossible de charger vos chambres.')).not.toBeInTheDocument();

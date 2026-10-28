@@ -108,7 +108,7 @@ export default function DashboardPage() {
           const status = (reservationsResult.reason as { status?: number } | null)?.status;
           setReservationsError(
             status === 403
-              ? 'Les réservations sont visibles uniquement pour les gérants vérifiés et Premium.'
+              ? 'Les réservations sont visibles uniquement pour les gérants vérifiés.'
               : 'Impossible de charger les demandes de réservation.',
           );
         }

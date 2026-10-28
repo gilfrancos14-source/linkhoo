@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   createClientLimiter,
   isAuthRequest,
+  isWebhookRequest,
   skipWriteQuota,
   userOrIpKey,
 } from './rateLimiters';
@@ -151,10 +152,26 @@ describe('isAuthRequest', () => {
   });
 });
 
+describe('isWebhookRequest', () => {
+  it('reconnaît les endpoints prestataires', () => {
+    expect(isWebhookRequest(fakeReq({ url: '/api/premium/webhook' }))).toBe(true);
+    expect(isWebhookRequest(fakeReq({ url: '/api/webhooks/hub2' }))).toBe(true);
+    expect(isWebhookRequest(fakeReq({ url: '/api/webhooks/hub2?retry=1' }))).toBe(true);
+  });
+
+  it('ne confond pas les préfixes voisins', () => {
+    expect(isWebhookRequest(fakeReq({ url: '/api/webhook' }))).toBe(false);
+    expect(isWebhookRequest(fakeReq({ url: '/api/webhooksy' }))).toBe(false);
+    expect(isWebhookRequest(fakeReq({ url: '/api/premium/initiate' }))).toBe(false);
+  });
+});
+
 describe('skipWriteQuota', () => {
-  it('exclut les GET et la connexion', () => {
+  it('exclut les GET, la connexion et les webhooks', () => {
     expect(skipWriteQuota(fakeReq({ method: 'GET', url: '/api/rooms' }))).toBe(true);
     expect(skipWriteQuota(fakeReq({ method: 'POST', url: '/api/auth/bootstrap' }))).toBe(true);
+    expect(skipWriteQuota(fakeReq({ method: 'POST', url: '/api/webhooks/hub2' }))).toBe(true);
+    expect(skipWriteQuota(fakeReq({ method: 'POST', url: '/api/premium/webhook' }))).toBe(true);
   });
 
   it('compte les vraies écritures', () => {

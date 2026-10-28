@@ -816,14 +816,14 @@ describe('POST /api/admin/reservations/:id/check-availability', () => {
 });
 
 describe('GET /api/admin/notifications', () => {
-  it('200 : liste vide si tous les gérants sont qualifiés', async () => {
+  it('200 : liste vide si tous les gérants sont vérifiés', async () => {
     gerants = fakeChain({
       data: [
         {
           clerk_user_id: 'user_1',
           is_verified: true,
-          is_premium: true,
-          premium_expires_at: FUTURE,
+          is_premium: false,
+          premium_expires_at: null,
         },
       ],
       error: null,
@@ -836,9 +836,9 @@ describe('GET /api/admin/notifications', () => {
     expect(res.body).toEqual({ notifications: [], unread_count: 0 });
   });
 
-  it('200 : compte les non lues des chambres des gérants non qualifiés', async () => {
+  it('200 : compte les non lues des chambres des gérants non vérifiés', async () => {
     gerants = fakeChain({
-      data: [{ clerk_user_id: 'user_1', is_verified: true, is_premium: false, premium_expires_at: null }],
+      data: [{ clerk_user_id: 'user_1', is_verified: false, is_premium: true, premium_expires_at: FUTURE }],
       error: null,
     });
     rooms = fakeChain({ data: [{ id: 'room-1' }], error: null });
@@ -930,3 +930,76 @@ describe('PATCH /api/admin/rooms/:id/promo-group', () => {
   });
 });
 
+
+describe('PATCH /api/admin/gerants/:id/payout-verification', () => {
+  const SETTINGS = {
+    clerk_user_id: 'user_gerant_1',
+    market: 'CI',
+    payout_method: 'mobile_money',
+    payout_phone: '+2250700000000',
+    payout_provider: 'orange',
+    payout_bank_code: null,
+    payout_bank_name: null,
+    payout_account_number: null,
+    payout_holder_name: 'Awa Kone',
+    payout_verified_at: null,
+  };
+
+  it('400 quand les coordonnees sont incompletes', async () => {
+    stubTables({
+      gerants: fakeChain({
+        data: { ...SETTINGS, payout_provider: null },
+        error: null,
+      }),
+    });
+
+    const res = await request(app)
+      .patch('/api/admin/gerants/gerant-1/payout-verification')
+      .set(auth(adminToken()))
+      .send({ verified: true });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('PAYOUT_DETAILS_INCOMPLETE');
+  });
+
+  it('200 : verifie les coordonnees et notifie le gerant', async () => {
+    const fetched = fakeChain({ data: SETTINGS, error: null });
+    const updated = fakeChain({
+      data: { ...SETTINGS, payout_verified_at: '2026-10-28T10:00:00.000Z' },
+      error: null,
+    });
+    stubTables({ gerants: [fetched, updated] });
+
+    const res = await request(app)
+      .patch('/api/admin/gerants/gerant-1/payout-verification')
+      .set(auth(adminToken()))
+      .send({ verified: true });
+
+    expect(res.status).toBe(200);
+    expect(res.body.verified).toBe(true);
+    expect(notifications.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'payout_details_verified',
+        gerant_id: 'user_gerant_1',
+      }),
+    );
+    expect(publishNotificationChanged).toHaveBeenCalledWith('admin', 'gerant');
+  });
+
+  it('200 : revoque la verification', async () => {
+    const fetched = fakeChain({
+      data: { ...SETTINGS, payout_verified_at: '2026-10-01T00:00:00.000Z' },
+      error: null,
+    });
+    const updated = fakeChain({ data: { ...SETTINGS, payout_verified_at: null }, error: null });
+    stubTables({ gerants: [fetched, updated] });
+
+    const res = await request(app)
+      .patch('/api/admin/gerants/gerant-1/payout-verification')
+      .set(auth(adminToken()))
+      .send({ verified: false });
+
+    expect(res.status).toBe(200);
+    expect(res.body.verified).toBe(false);
+  });
+});

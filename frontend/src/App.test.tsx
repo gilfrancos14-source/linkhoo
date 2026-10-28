@@ -90,7 +90,7 @@ const mocks = vi.hoisted(() => {
     fetchAvailableRooms: vi.fn<() => Promise<unknown[]>>(),
     fetchCategoriesByMarket: vi.fn<() => Promise<unknown[]>>(),
     // --- drapeaux de test ---
-    throwOnCategory: false,
+    throwOnSearch: false,
     resolveRoomDetail: (() => {}) as () => void,
     AdminUnauthorizedError: class AdminUnauthorizedError extends Error {
       constructor(message: string) {
@@ -225,7 +225,7 @@ vi.mock('./pages/admin/AdminDashboardPage', () => ({
 
 // Import lazy volontairement suspendu : permet d'observer le fallback Suspense.
 vi.mock(
-  './pages/RoomDetailPage',
+  './pages/RoomDetailMaq7',
   () =>
     new Promise((resolve) => {
       mocks.resolveRoomDetail = () =>
@@ -236,12 +236,12 @@ vi.mock(
 );
 
 // Page qui plante au rendu : vérifie que l'ErrorBoundary de App.tsx absorbe.
-vi.mock('./pages/CategoryPage', () => ({
+vi.mock('./pages/SearchResultsPage', () => ({
   default: () => {
-    if (mocks.throwOnCategory) {
-      throw new Error('boom catégorie');
+    if (mocks.throwOnSearch) {
+      throw new Error('boom recherche');
     }
-    return <div data-testid="page-categorie">Catégorie (stub)</div>;
+    return <div data-testid="page-recherche">Recherche (stub)</div>;
   },
 }));
 
@@ -277,7 +277,7 @@ beforeEach(() => {
   mocks.fetchRoomsByMarket.mockResolvedValue([]);
   mocks.fetchAvailableRooms.mockResolvedValue([]);
   mocks.fetchCategoriesByMarket.mockResolvedValue([]);
-  mocks.throwOnCategory = false;
+  mocks.throwOnSearch = false;
 });
 
 afterEach(() => {
@@ -604,9 +604,9 @@ describe('App — lazy, chrome et résilience', () => {
 
   it("capture l'erreur d'une page qui plante et propose de réessayer", async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    mocks.throwOnCategory = true;
+    mocks.throwOnSearch = true;
 
-    renderApp('/ci/categorie/3');
+    renderApp('/ci/recherche');
 
     expect(await screen.findByRole('heading', { name: 'Une erreur est survenue' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument();

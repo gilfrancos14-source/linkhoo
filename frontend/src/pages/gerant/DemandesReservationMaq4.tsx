@@ -154,7 +154,7 @@ export default function DemandesReservationMaq4() {
           const status = (reservationsResult.reason as { status?: number } | null)?.status;
           setError(
             status === 403
-              ? 'Les réservations sont visibles uniquement pour les gérants vérifiés et Premium.'
+              ? 'Les réservations sont visibles uniquement pour les gérants vérifiés.'
               : 'Impossible de charger les demandes de réservation.',
           );
         }

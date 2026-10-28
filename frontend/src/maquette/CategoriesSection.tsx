@@ -1,10 +1,7 @@
-import { Link } from 'react-router-dom';
-import type { MarketCode } from '../config/markets';
 import MaquetteBannerCarousel from './MaquetteBannerCarousel';
 import type { BannerSlide, CategoryCard } from './viewModel';
 
 interface CategoriesSectionProps {
-  market: MarketCode;
   cards: CategoryCard[];
   banners: BannerSlide[];
 }
@@ -26,7 +23,7 @@ const GRID_BY_COUNT: Record<number, string> = {
   5: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5',
 };
 
-export default function CategoriesSection({ market, cards, banners }: CategoriesSectionProps) {
+export default function CategoriesSection({ cards, banners }: CategoriesSectionProps) {
   if (cards.length === 0 && banners.length === 0) return null;
 
   const gridCols = GRID_BY_COUNT[cards.length] ?? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6';
@@ -52,16 +49,15 @@ export default function CategoriesSection({ market, cards, banners }: Categories
           {cards.map((card, index) => {
             const badge = BADGES[index % BADGES.length];
             return (
-              <Link
+              <div
                 key={card.id}
-                className="bg-white rounded-2xl p-2 border border-slate-100 shadow-sm hover:shadow-md transition text-center group"
-                to={`/${market.toLowerCase()}/categorie/${card.id}`}
+                className="bg-white rounded-2xl p-2 border border-slate-100 shadow-sm transition text-center"
               >
                 <div className="relative h-32 rounded-xl overflow-hidden mb-2">
                   {card.image && (
                     <img
                       alt={card.alt}
-                      className="w-full h-full object-cover group-hover:scale-105 transition"
+                      className="w-full h-full object-cover"
                       src={card.image}
                       loading="lazy"
                     />
@@ -76,7 +72,7 @@ export default function CategoriesSection({ market, cards, banners }: Categories
                 <p className="text-[10px] text-slate-400">
                   {card.count} bien{card.count > 1 ? 's' : ''}
                 </p>
-              </Link>
+              </div>
             );
           })}
         </div>

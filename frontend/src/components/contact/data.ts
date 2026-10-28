@@ -45,12 +45,12 @@ export const CONTACT_FAQS: readonly ContactFaqItem[] = [
   {
     question: 'Comment réserver un logement sur Linkhoo ?',
     answer:
-      'Choisissez votre pays, votre ville et vos dates, ouvrez la fiche du logement puis envoyez votre demande de réservation. Le gérant confirme la disponibilité et vous convenez ensemble des modalités. Vous pouvez aussi échanger avec lui via la messagerie intégrée.',
+      'Choisissez votre pays, votre ville et vos dates, ouvrez la fiche du logement puis envoyez votre demande de réservation. Vous réglez le séjour en ligne au moment de la demande ; le gérant confirme ensuite la disponibilité. Si la demande est refusée ou annulée, le montant est remboursé intégralement. Vous pouvez aussi échanger avec le gérant via la messagerie intégrée.',
   },
   {
     question: 'Comment se règle le loyer ?',
     answer:
-      'Le loyer se paie directement au gérant, selon les modalités convenues lors de la réservation : Linkhoo ne prélève pas le montant de la location. Les paiements en ligne concernent uniquement l’abonnement Premium des gérants et sont traités par FedaPay.',
+      'Le séjour se règle en ligne au moment de la demande, par mobile money ou carte bancaire via notre prestataire Hub2. Linkhoo encaisse le montant et le reverse au gérant après le séjour. En cas de refus du gérant ou d’annulation, le remboursement est total.',
   },
   {
     question: 'Comment publier mon logement en tant que gérant ?',

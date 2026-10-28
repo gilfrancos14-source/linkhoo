@@ -1,7 +1,7 @@
 import { Routes, Route, useLocation, useParams, Navigate } from 'react-router-dom';
 import { lazy, Suspense, useEffect } from 'react';
 import { MarketProvider, useMarket } from './contexts/MarketContext';
-import { isMarketSlug } from './config/markets';
+import { isMarketSlug, MARKETS } from './config/markets';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import BackToTop from './components/BackToTop';
@@ -20,10 +20,10 @@ const MentionsLegales = lazy(() => import('./pages/MentionsLegales'));
 const PolitiqueConfidentialite = lazy(() => import('./pages/PolitiqueConfidentialite'));
 const AProposPage = lazy(() => import('./pages/AProposPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
-const RoomDetailPage = lazy(() => import('./pages/RoomDetailPage'));
-const CategoryPage = lazy(() => import('./pages/CategoryPage'));
+const RoomDetailMaq7 = lazy(() => import('./pages/RoomDetailMaq7'));
 const SearchResultsPage = lazy(() => import('./pages/SearchResultsPage'));
 const ClientReservationPage = lazy(() => import('./pages/ClientReservationPage'));
+const ReservationPaymentPage = lazy(() => import('./pages/ReservationPaymentPage'));
 const ClientComptePage = lazy(() => import('./pages/ClientComptePage'));
 const ClientMessagesPage = lazy(() => import('./pages/messages/ClientMessagesPage'));
 const ClientLogin = lazy(() => import('./pages/ClientLogin'));
@@ -45,6 +45,7 @@ const GerantLogin = lazy(() => import('./pages/gerant/GerantLogin'));
 const OAuthCallback = lazy(() => import('./pages/gerant/OAuthCallback'));
 const CalendrierMaq5 = lazy(() => import('./pages/gerant/CalendrierMaq5'));
 const BoiteReceptionMaq6 = lazy(() => import('./pages/gerant/BoiteReceptionMaq6'));
+const ReversementsPage = lazy(() => import('./pages/gerant/ReversementsPage'));
 
 const SuperAdminLayout = lazy(() => import('./pages/admin/SuperAdminLayout'));
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
@@ -127,9 +128,12 @@ function MarketContent() {
   // La fiche chambre reproduit la maquette HabiCI : elle embarque son propre
   // en-tête, son pied de page et sa navigation mobile.
   const isRoomDetail = /\/chambre(\/|$)/.test(pathname);
+  // Retour de checkout : page autonome de confirmation, sans chrome du site.
+  const isPaymentReturn = /\/reservation\/paiement(\/|$)/.test(pathname);
   const hideChrome =
     isMaquetteHome ||
     isRoomDetail ||
+    isPaymentReturn ||
     isClientSpace ||
     pathname.includes('/gerant') ||
     pathname.includes('/admin') ||
@@ -147,10 +151,10 @@ function MarketContent() {
         <Route path="/politique-de-confidentialite" element={<PolitiqueConfidentialite />} />
         <Route path="/a-propos" element={<Navigate to="/a-propos" replace />} />
         <Route path="/contact" element={<Navigate to="/contact" replace />} />
-        <Route path="/chambre/:id" element={<RoomDetailPage />} />
-        <Route path="/categorie/:id" element={<CategoryPage />} />
+        <Route path="/chambre/:id" element={<RoomDetailMaq7 />} />
         <Route path="/recherche" element={<SearchResultsPage />} />
         <Route path="/suivi-reservation" element={<ClientReservationPage />} />
+        <Route path="/reservation/paiement" element={<ReservationPaymentPage />} />
         <Route path="/compte" element={
           <RoleRouteGuard role="client">
             <ClientComptePage />
@@ -187,6 +191,7 @@ function MarketContent() {
           <Route path="reservations" element={<ReservationsPage />} />
           <Route path="reservations/demandes" element={<DemandesReservationMaq4 />} />
           <Route path="reservations/calendrier" element={<CalendrierMaq5 />} />
+          <Route path="reversements" element={<ReversementsPage />} />
           <Route path="premium" element={<PremiumPage />} />
           <Route path="premium/success" element={<PremiumSuccessPage />} />
           <Route path="verification" element={<VerificationPage />} />
@@ -217,6 +222,24 @@ function CatchAllRedirect() {
   return <Navigate to="/" replace />;
 }
 
+/**
+ * Les liens de fiche chambre circulent parfois sans préfixe de marché
+ * (`/chambre/<id>` : anciens liens, partages, saisie manuelle). Sans cette
+ * route, l'URL tombait dans `*` et renvoyait sur la page d'accueil — la fiche
+ * semblait donc « ne pas s'afficher ». On la redirige vers le marché par
+ * défaut en conservant la query (`?arrivee=…`).
+ */
+function LegacyRoomRedirect() {
+  const { id } = useParams<{ id: string }>();
+  const { search } = useLocation();
+  return (
+    <Navigate
+      to={`/${MARKETS[0].slug}/chambre/${encodeURIComponent(id ?? '')}${search}`}
+      replace
+    />
+  );
+}
+
 function AppRoutes() {
   return (
     <MarketProvider>
@@ -229,6 +252,7 @@ function AppRoutes() {
             <Route path="/" element={<RootRedirect />} />
             <Route path="/a-propos" element={<AProposPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/chambre/:id" element={<LegacyRoomRedirect />} />
             {adminSectionRoutes}
             <Route path="/:market/*" element={<MarketRoute />} />
             <Route path="*" element={<CatchAllRedirect />} />

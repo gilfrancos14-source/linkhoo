@@ -78,11 +78,17 @@ const gerantBrouillon: GerantData = {
   created_at: '2025-12-01T00:00:00.000Z',
 };
 
-const gerantQualifie: GerantData = {
+const gerantVerifie: GerantData = {
   ...gerantBrouillon,
   is_verified: true,
   verification_status: 'approved',
   is_premium: true,
+};
+
+const gerantVerifieSansPremium: GerantData = {
+  ...gerantVerifie,
+  is_premium: false,
+  premium_expires_at: null,
 };
 
 function makeNotif(overrides: Partial<Notification> = {}): Notification {
@@ -206,7 +212,7 @@ describe('structure de la barre latérale', () => {
     );
   });
 
-  it('masque le lien Réservations tant que le gérant n’est pas qualifié', async () => {
+  it('masque le lien Réservations tant que le gérant n’est pas vérifié', async () => {
     renderLayout();
 
     // Laisse le gérant se charger : le lien doit rester absent ensuite.
@@ -216,8 +222,8 @@ describe('structure de la barre latérale', () => {
     expect(mocks.getMe).toHaveBeenCalledTimes(1);
   });
 
-  it('affiche Réservations pour un gérant vérifié et premium', async () => {
-    mocks.getMe.mockResolvedValue(gerantQualifie);
+  it('affiche Réservations pour un gérant vérifié, sans premium requis', async () => {
+    mocks.getMe.mockResolvedValue(gerantVerifieSansPremium);
 
     renderLayout();
 
@@ -225,15 +231,17 @@ describe('structure de la barre latérale', () => {
     expect(link).toHaveAttribute('href', '/ci/gerant/reservations');
   });
 
-  it('masque Réservations quand le premium est expiré', async () => {
+  it('affiche Réservations même quand le premium est expiré', async () => {
     mocks.getMe.mockResolvedValue({
-      ...gerantQualifie,
+      ...gerantVerifie,
       premium_expires_at: '2020-01-01T00:00:00.000Z',
     });
 
     renderLayout();
 
-    expect(screen.queryByRole('link', { name: 'Réservations' })).toBeNull();
+    expect(
+      await screen.findByRole('link', { name: 'Réservations' }),
+    ).toBeInTheDocument();
   });
 
   it('affiche le nombre de chambres du gérant en pastille', async () => {
@@ -247,8 +255,8 @@ describe('structure de la barre latérale', () => {
     expect(mocks.fetchMyRooms).toHaveBeenCalledTimes(1);
   });
 
-  it('affiche Demandes pour un gerant qualifie', async () => {
-    mocks.getMe.mockResolvedValue(gerantQualifie);
+  it('affiche Demandes pour un gerant vérifié', async () => {
+    mocks.getMe.mockResolvedValue(gerantVerifieSansPremium);
 
     renderLayout();
 
@@ -493,7 +501,7 @@ describe('notifications', () => {
 });
 
 describe('vérification d’une réservation depuis la cloche', () => {
-  it('ne propose pas « Vérifier » à un gérant non qualifié', async () => {
+  it('ne propose pas « Vérifier » à un gérant non vérifié', async () => {
     mocks.getNotifications.mockResolvedValue([makeNotif()]);
 
     renderLayout();
@@ -503,7 +511,7 @@ describe('vérification d’une réservation depuis la cloche', () => {
   });
 
   it('affiche l’état de chargement puis le résultat « Disponible »', async () => {
-    mocks.getMe.mockResolvedValue(gerantQualifie);
+    mocks.getMe.mockResolvedValue(gerantVerifie);
     mocks.getNotifications.mockResolvedValue([makeNotif()]);
     let resolveRes: ((value: unknown[]) => void) | null = null;
     mocks.getReservations.mockImplementation(
@@ -529,7 +537,7 @@ describe('vérification d’une réservation depuis la cloche', () => {
   });
 
   it('annonce « Non disponible » quand les dates se chevauchent', async () => {
-    mocks.getMe.mockResolvedValue(gerantQualifie);
+    mocks.getMe.mockResolvedValue(gerantVerifie);
     mocks.getNotifications.mockResolvedValue([makeNotif()]);
     mocks.checkDateConflict.mockResolvedValue({ hasConflict: true });
 
@@ -546,7 +554,7 @@ describe('vérification d’une réservation depuis la cloche', () => {
   });
 
   it('annonce « Non disponible » quand la réservation est introuvable', async () => {
-    mocks.getMe.mockResolvedValue(gerantQualifie);
+    mocks.getMe.mockResolvedValue(gerantVerifie);
     mocks.getNotifications.mockResolvedValue([makeNotif()]);
     mocks.getReservations.mockResolvedValue([]);
 
@@ -561,7 +569,7 @@ describe('vérification d’une réservation depuis la cloche', () => {
   });
 
   it('retombe sur « Non disponible » quand l’API de réservation échoue', async () => {
-    mocks.getMe.mockResolvedValue(gerantQualifie);
+    mocks.getMe.mockResolvedValue(gerantVerifie);
     mocks.getNotifications.mockResolvedValue([makeNotif()]);
     mocks.getReservations.mockRejectedValue(new Error('réseau'));
 
@@ -575,7 +583,7 @@ describe('vérification d’une réservation depuis la cloche', () => {
   });
 
   it('confirme la réservation et notifie le client', async () => {
-    mocks.getMe.mockResolvedValue(gerantQualifie);
+    mocks.getMe.mockResolvedValue(gerantVerifie);
     mocks.getNotifications.mockResolvedValue([makeNotif()]);
 
     renderLayout();
@@ -600,7 +608,7 @@ describe('vérification d’une réservation depuis la cloche', () => {
   });
 
   it('refuse la réservation et notifie le client du refus', async () => {
-    mocks.getMe.mockResolvedValue(gerantQualifie);
+    mocks.getMe.mockResolvedValue(gerantVerifie);
     mocks.getNotifications.mockResolvedValue([makeNotif()]);
     mocks.checkDateConflict.mockResolvedValue({ hasConflict: true });
 
@@ -621,7 +629,7 @@ describe('vérification d’une réservation depuis la cloche', () => {
   });
 
   it('ferme la modale via « Annuler » sans toucher à la réservation', async () => {
-    mocks.getMe.mockResolvedValue(gerantQualifie);
+    mocks.getMe.mockResolvedValue(gerantVerifie);
     mocks.getNotifications.mockResolvedValue([makeNotif()]);
 
     renderLayout();
@@ -637,7 +645,7 @@ describe('vérification d’une réservation depuis la cloche', () => {
   });
 
   it('ferme la modale en cliquant sur le fond', async () => {
-    mocks.getMe.mockResolvedValue(gerantQualifie);
+    mocks.getMe.mockResolvedValue(gerantVerifie);
     mocks.getNotifications.mockResolvedValue([makeNotif()]);
 
     const { container } = renderLayout();
@@ -655,7 +663,7 @@ describe('vérification d’une réservation depuis la cloche', () => {
 
 describe('identité et déconnexion', () => {
   it('affiche le prénom du gérant avec ses badges vérifié et premium', async () => {
-    mocks.getMe.mockResolvedValue(gerantQualifie);
+    mocks.getMe.mockResolvedValue(gerantVerifie);
 
     renderLayout();
 

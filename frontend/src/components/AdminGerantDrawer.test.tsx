@@ -21,6 +21,9 @@ const mocks = vi.hoisted(() => ({
   reviewDocument: vi.fn<
     (docId: string, status: 'approved' | 'rejected', reason?: string) => Promise<VerificationDocument>
   >(),
+  setPayoutVerification: vi.fn<
+    (id: string, verified: boolean) => Promise<{ verified: boolean; verified_at: string | null }>
+  >(),
 }));
 
 vi.mock('../lib/adminApi', () => ({
@@ -30,6 +33,7 @@ vi.mock('../lib/adminApi', () => ({
     approveGerantVerification: mocks.approveGerantVerification,
     rejectGerantVerification: mocks.rejectGerantVerification,
     reviewDocument: mocks.reviewDocument,
+    setPayoutVerification: mocks.setPayoutVerification,
   },
 }));
 
@@ -562,5 +566,40 @@ describe('AdminGerantDrawer', () => {
     );
 
     expect(await screen.findByText('Réseau indisponible')).toBeInTheDocument();
+  });
+
+  it('valide les coordonnées de reversement et prévient le parent', async () => {
+    const gerant: AdminGerant = {
+      ...pendingGerant,
+      verification_status: 'none',
+      is_verified: false,
+      payout_method: 'mobile_money',
+      payout_phone: '+2250700000000',
+      payout_provider: 'orange',
+      payout_holder_name: 'Awa Koné',
+      payout_verified_at: null,
+    };
+    mocks.setPayoutVerification.mockResolvedValue({
+      verified: true,
+      verified_at: '2026-10-28T10:00:00.000Z',
+    });
+
+    const { onUpdated } = await renderDrawer(gerant);
+    await screen.findByRole('heading', { level: 3, name: 'Coordonnées de reversement' });
+    expect(screen.getByText('orange')).toBeInTheDocument();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Valider les coordonnées' }),
+    );
+
+    await waitFor(() =>
+      expect(mocks.setPayoutVerification).toHaveBeenCalledWith('g-1', true),
+    );
+    expect(onUpdated).toHaveBeenCalledWith(
+      expect.objectContaining({ payout_verified_at: '2026-10-28T10:00:00.000Z' }),
+    );
+    expect(
+      await screen.findByRole('button', { name: 'Révoquer' }),
+    ).toBeInTheDocument();
   });
 });

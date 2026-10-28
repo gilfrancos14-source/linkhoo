@@ -525,26 +525,44 @@ describe('GET /api/rooms/:id', () => {
     expect(res.status).toBe(404);
   });
 
-  it('200 : masque l’identité d’un gérant non vérifié', async () => {
+  it('200 : expose l’identité d’un gérant non vérifié sans ses coordonnées', async () => {
     stubTables({
       rooms: fakeChain({ data: { id: 'r1', gerant_id: 'user_1' }, error: null }),
-      gerants: fakeChain({ data: { nom: 'Koffi', is_verified: false }, error: null }),
+      gerants: fakeChain({
+        data: { nom: 'Koffi', prenom: 'Mensah', phone: '+2250102030405', is_verified: false, created_at: '2025-01-02T00:00:00.000Z' },
+        error: null,
+      }),
     });
 
     const res = await request(app).get('/api/rooms/r1');
     expect(res.status).toBe(200);
-    expect(res.body.gerant).toBeNull();
+    expect(res.body.gerant).toMatchObject({
+      nom: 'Koffi',
+      prenom: 'Mensah',
+      phone: null,
+      is_verified: false,
+      created_at: '2025-01-02T00:00:00.000Z',
+    });
   });
 
-  it('200 : expose le gérant vérifié', async () => {
+  it('200 : expose le gérant vérifié avec ses coordonnées', async () => {
     stubTables({
       rooms: fakeChain({ data: { id: 'r1', gerant_id: 'user_1' }, error: null }),
-      gerants: fakeChain({ data: { nom: 'Aya', is_verified: true }, error: null }),
+      gerants: fakeChain({
+        data: { nom: 'Aya', prenom: 'Kouassi', phone: '+2250707070707', is_verified: true, created_at: '2024-03-12T00:00:00.000Z' },
+        error: null,
+      }),
     });
 
     const res = await request(app).get('/api/rooms/r1');
     expect(res.status).toBe(200);
-    expect(res.body.gerant).toEqual({ nom: 'Aya', is_verified: true });
+    expect(res.body.gerant).toMatchObject({
+      nom: 'Aya',
+      prenom: 'Kouassi',
+      phone: '+2250707070707',
+      is_verified: true,
+      created_at: '2024-03-12T00:00:00.000Z',
+    });
   });
 });
 

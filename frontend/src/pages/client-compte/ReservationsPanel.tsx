@@ -19,11 +19,13 @@ export default function ReservationsPanel({
   reviewError,
   reviewSubmitting,
   cancellingId,
+  payingId,
   onCancel,
   onOpenReviewForm,
   onChangeReview,
   onCloseReview,
   onSubmitReview,
+  onPay,
 }: {
   homePath: string;
   loading: boolean;
@@ -36,11 +38,13 @@ export default function ReservationsPanel({
   reviewError: string;
   reviewSubmitting: boolean;
   cancellingId: string | null;
+  payingId?: string | null;
   onCancel: (id: string) => void;
   onOpenReviewForm: (reservation: ClientMineReservationData) => void;
   onChangeReview: (patch: Partial<ReviewFormState>) => void;
   onCloseReview: () => void;
   onSubmitReview: (e: FormEvent) => void;
+  onPay?: (reservation: ClientMineReservationData) => void;
 }) {
   return (
     <section className="client-compte__panel">
@@ -69,8 +73,10 @@ export default function ReservationsPanel({
               canReview={!reviewsError && reviewable.some((x) => x.id === r.id)}
               isReviewed={reviewedIds.has(r.id)}
               cancellingId={cancellingId}
+              payingId={payingId}
               onCancel={onCancel}
               onReview={onOpenReviewForm}
+              onPay={onPay}
             />
           ))}
         </div>

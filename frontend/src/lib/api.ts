@@ -169,6 +169,8 @@ export interface GerantInfo {
   /** Date d'expiration de l'abonnement : requise pour calculer l'activité
       du badge (`isPremiumActive`) — sans elle, un premium expiré reste « actif ». */
   premium_expires_at?: string | null;
+  /** Date d'inscription du gérant, affichée « Membre depuis … ». */
+  created_at?: string | null;
 }
 
 export interface RoomData {
@@ -350,6 +352,31 @@ export const apiEscapades = {
 };
 
 // ── Reservations ──
+/**
+ * Vie financière d'une réservation, distincte de la décision du gérant
+ * (`statut`). `pending` = checkout ouvert mais pas encore confirmé.
+ */
+export type ReservationPaymentStatus =
+  | 'unpaid'
+  | 'pending'
+  | 'deposit_paid'
+  | 'paid'
+  | 'refund_pending'
+  | 'partially_refunded'
+  | 'refunded'
+  | 'failed';
+
+/** Paiement joint à une réservation à la création (aucune clé n'y figure). */
+export interface BookingPaymentInfo {
+  state: 'checkout' | 'paid';
+  reference?: string;
+  checkout_url?: string;
+  amount?: number;
+  currency?: string;
+  amount_xof?: number;
+  expires_at?: string;
+}
+
 export interface ReservationData {
   id: string;
   client_name: string;
@@ -372,6 +399,12 @@ export interface ReservationData {
   gerant_is_premium?: boolean;
   /** Clé d'idempotence générée côté client (anti doublon des rejeux). */
   client_key?: string | null;
+  payment_status?: ReservationPaymentStatus;
+  paid_at?: string | null;
+  /** Montant déjà remboursé (0 si aucun remboursement). */
+  refunded_amount?: number | null;
+  /** Checkout ouvert (ou état payé) au moment de la création. */
+  payment?: BookingPaymentInfo | null;
 }
 
 export interface ClientReservationData {
@@ -383,6 +416,9 @@ export interface ClientReservationData {
   duree_unite: DureeUnite | null;
   statut: 'en_attente' | 'confirmee' | 'annulee';
   created_at: string;
+  payment_status?: ReservationPaymentStatus;
+  paid_at?: string | null;
+  refunded_amount?: number | null;
 }
 
 export interface ClientMineReservationData extends ClientReservationData {
@@ -394,19 +430,76 @@ export interface ClientMineReservationData extends ClientReservationData {
 
 export type ReservationCreatePayload = Omit<
   ReservationData,
-  'id' | 'created_at' | 'responded_at' | 'statut' | 'duree_nombre' | 'duree_unite'
+  | 'id'
+  | 'created_at'
+  | 'responded_at'
+  | 'statut'
+  | 'duree_nombre'
+  | 'duree_unite'
+  | 'payment_status'
+  | 'paid_at'
+  | 'payment'
 > & {
   duree_nombre: number;
   duree_unite: DureeUnite;
+};
+
+export type ReservationPaymentStart =
+  | {
+      state: 'checkout';
+      reference: string;
+      checkout_url: string;
+      amount: number;
+      currency: string;
+      amount_xof: number;
+      expires_at: string;
+    }
+  | { state: 'paid'; reference?: string };
+
+export interface ReservationPaymentConfirmation {
+  success: boolean;
+  already_paid: boolean;
+  payment_status: ReservationPaymentStatus;
+  paid_at: string | null;
+  reservation: ReservationData | null;
+}
+
+/** Résultat d'une demande de remboursement (null : rien à rembourser). */
+export interface ReservationRefundOutcome {
+  requested: boolean;
+  status:
+    | 'requested'
+    | 'processing'
+    | 'succeeded'
+    | 'failed'
+    | 'manual_required'
+    | 'canceled'
+    | null;
+  refundId?: string | null;
+  reason?: string;
+  details?: string;
+}
+
+export type ReservationCancelResult = ClientMineReservationData & {
+  refund?: ReservationRefundOutcome;
 };
 
 export const apiReservations = {
   list: () => request<ReservationData[]>('/reservations'),
   listMine: () => request<ClientMineReservationData[]>('/reservations/mine'),
   cancelMine: (id: string) =>
-    request<ClientMineReservationData>(`/reservations/${id}/cancel`, { method: 'POST' }),
+    request<ReservationCancelResult>(`/reservations/${id}/cancel`, { method: 'POST' }),
   create: (data: ReservationCreatePayload) => request<ReservationData>('/reservations', { method: 'POST', body: JSON.stringify(data) }),
   updateStatut: (id: string, statut: string) => request<ReservationData>(`/reservations/${id}`, { method: 'PATCH', body: JSON.stringify({ statut }) }),
+  /** (Ré)ouvre le checkout Hub2 d'une réservation. Aucun montant n'est envoyé. */
+  startPayment: (id: string) =>
+    request<ReservationPaymentStart>(`/reservations/${id}/payment`, { method: 'POST' }),
+  /** Confirme le retour de checkout ; le webhook reste le chemin nominal. */
+  confirmPayment: (reference: string) =>
+    request<ReservationPaymentConfirmation>('/reservations/payment/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ reference }),
+    }),
   checkConflict: (roomId: string, dateDebut: string, dateFin: string, excludeId?: string) =>
     request<{ hasConflict: boolean }>(`/reservations/check?room_id=${roomId}&date_debut=${dateDebut}&date_fin=${dateFin}${excludeId ? `&exclude_id=${excludeId}` : ''}`),
 };
@@ -580,10 +673,87 @@ export const apiGerants = {
     request<VerificationStatusResponse>(`/gerants/${id}/verification-status`),
 };
 
+// ── Reversements (phase 4) ──
+/** Moyen de reversement déclaré par le gérant. */
+export type PayoutMethod = 'mobile_money' | 'bank_transfer';
+
+/** Statut interne d'un reversement — jamais un statut prestataire brut. */
+export type PayoutStatus = 'scheduled' | 'processing' | 'paid' | 'failed' | 'canceled';
+
+export interface PayoutSettingsData {
+  method: PayoutMethod | null;
+  phone: string | null;
+  provider: string | null;
+  bank_code: string | null;
+  bank_name: string | null;
+  account_number: string | null;
+  holder_name: string | null;
+  /** Coordonnées complètes ET validées par un administrateur. */
+  verified: boolean;
+  verified_at: string | null;
+  /** Champs encore manquants (`method`, `phone`, `provider`…). */
+  missing_fields: string[];
+}
+
+export interface PayoutSettingsInput {
+  method: PayoutMethod;
+  phone?: string | null;
+  provider?: string | null;
+  bank_code?: string | null;
+  bank_name?: string | null;
+  account_number?: string | null;
+  holder_name: string;
+}
+
+export interface PayoutData {
+  id: string;
+  reference: string;
+  reservation_id: string | null;
+  gross_amount: number;
+  commission_amount: number;
+  refunded_amount: number;
+  net_amount: number;
+  currency: string;
+  status: PayoutStatus;
+  scheduled_for: string;
+  paid_at: string | null;
+  failure_code: string | null;
+  created_at: string;
+}
+
+export const apiPayouts = {
+  getSettings: () => request<PayoutSettingsData>('/payouts/settings'),
+  saveSettings: (data: PayoutSettingsInput) =>
+    request<PayoutSettingsData>('/payouts/settings', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  listMine: () => request<PayoutData[]>('/payouts/mine'),
+};
+
 // ── Premium ──
+/**
+ * Réponse d'initiation. FedaPay renvoie `transaction_id` + `payment_url` ;
+ * Hub2 renvoie `reference` + `checkout_url` (le reste est informatif).
+ * Les deux champs sont optionnels pour que le front tolère un rollback par
+ * `PAYMENTS_PROVIDER` sans redéploiement.
+ */
 interface PremiumInitiateResponse {
-  transaction_id: number;
-  payment_url: string;
+  transaction_id?: number;
+  payment_url?: string;
+  reference?: string;
+  checkout_url?: string;
+  amount?: number;
+  currency?: string;
+  amount_xof?: number;
+  expires_at?: string;
+}
+
+interface PremiumConfirmResponse {
+  success: boolean;
+  already_active: boolean;
+  premium_expires_at: string | null;
+  gerant: GerantData;
 }
 
 export const apiPremium = {
@@ -593,14 +763,15 @@ export const apiPremium = {
       body: JSON.stringify({ market }),
     }),
   confirm: (transactionId: number) =>
-    request<{
-      success: boolean;
-      already_active: boolean;
-      premium_expires_at: string | null;
-      gerant: GerantData;
-    }>('/premium/confirm', {
+    request<PremiumConfirmResponse>('/premium/confirm', {
       method: 'POST',
       body: JSON.stringify({ transaction_id: transactionId }),
+    }),
+  /** Confirmation Hub2 : la référence interne remplace `transaction_id`. */
+  confirmReference: (reference: string) =>
+    request<PremiumConfirmResponse>('/premium/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ reference }),
     }),
 };
 

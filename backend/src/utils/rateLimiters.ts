@@ -32,12 +32,24 @@ export function isAuthRequest(req: Request): boolean {
 }
 
 /**
+ * Vrai pour les endpoints de webhook prestataire (`/api/premium/webhook`,
+ * `/api/webhooks/*`). Ils ont leur propre limiteur : les compter aussi dans le
+ * quota global d'écritures reviendrait à refuser un paiement parce qu'un autre
+ * utilisateur a rempli un formulaire dans la même fenêtre.
+ */
+export function isWebhookRequest(req: Request): boolean {
+  const path = fullPath(req);
+  return path === '/api/premium/webhook' || path === '/api/webhooks' || path.startsWith('/api/webhooks/');
+}
+
+/**
  * Prédicat `skip` du limiteur global d'écritures (index.ts) : ne compte que les
- * vraies écritures. Les GET et la connexion en sont exclus.
+ * vraies écritures. Les GET, la connexion et les webhooks en sont exclus.
  */
 export function skipWriteQuota(req: Request): boolean {
   if (req.method === 'GET') return true;
   if (isAuthRequest(req)) return true;
+  if (isWebhookRequest(req)) return true;
   return false;
 }
 

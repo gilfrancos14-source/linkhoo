@@ -157,28 +157,24 @@ describe('ReservationsPage', () => {
     expect(mocks.getMe).toHaveBeenCalledTimes(1);
   });
 
-  it('redirige quand le premium est expiré', async () => {
+  it('affiche les réservations même quand le premium est expiré', async () => {
     mocks.getMe.mockResolvedValue(
       makeGerant({ premium_expires_at: '2025-06-01T00:00:00.000Z' }),
     );
 
     renderReservations();
 
-    expect(
-      await screen.findByText('Tableau de bord gérant'),
-    ).toBeInTheDocument();
-    expect(mocks.getReservations).not.toHaveBeenCalled();
+    expect(await screen.findByRole('table')).toBeInTheDocument();
+    expect(mocks.getReservations).toHaveBeenCalledTimes(1);
   });
 
-  it('redirige quand le profil premium est absent', async () => {
-    mocks.getMe.mockResolvedValue(makeGerant({ is_premium: false }));
+  it('affiche les réservations quand le profil premium est absent', async () => {
+    mocks.getMe.mockResolvedValue(makeGerant({ is_premium: false, premium_expires_at: null }));
 
     renderReservations();
 
-    expect(
-      await screen.findByText('Tableau de bord gérant'),
-    ).toBeInTheDocument();
-    expect(mocks.getReservations).not.toHaveBeenCalled();
+    expect(await screen.findByRole('table')).toBeInTheDocument();
+    expect(mocks.getReservations).toHaveBeenCalledTimes(1);
   });
 
   it('respecte le marché BJ pour la redirection', async () => {
@@ -406,11 +402,11 @@ describe('ReservationsPage', () => {
     );
   });
 
-  it('attribue la confirmation au gérant quand il est vérifié et premium', async () => {
+  it('attribue la confirmation au gérant vérifié, sans premium requis', async () => {
     mocks.getReservations.mockResolvedValue([
       makeReservation({
         gerantIsVerified: true,
-        gerantIsPremium: true,
+        gerantIsPremium: false,
         gerantPrenom: 'Awa',
         gerantNom: 'Kouassi',
       }),

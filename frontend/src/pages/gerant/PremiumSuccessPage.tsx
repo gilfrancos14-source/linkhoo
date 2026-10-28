@@ -14,23 +14,33 @@ export default function PremiumSuccessPage() {
   const verify = useCallback(async () => {
     if (!userId) return;
     const params = new URLSearchParams(window.location.search);
+    // Hub2 renvoie `?reference=PAY-…` ; FedaPay conservait `?id=<transaction>`.
+    // On accepte les deux pour que le rollback ne casse pas les liens déjà
+    // envoyés par e-mail.
+    const reference = params.get('reference');
     const idParam = params.get('id');
     const transactionId = idParam ? parseInt(idParam, 10) : NaN;
 
-    if (!idParam || !Number.isFinite(transactionId)) {
+    if (!reference && (!idParam || !Number.isFinite(transactionId))) {
       setStatus('error');
       setMessage('Paramètres de paiement invalides.');
       return;
     }
 
     try {
-      await apiPremium.confirm(transactionId);
+      if (reference) {
+        await apiPremium.confirmReference(reference);
+      } else {
+        await apiPremium.confirm(transactionId);
+      }
       setStatus('success');
       setMessage('Votre abonnement premium est maintenant actif !');
     } catch (err: any) {
       const msg = err?.message || 'Erreur lors de la confirmation du paiement.';
+      const code = err?.detail?.code;
       const isPending =
-        /non confirm|pas pay|pending|declined|canceled/i.test(msg);
+        code === 'PAYMENT_NOT_SUCCEEDED' ||
+        /non confirm|pas (encore|été)|pas pay|pending|declined|canceled/i.test(msg);
       setStatus('error');
       setMessage(
         isPending
@@ -102,7 +112,7 @@ export default function PremiumSuccessPage() {
           <p style={{
             color: status === 'success' ? '#047857' : status === 'error' ? '#B91C1C' : '#A16207',
           }}>
-            {status === 'loading' ? 'Vérification de votre paiement avec FedaPay...' : message}
+            {status === 'loading' ? 'Vérification de votre paiement...' : message}
           </p>
         </div>
       </section>

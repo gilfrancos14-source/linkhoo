@@ -422,11 +422,23 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     if (data.gerant_id) {
       const { data: gerantData } = await supabaseAdmin
         .from('gerants')
-        .select('nom, prenom, phone, is_verified, is_premium, premium_expires_at')
+        .select('nom, prenom, phone, is_verified, is_premium, premium_expires_at, created_at')
         .eq('clerk_user_id', data.gerant_id)
         .maybeSingle();
-      // Identité et coordonnées jamais exposées tant que le gérant n'est pas vérifié.
-      if (gerantData?.is_verified) gerant = gerantData;
+      if (gerantData) {
+        // Identité publique de l'hôte : elle est nécessaire à la fiche chambre
+        // (nom, ancienneté, badges). En revanche, les coordonnées (téléphone)
+        // ne sont jamais exposées tant que le gérant n'est pas vérifié.
+        gerant = {
+          nom: gerantData.nom ?? '',
+          prenom: gerantData.prenom ?? '',
+          phone: gerantData.is_verified ? gerantData.phone : null,
+          is_verified: Boolean(gerantData.is_verified),
+          is_premium: Boolean(gerantData.is_premium),
+          premium_expires_at: gerantData.premium_expires_at,
+          created_at: gerantData.created_at,
+        };
+      }
     }
 
     res.json({ ...data, gerant });

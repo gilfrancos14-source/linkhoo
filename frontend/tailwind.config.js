@@ -2,7 +2,7 @@
 export default {
   content: [
     './src/maquette/**/*.{ts,tsx}',
-    './src/pages/RoomDetailPage.tsx',
+    './src/pages/RoomDetailMaq7.tsx',
     './src/pages/gerant/DashboardPage.tsx',
     './src/pages/gerant/ChambresPage.tsx',
     './src/pages/gerant/AjouterChambreMaq3.tsx',

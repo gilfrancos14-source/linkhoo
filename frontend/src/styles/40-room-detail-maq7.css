@@ -1,0 +1,198 @@
+/* ==========================================================================
+   FICHE CHAMBRE — reproduction de la maquette maq7.html
+   Les utilitaires viennent de Tailwind ; ce fichier ne déclare que le reset
+   local (preflight est désactivé) et la palette exacte de la maquette.
+   ========================================================================== */
+
+.room-detail-maq7 {
+  --m7-brand: #ff5a1f;
+  --m7-brand-dark: #e8480f;
+  --m7-brand-soft: #fff1ea;
+  --m7-ink: #14213d;
+  --m7-mute: #6b7280;
+  --m7-line: #e8ecf2;
+
+  color: var(--m7-ink);
+}
+
+.room-detail-maq7 main {
+  overflow: visible;
+}
+
+/* En-tête de marché réutilisé sur la fiche : les wrappers `.landing` et
+   `.maquette-shell` fournissent les variables, le reset et les mesures de la
+   barre de /ci, sans imposer leur fond ni leur hauteur pleine. */
+.room-detail-maq7 .m7-market-header {
+  min-height: 0;
+  background: transparent;
+}
+
+/* Bordures : équivalent local du preflight Tailwind (désactivé globalement).
+   Sans `border-style: solid`, un utilitaire `.border` (qui ne pose que la
+   largeur) reste invisible. Spécificité nulle : `.border`, `.border-2`,
+   `.border-dashed`… repris sur un élément gagnent toujours. */
+:where(.room-detail-maq7, .room-detail-maq7 *) {
+  border-width: 0;
+  border-style: solid;
+}
+
+/* Reset local des contrôles natifs (fond, couleur, police uniquement : la
+   gestion des bordures est assurée par la règle ci-dessus). */
+:where(.room-detail-maq7) :where(button, input, select, textarea) {
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+:where(.room-detail-maq7) :where(button) {
+  cursor: pointer;
+}
+
+:where(.room-detail-maq7) :where(button:disabled) {
+  cursor: default;
+}
+
+/* Accordéons : fermés sur mobile, toujours ouverts sur desktop. */
+.room-detail-maq7 details > summary {
+  list-style: none;
+}
+
+.room-detail-maq7 details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.room-detail-maq7 details:not([open]) .chev {
+  transform: rotate(180deg);
+}
+
+@media (min-width: 1024px) {
+  /* Les blocs de contenu (description, règles, hôte) restent ouverts sur
+     desktop : leur résumé n'est pas cliquable. Le formulaire de coordonnées
+     est explicitement repliable et doit rester utilisable. */
+  .room-detail-maq7 details:not(.m7-collapsible) > summary {
+    pointer-events: none;
+  }
+
+  .room-detail-maq7 .chev {
+    display: none;
+  }
+}
+
+/* Palette exacte de la maquette (les tokens du site sont légèrement différents). */
+.room-detail-maq7 .text-ink {
+  color: var(--m7-ink);
+}
+
+.room-detail-maq7 .text-mute {
+  color: var(--m7-mute);
+}
+
+.room-detail-maq7 .border-line {
+  border-color: var(--m7-line);
+}
+
+.room-detail-maq7 .bg-brand {
+  background-color: var(--m7-brand);
+}
+
+.room-detail-maq7 .text-brand {
+  color: var(--m7-brand);
+}
+
+.room-detail-maq7 .border-brand {
+  border-color: var(--m7-brand);
+}
+
+.room-detail-maq7 .bg-brand-soft {
+  background-color: var(--m7-brand-soft);
+}
+
+.room-detail-maq7 .bg-ink\/80 {
+  background-color: rgb(20 33 61 / 0.8);
+}
+
+.room-detail-maq7 .placeholder\:text-mute::placeholder {
+  color: var(--m7-mute);
+}
+
+.room-detail-maq7 .hover\:text-brand:hover {
+  color: var(--m7-brand);
+}
+
+.room-detail-maq7 .focus\:border-brand:focus {
+  border-color: var(--m7-brand);
+}
+
+.room-detail-maq7 .hover\:bg-brand-dark:hover {
+  background-color: var(--m7-brand-dark);
+}
+
+.room-detail-maq7 .hover\:bg-brand-soft:hover {
+  background-color: var(--m7-brand-soft);
+}
+
+/* --------------------------------------------------------------------------
+   Galerie : dimensions exactes de maq7.html.
+   L'image est positionnée en absolu pour que sa hauteur naturelle ne puisse
+   jamais étirer la galerie : mobile 2/1, tablette 320 px, desktop 420 px.
+   -------------------------------------------------------------------------- */
+
+.room-detail-maq7 .m7-gallery {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.room-detail-maq7 .m7-gallery__main {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 2 / 1;
+  height: auto;
+  min-height: 0;
+  border-radius: 1rem;
+}
+
+.room-detail-maq7 .m7-gallery__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.room-detail-maq7 .m7-gallery__side {
+  display: none;
+}
+
+.room-detail-maq7 .m7-gallery__thumb {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .room-detail-maq7 .m7-gallery__main {
+    aspect-ratio: auto;
+    height: 20rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .room-detail-maq7 .m7-gallery {
+    grid-template-columns: 2.4fr 1fr;
+    height: 420px;
+  }
+
+  .room-detail-maq7 .m7-gallery__main {
+    height: 100%;
+  }
+
+  .room-detail-maq7 .m7-gallery__side {
+    display: grid;
+    grid-template-rows: 1fr 1fr 1fr;
+    gap: 0.75rem;
+    height: 100%;
+    min-height: 0;
+  }
+}
+

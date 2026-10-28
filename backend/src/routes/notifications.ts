@@ -80,9 +80,9 @@ router.get('/', requireClerkAuth, async (req: Request, res: Response, next: Next
     });
 
     // Identité du client : cette route est la seule à renvoyer des données de
-    // réservation à un gérant **non qualifié** (les routes réservations sont en
-    // 403). Masquage sauf gérant vérifié + premium actif — règle identique à
-    // celle des listes de réservation.
+    // réservation à un gérant **non vérifié** (les routes réservations sont en
+    // 403). Masquage sauf gérant vérifié — règle identique à celle des listes
+    // de réservation.
     const qualified = await isQualifiedGerantUser(authUserId);
     res.json(qualified ? data : data.map((row) => maskClientIdentity(row)));
   } catch (err) {

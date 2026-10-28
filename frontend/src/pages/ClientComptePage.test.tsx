@@ -7,7 +7,7 @@ import ClientComptePage from './ClientComptePage';
 
 const mocks = vi.hoisted(() => ({
   getMyReservations: vi.fn<() => Promise<unknown[]>>(),
-  cancelMyReservation: vi.fn<(id: string) => Promise<void>>(),
+  cancelMyReservation: vi.fn<(id: string) => Promise<unknown>>(),
   listMine: vi.fn<() => Promise<unknown[]>>(),
   createReview: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   getMe: vi.fn<() => Promise<unknown>>(),
@@ -415,6 +415,19 @@ describe('ClientComptePage — annulation', () => {
     expect(mocks.cancelMyReservation).toHaveBeenCalledWith('res1');
     expect(await within(cardByTitle('Suite vue mer')).findByText('Annulée')).toBeInTheDocument();
     expect(within(cardByTitle('Suite vue mer')).queryByRole('button', { name: 'Annuler' })).not.toBeInTheDocument();
+  });
+
+  it('affiche le remboursement en cours quand la réservation était payée', async () => {
+    mocks.cancelMyReservation.mockResolvedValue({
+      refund: { requested: true, status: 'processing', refundId: 'refund-1' },
+    });
+    await renderLoaded();
+
+    fireEvent.click(within(cardByTitle('Suite vue mer')).getByRole('button', { name: 'Annuler' }));
+
+    const card = cardByTitle('Suite vue mer');
+    expect(await within(card).findByText('Remboursement en cours')).toBeInTheDocument();
+    expect(within(card).queryByText('Payée')).not.toBeInTheDocument();
   });
 
   it("n'annule rien quand l'utilisateur refuse", async () => {

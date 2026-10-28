@@ -94,6 +94,14 @@ export default function AdminGerantsPage() {
             Documents
           </button>
         )}
+        {(gerant.payout_method || gerant.payout_verified_at) && (
+          <button
+            className="admin-btn admin-btn--sm"
+            onClick={() => setSelectedGerant(gerant)}
+          >
+            Reversements
+          </button>
+        )}
         {gerant.is_verified ? (
           <button className="admin-btn admin-btn--danger admin-btn--sm" onClick={() => handleRevoke(gerant.id)} disabled={isLoading}>
             {isLoading ? '...' : 'Révoquer'}

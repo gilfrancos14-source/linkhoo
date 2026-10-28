@@ -34,18 +34,6 @@ const PERKS = [
     ),
   },
   {
-    title: 'Gestion des réservations de vos biens',
-    desc: 'Accédez à vos réservations depuis votre tableau de bord : consultez, validez et suivez chaque demande en un clic.',
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2"/>
-        <line x1="16" y1="2" x2="16" y2="6"/>
-        <line x1="8" y1="2" x2="8" y2="6"/>
-        <line x1="3" y1="10" x2="21" y2="10"/>
-      </svg>
-    ),
-  },
-  {
     title: 'Badge PRO et statut Premium dans votre espace gérant',
     desc: 'Votre profil gérant affiche le badge PRO et le statut Premium, visible de vos clients et partenaires.',
     icon: (
@@ -75,8 +63,12 @@ export default function PremiumPage() {
     setProcessing(true);
     setError('');
     try {
-      const { payment_url } = await apiPremium.initiate(market);
-      window.location.href = payment_url;
+      const { payment_url, checkout_url } = await apiPremium.initiate(market);
+      // Hub2 fournit `checkout_url` ; FedaPay `payment_url`. Le fallback garde
+      // le rollback fonctionnel sans changement de front.
+      const redirectUrl = checkout_url ?? payment_url;
+      if (!redirectUrl) throw new Error('URL de paiement indisponible');
+      window.location.href = redirectUrl;
     } catch (err: any) {
       setError(err.message || 'Erreur lors de l\'initiation du paiement');
       setProcessing(false);
@@ -155,7 +147,7 @@ export default function PremiumPage() {
                     ? 'Redirection...'
                     : '5 000 XOF / mois'}
                 </button>
-                <p className="premium-hero__note">Paiement sécurisé via FedaPay</p>
+                <p className="premium-hero__note">Paiement sécurisé via Hub2</p>
               </div>
             </div>
           </section>

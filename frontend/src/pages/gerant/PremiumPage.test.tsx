@@ -10,7 +10,12 @@ const mocks = vi.hoisted(() => ({
   userId: 'user_clerk_1' as string | null,
   getMe: vi.fn<() => Promise<GerantData>>(),
   initiate: vi.fn<
-    (market: string) => Promise<{ transaction_id: number; payment_url: string }>
+    (market: string) => Promise<{
+      transaction_id?: number;
+      payment_url?: string;
+      reference?: string;
+      checkout_url?: string;
+    }>
   >(),
 }));
 
@@ -115,14 +120,14 @@ describe('PremiumPage', () => {
     expect(screen.queryByText('Chargement...')).not.toBeInTheDocument();
   });
 
-  it('liste les cinq avantages de l’abonnement', async () => {
+  it('liste les quatre avantages de l’abonnement', async () => {
     renderPremium();
 
     expect(
       await screen.findByRole('heading', { name: 'Avantages Premium' }),
     ).toBeInTheDocument();
     const items = screen.getAllByRole('listitem');
-    expect(items).toHaveLength(5);
+    expect(items).toHaveLength(4);
     // Chaque <li> contient le titre du bénéfice dans .premium-perk__title
     // (le textContent du <li> inclut aussi le paragraphe d'explication).
     const titres = items.map(
@@ -132,7 +137,6 @@ describe('PremiumPage', () => {
       'Une annonce sur 3 en tête des recherches et des catégories',
       'Badge Premium sur vos cartes de résultats',
       'Badge Premium sur la fiche publique de vos biens',
-      'Gestion des réservations de vos biens',
       'Badge PRO et statut Premium dans votre espace gérant',
     ]);
     // Chaque avantage est accompagné d'un court paragraphe d'explication.
@@ -173,6 +177,39 @@ describe('PremiumPage', () => {
     await user.click(screen.getByRole('button', { name: '5 000 XOF / mois' }));
 
     expect(mocks.initiate).toHaveBeenCalledWith('BJ');
+  });
+
+  it('utilise checkout_url quand Hub2 le fournit (sans payment_url)', async () => {
+    mocks.initiate.mockResolvedValue({
+      reference: 'PAY-2026-ABC123',
+      checkout_url: 'https://pay.hub2.io/link_1',
+    });
+    const user = userEvent.setup();
+    renderPremium();
+    await screen.findByText('Devenez Premium');
+
+    await user.click(screen.getByRole('button', { name: '5 000 XOF / mois' }));
+
+    expect(
+      await screen.findByRole('button', { name: 'Redirection...' }),
+    ).toBeDisabled();
+    expect(screen.queryByText('URL de paiement indisponible')).not.toBeInTheDocument();
+  });
+
+  it('signale une réponse sans URL de paiement', async () => {
+    mocks.initiate.mockResolvedValue({ reference: 'PAY-2026-ABC123' });
+    const user = userEvent.setup();
+    renderPremium();
+    await screen.findByText('Devenez Premium');
+
+    await user.click(screen.getByRole('button', { name: '5 000 XOF / mois' }));
+
+    expect(
+      await screen.findByText('URL de paiement indisponible'),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: '5 000 XOF / mois' }),
+    ).toBeEnabled();
   });
 
   it('verrouille le bouton et affiche « Redirection... » pendant l’initiation', async () => {

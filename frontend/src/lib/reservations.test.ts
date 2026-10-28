@@ -1,10 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   addReservation,
+  canPayReservation,
   cancelMyReservation,
   checkDateConflict,
+  confirmReservationPayment,
   getMyReservations,
   getReservations,
+  paymentColors,
+  paymentLabels,
+  startReservationPayment,
   statutColors,
   statutLabels,
   updateReservationStatut,
@@ -17,6 +22,8 @@ const mocks = vi.hoisted(() => ({
   listMine: vi.fn<() => Promise<unknown[]>>(),
   cancelMine: vi.fn<(id: string) => Promise<unknown>>(),
   updateStatut: vi.fn<(id: string, statut: string) => Promise<unknown>>(),
+  startPayment: vi.fn<(id: string) => Promise<unknown>>(),
+  confirmPayment: vi.fn<(reference: string) => Promise<unknown>>(),
   checkConflict: vi.fn<(roomId: string, dateDebut: string, dateFin: string, excludeId?: string) => Promise<{ hasConflict: boolean }>>(),
 }));
 
@@ -27,6 +34,8 @@ vi.mock('../lib/api', () => ({
     listMine: mocks.listMine,
     cancelMine: mocks.cancelMine,
     updateStatut: mocks.updateStatut,
+    startPayment: mocks.startPayment,
+    confirmPayment: mocks.confirmPayment,
     checkConflict: mocks.checkConflict,
   },
 }));
@@ -84,6 +93,48 @@ describe('libellés et couleurs de statut', () => {
   });
 });
 
+describe('libellés et couleurs de paiement', () => {
+  it('couvre tous les statuts de paiement', () => {
+    expect(Object.keys(paymentLabels).sort()).toEqual(
+      [
+        'deposit_paid',
+        'failed',
+        'paid',
+        'partially_refunded',
+        'pending',
+        'refund_pending',
+        'refunded',
+        'unpaid',
+      ].sort(),
+    );
+    expect(Object.keys(paymentColors).sort()).toEqual(Object.keys(paymentLabels).sort());
+  });
+
+  it('associe chaque statut à son libellé français', () => {
+    expect(paymentLabels.unpaid).toBe('Paiement à effectuer');
+    expect(paymentLabels.pending).toBe('Paiement en cours');
+    expect(paymentLabels.paid).toBe('Payée');
+    expect(paymentLabels.refunded).toBe('Remboursée');
+    expect(paymentLabels.failed).toBe('Paiement échoué');
+  });
+});
+
+describe('canPayReservation', () => {
+  it('autorise le paiement seulement quand rien n’est encaissé', () => {
+    expect(canPayReservation('unpaid')).toBe(true);
+    expect(canPayReservation('failed')).toBe(true);
+  });
+
+  it('refuse le paiement pour les statuts engagés', () => {
+    expect(canPayReservation('pending')).toBe(false);
+    expect(canPayReservation('paid')).toBe(false);
+    expect(canPayReservation('deposit_paid')).toBe(false);
+    expect(canPayReservation('refund_pending')).toBe(false);
+    expect(canPayReservation('refunded')).toBe(false);
+    expect(canPayReservation(undefined)).toBe(false);
+  });
+});
+
 describe('getReservations', () => {
   it('transforme les champs snake_case en camelCase', async () => {
     mocks.list.mockResolvedValue([apiReservation()]);
@@ -110,6 +161,9 @@ describe('getReservations', () => {
       gerantPrenom: 'Bakary',
       gerantIsVerified: true,
       gerantIsPremium: true,
+      paymentStatus: undefined,
+      paidAt: null,
+      payment: null,
     });
   });
 
@@ -155,6 +209,45 @@ describe('getReservations', () => {
     mocks.list.mockRejectedValue(new Error('Réseau indisponible'));
 
     await expect(getReservations()).rejects.toThrow('Réseau indisponible');
+  });
+
+  it('expose le statut de paiement et le checkout renvoyés par l’API', async () => {
+    mocks.list.mockResolvedValue([
+      apiReservation({
+        payment_status: 'pending',
+        paid_at: null,
+        payment: {
+          state: 'checkout',
+          reference: 'pay-1',
+          checkout_url: 'https://checkout.hub2.io/pay-1',
+          amount: 120000,
+          currency: 'XOF',
+        },
+      }),
+    ]);
+
+    const [reservation] = await getReservations();
+
+    expect(reservation.paymentStatus).toBe('pending');
+    expect(reservation.paidAt).toBeNull();
+    expect(reservation.payment).toEqual({
+      state: 'checkout',
+      reference: 'pay-1',
+      checkout_url: 'https://checkout.hub2.io/pay-1',
+      amount: 120000,
+      currency: 'XOF',
+    });
+  });
+
+  it('conserve la date de paiement d’une réservation réglée', async () => {
+    mocks.list.mockResolvedValue([
+      apiReservation({ payment_status: 'paid', paid_at: '2030-05-03T12:00:00Z' }),
+    ]);
+
+    const [reservation] = await getReservations();
+
+    expect(reservation.paymentStatus).toBe('paid');
+    expect(reservation.paidAt).toBe('2030-05-03T12:00:00Z');
   });
 });
 
@@ -239,6 +332,36 @@ describe('appels délégués à apiReservations', () => {
       hasConflict: true,
     });
     expect(mocks.checkConflict).toHaveBeenCalledWith('room-1', '2030-06-01', '2030-06-05', undefined);
+  });
+
+  it('startReservationPayment délègue l’identifiant de la réservation', async () => {
+    const start = {
+      state: 'checkout' as const,
+      reference: 'pay-1',
+      checkout_url: 'https://checkout.hub2.io/pay-1',
+      amount: 120000,
+      currency: 'XOF',
+      amount_xof: 120000,
+      expires_at: '2030-05-01T11:00:00Z',
+    };
+    mocks.startPayment.mockResolvedValue(start);
+
+    await expect(startReservationPayment('res-42')).resolves.toEqual(start);
+    expect(mocks.startPayment).toHaveBeenCalledWith('res-42');
+  });
+
+  it('confirmReservationPayment délègue la référence', async () => {
+    const confirmation = {
+      success: true,
+      already_paid: false,
+      payment_status: 'paid' as const,
+      paid_at: '2030-05-01T10:30:00Z',
+      reservation: null,
+    };
+    mocks.confirmPayment.mockResolvedValue(confirmation);
+
+    await expect(confirmReservationPayment('pay-1')).resolves.toEqual(confirmation);
+    expect(mocks.confirmPayment).toHaveBeenCalledWith('pay-1');
   });
 
   it('checkDateConflict avec excludeId', async () => {

@@ -3,8 +3,9 @@ import { useSearchParams } from 'react-router-dom';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { useHomePath } from '../hooks/useHomePath';
 import { useClientUnread } from '../hooks/useClientUnread';
-import { setAuthTokenGetter, apiClients, apiReviews, type ClientMineReservationData, type ReviewData } from '../lib/api';
-import { getMyReservations, cancelMyReservation } from '../lib/reservations';
+import { setAuthTokenGetter, apiClients, apiReviews, type ClientMineReservationData, type ReservationPaymentStatus, type ReviewData } from '../lib/api';
+import { getMyReservations, cancelMyReservation, startReservationPayment } from '../lib/reservations';
+import { redirectTo } from '../lib/navigation';
 
 import type { View, ReviewFormState } from './client-compte/types';
 import ClientAccountLayout from '../components/ClientAccountLayout';
@@ -46,6 +47,7 @@ export default function ClientComptePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [payingId, setPayingId] = useState<string | null>(null);
 
   const [reviewForm, setReviewForm] = useState<ReviewFormState | null>(null);
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
@@ -116,9 +118,31 @@ export default function ClientComptePage() {
     setCancellingId(id);
     setError('');
     try {
-      await cancelMyReservation(id);
+      const result = await cancelMyReservation(id);
+      // Le backend rembourse automatiquement une réservation payée : on
+      // reflète l'état renvoyé sans attendre un rechargement de la page.
+      const refundStatus = result?.refund?.status;
+      const nextPaymentStatus: ReservationPaymentStatus | undefined =
+        refundStatus === 'succeeded'
+          ? 'refunded'
+          : refundStatus === 'requested' ||
+              refundStatus === 'processing' ||
+              refundStatus === 'manual_required'
+            ? 'refund_pending'
+            : refundStatus === 'failed' || refundStatus === 'canceled'
+              ? 'paid'
+              : undefined;
+
       setReservations((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, statut: 'annulee' as const } : r)),
+        prev.map((r) =>
+          r.id === id
+            ? {
+                ...r,
+                statut: 'annulee' as const,
+                ...(nextPaymentStatus ? { payment_status: nextPaymentStatus } : {}),
+              }
+            : r,
+        ),
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Impossible d\'annuler la réservation.');
@@ -127,8 +151,29 @@ export default function ClientComptePage() {
     }
   };
 
-  const openReviewForm = (reservation: ClientMineReservationData) => {
-    setReviewError('');
+  const handlePay = async (reservation: ClientMineReservationData) => {
+    setPayingId(reservation.id);
+    setError('');
+    try {
+      const start = await startReservationPayment(reservation.id);
+      if (start.state === 'paid') {
+        setReservations((prev) =>
+          prev.map((r) =>
+            r.id === reservation.id ? { ...r, payment_status: 'paid' as const } : r,
+          ),
+        );
+        return;
+      }
+      // Sortie vers le checkout hébergé : aucun montant ne transite par le front.
+      redirectTo(start.checkout_url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Paiement indisponible pour le moment.');
+    } finally {
+      setPayingId(null);
+    }
+  };
+
+  const openReviewForm = (reservation: ClientMineReservationData) => {    setReviewError('');
     setReviewSuccess('');
     setReviewForm({
       reservationId: reservation.id,
@@ -224,11 +269,13 @@ export default function ClientComptePage() {
                 reviewError={reviewError}
                 reviewSubmitting={reviewSubmitting}
                 cancellingId={cancellingId}
+                payingId={payingId}
                 onCancel={handleCancel}
                 onOpenReviewForm={openReviewForm}
                 onChangeReview={handleChangeReview}
                 onCloseReview={() => setReviewForm(null)}
                 onSubmitReview={handleReviewSubmit}
+                onPay={handlePay}
               />
             )}
 
