@@ -1,5 +1,308 @@
 /* ==========================================================================
-   PREMIUM PAGE
+   PREMIUM PAGE — reproduction de docs/maquettes/habici-premium.html
+   La page embarque sa propre sidebar et son propre topbar : l'AdminLayout
+   masque son chrome sur cette route (classe .admin--blank).
+   ========================================================================== */
+
+.premium-maq {
+  background: #fafbfe;
+  color: #0b1b3f;
+  font-family: "Inter", system-ui, sans-serif;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Le shell gérant (.gerant-maq1) impose sa police et sa couleur : sur cette
+   page on conserve la typographie Inter de la maquette Premium. */
+.gerant-maq1.premium-maq {
+  color: #0b1b3f;
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+/* Preflight Tailwind est désactivé globalement : reset scopé pour retrouver
+   exactement le rendu du fichier HTML (bordures, boutons, champs, SVG). */
+.premium-maq *,
+.premium-maq *::before,
+.premium-maq *::after {
+  box-sizing: border-box;
+  border-width: 0;
+  border-style: solid;
+  border-color: #e5e7eb;
+}
+
+.premium-maq svg {
+  display: block;
+  vertical-align: middle;
+}
+
+.premium-maq :where(h1, h2, h3, h4, h5, h6) {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.premium-maq :where(button, [role='button']) {
+  cursor: pointer;
+}
+
+.premium-maq :disabled {
+  cursor: default;
+}
+
+.premium-maq :where(button, [type='button']) {
+  -webkit-appearance: button;
+  background-color: transparent;
+  background-image: none;
+}
+
+.premium-maq :where(input) {
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: 100%;
+  line-height: inherit;
+  color: inherit;
+}
+
+.premium-maq :where(input)::placeholder {
+  opacity: 1;
+}
+
+.premium-maq :focus-visible {
+  outline: revert;
+  outline-offset: revert;
+  border-radius: revert;
+}
+
+.premium-maq ::selection {
+  background: Highlight;
+  color: HighlightText;
+}
+
+/* Le site ajoute une barre d'accent fixe et force overflow:hidden sur <main>. */
+html:has(.premium-maq)::before {
+  display: none;
+}
+
+.premium-maq main {
+  overflow: visible;
+}
+
+/* ---- Sidebar ---- */
+/* La sidebar reprend le shell commun des pages gérant (.gerant-maq1).
+   On ne garde ici que l'état actif de l'entrée « Mon abonnement ». */
+.gerant-maq1.premium-maq .sub.on {
+  color: #ea580c;
+  font-weight: 600;
+}
+
+.gerant-maq1.premium-maq .sub.on svg {
+  color: #f97316;
+}
+
+/* ---- Cartes d'offres ---- */
+:where(.premium-maq) .plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e6ebf5;
+  border-radius: 0.75rem;
+  padding: 18px;
+  box-shadow: 0 2px 10px rgba(20, 50, 120, 0.04);
+}
+
+:where(.premium-maq) .plan h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0b1b3f;
+}
+
+:where(.premium-maq) .plan .ico {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  background: #eef3fc;
+  color: #2f5bbf;
+}
+
+:where(.premium-maq) .plan .d {
+  margin-top: 1rem;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #5f86d1;
+  min-height: 36px;
+}
+
+:where(.premium-maq) .pr {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.375rem;
+  color: #0b1b3f;
+}
+
+:where(.premium-maq) .pr b {
+  font-size: clamp(26px, 2.3vw, 34px);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+:where(.premium-maq) .pr span {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+:where(.premium-maq) .old {
+  margin-top: 0.375rem;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 11px;
+  color: #5f86d1;
+}
+
+:where(.premium-maq) .old s {
+  text-decoration-line: line-through;
+  text-decoration-color: #5f86d1;
+}
+
+:where(.premium-maq) .old em {
+  font-style: normal;
+  border-radius: 0.25rem;
+  background: #ff5a14;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+:where(.premium-maq) .cta {
+  margin-top: 0.5rem;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 0.375rem;
+  border: 1px solid #2f5bbf;
+  color: #2f5bbf;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: #fff;
+  text-decoration: none;
+}
+
+:where(.premium-maq) .ft {
+  margin-top: 1.25rem;
+}
+
+:where(.premium-maq) .ft > * + * {
+  margin-top: 13px;
+}
+
+:where(.premium-maq) .ft li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #3d5c9e;
+  list-style: none;
+}
+
+:where(.premium-maq) .ft li::before {
+  content: "";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  background: #22b573 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center/10px no-repeat;
+}
+
+/* ---- Cartes de droite ---- */
+:where(.premium-maq) .why {
+  display: flex;
+  gap: 1rem;
+}
+
+:where(.premium-maq) .why > span {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 9999px;
+  background: #eaf0fb;
+  color: #2f5bbf;
+}
+
+:where(.premium-maq) .why h4 {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1f45a0;
+}
+
+:where(.premium-maq) .why p {
+  margin-top: 0.25rem;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #6f93d9;
+}
+
+:where(.premium-maq) .box {
+  background: #fff;
+  border: 1px solid #e6ebf5;
+  border-radius: 0.75rem;
+  padding: 22px;
+  box-shadow: 0 2px 10px rgba(20, 50, 120, 0.03);
+}
+
+:where(.premium-maq) .stat {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+:where(.premium-maq) .stat > span:first-child {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 9999px;
+  background: #ff5a14;
+  flex: none;
+}
+
+:where(.premium-maq) .stat b {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+:where(.premium-maq) .stat small {
+  display: block;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Masque la barre de défilement de la sidebar, le scroll reste actif. */
+.premium-maq aside {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.premium-maq aside::-webkit-scrollbar {
+  display: none;
+}
+
+/* ==========================================================================
+   Ancienne page premium (classes conservées pour compatibilité)
    ========================================================================== */
 
 .premium-hero {

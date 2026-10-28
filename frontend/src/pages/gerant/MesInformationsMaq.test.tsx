@@ -172,10 +172,6 @@ describe('MesInformationsMaq', () => {
     await screen.findByText('Awa Kouassi', { selector: 'h2' });
 
     expect(screen.getByRole('link', { name: /Retour/ })).toHaveAttribute('href', '/ci/gerant');
-    expect(screen.getByRole('link', { name: 'Modifier le profil' })).toHaveAttribute(
-      'href',
-      '/ci/gerant/profil/modifier',
-    );
     expect(screen.getByRole('link', { name: /Voir le suivi de vérification/ })).toHaveAttribute(
       'href',
       '/ci/gerant/verification/suivi',
@@ -203,9 +199,5 @@ describe('MesInformationsMaq', () => {
     await screen.findByText('Awa Kouassi', { selector: 'h2' });
 
     expect(screen.getByRole('link', { name: /Retour/ })).toHaveAttribute('href', '/bj/gerant');
-    expect(screen.getByRole('link', { name: 'Modifier le profil' })).toHaveAttribute(
-      'href',
-      '/bj/gerant/profil/modifier',
-    );
   });
 });

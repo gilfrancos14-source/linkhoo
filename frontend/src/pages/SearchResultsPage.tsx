@@ -10,7 +10,9 @@ import {
 } from '../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../data/categories';
 import { priceWithCurrency } from '../lib/roomDisplay';
+import { sortRoomsByTier } from '../lib/roomRanking';
 import SearchStayCard from '../components/SearchStayCard';
+import PremiumRoomsCarousel from '../components/PremiumRoomsCarousel';
 import LandingFooter from '../components/landing/LandingFooter';
 import LandingHeader from '../components/landing/LandingHeader';
 import { COUNTRIES, DEFAULT_COUNTRY } from '../components/landing/data';
@@ -18,6 +20,8 @@ import Icon from '../components/landing/icons';
 
 const ITEMS_PER_PAGE = 6;
 const PRICE_CEILING = 500_000;
+/** Nombre maximal de chambres mises en avant dans le carrousel premium. */
+const PREMIUM_SHOWCASE_LIMIT = 9;
 
 type SortKey = 'recommended' | 'price-asc' | 'price-desc';
 
@@ -256,7 +260,7 @@ export default function SearchResultsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState<SortKey>('recommended');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   // Référentiels : catégories, villes, quartiers (endpoints dédiés,
   // pas besoin de tout le catalogue).
@@ -385,16 +389,37 @@ export default function SearchResultsPage() {
     });
   }, [hasDates, rooms, query, selectedVille, selectedQuartier, selectedCategory, priceMax]);
 
+  // Classement de la recherche : gérants premium, puis vérifiés, puis non
+  // vérifiés. L'ordre organique du serveur est conservé dans chaque palier.
+  const rankedRooms = useMemo(() => sortRoomsByTier(filteredRooms), [filteredRooms]);
+
+  // Sélection premium : uniquement le marché courant (dates de disponibilité
+  // incluses), indépendamment des filtres ville / catégorie / budget / q.
+  // Une chambre par gérant en priorité, puis les autres chambres premium.
+  const premiumRooms = useMemo(() => {
+    const premium = rooms.filter((room) => room.gerantPremium);
+    const firstByGerant = new Map<string, Room>();
+    const rest: Room[] = [];
+
+    for (const room of premium) {
+      const key = room.gerantId ?? room.id;
+      if (!firstByGerant.has(key)) firstByGerant.set(key, room);
+      else rest.push(room);
+    }
+
+    return [...firstByGerant.values(), ...rest].slice(0, PREMIUM_SHOWCASE_LIMIT);
+  }, [rooms]);
+
   // Sans dates : total vient du serveur ; avec dates : découpage local.
   const totalPages = hasDates
-    ? Math.ceil(filteredRooms.length / ITEMS_PER_PAGE)
+    ? Math.ceil(rankedRooms.length / ITEMS_PER_PAGE)
     : Math.ceil(total / ITEMS_PER_PAGE);
   const paginatedRooms = hasDates
-    ? filteredRooms.slice(
+    ? rankedRooms.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
         currentPage * ITEMS_PER_PAGE,
       )
-    : filteredRooms;
+    : rankedRooms;
 
   const sortedRooms = useMemo(() => {
     if (sortBy === 'recommended') return paginatedRooms;
@@ -661,6 +686,16 @@ export default function SearchResultsPage() {
 
       {!needsDates && (
         <>
+          {premiumRooms.length > 0 && (
+            <div className="search-page__shell search-page__featured-shell">
+              <PremiumRoomsCarousel
+                rooms={premiumRooms}
+                hrefFor={roomHref}
+                metaFor={searchMeta}
+              />
+            </div>
+          )}
+
           <section className="search-page__shell search-page__toolbar-section">
             <div className="search-page__toolbar">
               <div className="search-page__toolbar-left">
@@ -889,7 +924,7 @@ export default function SearchResultsPage() {
             <section className="search-page__results">
               <div className="search-page__results-head">
                 <p>
-                  {sortedRooms.length} bien{sortedRooms.length !== 1 ? 's' : ''} d&apos;exception à{' '}
+                  {rankedRooms.length} bien{rankedRooms.length !== 1 ? 's' : ''} d&apos;exception à{' '}
                   {destinationLabel}
                 </p>
                 <span>
@@ -897,6 +932,11 @@ export default function SearchResultsPage() {
                   {Math.max(totalPages, 1)}
                 </span>
               </div>
+
+              <p className="search-page__results-note">
+                <Icon name="badgeCheck" size={14} />
+                Hôtes premium en tête, puis hôtes vérifiés.
+              </p>
 
               {sortedRooms.length === 0 ? (
                 <div className="search-page__empty">

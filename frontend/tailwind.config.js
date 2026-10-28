@@ -10,6 +10,7 @@ export default {
     './src/pages/gerant/DemandesReservationMaq4.tsx',
     './src/pages/gerant/CalendrierMaq5.tsx',
     './src/pages/gerant/BoiteReceptionMaq6.tsx',
+    './src/pages/gerant/PremiumPage.tsx',
     './src/pages/gerant/verification/VerifiedSection.tsx',
     './src/pages/gerant/verification/VerificationStaticSection.tsx',
     './src/pages/gerant/verification/SuiviVerificationSection.tsx',

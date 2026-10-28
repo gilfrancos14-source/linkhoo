@@ -235,7 +235,9 @@ export default function AdminLayout() {
     pathname === `${gerantPath}/verification/suivi` ||
     pathname === `${gerantPath}/verification/suivi/` ||
     pathname === `${gerantPath}/profil` ||
-    pathname === `${gerantPath}/profil/`;
+    pathname === `${gerantPath}/profil/` ||
+    pathname === `${gerantPath}/premium` ||
+    pathname === `${gerantPath}/premium/`;
 
   return (
     <GerantSessionProvider value={handleSignOut}>

@@ -157,7 +157,21 @@ describe('fetchRoomsByMarket', () => {
       promoEnd: '2030-08-31',
       gerantId: 'gerant-1',
       gerant: undefined,
+      gerantPremium: undefined,
+      gerantVerified: false,
     });
+  });
+
+  it('transmet gerant_verified vers gerantVerified', async () => {
+    mocks.list.mockResolvedValue([
+      apiRoom({ gerant_verified: true }),
+      apiRoom({ id: 'room-2' }),
+    ]);
+
+    const rooms = await fetchRoomsByMarket('CI');
+
+    expect(rooms[0].gerantVerified).toBe(true);
+    expect(rooms[1].gerantVerified).toBe(false);
   });
 
   it('transmet gerant_premium vers gerantPremium', async () => {

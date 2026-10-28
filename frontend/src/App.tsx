@@ -37,7 +37,6 @@ const AjouterChambre = lazy(() => import('./pages/gerant/AjouterChambreMaq3'));
 const DemandesReservationMaq4 = lazy(() => import('./pages/gerant/DemandesReservationMaq4'));
 const PremiumPage = lazy(() => import('./pages/gerant/PremiumPage'));
 const PremiumSuccessPage = lazy(() => import('./pages/gerant/PremiumSuccessPage'));
-const ProfilPage = lazy(() => import('./pages/gerant/ProfilPage'));
 const MesInformationsMaq = lazy(() => import('./pages/gerant/MesInformationsMaq'));
 const VerificationPage = lazy(() => import('./pages/gerant/VerificationPage'));
 const SuiviVerificationPage = lazy(() => import('./pages/gerant/SuiviVerificationPage'));
@@ -198,7 +197,6 @@ function MarketContent() {
           <Route path="verification/suivi" element={<SuiviVerificationPage />} />
           <Route path="messages/boite-reception" element={<BoiteReceptionMaq6 />} />
           <Route path="profil" element={<MesInformationsMaq />} />
-          <Route path="profil/modifier" element={<ProfilPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />

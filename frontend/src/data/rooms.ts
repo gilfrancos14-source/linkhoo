@@ -33,6 +33,8 @@ export interface Room {
   gerant?: GerantInfo;
   /** Gérant premium : la carte affiche le badge « Premium ». */
   gerantPremium?: boolean;
+  /** Gérant vérifié : badge « Hôte vérifié » et classement des résultats. */
+  gerantVerified?: boolean;
 }
 
 function mapRoom(d: RoomData): Room {
@@ -66,6 +68,7 @@ function mapRoom(d: RoomData): Room {
     gerantId: d.gerant_id,
     gerant: d.gerant,
     gerantPremium: d.gerant_premium,
+    gerantVerified: d.gerant_verified ?? false,
   };
 }
 

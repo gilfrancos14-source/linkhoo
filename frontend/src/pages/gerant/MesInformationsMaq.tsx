@@ -43,7 +43,6 @@ export default function MesInformationsMaq() {
   const { market } = useMarket();
   const gerantPath = `${homePath}/gerant`;
   const suiviPath = `${gerantPath}/verification/suivi`;
-  const modifierPath = `${gerantPath}/profil/modifier`;
 
   const [gerant, setGerant] = useState<GerantData | null>(null);
   const [verification, setVerification] = useState<VerificationStatusResponse | null>(null);
@@ -341,18 +340,12 @@ export default function MesInformationsMaq() {
                   </ul>
                 </div>
 
-                <Link to={modifierPath} className="absolute right-5 top-[17px] flex h-[31px] w-[130px] items-center justify-center gap-[9px] rounded-lg border border-[#E1E8F4] bg-white text-[11px] font-semibold shadow-sm transition hover:bg-[#F7F9FD]">
-                  <svg className="ic h-[13px] w-[13px] stroke-[1.9]"><use href="#i-pencil" /></svg>Modifier le profil
-                </Link>
               </section>
 
               <section className="relative mt-[15px] h-[286px] rounded-xl border border-[#EEF2F8] bg-white shadow-[0_2px_10px_rgba(20,40,90,0.04)]">
                 <h2 className="absolute left-6 top-[14px] flex h-5 items-center gap-[15px] text-[13.5px] font-bold tracking-[-0.01em]">
                   <svg className="ic h-5 w-5 stroke-[1.75] text-[#2F5FC4]"><use href="#i-user" /></svg>Informations personnelles
                 </h2>
-                <Link to={modifierPath} className="absolute right-5 top-[17px] flex h-8 w-[89px] items-center justify-center gap-[9px] rounded-lg border border-[#E1E8F4] bg-white text-[11px] font-semibold shadow-sm transition hover:bg-[#F7F9FD]">
-                  <svg className="ic h-[13px] w-[13px] stroke-[1.9]"><use href="#i-pencil" /></svg>Modifier
-                </Link>
 
                 <dl className="absolute left-[22px] top-[59px] text-[12px] text-[#1F3566]">
                   <div><dt className="font-medium leading-[18px]">Nom complet</dt><dd className="leading-[17px] text-[#2A416F]">{fullName}</dd></div>
@@ -373,9 +366,6 @@ export default function MesInformationsMaq() {
                 <h2 className="absolute left-6 top-4 flex h-5 items-center gap-[15px] text-[13.5px] font-bold tracking-[-0.01em]">
                   <svg className="ic h-5 w-5 stroke-[1.75] text-[#2F5FC4]"><use href="#i-briefcase" /></svg>Informations professionnelles
                 </h2>
-                <Link to={modifierPath} className="absolute right-5 top-[14px] flex h-8 w-[89px] items-center justify-center gap-[9px] rounded-lg border border-[#E1E8F4] bg-white text-[11px] font-semibold shadow-sm transition hover:bg-[#F7F9FD]">
-                  <svg className="ic h-[13px] w-[13px] stroke-[1.9]"><use href="#i-pencil" /></svg>Modifier
-                </Link>
 
                 <dl className="absolute left-[22px] top-[47px] text-[12px]">
                   <div className="flex h-6 items-center"><dt className="w-[190px] font-medium text-[#1F3566]">Marché</dt><dd className="text-[#2F4472]">{marketLabel}</dd></div>
@@ -389,9 +379,6 @@ export default function MesInformationsMaq() {
                 <h2 className="absolute left-6 top-5 flex h-5 items-center gap-[15px] text-[13.5px] font-bold tracking-[-0.01em]">
                   <svg className="ic h-5 w-5 stroke-[1.75] text-[#2F5FC4]"><use href="#i-bell" /></svg>Préférences &amp; notifications
                 </h2>
-                <Link to={modifierPath} className="absolute right-5 top-[14px] flex h-8 w-[89px] items-center justify-center gap-[9px] rounded-lg border border-[#E1E8F4] bg-white text-[11px] font-semibold shadow-sm transition hover:bg-[#F7F9FD]">
-                  <svg className="ic h-[13px] w-[13px] stroke-[1.9]"><use href="#i-pencil" /></svg>Modifier
-                </Link>
 
                 <ul className="absolute left-[22px] right-5 top-[47px] text-[11.5px] text-[#1F3566]">
                   {([

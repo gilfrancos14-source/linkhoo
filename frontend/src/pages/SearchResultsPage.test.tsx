@@ -489,8 +489,73 @@ describe('SearchResultsPage — requête libre et pagination', () => {
     renderPage(DATED);
 
     await screen.findByText('2 biens trouvés');
-    expect(screen.getByText('Premium')).toBeInTheDocument();
-    expect(document.querySelector('.stay-card__badge--premium')).toBeInTheDocument();
-    expect(document.querySelectorAll('.stay-card__badge')).toHaveLength(1);
+
+    const results = document.querySelector('.search-page__grid');
+    expect(results).not.toBeNull();
+    expect(within(results as HTMLElement).getByText('Premium')).toBeInTheDocument();
+    expect(results!.querySelector('.stay-card__badge--premium')).toBeInTheDocument();
+    expect(results!.querySelectorAll('.stay-card__badge')).toHaveLength(1);
+  });
+
+  it('affiche le badge « Hôte vérifié » pour un gérant vérifié non premium', async () => {
+    mocks.fetchAvailableRooms.mockResolvedValue([
+      makeRoom({ id: 'v1', title: 'Maison vérifiée', gerantVerified: true }),
+      makeRoom({ id: 'u1', title: 'Maison non vérifiée' }),
+    ]);
+
+    renderPage(DATED);
+
+    await screen.findByText('2 biens trouvés');
+
+    const results = document.querySelector('.search-page__grid') as HTMLElement;
+    expect(within(results).getByText('Hôte vérifié')).toBeInTheDocument();
+    expect(results.querySelectorAll('.stay-card__badge--verified')).toHaveLength(1);
+  });
+
+  it('classe les résultats premium, puis vérifiés, puis non vérifiés', async () => {
+    mocks.fetchAvailableRooms.mockResolvedValue([
+      makeRoom({ id: 'u1', title: 'Non vérifié', gerantVerified: false }),
+      makeRoom({ id: 'v1', title: 'Vérifié', gerantVerified: true }),
+      makeRoom({ id: 'p1', title: 'Premium', gerantPremium: true }),
+      makeRoom({ id: 'v2', title: 'Vérifié bis', gerantVerified: true }),
+    ]);
+
+    renderPage(DATED);
+
+    await screen.findByText('4 biens trouvés');
+
+    const results = document.querySelector('.search-page__grid') as HTMLElement;
+    const titles = within(results)
+      .getAllByRole('heading', { level: 3 })
+      .map((heading) => heading.textContent);
+
+    expect(titles).toEqual(['Premium', 'Vérifié', 'Vérifié bis', 'Non vérifié']);
+  });
+
+  it('affiche la sélection premium au-dessus des résultats', async () => {
+    mocks.fetchAvailableRooms.mockResolvedValue([
+      makeRoom({ id: 'p1', title: 'Suite premium', gerantPremium: true, gerantId: 'g1' }),
+      makeRoom({ id: 'p2', title: 'Villa premium', gerantPremium: true, gerantId: 'g2' }),
+      makeRoom({ id: 'c1', title: 'Chambre classique' }),
+    ]);
+
+    renderPage(DATED);
+
+    const carousel = await screen.findByRole('region', { name: 'Sélection premium' });
+    expect(carousel).toBeInTheDocument();
+    expect(within(carousel).getByText('Suite premium')).toBeInTheDocument();
+    expect(within(carousel).getByText('Villa premium')).toBeInTheDocument();
+    expect(within(carousel).queryByText('Chambre classique')).not.toBeInTheDocument();
+  });
+
+  it('masque la sélection premium sans gérant premium', async () => {
+    mocks.fetchAvailableRooms.mockResolvedValue([
+      makeRoom({ id: 'v1', title: 'Vérifié', gerantVerified: true }),
+    ]);
+
+    renderPage(DATED);
+
+    await screen.findByText('1 bien trouvé');
+    expect(screen.queryByRole('region', { name: 'Sélection premium' })).not.toBeInTheDocument();
   });
 });

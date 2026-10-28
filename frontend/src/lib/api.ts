@@ -200,6 +200,8 @@ export interface RoomData {
   gerant?: GerantInfo;
   /** Position boostée par l'abonnement du gérant (quota 1 sur 3 en recherche). */
   gerant_premium?: boolean;
+  /** Gérant vérifié : sert au classement premium → vérifié → non vérifié. */
+  gerant_verified?: boolean;
   is_popular?: boolean;
   promo_group?: string | null;
   promo_start?: string | null;

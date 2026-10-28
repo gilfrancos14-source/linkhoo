@@ -52,74 +52,116 @@ function applyRoomFilters(query: any, filters: RoomListFilters): any {
 }
 
 /**
- * `gerant_id` des gérants premium ACTIFS — l'expiration est tranchée par
- * `isPremiumActive` (source unique, la même que les badges).
+ * Signaux gérant nécessaires au classement et aux badges :
+ * - `premiumIds` : gérants premium ACTIFS (expiration tranchée par
+ *   `isPremiumActive`, source unique de vérité) ;
+ * - `verifiedIds` : gérants vérifiés (colonne `is_verified`).
  *
  * Client admin : la table `gerants` est protégée par RLS (le client anon en
  * lit 0 ligne), exactement comme pour la fiche détaillée d'une chambre.
  *
  * Cette lecture sert uniquement au classement : si elle échoue, on journalise
- * et on classe sans boost plutôt que de casser le catalogue.
+ * et on classe sans signal plutôt que de casser le catalogue.
  *
- * Cache en mémoire 90 s : la donnée ne bouge qu'à l'expiration premium, et
- * chaque appel liste/popular/available en avait fait 1 aller-retour Supabase.
+ * Cache en mémoire 90 s : la donnée ne bouge qu'à l'expiration premium ou à
+ * une validation de vérification, et chaque appel liste/popular/available en
+ * avait fait 1 aller-retour Supabase.
  */
-const PREMIUM_CACHE_TTL_MS = 90_000;
-let premiumCache: { ids: Set<string>; at: number } | null = null;
-let premiumInflight: Promise<Set<string>> | null = null;
-
-/** Reset du cache premium — réservé aux tests (état module partagé). */
-export function resetPremiumCacheForTests(): void {
-  premiumCache = null;
-  premiumInflight = null;
+interface GerantSignals {
+  premiumIds: ReadonlySet<string>;
+  verifiedIds: ReadonlySet<string>;
 }
 
-async function loadPremiumGerantIds(): Promise<Set<string>> {
-  if (premiumCache && Date.now() - premiumCache.at < PREMIUM_CACHE_TTL_MS) {
-    return premiumCache.ids;
+const GERANT_SIGNALS_CACHE_TTL_MS = 90_000;
+const EMPTY_GERANT_SIGNALS: GerantSignals = {
+  premiumIds: new Set<string>(),
+  verifiedIds: new Set<string>(),
+};
+let gerantSignalsCache: { signals: GerantSignals; at: number } | null = null;
+let gerantSignalsInflight: Promise<GerantSignals> | null = null;
+
+/** Reset du cache gérant — réservé aux tests (état module partagé). */
+export function resetPremiumCacheForTests(): void {
+  gerantSignalsCache = null;
+  gerantSignalsInflight = null;
+}
+
+async function loadGerantSignals(): Promise<GerantSignals> {
+  if (
+    gerantSignalsCache &&
+    Date.now() - gerantSignalsCache.at < GERANT_SIGNALS_CACHE_TTL_MS
+  ) {
+    return gerantSignalsCache.signals;
   }
   // Déduplication des appels concurrents : une seule requête en vol.
-  if (premiumInflight) return premiumInflight;
+  if (gerantSignalsInflight) return gerantSignalsInflight;
 
-  premiumInflight = (async () => {
+  gerantSignalsInflight = (async () => {
     try {
+      // Une seule requête pour les deux signaux : les gérants ni premium ni
+      // vérifiés n'ont aucune influence sur le classement.
       const { data, error } = await supabaseAdmin
         .from('gerants')
-        .select('clerk_user_id, is_premium, premium_expires_at')
-        .eq('is_premium', true);
+        .select('clerk_user_id, is_premium, premium_expires_at, is_verified')
+        .or('is_premium.eq.true,is_verified.eq.true');
       if (error) throw error;
 
-      const ids = new Set<string>();
+      const premiumIds = new Set<string>();
+      const verifiedIds = new Set<string>();
       // `select()` sans `.single()` renvoie une liste ; un résultat unique
       // inattendu ne doit pas faire échouer le classement.
       for (const gerant of Array.isArray(data) ? data : []) {
-        if (gerant.clerk_user_id && isPremiumActive(gerant)) ids.add(gerant.clerk_user_id);
+        if (!gerant.clerk_user_id) continue;
+        if (isPremiumActive(gerant)) premiumIds.add(gerant.clerk_user_id);
+        if (gerant.is_verified) verifiedIds.add(gerant.clerk_user_id);
       }
-      premiumCache = { ids, at: Date.now() };
-      return ids;
+
+      const signals = { premiumIds, verifiedIds };
+      gerantSignalsCache = { signals, at: Date.now() };
+      return signals;
     } catch (err) {
-      console.error('loadPremiumGerantIds : classement sans boost', err);
+      console.error('loadGerantSignals : classement sans signal', err);
       // Échec : on ne met pas en cache pour retenter au prochain appel.
-      return new Set();
+      return EMPTY_GERANT_SIGNALS;
     } finally {
-      premiumInflight = null;
+      gerantSignalsInflight = null;
     }
   })();
 
-  return premiumInflight;
+  return gerantSignalsInflight;
 }
 
-/** Drapeau `gerant_premium` sur chaque ligne (alimente le badge « Premium »). */
-function stampPremiumFlag(rows: any[], premiumGerantIds: ReadonlySet<string>): any[] {
+/** Drapeaux `gerant_premium` / `gerant_verified` sur chaque ligne. */
+function stampGerantFlags(rows: any[], signals: GerantSignals): any[] {
   return rows.map((room) => ({
     ...room,
-    gerant_premium: !!room.gerant_id && premiumGerantIds.has(room.gerant_id),
+    gerant_premium: !!room.gerant_id && signals.premiumIds.has(room.gerant_id),
+    gerant_verified: !!room.gerant_id && signals.verifiedIds.has(room.gerant_id),
   }));
 }
 
-/** Classement quota premium (ordre organique intercalé) + drapeau par ligne. */
-function rankRows(rows: any[], premiumGerantIds: ReadonlySet<string>): any[] {
-  return stampPremiumFlag(interleaveRooms(rows, premiumGerantIds), premiumGerantIds);
+/** Classement quota premium (ordre organique intercalé) + drapeaux par ligne. */
+function rankRows(rows: any[], signals: GerantSignals): any[] {
+  return stampGerantFlags(interleaveRooms(rows, signals.premiumIds), signals);
+}
+
+/** Palier de visibilité : premium (0), vérifié (1), non vérifié (2). */
+function gerantTier(room: any): number {
+  if (room.gerant_premium) return 0;
+  if (room.gerant_verified) return 1;
+  return 2;
+}
+
+/**
+ * Classement de la recherche : tous les premiums actifs d'abord, puis les
+ * gérants vérifiés, puis les non vérifiés. À l'intérieur d'un palier, l'ordre
+ * organique reçu de PostgREST (`created_at` desc, `id` asc) est conservé.
+ */
+function rankAvailableRows(rows: any[], signals: GerantSignals): any[] {
+  return stampGerantFlags(rows, signals)
+    .map((room, index) => ({ room, index }))
+    .sort((a, b) => gerantTier(a.room) - gerantTier(b.room) || a.index - b.index)
+    .map(({ room }) => room);
 }
 
 router.get('/popular', async (req: Request, res: Response, next: NextFunction) => {
@@ -197,9 +239,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         );
         return query.range(from, to);
       });
-      const premiumPromise = loadPremiumGerantIds();
-      const [data, premiumGerantIds] = await Promise.all([rowsPromise, premiumPromise]);
-      return res.json(rankRows(data, premiumGerantIds));
+      const premiumPromise = loadGerantSignals();
+      const [data, signals] = await Promise.all([rowsPromise, premiumPromise]);
+      return res.json(rankRows(data, signals));
     }
 
     // Mode paginé : une page de lignes + un compte exact, en SQL — jamais
@@ -230,17 +272,17 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       windowRows === null ? offset + limit - 1 : windowRows - 1,
     );
 
-    const premiumPromise = loadPremiumGerantIds();
+    const premiumPromise = loadGerantSignals();
 
-    const [{ count, error: countError }, { data: rows, error }, premiumGerantIds] =
+    const [{ count, error: countError }, { data: rows, error }, signals] =
       await Promise.all([countQuery, rowsQuery, premiumPromise]);
     if (countError) throw countError;
     if (error) throw error;
 
     const items =
       windowRows === null
-        ? stampPremiumFlag(rows ?? [], premiumGerantIds)
-        : rankRows(rows ?? [], premiumGerantIds).slice(offset, offset + limit);
+        ? stampGerantFlags(rows ?? [], signals)
+        : rankRows(rows ?? [], signals).slice(offset, offset + limit);
 
     res.json({ items, total: count ?? 0, page, limit });
   } catch (err) {
@@ -284,31 +326,32 @@ router.get('/available', async (req: Request, res: Response, next: NextFunction)
       }
       return query.range(from, to);
     });
-    const premiumPromise = loadPremiumGerantIds();
-    const [rooms, premiumGerantIds] = await Promise.all([roomsPromise, premiumPromise]);
+    const premiumPromise = loadGerantSignals();
+    const [rooms, signals] = await Promise.all([roomsPromise, premiumPromise]);
 
     const available = rooms.filter((room) => !blockedIds.has(room.id));
 
     // Repli progressif : match exact normalisé, puis match partiel (« Abid »
     // → « Abidjan », « Lomé » → « Lomé-Centre ») si l'exact ne renvoie rien.
+    // Le tri par paliers gérant est appliqué après le filtre ville.
     if (!normalizedVille) {
-      res.json(rankRows(available, premiumGerantIds));
+      res.json(rankAvailableRows(available, signals));
       return;
     }
 
     const exact = available.filter((room) => normalizeCity(room.ville) === normalizedVille);
     if (exact.length > 0) {
-      res.json(rankRows(exact, premiumGerantIds));
+      res.json(rankAvailableRows(exact, signals));
       return;
     }
 
     res.json(
-      rankRows(
+      rankAvailableRows(
         available.filter((room) => {
           const v = normalizeCity(room.ville);
           return v.length > 0 && (v.includes(normalizedVille) || normalizedVille.includes(v));
         }),
-        premiumGerantIds,
+        signals,
       )
     );
   } catch (err) {

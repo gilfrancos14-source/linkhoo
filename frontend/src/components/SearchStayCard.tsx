@@ -8,19 +8,43 @@ interface SearchStayCardProps {
   room: Room;
   href: string;
   meta: string[];
+  /** `featured` : carte de la sélection premium (carrousel en tête de page). */
+  variant?: 'default' | 'featured';
 }
 
-export default function SearchStayCard({ room, href, meta }: SearchStayCardProps) {
+export default function SearchStayCard({
+  room,
+  href,
+  meta,
+  variant = 'default',
+}: SearchStayCardProps) {
   const [saved, setSaved] = useState(false);
   const displayPrice = priceWithCurrency(room.price, room.priceUnit);
   const priceLabel = `${room.title}, dès ${displayPrice} ${room.priceUnit ?? ''}`.trim();
-  const tag = room.isPopular || room.gerantPremium ? 'Coup de cœur' : undefined;
-  const badge = !room.disponible ? 'Indisponible' : room.gerantPremium ? 'Premium' : undefined;
-  const badgeVariant = !room.disponible ? 'unavailable' : room.gerantPremium ? 'premium' : 'default';
+  const tag =
+    variant === 'featured'
+      ? 'À la une'
+      : room.isPopular || room.gerantPremium
+        ? 'Coup de cœur'
+        : undefined;
+  const badge = !room.disponible
+    ? 'Indisponible'
+    : room.gerantPremium
+      ? 'Premium'
+      : room.gerantVerified
+        ? 'Hôte vérifié'
+        : undefined;
+  const badgeVariant = !room.disponible
+    ? 'unavailable'
+    : room.gerantPremium
+      ? 'premium'
+      : room.gerantVerified
+        ? 'verified'
+        : 'default';
   const location = [room.quartier, room.ville].filter(Boolean).join(' · ');
 
   return (
-    <article className="stay-card">
+    <article className={`stay-card${variant === 'featured' ? ' stay-card--featured' : ''}`}>
       <div className="stay-card__media">
         <Link to={href} className="stay-card__media-link" aria-label={priceLabel}>
           <img

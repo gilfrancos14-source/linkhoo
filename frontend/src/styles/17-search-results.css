@@ -911,6 +911,252 @@
 }
 
 /* ==========================================================================
+   Sélection premium
+   ========================================================================== */
+
+.search-page__featured-shell {
+  padding-top: 1.5rem;
+}
+
+.search-page__featured {
+  position: relative;
+  padding: 1.5rem;
+  overflow: hidden;
+  border: 1px solid rgba(244, 199, 122, 0.55);
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(244, 199, 122, 0.22), transparent 55%),
+    linear-gradient(135deg, #fffdf8 0%, #ffffff 45%, #faf7ff 100%);
+  box-shadow: 0 20px 60px -40px rgba(83, 0, 183, 0.45);
+}
+
+.search-page__featured::before {
+  content: '';
+  position: absolute;
+  right: -6rem;
+  bottom: -8rem;
+  width: 18rem;
+  height: 18rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(109, 40, 217, 0.12), transparent 70%);
+  pointer-events: none;
+}
+
+.search-page__featured > * {
+  position: relative;
+  z-index: 1;
+}
+
+.search-page__featured-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.search-page__featured-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.35rem;
+  color: var(--sp-primary);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.search-page__featured-eyebrow svg {
+  color: var(--sp-sand);
+  fill: var(--sp-sand);
+}
+
+.search-page__featured-title {
+  color: var(--sp-ink);
+  font-family: 'Plus Jakarta Sans', var(--font-sans);
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.search-page__featured-hint {
+  margin-top: 0.3rem;
+  color: var(--sp-outline);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.premium-carousel__controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.premium-carousel__nav,
+.premium-carousel__pause {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 1px solid var(--sp-hairline);
+  border-radius: 50%;
+  background: var(--sp-white);
+  color: var(--sp-ink);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.premium-carousel__nav:hover,
+.premium-carousel__pause:hover {
+  border-color: var(--sp-purple);
+  background: var(--sp-purple);
+  color: var(--sp-white);
+}
+
+.premium-carousel__pause[aria-pressed='true'] {
+  border-color: var(--sp-purple);
+  color: var(--sp-purple);
+}
+
+.premium-carousel__viewport {
+  overflow: hidden;
+}
+
+.premium-carousel__track {
+  display: flex;
+  gap: 1rem;
+  padding-bottom: 0.25rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.premium-carousel__track::-webkit-scrollbar {
+  display: none;
+}
+
+.premium-carousel__item {
+  flex: 0 0 calc((100% - 2rem) / 3);
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+.premium-carousel__item .stay-card {
+  height: 100%;
+}
+
+.premium-carousel__item .stay-card__media {
+  flex: none;
+}
+
+.search-page .stay-card--featured {
+  border-color: rgba(244, 199, 122, 0.6);
+  box-shadow: 0 18px 40px -26px rgba(83, 0, 183, 0.35);
+}
+
+.search-page .stay-card--featured .stay-card__tag {
+  background: linear-gradient(135deg, #f8d99a, #f4c77a);
+  color: #4a2c00;
+}
+
+.search-page .stay-card__badge--verified {
+  background: rgba(236, 253, 245, 0.95);
+  color: #0f766e;
+}
+
+.premium-carousel__dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
+.premium-carousel__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--sp-hairline);
+  cursor: pointer;
+  transition: width 0.2s ease, background-color 0.2s ease;
+}
+
+.premium-carousel__dot:hover {
+  background: var(--sp-outline);
+}
+
+.premium-carousel__dot.is-active {
+  width: 1.2rem;
+  background: var(--sp-purple);
+}
+
+.search-page__results-note {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: -0.5rem 0 1rem;
+  color: var(--sp-outline);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.search-page__results-note svg {
+  flex-shrink: 0;
+  color: var(--sp-purple);
+}
+
+@media (max-width: 1023px) {
+  .premium-carousel__item {
+    flex-basis: calc((100% - 1rem) / 2);
+  }
+}
+
+@media (max-width: 767px) {
+  .search-page__featured {
+    padding: 1.25rem;
+    border-radius: 1.25rem;
+  }
+
+  .search-page__featured-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .search-page__featured-title {
+    font-size: 22px;
+    line-height: 28px;
+  }
+
+  .premium-carousel__controls {
+    align-self: flex-end;
+  }
+
+  .premium-carousel__item {
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 479px) {
+  .search-page__featured {
+    padding: 1rem;
+  }
+
+  .premium-carousel__nav,
+  .premium-carousel__pause {
+    width: 2.1rem;
+    height: 2.1rem;
+  }
+}
+
+/* ==========================================================================
    Résultats
    ========================================================================== */
 
@@ -1225,12 +1471,20 @@
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr) auto;
   align-items: stretch;
+  min-height: 220px;
 }
 
+/* Vignette à ratio fixe : une carte au contenu plus long ne doit jamais
+   étirer l'image en portrait. L'image est centrée verticalement dans sa
+   colonne et garde un cadrage 4/3 homogène sur toutes les cartes. */
 .search-page__grid--list .stay-card__media {
-  height: 100%;
-  min-height: 220px;
-  aspect-ratio: auto;
+  align-self: center;
+  width: calc(100% - 1.5rem);
+  height: auto;
+  min-height: 0;
+  margin: 0.75rem;
+  border-radius: 0.9rem;
+  aspect-ratio: 4 / 3;
 }
 
 .search-page__grid--list .stay-card__body {
@@ -1649,22 +1903,95 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* Même disposition qu'en desktop : vignette à gauche, contenu à droite,
+     prix et flèche sous le contenu. On resserre seulement les colonnes. */
   .search-page__grid--list .stay-card {
-    display: flex;
+    grid-template-columns: clamp(6.75rem, 34%, 9rem) minmax(0, 1fr);
+    grid-template-areas:
+      'media body'
+      'media foot';
+    align-items: stretch;
+    min-height: 0;
   }
 
   .search-page__grid--list .stay-card__media {
-    width: 100%;
+    grid-area: media;
+    align-self: center;
+    width: calc(100% - 1rem);
+    height: auto;
     min-height: 0;
-    aspect-ratio: 16 / 10;
+    margin: 0.5rem;
+    border-radius: 0.75rem;
+    aspect-ratio: 4 / 3;
+  }
+
+  .search-page__grid--list .stay-card__body {
+    grid-area: body;
+    justify-content: center;
+    padding: 0.75rem 0.85rem 0.35rem;
   }
 
   .search-page__grid--list .stay-card__foot {
+    grid-area: foot;
     flex-direction: row;
     justify-content: space-between;
-    padding: 0.5rem 1.25rem 1.25rem;
-    border-top: 1px solid var(--sp-hairline);
+    gap: 0.5rem;
+    padding: 0 0.85rem 0.75rem;
+    border-top: 0;
     border-left: 0;
+  }
+
+  /* Dans une vignette étroite, l'empilement tag + badge déborderait :
+     on ne garde que le badge de statut (Premium / Hôte vérifié), en bas
+     de l'image, et le cœur en haut à droite. */
+  .search-page__grid--list .stay-card__tag {
+    display: none;
+  }
+
+  .search-page__grid--list .stay-card__badges {
+    top: auto;
+    right: 0.4rem;
+    bottom: 0.4rem;
+    left: 0.4rem;
+  }
+
+  .search-page__grid--list .stay-card__badge {
+    max-width: 100%;
+    padding: 0.12rem 0.4rem;
+    overflow: hidden;
+    font-size: 8px;
+    line-height: 11px;
+    letter-spacing: 0.02em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .search-page__grid--list .stay-card__favorite {
+    top: 0.4rem;
+    right: 0.4rem;
+    width: 1.6rem;
+    height: 1.6rem;
+  }
+
+  .search-page__grid--list .stay-card__favorite svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  /* La pastille d'information est trop large pour la vignette : elle est
+     déjà reprise par les caractéristiques du contenu. */
+  .search-page__grid--list .stay-card__rating {
+    display: none;
+  }
+
+  .search-page__grid--list .stay-card .stay-card__title {
+    font-size: 16px;
+    line-height: 21px;
+  }
+
+  .search-page__grid--list .stay-card .stay-card__price strong {
+    font-size: 16px;
+    line-height: 22px;
   }
 
   .search-page__empty {
@@ -1706,6 +2033,23 @@
   .search-page__results-head {
     flex-direction: column;
     gap: 0.25rem;
+  }
+
+  .search-page__grid--list .stay-card {
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+  }
+
+  .search-page__grid--list .stay-card__body {
+    padding: 0.65rem 0.7rem 0.3rem;
+  }
+
+  .search-page__grid--list .stay-card__foot {
+    padding: 0 0.7rem 0.65rem;
+  }
+
+  .search-page__grid--list .stay-card__arrow {
+    width: 1.9rem;
+    height: 1.9rem;
   }
 
   .search-page__pagination {

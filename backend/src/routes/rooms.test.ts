@@ -112,7 +112,7 @@ describe('GET /api/rooms', () => {
 
     const res = await request(app).get('/api/rooms?market=CI');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([{ id: 'r1', gerant_premium: false }]);
+    expect(res.body).toEqual([{ id: 'r1', gerant_premium: false, gerant_verified: false }]);
     expect(publicRooms.eq).toHaveBeenCalledWith('market', 'CI');
     expect(publicRooms.range).toHaveBeenCalledWith(0, 999);
   });
@@ -138,7 +138,7 @@ describe('GET /api/rooms', () => {
     );
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([{ id: 'r1', gerant_premium: false }]);
+    expect(res.body).toEqual([{ id: 'r1', gerant_premium: false, gerant_verified: false }]);
     expect(publicRooms.eq).toHaveBeenCalledWith('market', 'CI');
     expect(publicRooms.eq).toHaveBeenCalledWith('ville', 'Abidjan');
     expect(publicRooms.eq).toHaveBeenCalledWith('quartier', 'Cocody');
@@ -223,7 +223,9 @@ describe('GET /api/rooms', () => {
     expect(res.body.limit).toBe(10);
     // Fenêtre bornée : 3 × la page demandée (20 lignes lues, 10 renvoyées).
     expect(dataChain.range).toHaveBeenCalledWith(0, 59);
-    expect(res.body.items).toEqual(rows.slice(10, 20).map((row) => ({ ...row, gerant_premium: false })));
+    expect(res.body.items).toEqual(
+      rows.slice(10, 20).map((row) => ({ ...row, gerant_premium: false, gerant_verified: false })),
+    );
     expect(countChain.select).toHaveBeenCalledWith('id', { count: 'exact', head: true });
   });
 
@@ -253,10 +255,13 @@ describe('GET /api/rooms', () => {
     expect(dataChain.range).toHaveBeenCalledWith(0, 17);
   });
 
-  it('200 : marque gerant_premium pour un gérant premium actif', async () => {
+  it('200 : marque gerant_premium et gerant_verified', async () => {
     const rows = roomRows(3, 3).map((row, index) => ({ ...row, gerant_id: `g${index}` }));
     const gerantsChain = fakeChain({
-      data: [{ clerk_user_id: 'g1', is_premium: true, premium_expires_at: null }],
+      data: [
+        { clerk_user_id: 'g1', is_premium: true, premium_expires_at: null, is_verified: true },
+        { clerk_user_id: 'g2', is_premium: false, premium_expires_at: null, is_verified: true },
+      ],
       error: null,
     });
     stubPublicRooms(fakeChain({ data: rows, error: null }));
@@ -265,12 +270,18 @@ describe('GET /api/rooms', () => {
     const res = await request(app).get('/api/rooms?market=CI');
 
     expect(res.status).toBe(200);
-    expect(gerantsChain.eq).toHaveBeenCalledWith('is_premium', true);
+    expect(gerantsChain.or).toHaveBeenCalledWith('is_premium.eq.true,is_verified.eq.true');
     // r01 (premium) est tirée vers l'avant sur le premier rang premium.
-    expect(res.body.map((row: any) => ({ id: row.id, premium: row.gerant_premium }))).toEqual([
-      { id: 'r01', premium: true },
-      { id: 'r00', premium: false },
-      { id: 'r02', premium: false },
+    expect(
+      res.body.map((row: any) => ({
+        id: row.id,
+        premium: row.gerant_premium,
+        verified: row.gerant_verified,
+      })),
+    ).toEqual([
+      { id: 'r01', premium: true, verified: true },
+      { id: 'r00', premium: false, verified: false },
+      { id: 'r02', premium: false, verified: true },
     ]);
   });
 
@@ -352,7 +363,9 @@ describe('GET /api/rooms', () => {
 
     expect(res.status).toBe(200);
     expect(dataChain.range).toHaveBeenCalledWith(600, 699);
-    expect(res.body.items).toEqual(rows.map((row) => ({ ...row, gerant_premium: false })));
+    expect(res.body.items).toEqual(
+      rows.map((row) => ({ ...row, gerant_premium: false, gerant_verified: false })),
+    );
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });
@@ -420,15 +433,15 @@ describe('GET /api/rooms/available', () => {
     expect(reservations.neq).toHaveBeenCalledWith('statut', 'annulee');
   });
 
-  it('200 : classe les chambres disponibles selon le quota premium', async () => {
+  it('200 : classe premium, puis vérifiés, puis non vérifiés', async () => {
     const at = (minute: number) => `2026-01-01T00:${String(minute).padStart(2, '0')}:00.000Z`;
     publicRooms = fakeChain({
       data: [
-        { id: 'r0', ville: 'Abidjan', gerant_id: 'gA', created_at: at(5) },
-        { id: 'r1', ville: 'Abidjan', gerant_id: 'gA', created_at: at(4) },
+        { id: 'r0', ville: 'Abidjan', gerant_id: 'gV', created_at: at(5) },
+        { id: 'r1', ville: 'Abidjan', gerant_id: 'gV', created_at: at(4) },
         { id: 'r2', ville: 'Abidjan', gerant_id: 'gP1', created_at: at(3) },
-        { id: 'r3', ville: 'Abidjan', gerant_id: 'gA', created_at: at(2) },
-        { id: 'r4', ville: 'Abidjan', gerant_id: 'gA', created_at: at(1) },
+        { id: 'r3', ville: 'Abidjan', gerant_id: 'gU', created_at: at(2) },
+        { id: 'r4', ville: 'Abidjan', gerant_id: 'gV', created_at: at(1) },
         { id: 'r5', ville: 'Abidjan', gerant_id: 'gP2', created_at: at(0) },
       ],
       error: null,
@@ -437,8 +450,9 @@ describe('GET /api/rooms/available', () => {
     stubTables({
       gerants: fakeChain({
         data: [
-          { clerk_user_id: 'gP1', is_premium: true, premium_expires_at: null },
-          { clerk_user_id: 'gP2', is_premium: true, premium_expires_at: null },
+          { clerk_user_id: 'gP1', is_premium: true, premium_expires_at: null, is_verified: true },
+          { clerk_user_id: 'gP2', is_premium: true, premium_expires_at: null, is_verified: false },
+          { clerk_user_id: 'gV', is_premium: false, premium_expires_at: null, is_verified: true },
         ],
         error: null,
       }),
@@ -449,10 +463,23 @@ describe('GET /api/rooms/available', () => {
     );
 
     expect(res.status).toBe(200);
-    // Deux boosts tirés vers l'avant (rangs 0 et 3), le reste garde l'ordre organique.
-    expect(res.body.map((row: { id: string }) => row.id)).toEqual(['r2', 'r0', 'r1', 'r5', 'r3', 'r4']);
-    expect(res.body.filter((row: { gerant_premium: boolean }) => row.gerant_premium)).toHaveLength(2);
-    expect(res.body[5]).toMatchObject({ id: 'r4', gerant_premium: false });
+    // Premiums d'abord (r2 puis r5), puis les vérifiés non premium (r0, r1,
+    // r4), puis les non vérifiés (r3) — ordre organique conservé par palier.
+    expect(res.body.map((row: { id: string }) => row.id)).toEqual([
+      'r2',
+      'r5',
+      'r0',
+      'r1',
+      'r4',
+      'r3',
+    ]);
+    expect(
+      res.body.filter((row: { gerant_premium: boolean }) => row.gerant_premium).map((row: { id: string }) => row.id),
+    ).toEqual(['r2', 'r5']);
+    expect(
+      res.body.filter((row: { gerant_verified: boolean }) => row.gerant_verified).map((row: { id: string }) => row.id),
+    ).toEqual(['r2', 'r0', 'r1', 'r4']);
+    expect(res.body[5]).toMatchObject({ id: 'r3', gerant_premium: false, gerant_verified: false });
   });
 });
 
