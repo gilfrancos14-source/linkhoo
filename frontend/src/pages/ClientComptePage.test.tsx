@@ -451,7 +451,7 @@ describe('ClientComptePage — annulation', () => {
   });
 
   it("désactive le bouton pendant l'annulation", async () => {
-    let resolveCancel: () => void = () => {};
+    let resolveCancel: (value?: unknown) => void = () => {};
     mocks.cancelMyReservation.mockReturnValue(
       new Promise((resolve) => {
         resolveCancel = resolve;
