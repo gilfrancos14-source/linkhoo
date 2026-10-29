@@ -359,10 +359,7 @@ export default function ClientDashboardMaq({
           </button>
 
           <Link to={homePath} className="mb-6 flex items-center gap-2 px-2" aria-label="Linkhoo - retour à l'accueil">
-            <Icon id="home" className="f h-9 w-9 text-habi" />
-            <span className="text-2xl font-bold text-navy">
-              Link<span className="text-habi">hoo</span>
-            </span>
+            <img className="sidebar-logo" src="/logo.jpg" alt="Logo Linkhoo" />
           </Link>
 
           <nav className="space-y-1">

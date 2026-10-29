@@ -453,12 +453,7 @@ export default function ClientMessagesMaq({
       {/* ============ SIDEBAR ============ */}
       <aside className="fixed inset-y-0 left-0 z-20 flex w-[247px] flex-col overflow-y-auto border-r border-[#e6ebf5] bg-white">
         <div className="flex h-[70px] flex-none items-center gap-2.5 px-[34px]">
-          <span className="grid h-[36px] w-[36px] place-items-center rounded-[10px] bg-[#ff5a14] text-white">
-            <Icon id="home" className="f !h-6 !w-6" />
-          </span>
-          <span className="text-[28px] font-extrabold tracking-tight text-[#1d3f8f]">
-            Link<span className="text-[#ff5a14]">hoo</span>
-          </span>
+          <img className="sidebar-logo" src="/logo.jpg" alt="Logo Linkhoo" />
         </div>
 
         <nav className="mt-3 space-y-[4px] px-[15px]">
