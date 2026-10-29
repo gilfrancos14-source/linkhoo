@@ -145,6 +145,7 @@ vi.mock('./lib/api', () => ({
   apiPremium: mocks.autoApi(),
   apiAuth: { bootstrap: mocks.bootstrap, me: mocks.me },
   apiClients: mocks.autoApi(),
+  apiFavorites: mocks.autoApi(),
   apiReviews: { featured: mocks.featured },
   apiContact: { send: mocks.autoFn },
 }));
@@ -661,7 +662,7 @@ describe('App — lazy, chrome et résilience', () => {
     renderApp('/ci/messages');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Messages' }),
+      await screen.findByRole('heading', { level: 1, name: 'Mes messages' }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('pathname')).toHaveTextContent('/ci/messages');
     // La page ne défile pas : seul le pied de page part, l'en-tête reste.

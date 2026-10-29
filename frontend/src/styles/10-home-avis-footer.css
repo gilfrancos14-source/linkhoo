@@ -225,6 +225,7 @@
   justify-content: space-between;
   gap: 0.5rem;
   padding-top: 1.8rem;
+  margin-top: 1.5rem;
   font-size: 0.8rem;
   color: var(--ink-soft);
 }

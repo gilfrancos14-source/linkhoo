@@ -8,6 +8,7 @@ import ContactHero from '../components/contact/ContactHero';
 import ContactLocation from '../components/contact/ContactLocation';
 import ContactTopBar from '../components/contact/ContactTopBar';
 import LandingBackToTop from '../components/landing/LandingBackToTop';
+import '../styles/30-page-contact.css';
 
 export default function ContactPage() {
   return (

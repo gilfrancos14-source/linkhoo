@@ -5,6 +5,8 @@ import SplitAuthLayout, {
   clerkFormAppearance,
   type AuthBenefit,
 } from '../../components/SplitAuthLayout';
+import '../../styles/20-auth.css';
+import '../../styles/22-register.css';
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkConfigured = Boolean(clerkKey && clerkKey.startsWith('pk_'));

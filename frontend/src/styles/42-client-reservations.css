@@ -1,0 +1,182 @@
+/* ==========================================================================
+   Client — Mes réservations (/compte?view=stays)
+   Conversion de docs/maquettes/habici-mes-reservations.html.
+   Les règles reprennent le bloc <style> de la maquette à l'identique, scopées
+   sous .res-maq pour ne pas entrer en collision avec les classes génériques
+   (.card, .btn, .nav…) déjà utilisées ailleurs. Les couleurs de la maquette
+   (bl, blue2, soft, line, tint, brand, ink) sont écrites en valeurs exactes.
+   ========================================================================== */
+
+@layer base {
+  /* Le preflight de Tailwind est désactivé dans le projet : sans ce rappel,
+     les utilitaires `border` / `divide-*` n'ont pas de `border-style`. */
+  .res-maq :where(*, ::before, ::after) {
+    border-width: 0;
+    border-style: solid;
+    border-color: theme('borderColor.DEFAULT', currentColor);
+  }
+}
+
+@layer components {
+  .res-maq :where(.ic) {
+    @apply w-6 h-6 shrink-0 fill-none stroke-current;
+    display: block;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .res-maq :where(.ic.f) {
+    @apply fill-current;
+  }
+
+  .res-maq .card {
+    @apply bg-white border border-[#e6ebf5] rounded-xl shadow-[0_2px_10px_rgba(20,50,120,.04)];
+  }
+
+  /* Sidebar */
+  .res-maq .nv {
+    @apply flex items-center gap-3.5 h-[40px] px-3 rounded-lg text-[14px] font-medium text-[#1d3f8f];
+  }
+  .res-maq .nv > svg {
+    @apply w-6 h-6 flex-none;
+  }
+  .res-maq .nv.on {
+    @apply bg-[#fff1e8] text-[#ff5a14];
+  }
+  .res-maq .bd {
+    @apply ml-auto grid place-items-center w-5 h-5 rounded-full bg-[#ff4d1a] text-white text-[11px] font-bold;
+  }
+  .res-maq .btn {
+    @apply grid place-items-center h-[30px] rounded-md border border-[#2f5bbf] bg-white text-[11.5px] font-semibold text-[#2f5bbf];
+  }
+  .res-maq .btn.o {
+    @apply border-[#ff5a14] bg-[#ff5a14] text-white;
+  }
+
+  /* Onglets / filtres */
+  .res-maq .tab {
+    @apply flex h-[50px] items-center gap-3 px-8 text-[13px] font-medium text-[#1d3f8f] border-b-[3px] border-transparent;
+  }
+  .res-maq .tab.on {
+    @apply text-[#ff5a14] border-[#ff5a14];
+  }
+  .res-maq .tab b {
+    @apply grid h-[22px] w-[22px] place-items-center rounded-full border border-[#e6ebf5] bg-[#eef3fc] text-[11px] font-semibold;
+  }
+  .res-maq .tab.on b {
+    @apply border-orange-200 bg-[#fff1e8] text-[#ff5a14];
+  }
+  .res-maq .flt {
+    @apply flex h-[38px] items-center gap-2.5 rounded-lg border border-[#e6ebf5] bg-white px-3.5 text-[12px] text-[#1d3f8f];
+  }
+  .res-maq .flt > svg:first-child {
+    @apply h-4 w-4 text-[#2f5bbf];
+  }
+  .res-maq .flt > svg:last-child:not(:first-child) {
+    @apply ml-auto h-4 w-4 text-[#1d3f8f];
+  }
+
+  /* Carte réservation */
+  .res-maq .rs {
+    @apply grid grid-cols-[minmax(150px,210px)_minmax(0,1fr)_minmax(210px,246px)] gap-[22px] px-4 py-3 max-md:grid-cols-1;
+    @apply bg-white border border-[#e6ebf5] rounded-xl shadow-[0_2px_10px_rgba(20,50,120,.04)];
+  }
+  .res-maq .im {
+    @apply relative h-[121px] overflow-hidden rounded-lg bg-gradient-to-br from-amber-200 to-orange-300;
+  }
+  .res-maq .im img {
+    @apply absolute inset-0 h-full w-full object-cover;
+  }
+  .res-maq .im .ph {
+    @apply absolute bottom-2 left-2 rounded-full border border-amber-300/80 bg-[#0b1b3f]/85 px-2 py-0.5 text-[10.5px] font-semibold text-white;
+  }
+  .res-maq .rs h3 {
+    @apply mt-1 text-[15px] font-bold text-[#1d3f8f];
+  }
+  .res-maq .rs .l {
+    @apply mt-2 flex items-center gap-2.5 text-[12px] text-[#5f86d1];
+  }
+  .res-maq .rs .l > svg,
+  .res-maq .am svg {
+    @apply h-4 w-4 flex-none text-[#2f5bbf];
+  }
+  .res-maq .am {
+    @apply mt-5 flex flex-wrap gap-x-7 gap-y-2 text-[12px] text-[#5f86d1];
+  }
+  .res-maq .am li {
+    @apply flex items-center gap-2;
+  }
+  .res-maq .st {
+    @apply inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[11.5px] font-medium;
+  }
+  .res-maq .st svg {
+    @apply h-4 w-4 stroke-white;
+  }
+  .res-maq .st.ok {
+    @apply bg-[#e6f7ee] text-emerald-700;
+  }
+  .res-maq .st.ok svg {
+    @apply fill-emerald-500;
+  }
+  .res-maq .st.run {
+    @apply bg-[#e5eefc] text-[#2f5bbf];
+  }
+  .res-maq .st.run svg {
+    @apply fill-blue-500;
+  }
+  .res-maq .st.done {
+    @apply bg-[#efe8fb] text-purple-700;
+  }
+  .res-maq .st.done svg {
+    @apply fill-purple-500;
+  }
+  .res-maq .st.wait {
+    @apply bg-[#fff4e0] text-amber-700;
+  }
+  .res-maq .st.wait svg {
+    @apply fill-amber-500;
+  }
+  .res-maq .st.off {
+    @apply bg-[#eceff4] text-slate-600;
+  }
+  .res-maq .st.off svg {
+    @apply fill-slate-500;
+  }
+  .res-maq .pr {
+    @apply mt-3 text-[12.5px] font-semibold text-[#0b1b3f];
+  }
+  .res-maq .pr b {
+    @apply text-[18px] font-extrabold;
+  }
+  .res-maq .tt {
+    @apply mt-1.5 text-[12px] text-[#5f86d1];
+  }
+
+  /* Panneau droit */
+  .res-maq .rc {
+    @apply flex h-[41px] items-center gap-3.5 border-b border-[#e6ebf5] text-[13.5px] text-[#35559f];
+  }
+  .res-maq .rc:last-child {
+    @apply border-0;
+  }
+  .res-maq .rc > svg {
+    @apply h-[22px] w-[22px] flex-none;
+  }
+  .res-maq .rc b {
+    @apply ml-auto text-[14px] font-bold text-[#0b1b3f];
+  }
+
+  /* Avatar de repli (topbar) */
+  .res-maq .avatar {
+    @apply grid place-items-center rounded-full bg-gradient-to-br from-amber-600 to-amber-900 text-xs font-semibold text-white;
+  }
+
+  /* Menu utilisateur (identique au reste de l'espace client) */
+  .res-maq .user-menu {
+    @apply absolute right-0 top-[calc(100%+8px)] z-30 w-44 overflow-hidden rounded-xl border border-[#e6ebf5] bg-white p-1 shadow-lg;
+  }
+  .res-maq .user-menu__item {
+    @apply flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-slate-600 hover:bg-slate-50;
+  }
+}

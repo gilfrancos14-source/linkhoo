@@ -1,4 +1,4 @@
-﻿/* latin-ext */
+/* latin-ext */
 @font-face {
   font-family: 'Lato';
   font-style: italic;
@@ -70,6 +70,63 @@
   src: url(/fonts/lato-6.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
+/* --------------------------------------------------------------------------
+   Polices de la maquette d'accueil, auto-hébergées (sous-ensemble latin).
+   Avant : deux requêtes tierces bloquantes vers fonts.googleapis.com puis
+   fonts.gstatic.com. Désormais : un seul woff2 variable par famille, servi
+   depuis notre origine et mis en cache par le service worker.
+   -------------------------------------------------------------------------- */
+/* Les maquettes historiques utilisent le suffixe « Variable » ; Tailwind et
+   les styles inline utilisent le nom court. Même fichier dans les deux cas :
+   le navigateur ne le télécharge qu'une fois. */
+@font-face {
+  font-family: 'Plus Jakarta Sans Variable';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url(/fonts/plus-jakarta-sans-latin.woff2) format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url(/fonts/plus-jakarta-sans-latin.woff2) format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(/fonts/inter-latin.woff2) format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(/fonts/inter-latin.woff2) format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Caveat Variable';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/fonts/caveat-latin.woff2) format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Caveat';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/fonts/caveat-latin.woff2) format('woff2-variations');
+}
+
 /* latin-ext */
 @font-face {
   font-family: 'Lato';

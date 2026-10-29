@@ -57,6 +57,26 @@ export function clearApiCache(): void {
   publicCache.clear();
 }
 
+/**
+ * Promesses lancées avant le bundle JS (script inline de `index.html`) : le
+ * navigateur a commencé à télécharger les données de l'accueil pendant que
+ * React se téléchargeait. `cachedGet()` les consomme au lieu de rejouer les
+ * requêtes — la clé stockée par le HTML est `/api${path}`.
+ * Entrée retirée à la lecture : jamais de promesse orpheline.
+ */
+function takePrefetched<T>(path: string): Promise<T> | null {
+  const store = (globalThis as { __LINKHOO_PREFETCH__?: Map<string, Promise<unknown>> })
+    .__LINKHOO_PREFETCH__;
+  if (typeof store?.get !== 'function') return null;
+  const key = `${API_BASE}${path}`;
+  const promise = store.get(key);
+  if (!promise) return null;
+  // Une promesse ne se consomme qu'une fois : les appels suivants repasseront
+  // par le cache mémoire de `cachedGet()`.
+  store.delete(key);
+  return promise as Promise<T>;
+}
+
 export async function cachedGet<T>(path: string, ttlMs = PUBLIC_CACHE_TTL_MS): Promise<T> {
   const now = Date.now();
   const hit = publicCache.get(path);
@@ -71,11 +91,20 @@ export async function cachedGet<T>(path: string, ttlMs = PUBLIC_CACHE_TTL_MS): P
     }
   }
 
+  // Requêtes de l'accueil lancées dès l'analyse du HTML (voir index.html) :
+  // elles sont déjà en vol avant même que le bundle React ne s'exécute. On
+  // récupère la promesse au lieu d'en démarrer une seconde ; en cas d'échec
+  // on retombe simplement sur la requête classique.
+  const preloaded = takePrefetched<T>(path);
+
   // `cache: 'no-cache'` force une revalidation conditionnelle (304) auprès du
   // serveur : après une mutation qui a purgé ce cache mémoire, la réponse
   // serveur fraîche doit être visible immédiatement — le cache HTTP du
   // navigateur ne doit jamais nous servir une version périmée.
-  const promise = request<T>(path, { cache: 'no-cache', public: true }).catch((err) => {
+  const promise = (preloaded
+    ? preloaded.catch(() => request<T>(path, { cache: 'no-cache', public: true }))
+    : request<T>(path, { cache: 'no-cache', public: true })
+  ).catch((err) => {
     // Une erreur n'est jamais mise en cache : le prochain appel réessaiera.
     publicCache.delete(path);
     throw err;
@@ -208,6 +237,11 @@ export interface RoomData {
   promo_end?: string | null;
 }
 
+/** Chambre favorite : données de la chambre + date d'ajout au favori. */
+export interface FavoriteRoomData extends RoomData {
+  favorited_at: string;
+}
+
 export interface RoomListParams {
   market?: string;
   ville?: string;
@@ -273,6 +307,23 @@ export const apiRooms = {
   update: (id: string, data: Partial<RoomData>) => request<RoomData>(`/rooms/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => request<void>(`/rooms/${id}`, { method: 'DELETE' }),
   toggle: (id: string) => request<RoomData>(`/rooms/${id}/toggle`, { method: 'PATCH' }),
+};
+
+// ── Favoris client ──
+// Endpoints authentifiés : le client ajoute/retire une chambre avec le cœur.
+// Une réservation n'a aucun effet sur cette liste.
+export const apiFavorites = {
+  list: () => request<FavoriteRoomData[]>('/favorites'),
+  add: (roomId: string) =>
+    request<{ room_id: string; favorite: boolean; room: FavoriteRoomData }>(
+      `/favorites/${encodeURIComponent(roomId)}`,
+      { method: 'POST' },
+    ),
+  remove: (roomId: string) =>
+    request<{ room_id: string; favorite: boolean }>(
+      `/favorites/${encodeURIComponent(roomId)}`,
+      { method: 'DELETE' },
+    ),
 };
 
 // ── Banners ──
@@ -834,10 +885,21 @@ export interface ReviewData {
   created_at: string;
 }
 
+export interface RoomReviewDistributionItem {
+  /** Note (1 à 5 étoiles). */
+  note: number;
+  /** Nombre d'avis ayant cette note. */
+  count: number;
+  /** Pourcentage du total d'avis (arrondi à 0,1). */
+  percent: number;
+}
+
 export interface RoomReviewsResponse {
   reviews: ReviewData[];
   room_avg: number | null;
   room_count: number;
+  /** Répartition des notes par étoile, calculée côté backend. */
+  room_distribution: RoomReviewDistributionItem[];
   gerant_avg: number | null;
   gerant_count: number;
 }

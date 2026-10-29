@@ -8,6 +8,7 @@ import AboutStats from '../components/a-propos/AboutStats';
 import AboutTeam from '../components/a-propos/AboutTeam';
 import AboutTopBar from '../components/a-propos/AboutTopBar';
 import AboutWhy from '../components/a-propos/AboutWhy';
+import '../styles/29-page-a-propos.css';
 
 export default function AProposPage() {
   return (

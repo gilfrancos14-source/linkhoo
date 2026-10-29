@@ -1,7 +1,7 @@
 /* ==========================================================================
-   Page À propos — reproduction de maquette/linkhoo-a-propos.html
-   Le style est scopé sous .about-page, qui réutilise le socle .landing
-   (reset, conteneur, typographie de base) sans toucher aux pages de marché.
+   Page Ã€ propos â€” reproduction de maquette/linkhoo-a-propos.html
+   Le style est scopÃ© sous .about-page, qui rÃ©utilise le socle .landing
+   (reset, conteneur, typographie de base) sans toucher aux pages de marchÃ©.
    ========================================================================== */
 
 .about-page {
@@ -14,7 +14,7 @@
   --ab-muted: #64748b;
   --ab-line: #ece8f8;
 
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter Variable', system-ui, sans-serif;
   color: var(--ab-ink);
   background: #fff;
 }
@@ -33,7 +33,7 @@
 }
 
 .about-page .ab-hand {
-  font-family: 'Caveat', cursive;
+  font-family: 'Caveat Variable', cursive;
   font-weight: 600;
 }
 
@@ -108,7 +108,7 @@
   color: #fff;
 }
 
-/* ---------- En-tête ---------- */
+/* ---------- En-tÃªte ---------- */
 .ab-header {
   position: relative;
   z-index: 20;
@@ -372,7 +372,7 @@
   border-radius: 18px;
   background:
     linear-gradient(180deg, rgba(15, 23, 42, 0.65), rgba(15, 23, 42, 0.15) 45%, rgba(15, 23, 42, 0.45)),
-    url('/images/about-smiling-woman.jpg') center/cover no-repeat;
+    url('/images/about-smiling-woman.webp') center/cover no-repeat;
   box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.15);
 }
 
@@ -637,7 +637,7 @@
   color: var(--ab-muted);
 }
 
-/* ---------- Équipe ---------- */
+/* ---------- Ã‰quipe ---------- */
 .ab-team__inner {
   display: grid;
   gap: 40px;
@@ -681,7 +681,7 @@
   border-radius: 16px;
   background:
     linear-gradient(to bottom left, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.28) 38%, rgba(255, 255, 255, 0) 62%),
-    url('/images/about-team.jpg') center/cover no-repeat;
+    url('/images/about-team.webp') center/cover no-repeat;
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
 }
 
@@ -1076,7 +1076,7 @@
   }
 }
 
-/* ---------- Lisibilité : tailles de texte relevées ---------- */
+/* ---------- LisibilitÃ© : tailles de texte relevÃ©es ---------- */
 .about-page {
   font-size: 17px;
 }

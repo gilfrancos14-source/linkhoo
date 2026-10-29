@@ -5,6 +5,8 @@ export interface RoomReviewStats {
   rating: number | null;
   /** Nombre total d'avis de l'appartement (commentés ou non). */
   count: number;
+  /** Répartition des notes (5 → 1 étoile) : pourcentage du total, pour l'histogramme. */
+  distribution: { note: number; count: number; percent: number }[];
 }
 
 interface ReviewNoteRow {
@@ -34,6 +36,7 @@ export async function fetchRoomReviewStats(
   if (error) throw error;
 
   const sums = new Map<string, { total: number; count: number }>();
+  const notesByRoom = new Map<string, Map<number, number>>();
   for (const row of (data ?? []) as ReviewNoteRow[]) {
     if (!row.room_id) continue;
     const note = Number(row.note_appartement);
@@ -42,12 +45,26 @@ export async function fetchRoomReviewStats(
     current.total += note;
     current.count += 1;
     sums.set(row.room_id, current);
+
+    const byNote = notesByRoom.get(row.room_id) ?? new Map<number, number>();
+    byNote.set(note, (byNote.get(note) ?? 0) + 1);
+    notesByRoom.set(row.room_id, byNote);
   }
 
   for (const [roomId, { total, count }] of sums) {
+    const byNote = notesByRoom.get(roomId) ?? new Map<number, number>();
+    const distribution = [5, 4, 3, 2, 1].map((note) => {
+      const noteCount = byNote.get(note) ?? 0;
+      return {
+        note,
+        count: noteCount,
+        percent: count > 0 ? Math.round((noteCount / count) * 1000) / 10 : 0,
+      };
+    });
     stats.set(roomId, {
       rating: Math.round((total / count) * 10) / 10,
       count,
+      distribution,
     });
   }
 

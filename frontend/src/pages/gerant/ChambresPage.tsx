@@ -6,6 +6,7 @@ import GerantLogoutButton from '../../components/GerantLogoutButton';
 import { fetchMyRooms, toggleRoom, updateRoom, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import { priceWithCurrency } from '../../lib/roomDisplay';
+import '../../styles/34-gerant-maq2.css';
 
 function Icon({ id, className = 'i' }: { id: string; className?: string }) {
   return (

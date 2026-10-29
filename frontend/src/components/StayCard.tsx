@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { priceWithCurrency } from '../lib/roomDisplay';
+import '../styles/05-home-staycard.css';
 
 interface StayCardProps {
   image: string;

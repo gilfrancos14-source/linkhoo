@@ -1,3 +1,5 @@
+@import "./42-verify-cta.css";
+
 /* ==========================================================================
    ADMIN PANEL — Slate + Blue (inspiré Stripe / Linear)
    ========================================================================== */
@@ -983,97 +985,6 @@
 
 .dash-hero__retry {
   margin-top: 16px;
-}
-
-/* Verify CTA */
-.verify-cta {
-  background: linear-gradient(120deg, #FEF3C7 0%, #FDE68A 100%);
-  border: 1px solid #F59E0B;
-  border-radius: 16px;
-  padding: 20px 24px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.verify-cta__icon {
-  flex-shrink: 0;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(245, 158, 11, 0.15);
-  border-radius: 12px;
-  color: #D97706;
-}
-
-.verify-cta__text {
-  flex: 1;
-}
-
-.verify-cta__text h3 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-  color: #92400E;
-}
-
-.verify-cta__text p {
-  margin: 4px 0 0;
-  font-size: 13.5px;
-  color: #A16207;
-}
-
-.verify-cta__btn {
-  flex-shrink: 0;
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.verify-cta__btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(217, 119, 6, 0.4);
-}
-
-.verify-cta__btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.verify-cta--danger {
-  background: linear-gradient(120deg, var(--admin-danger-bg) 0%, #fecaca 100%);
-  border-color: #f87171;
-}
-
-.verify-cta--danger .verify-cta__icon {
-  background: rgba(220, 38, 38, 0.12);
-  color: var(--admin-danger);
-}
-
-.verify-cta--danger .verify-cta__text h3 {
-  color: #991b1b;
-}
-
-.verify-cta--danger .verify-cta__text p {
-  color: #b91c1c;
-}
-
-.verify-cta__meta {
-  display: block;
-  margin-top: 5px;
-  font-size: 12.5px;
-  font-weight: 500;
-  opacity: 0.8;
 }
 
 /* Verify page */

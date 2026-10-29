@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ESPACE GÉRANT - Ajouter une chambre (reproduction de maquette/maq3.html)
+   ESPACE GÃ‰RANT - Ajouter une chambre (reproduction de maquette/maq3.html)
    La page embarque sa propre sidebar et son propre topbar : l'AdminLayout
    masque son chrome sur cette route (classe .admin--blank).
    ========================================================================== */
@@ -7,7 +7,7 @@
 .gerant-maq3 {
   background: #f5f8fc;
   color: #0f2a5c;
-  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-family: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;

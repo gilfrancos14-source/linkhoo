@@ -1,7 +1,7 @@
 /* ==========================================================================
-   VÉRIFICATION GÉRANT — reproduction de maquette/habici-verification.html
-   Les utilitaires viennent de Tailwind ; ce fichier rétablit le reset local
-   (preflight Tailwind est désactivé globalement) et le cadre de la page.
+   VÃ‰RIFICATION GÃ‰RANT â€” reproduction de maquette/habici-verification.html
+   Les utilitaires viennent de Tailwind ; ce fichier rÃ©tablit le reset local
+   (preflight Tailwind est dÃ©sactivÃ© globalement) et le cadre de la page.
    ========================================================================== */
 
 html:has(.verif-maq)::before {
@@ -29,7 +29,7 @@ body:has(.verif-maq) {
   min-height: 100%;
   background: #f5f7fb;
   color: #0f2150;
-  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-family: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;

@@ -1,0 +1,97 @@
+/* La maquette n'affiche pas la barre d'accent marché du site. */
+html.cdash-hide-market-bar::before {
+  display: none;
+}
+
+/* ==========================================================================
+   Client — tableau de bord (/compte, vue d'ensemble)
+   Conversion de la maquette docs/maquettes/index.html.
+   Tout est scopé sous .cdash-maq pour ne pas entrer en collision avec les
+   classes génériques (.card, .nav, .link…) déjà utilisées ailleurs.
+   Le tout est placé dans la couche components : les utilitaires Tailwind
+   (h-6, w-10, !h-3…) gardent ainsi la priorité, comme dans la maquette.
+   ========================================================================== */
+
+/* Le preflight de Tailwind est désactivé dans le projet : sans ce rappel, les
+   utilitaires `border` / `divide-*` n'ont pas de `border-style` et restent
+   invisibles. On rétablit donc le comportement de la maquette, uniquement
+   sous .cdash-maq et dans la couche base pour que les utilitaires gardent la
+   priorité (border-0, border-t…). */
+@layer base {
+  .cdash-maq :where(*, ::before, ::after) {
+    border-width: 0;
+    border-style: solid;
+    border-color: theme('borderColor.DEFAULT', currentColor);
+  }
+}
+
+@layer components {
+
+.cdash-maq :where(.ic) {
+  @apply w-5 h-5 shrink-0 fill-none stroke-current;
+  display: block;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cdash-maq :where(.ic.f) {
+  @apply fill-current;
+}
+
+.cdash-maq .card {
+  @apply bg-white border border-slate-200/80 rounded-xl shadow-sm;
+}
+
+.cdash-maq .btn-o {
+  @apply block w-full text-center text-xs font-medium text-blue-700 border border-blue-500 rounded-lg py-2 hover:bg-blue-50;
+}
+
+.cdash-maq .link {
+  @apply text-[11px] font-medium text-blue-700 inline-flex items-center gap-1 hover:underline;
+}
+
+.cdash-maq .nav {
+  @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50;
+}
+
+.cdash-maq .nav.is-active {
+  @apply bg-habi-soft text-habi font-medium;
+}
+
+.cdash-maq .pill {
+  @apply absolute top-2 left-2 text-[10px] font-medium px-2.5 py-0.5 rounded-full bg-white border;
+}
+
+.cdash-maq .heart {
+  @apply absolute top-1.5 right-1.5 grid place-items-center w-6 h-6 rounded-full bg-white/80 text-white;
+}
+
+.cdash-maq .avatar {
+  @apply grid place-items-center rounded-full text-white font-semibold bg-gradient-to-br from-amber-600 to-amber-900;
+}
+
+/* Dégradés de secours, visibles seulement si une image est introuvable. */
+.cdash-maq .r1 {
+  background: linear-gradient(160deg, #5b3a24, #d9a273 50%, #f4e0c8);
+}
+.cdash-maq .r2 {
+  background: linear-gradient(160deg, #3b4a63, #8d9bb3 55%, #e3d6c4);
+}
+.cdash-maq .r3 {
+  background: linear-gradient(160deg, #8a5a34, #e0b184 50%, #f7ecd9);
+}
+.cdash-maq .r4 {
+  background: linear-gradient(160deg, #6b4b33, #c9a07a 50%, #efe3d3);
+}
+
+/* Le menu utilisateur ne doit pas être rogné par la topbar. */
+.cdash-maq .user-menu {
+  @apply absolute right-0 top-[calc(100%+8px)] z-30 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-lg;
+}
+
+.cdash-maq .user-menu__item {
+  @apply flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-slate-600 hover:bg-slate-50;
+}
+
+}

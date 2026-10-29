@@ -59,7 +59,13 @@ export default function HeroSection({ market }: HeroSectionProps) {
         <img
           alt={`Vue de ${country.label}`}
           className="w-full h-full object-cover object-center filter brightness-[0.78]"
-          src="/images/hero-city.jpg"
+          src="/images/hero-city.webp"
+          srcSet="/images/hero-city-800.webp 800w, /images/hero-city.webp 1280w"
+          sizes="100vw"
+          width={1280}
+          height={1601}
+          fetchPriority="high"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0E1A2D] via-black/40 to-black/30"></div>
       </div>

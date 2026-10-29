@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { apiAdmin, setAdminToken } from '../../lib/adminApi';
 import { marketSlugFromPath } from '../../contexts/MarketContext';
 import { marketBySlug } from '../../config/markets';
+import '../../styles/20-auth.css';
 
 export default function AdminLogin() {
   const { pathname } = useLocation();

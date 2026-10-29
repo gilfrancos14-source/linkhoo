@@ -7,8 +7,7 @@ import { useGerantChrome } from '../../hooks/useGerantChrome';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
 import { apiPremium } from '../../lib/api';
 import { isPremiumActive } from '../../lib/premium';
-
-/** Icônes Lucide utilisées par la maquette HabiCI Premium. */
+import '../../styles/26-premium.css';
 const ICONS: Record<string, ReactNode> = {
   home: (
     <>
@@ -472,7 +471,7 @@ export default function PremiumPage() {
                 alt=""
                 className="absolute inset-y-0 right-0 h-full w-[52%] object-cover"
                 onError={(event) => {
-                  event.currentTarget.src = '/images/pexels-artbovich-6782567.jpg';
+                  event.currentTarget.src = '/images/pexels-artbovich-6782567.webp';
                 }}
                 style={{
                   maskImage: 'linear-gradient(to right, transparent, #000 45%)',

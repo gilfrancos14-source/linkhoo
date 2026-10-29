@@ -36,9 +36,14 @@ router.get('/', reviewsLimiter, async (req: Request, res: Response, next: NextFu
     if (error) throw error;
 
     const reviews = roomReviews || [];
-    const roomAvg = reviews.length
-      ? reviews.reduce((sum, r) => sum + r.note_appartement, 0) / reviews.length
-      : null;
+    // Moyenne + histogramme des notes : logique backend (une seule source de
+    // vérité, partagée avec les cartes de la landing via `fetchRoomReviewStats`).
+    const stats = await fetchRoomReviewStats([roomId]).catch(
+      () => new Map<string, RoomReviewStats>(),
+    );
+    const roomStats = stats.get(roomId) ?? null;
+    const roomAvg = roomStats?.rating ?? null;
+    const roomCount = roomStats?.count ?? reviews.length;
 
     let gerantAvg: number | null = null;
     let gerantCount = 0;
@@ -57,7 +62,8 @@ router.get('/', reviewsLimiter, async (req: Request, res: Response, next: NextFu
     res.json({
       reviews,
       room_avg: roomAvg,
-      room_count: reviews.length,
+      room_count: roomCount,
+      room_distribution: roomStats?.distribution ?? [],
       gerant_avg: gerantAvg,
       gerant_count: gerantCount,
     });

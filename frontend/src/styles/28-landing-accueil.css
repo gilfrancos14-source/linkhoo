@@ -1,7 +1,7 @@
 /* ==========================================================================
-   Landing racine — reproduction de maquette/linkhoo-accueil.html
-   Tout le style est scopé sous .landing : aucune fuite vers les pages de
-   marché, qui conservent les thèmes et composants existants.
+   Landing racine â€” reproduction de maquette/linkhoo-accueil.html
+   Tout le style est scopÃ© sous .landing : aucune fuite vers les pages de
+   marchÃ©, qui conservent les thÃ¨mes et composants existants.
    ========================================================================== */
 
 .landing {
@@ -15,7 +15,7 @@
   min-height: 100vh;
   background: #fff;
   color: var(--acc-ink);
-  font-family: 'Plus Jakarta Sans', Inter, system-ui, sans-serif;
+  font-family: 'Plus Jakarta Sans Variable', 'Inter Variable', system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -125,7 +125,7 @@
   color: #fff;
 }
 
-/* ---------- En-tête ---------- */
+/* ---------- En-tÃªte ---------- */
 .acc-header {
   position: relative;
   z-index: 30;
@@ -263,13 +263,22 @@
 
 /* ---------- Hero ---------- */
 .acc-hero {
+  --hero-image: url("/images/hero-city.webp");
   position: relative;
   min-height: 390px;
   color: #fff;
   background:
     linear-gradient(90deg, rgba(20, 12, 8, 0.88) 0%, rgba(40, 22, 12, 0.55) 45%, rgba(0, 0, 0, 0) 100%),
-    url("/images/hero-city.jpg") center 45% / cover no-repeat,
+    var(--hero-image) center 45% / cover no-repeat,
     linear-gradient(180deg, #3a2314 0%, #6b4a2b 45%, #1f7fa8 100%);
+}
+
+/* Mobile : même cadrage, mais une source deux fois plus légère (~60 Ko au
+   lieu de ~127 Ko) pour le LCP sur réseau lent. */
+@media (max-width: 899px) {
+  .acc-hero {
+    --hero-image: url("/images/hero-city-800.webp");
+  }
 }
 
 .acc-hero__inner {
@@ -403,7 +412,7 @@
   background: #4d33c0;
 }
 
-/* ---------- Où louer ---------- */
+/* ---------- OÃ¹ louer ---------- */
 .acc-countries-section {
   background: var(--acc-soft);
 }
@@ -1205,7 +1214,7 @@
   }
 }
 
-/* ---------- Lisibilité : tailles de texte relevées ---------- */
+/* ---------- LisibilitÃ© : tailles de texte relevÃ©es ---------- */
 .landing {
   font-size: 17px;
 }

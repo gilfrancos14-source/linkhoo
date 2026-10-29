@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ESPACE GÉRANT — Mes chambres (reproduction de maquette/maq2.html)
+   ESPACE GÃ‰RANT â€” Mes chambres (reproduction de maquette/maq2.html)
    La page embarque sa propre sidebar et son propre topbar : l'AdminLayout
    masque son chrome sur cette route (classe .admin--blank).
    ========================================================================== */
@@ -7,15 +7,15 @@
 .gerant-maq2 {
   background: #f5f8fc;
   color: #0f2a5c;
-  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-family: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Preflight Tailwind est désactivé globalement : on rétablit un reset scopé
-   pour obtenir exactement le même rendu que maq2.html (bordures, boutons,
+/* Preflight Tailwind est dÃ©sactivÃ© globalement : on rÃ©tablit un reset scopÃ©
+   pour obtenir exactement le mÃªme rendu que maq2.html (bordures, boutons,
    champs, tableaux, SVG, interlignes). */
 .gerant-maq2 *,
 .gerant-maq2 *::before,

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { MarketProvider } from '../contexts/MarketContext';
 import type { ClientMineReservationData, ReviewData } from '../lib/api';
 import ClientComptePage from './ClientComptePage';
@@ -60,13 +60,21 @@ vi.mock('@clerk/clerk-react', () => ({
   useClerk: () => ({ signOut: mocks.signOut }),
 }));
 
+/** Les statuts affichés dépendent des dates du séjour : on les garde
+ *  relatives à aujourd'hui pour que la suite de tests ne vieillisse pas. */
+const isoOffset = (days: number) => {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+};
+
 const RESERVATIONS: ClientMineReservationData[] = [
   {
     id: 'res1',
     room_id: 'room1',
     room_title: 'Suite vue mer',
-    date_debut: '2026-03-01',
-    date_fin: '2026-03-04',
+    date_debut: isoOffset(2),
+    date_fin: isoOffset(5),
     duree_nombre: 3,
     duree_unite: 'nuit',
     statut: 'confirmee',
@@ -79,8 +87,8 @@ const RESERVATIONS: ClientMineReservationData[] = [
     id: 'res2',
     room_id: 'room2',
     room_title: 'Bungalow cocody',
-    date_debut: '2026-05-10',
-    date_fin: '2026-05-12',
+    date_debut: isoOffset(10),
+    date_fin: isoOffset(12),
     duree_nombre: 2,
     duree_unite: 'nuit',
     statut: 'en_attente',
@@ -93,8 +101,8 @@ const RESERVATIONS: ClientMineReservationData[] = [
     id: 'res3',
     room_id: 'room3',
     room_title: 'Loft plateau',
-    date_debut: '2025-11-01',
-    date_fin: '2025-11-05',
+    date_debut: isoOffset(-60),
+    date_fin: isoOffset(-57),
     duree_nombre: 4,
     duree_unite: 'nuit',
     statut: 'annulee',
@@ -107,8 +115,8 @@ const RESERVATIONS: ClientMineReservationData[] = [
     id: 'res4',
     room_id: 'room4',
     room_title: 'Chambre vue',
-    date_debut: '2026-01-05',
-    date_fin: '2026-01-07',
+    date_debut: isoOffset(-40),
+    date_fin: isoOffset(-38),
     duree_nombre: 2,
     duree_unite: 'nuit',
     statut: 'confirmee',
@@ -141,12 +149,18 @@ const CLERK_USER = {
   emailAddresses: [],
 };
 
+function SearchRouteProbe() {
+  const location = useLocation();
+  return <div data-testid="search-route">{`${location.pathname}${location.search}`}</div>;
+}
+
 function renderPage(entry = '/ci/compte') {
   return render(
     <MemoryRouter initialEntries={[entry]}>
       <MarketProvider>
         <Routes>
           <Route path="/:market/compte" element={<ClientComptePage />} />
+          <Route path="/:market/recherche" element={<SearchRouteProbe />} />
           <Route path="/:market" element={<div data-testid="home">Accueil du marché</div>} />
         </Routes>
       </MarketProvider>
@@ -156,7 +170,7 @@ function renderPage(entry = '/ci/compte') {
 
 async function renderLoaded(entry = '/ci/compte?view=stays') {
   const view = renderPage(entry);
-  await screen.findByText('Suite vue mer');
+  await screen.findAllByText('Suite vue mer');
   return view;
 }
 
@@ -173,13 +187,23 @@ function mustFind<T extends Element>(selector: string): T {
 }
 
 function cards(): HTMLElement[] {
-  return Array.from(document.querySelectorAll<HTMLElement>('.client-compte__card--res'));
+  return Array.from(document.querySelectorAll<HTMLElement>('.rs'));
 }
 
 function cardByTitle(title: string): HTMLElement {
-  const found = cards().find((c) => c.querySelector('.client-compte__card-title')?.textContent === title);
+  const found = cards().find((c) => c.querySelector('h3')?.textContent === title);
   if (!found) throw new Error(`carte introuvable : ${title}`);
   return found;
+}
+
+/** Même formatage que la page (date locale, jour/mois abrégé/année). */
+function fmtDate(iso: string): string {
+  const [year, month, day] = iso.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 beforeEach(() => {
@@ -210,7 +234,7 @@ describe('ClientComptePage — états de chargement', () => {
     renderPage('/ci/compte?view=stays');
 
     expect(screen.getByText('Chargement de vos réservations…')).toBeInTheDocument();
-    expect(document.querySelector('.client-compte__card--res')).toBeNull();
+    expect(document.querySelector('.rs')).toBeNull();
   });
 
   it("n'interroge rien tant que Clerk n'est pas chargé", () => {
@@ -249,11 +273,11 @@ describe('ClientComptePage — états de chargement', () => {
 });
 
 describe('ClientComptePage — navigation du compte', () => {
-  it("affiche l'avatar et le nom du compte Clerk dans la sidebar", async () => {
+  it("affiche l'avatar et le nom du compte Clerk dans le chrome de la page", async () => {
     await renderLoaded();
 
-    expect(mustFind('.sidebar__avatar')).toHaveTextContent('A');
-    expect(mustFind('.sidebar__user-name')).toHaveTextContent('Aya');
+    expect(mustFind('.avatar')).toHaveTextContent('AK');
+    expect(screen.getByText('Aya Kouassi')).toBeInTheDocument();
   });
 
   it("affiche l'email du compte sur la vue profil", async () => {
@@ -268,14 +292,15 @@ describe('ClientComptePage — navigation du compte', () => {
 
     await renderLoaded();
 
-    expect(mustFind('.sidebar__user-name')).toHaveTextContent('Client');
-    expect(mustFind('.sidebar__avatar')).toHaveTextContent('C');
+    expect(mustFind('.avatar')).toHaveTextContent('C');
+    expect(screen.getAllByText('Client').length).toBeGreaterThan(0);
   });
 
   it('déconnecte et revient vers le marché', async () => {
     await renderLoaded();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Déconnexion' }));
+    fireEvent.click(screen.getByRole('button', { name: /Aya Kouassi/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Déconnexion' }));
 
     expect(await screen.findByTestId('home')).toBeInTheDocument();
     expect(mocks.signOut).toHaveBeenCalledTimes(1);
@@ -285,7 +310,7 @@ describe('ClientComptePage — navigation du compte', () => {
     mocks.unreadMessages.mockResolvedValue({ count: 4 });
     await renderLoaded();
 
-    const link = screen.getByRole('link', { name: /Messages/ });
+    const link = screen.getByRole('link', { name: /Mes messages/ });
     expect(link).toHaveAttribute('href', '/ci/messages');
     expect(within(link).getByText('4')).toBeInTheDocument();
   });
@@ -293,8 +318,8 @@ describe('ClientComptePage — navigation du compte', () => {
   it("n'affiche pas de pastille Messages quand tout est lu", async () => {
     await renderLoaded();
 
-    const link = screen.getByRole('link', { name: /Messages/ });
-    expect(link.querySelector('.sidebar__pill')).toBeNull();
+    const link = screen.getByRole('link', { name: /Mes messages/ });
+    expect(link.querySelector('.bd')).toBeNull();
   });
 });
 
@@ -303,23 +328,24 @@ describe('ClientComptePage — vues', () => {
     renderPage('/ci/compte');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: "Vue d'ensemble" }),
+      await screen.findByRole('heading', { level: 1, name: /Votre prochain séjour/ }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: "Vue d'ensemble" })).toHaveClass('sidebar__link--active');
-    expect(screen.getByRole('link', { name: /Mes séjours/ })).not.toHaveClass('sidebar__link--active');
+    expect(screen.getByRole('link', { name: 'Accueil' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: /Mes réservations/ })).not.toHaveAttribute('aria-current');
   });
 
-  it('affiche la vue « Mes séjours »', async () => {
+  it('affiche la vue « Mes réservations »', async () => {
     await renderLoaded();
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Mes séjours' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Mes séjours/ })).toHaveClass('sidebar__link--active');
+    expect(screen.getByRole('heading', { level: 1, name: 'Mes réservations' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Mes réservations/ })).toHaveAttribute('aria-current', 'page');
   });
 
   it('affiche le nombre de réservations en pastille', async () => {
     await renderLoaded();
 
-    expect(mustFind('.sidebar__pill')).toHaveTextContent('4');
+    const link = screen.getByRole('link', { name: /Mes réservations/ });
+    expect(within(link).getByText('4')).toBeInTheDocument();
   });
 
   it("bascule sur la vue profil et change le titre", async () => {
@@ -329,7 +355,65 @@ describe('ClientComptePage — vues', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Mon profil' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Mon profil' })).toHaveClass('sidebar__link--active');
-    expect(document.querySelector('.client-compte__card--res')).toBeNull();
+    expect(document.querySelector('.rs')).toBeNull();
+  });
+});
+
+describe('ClientComptePage — formulaire de recherche du tableau de bord', () => {
+  async function renderDashboard() {
+    renderPage('/ci/compte');
+    await screen.findByRole('heading', { level: 1, name: /Votre prochain séjour/ });
+  }
+
+  function submitHeroSearch() {
+    const form = mustFind<HTMLFormElement>('.cdash-maq main form');
+    fireEvent.submit(form);
+  }
+
+  it('transmet destination, dates et catégorie à la page de recherche', async () => {
+    await renderDashboard();
+    await screen.findByRole('option', { name: 'Appartements' });
+
+    fireEvent.change(screen.getByLabelText('Où souhaitez-vous séjourner ?'), {
+      target: { value: 'Cocody' },
+    });
+    fireEvent.change(screen.getByLabelText('Date d’arrivée'), { target: { value: '2026-11-12' } });
+    fireEvent.change(screen.getByLabelText('Date de départ'), { target: { value: '2026-11-15' } });
+    fireEvent.change(screen.getByLabelText('Catégorie'), { target: { value: 'ci-appartements' } });
+
+    expect(screen.getByText('12 nov. 2026')).toBeInTheDocument();
+    expect(screen.getByText('15 nov. 2026')).toBeInTheDocument();
+
+    submitHeroSearch();
+
+    expect(await screen.findByTestId('search-route')).toHaveTextContent(
+      '/ci/recherche?q=Cocody&arrivee=2026-11-12&depart=2026-11-15&categorie=ci-appartements',
+    );
+  });
+
+  it('refuse une recherche avec une seule date', async () => {
+    await renderDashboard();
+
+    fireEvent.change(screen.getByLabelText('Date d’arrivée'), { target: { value: '2026-11-12' } });
+    submitHeroSearch();
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Renseignez la date d’arrivée et la date de départ.',
+    );
+    expect(screen.queryByTestId('search-route')).toBeNull();
+  });
+
+  it('refuse un départ antérieur à l’arrivée', async () => {
+    await renderDashboard();
+
+    fireEvent.change(screen.getByLabelText('Date d’arrivée'), { target: { value: '2026-11-12' } });
+    fireEvent.change(screen.getByLabelText('Date de départ'), { target: { value: '2026-11-10' } });
+    submitHeroSearch();
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'La date de départ doit être postérieure à la date d’arrivée.',
+    );
+    expect(screen.queryByTestId('search-route')).toBeNull();
   });
 });
 
@@ -338,12 +422,11 @@ describe('ClientComptePage — liste des réservations', () => {
     await renderLoaded();
 
     const card = cardByTitle('Suite vue mer');
-    expect(card).toHaveTextContent('01 mars');
-    expect(card).toHaveTextContent('04 mars 2026');
+    expect(card).toHaveTextContent(fmtDate(RESERVATIONS[0].date_debut));
+    expect(card).toHaveTextContent(fmtDate(RESERVATIONS[0].date_fin));
     expect(card).toHaveTextContent('75 000');
     expect(card).toHaveTextContent('FCFA / nuit');
     expect(card).toHaveTextContent('Confirmée');
-    expect(card).toHaveTextContent('Belle suite avec terrasse');
   });
 
   it('affiche la photo de la chambre avec son texte alternatif', async () => {
@@ -352,13 +435,13 @@ describe('ClientComptePage — liste des réservations', () => {
     expect(screen.getByRole('img', { name: 'Suite' })).toHaveAttribute('src', '/images/suite.jpg');
   });
 
-  it('affiche une image de repli sans description ni photo', async () => {
+  it('affiche le prix communiqué par le gérant quand le montant est absent', async () => {
     await renderLoaded();
 
     const card = cardByTitle('Bungalow cocody');
-    expect(card.querySelector('.client-compte__card-media-fallback')).not.toBeNull();
     expect(card).toHaveTextContent('En attente');
-    expect(card.querySelector('.client-compte__price')).toBeNull();
+    expect(card).toHaveTextContent('Prix communiqué par le gérant');
+    expect(card).not.toHaveTextContent('FCFA / nuit');
   });
 
   it("masque le bouton d'annulation sur une réservation annulée", async () => {
@@ -366,7 +449,7 @@ describe('ClientComptePage — liste des réservations', () => {
 
     const card = cardByTitle('Loft plateau');
     expect(card).toHaveTextContent('Annulée');
-    expect(within(card).queryByRole('button', { name: 'Annuler' })).not.toBeInTheDocument();
+    expect(within(card).queryByRole('button', { name: 'Annuler la réservation' })).not.toBeInTheDocument();
     expect(within(card).queryByRole('button', { name: 'Laisser un avis' })).not.toBeInTheDocument();
   });
 
@@ -396,12 +479,13 @@ describe('ClientComptePage — liste des réservations', () => {
     const withPhoto = cardByTitle('Loft plateau');
     expect(withPhoto.querySelector('img')).toHaveAttribute('src', '/images/loft.jpg');
     expect(withPhoto.querySelector('img')).toHaveAttribute('alt', 'Loft plateau');
+    expect(withPhoto).toHaveTextContent('Annulée');
 
     // « Chambre vue » a room.img === null : pas d'<img>, uniquement le repli (SVG masqué).
     const withoutPhoto = cardByTitle('Chambre vue');
     expect(withoutPhoto.querySelector('img')).toBeNull();
     expect(within(withoutPhoto).queryByRole('img')).not.toBeInTheDocument();
-    expect(withoutPhoto.querySelector('.client-compte__card-media-fallback')).not.toBeNull();
+    expect(withoutPhoto).toHaveTextContent('Terminée');
   });
 });
 
@@ -409,12 +493,12 @@ describe('ClientComptePage — annulation', () => {
   it('annule la réservation confirmée après confirmation', async () => {
     await renderLoaded();
 
-    fireEvent.click(within(cardByTitle('Suite vue mer')).getByRole('button', { name: 'Annuler' }));
+    fireEvent.click(within(cardByTitle('Suite vue mer')).getByRole('button', { name: 'Annuler la réservation' }));
 
     expect(window.confirm).toHaveBeenCalledWith('Annuler cette réservation ?');
     expect(mocks.cancelMyReservation).toHaveBeenCalledWith('res1');
     expect(await within(cardByTitle('Suite vue mer')).findByText('Annulée')).toBeInTheDocument();
-    expect(within(cardByTitle('Suite vue mer')).queryByRole('button', { name: 'Annuler' })).not.toBeInTheDocument();
+    expect(within(cardByTitle('Suite vue mer')).queryByRole('button', { name: 'Annuler la réservation' })).not.toBeInTheDocument();
   });
 
   it('affiche le remboursement en cours quand la réservation était payée', async () => {
@@ -423,7 +507,7 @@ describe('ClientComptePage — annulation', () => {
     });
     await renderLoaded();
 
-    fireEvent.click(within(cardByTitle('Suite vue mer')).getByRole('button', { name: 'Annuler' }));
+    fireEvent.click(within(cardByTitle('Suite vue mer')).getByRole('button', { name: 'Annuler la réservation' }));
 
     const card = cardByTitle('Suite vue mer');
     expect(await within(card).findByText('Remboursement en cours')).toBeInTheDocument();
@@ -434,7 +518,7 @@ describe('ClientComptePage — annulation', () => {
     vi.mocked(window.confirm).mockReturnValue(false);
     await renderLoaded();
 
-    fireEvent.click(within(cardByTitle('Suite vue mer')).getByRole('button', { name: 'Annuler' }));
+    fireEvent.click(within(cardByTitle('Suite vue mer')).getByRole('button', { name: 'Annuler la réservation' }));
 
     expect(mocks.cancelMyReservation).not.toHaveBeenCalled();
     expect(cardByTitle('Suite vue mer')).toHaveTextContent('Confirmée');
@@ -444,7 +528,7 @@ describe('ClientComptePage — annulation', () => {
     mocks.cancelMyReservation.mockRejectedValue(new Error('Délai dépassé'));
     await renderLoaded();
 
-    fireEvent.click(within(cardByTitle('Suite vue mer')).getByRole('button', { name: 'Annuler' }));
+    fireEvent.click(within(cardByTitle('Suite vue mer')).getByRole('button', { name: 'Annuler la réservation' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Délai dépassé');
     expect(cardByTitle('Suite vue mer')).toHaveTextContent('Confirmée');
@@ -459,7 +543,7 @@ describe('ClientComptePage — annulation', () => {
     );
     await renderLoaded();
 
-    fireEvent.click(within(cardByTitle('Suite vue mer')).getByRole('button', { name: 'Annuler' }));
+    fireEvent.click(within(cardByTitle('Suite vue mer')).getByRole('button', { name: 'Annuler la réservation' }));
 
     expect(await within(cardByTitle('Suite vue mer')).findByRole('button', { name: 'Annulation…' })).toBeDisabled();
 
@@ -664,7 +748,7 @@ describe('ClientComptePage — appels réseau', () => {
 
     await renderLoaded();
 
-    expect(await screen.findByText('Suite vue mer')).toBeInTheDocument();
+    expect((await screen.findAllByText('Suite vue mer')).length).toBeGreaterThan(0);
     // Sans avis, on ignore quels séjours sont déjà notés : on n'annonce ni de
     // compte de séjours notables, ni de bouton « Laisser un avis » (risque de
     // doublon), mais on explique l'état dégradé — sans page en erreur.

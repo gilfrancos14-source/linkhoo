@@ -379,7 +379,7 @@
   background:
     linear-gradient(to bottom left, rgba(45, 19, 128, 0.92) 0%, rgba(79, 34, 189, 0.5) 34%, rgba(45, 19, 128, 0) 62%),
     linear-gradient(to top, rgba(45, 19, 128, 0.5), rgba(45, 19, 128, 0) 38%),
-    url('/images/contact-support.jpg') center 18%/cover no-repeat,
+    url('/images/contact-support.webp') center 18%/cover no-repeat,
     linear-gradient(135deg, #6b35d9, #4f22bd 52%, #2d1380);
   box-shadow: 0 8px 24px rgba(80, 40, 180, 0.18);
 }
@@ -397,7 +397,7 @@
 
 .ct-hero__script p {
   margin: 0;
-  font-family: 'Caveat', cursive;
+  font-family: 'Caveat Variable', cursive;
   font-size: 24px;
   font-style: italic;
   font-weight: 500;
@@ -1390,7 +1390,7 @@
   }
 }
 
-/* ---------- Lisibilité : tailles de texte relevées ---------- */
+/* ---------- LisibilitÃ© : tailles de texte relevÃ©es ---------- */
 .contact-page {
   font-size: 16px;
 }

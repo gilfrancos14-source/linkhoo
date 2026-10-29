@@ -461,6 +461,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Chambre introuvable' });
 
+    const signals = await loadGerantSignals();
     let gerant = null;
     if (data.gerant_id) {
       const { data: gerantData } = await supabaseAdmin
@@ -484,7 +485,15 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       }
     }
 
-    res.json({ ...data, gerant });
+    res.json({
+      ...data,
+      gerant,
+      // Drapeaux de classement/badges : identiques à ceux des listes (préfixe
+      // premium vérifié en cours via `isPremiumActive`) pour que la fiche
+      // reflète bien l'état réel de la base.
+      gerant_premium: !!data.gerant_id && signals.premiumIds.has(data.gerant_id),
+      gerant_verified: !!data.gerant_id && signals.verifiedIds.has(data.gerant_id),
+    });
   } catch (err) {
     next(err);
   }

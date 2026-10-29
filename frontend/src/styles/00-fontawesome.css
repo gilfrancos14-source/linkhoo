@@ -1,0 +1,93 @@
+/* Généré par scripts/build-fontawesome-subset.mjs — ne pas éditer à la main. */
+@font-face {
+  font-family: 'Font Awesome 7 Free';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url('/fonts/fa-solid-900.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Font Awesome 7 Free';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/fa-regular-400.woff2') format('woff2');
+}
+
+.fa-solid,
+.fa-regular,
+.fas,
+.far,
+.fa {
+  --_fa-family: 'Font Awesome 7 Free';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  display: var(--fa-display, inline-block);
+  font-family: var(--_fa-family);
+  font-feature-settings: normal;
+  font-style: normal;
+  font-synthesis: none;
+  font-variant: normal;
+  font-weight: var(--fa-style, 900);
+  line-height: 1;
+  text-align: center;
+  text-rendering: auto;
+  width: var(--fa-width, 1.25em);
+}
+
+.fa-solid,
+.fas { --fa-style: 900; }
+
+.fa-regular,
+.far { --fa-style: 400; }
+
+.fa-solid::before,
+.fa-regular::before,
+.fas::before,
+.far::before,
+.fa::before {
+  content: var(--fa)/"";
+}
+
+@supports not (content: ""/"") {
+  .fa-solid::before,
+  .fa-regular::before,
+  .fas::before,
+  .far::before,
+  .fa::before {
+    content: var(--fa);
+  }
+}
+
+.fa-arrow-right { --fa: "\f061"; }
+.fa-bed { --fa: "\f236"; }
+.fa-building { --fa: "\f1ad"; }
+.fa-calendar { --fa: "\f133"; }
+.fa-calendar-days { --fa: "\f073"; }
+.fa-car { --fa: "\f1b9"; }
+.fa-chevron-left { --fa: "\f053"; }
+.fa-chevron-right { --fa: "\f054"; }
+.fa-city { --fa: "\f64f"; }
+.fa-clock { --fa: "\f017"; }
+.fa-compass { --fa: "\f14e"; }
+.fa-door-open { --fa: "\f52b"; }
+.fa-fire { --fa: "\f06d"; }
+.fa-gift { --fa: "\f06b"; }
+.fa-heart { --fa: "\f004"; }
+.fa-house { --fa: "\f015"; }
+.fa-landmark { --fa: "\f66f"; }
+.fa-location-dot { --fa: "\f3c5"; }
+.fa-magnifying-glass { --fa: "\f002"; }
+.fa-masks-theater { --fa: "\f630"; }
+.fa-monument { --fa: "\f5a6"; }
+.fa-shapes { --fa: "\f61f"; }
+.fa-shower { --fa: "\f2cc"; }
+.fa-star { --fa: "\f005"; }
+.fa-suitcase-rolling { --fa: "\f5c1"; }
+.fa-tags { --fa: "\f02c"; }
+.fa-tree-city { --fa: "\e587"; }
+.fa-umbrella-beach { --fa: "\f5ca"; }
+.fa-utensils { --fa: "\f2e7"; }
+.fa-water { --fa: "\f773"; }
+.fa-xmark { --fa: "\f00d"; }

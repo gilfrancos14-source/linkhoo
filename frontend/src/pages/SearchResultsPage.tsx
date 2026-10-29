@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect, useRef, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
+import '../styles/17-search-results.css';
 import {
   fetchAvailableRooms,
   fetchVilles,

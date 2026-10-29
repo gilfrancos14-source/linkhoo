@@ -12,6 +12,7 @@ import {
 } from '../../lib/api';
 import { isPremiumActive } from '../../lib/premium';
 import { formatDateLong } from '../../lib/formatDate';
+import '../../styles/39-gerant-verification.css';
 
 type PreferenceKey = 'reservations' | 'messages' | 'marketing';
 type AccountRowStatus = 'validated' | 'progress' | 'rejected' | 'missing' | 'unknown';

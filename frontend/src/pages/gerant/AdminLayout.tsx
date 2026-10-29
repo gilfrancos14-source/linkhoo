@@ -9,6 +9,8 @@ import { updateReservationStatut, getReservations, checkDateConflict } from '../
 import { apiGerants, apiMessages, type GerantData } from '../../lib/api';
 import { GerantSessionProvider } from '../../contexts/GerantSessionContext';
 import { isPremiumActive } from '../../lib/premium';
+import '../../styles/18-admin.css';
+import '../../styles/33-gerant-blank.css';
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkConfigured = clerkKey && clerkKey.startsWith('pk_');

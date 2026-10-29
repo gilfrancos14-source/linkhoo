@@ -1,6 +1,8 @@
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
 import { useHomePath } from '../hooks/useHomePath';
+import '../styles/19-client-tracking.css';
+import '../styles/15-room-detail.css';
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkConfigured = Boolean(clerkKey && clerkKey.startsWith('pk_'));

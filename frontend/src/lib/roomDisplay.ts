@@ -77,14 +77,23 @@ export function roomSubtitle(room: RoomSubtitleSource): string {
 
 export interface RoomMetaSource {
   chambres?: number | null;
+  /** Nombre de salles de bain — pastille jointe au nombre de chambres. */
+  douches?: number | null;
 }
 
 /**
- * Pastilles sous le titre d'une carte (le nombre de chambres). Les valeurs
- * absentes sont retirées : jamais de puce vide.
+ * Pastilles sous le titre d'une carte (le nombre de chambres et de douches).
+ * Les valeurs absentes ou nulles sont retirées : jamais de puce vide.
  */
 export function roomMeta(room: RoomMetaSource): string[] {
+  const metas: string[] = [];
   const chambres = Math.floor(Number(room.chambres));
-  if (!Number.isFinite(chambres) || chambres <= 0) return [];
-  return [`${chambres} chambre${chambres > 1 ? 's' : ''}`];
+  if (Number.isFinite(chambres) && chambres > 0) {
+    metas.push(`${chambres} chambre${chambres > 1 ? 's' : ''}`);
+  }
+  const douches = Math.floor(Number(room.douches));
+  if (Number.isFinite(douches) && douches > 0) {
+    metas.push(`${douches} douche${douches > 1 ? 's' : ''}`);
+  }
+  return metas;
 }

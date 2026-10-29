@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PREMIUM PAGE — reproduction de docs/maquettes/habici-premium.html
+   PREMIUM PAGE â€” reproduction de docs/maquettes/habici-premium.html
    La page embarque sa propre sidebar et son propre topbar : l'AdminLayout
    masque son chrome sur cette route (classe .admin--blank).
    ========================================================================== */
@@ -7,21 +7,21 @@
 .premium-maq {
   background: #fafbfe;
   color: #0b1b3f;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: "Inter Variable", system-ui, sans-serif;
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Le shell gérant (.gerant-maq1) impose sa police et sa couleur : sur cette
+/* Le shell gÃ©rant (.gerant-maq1) impose sa police et sa couleur : sur cette
    page on conserve la typographie Inter de la maquette Premium. */
 .gerant-maq1.premium-maq {
   color: #0b1b3f;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: "Inter Variable", system-ui, sans-serif;
 }
 
-/* Preflight Tailwind est désactivé globalement : reset scopé pour retrouver
+/* Preflight Tailwind est dÃ©sactivÃ© globalement : reset scopÃ© pour retrouver
    exactement le rendu du fichier HTML (bordures, boutons, champs, SVG). */
 .premium-maq *,
 .premium-maq *::before,
@@ -90,8 +90,8 @@ html:has(.premium-maq)::before {
 }
 
 /* ---- Sidebar ---- */
-/* La sidebar reprend le shell commun des pages gérant (.gerant-maq1).
-   On ne garde ici que l'état actif de l'entrée « Mon abonnement ». */
+/* La sidebar reprend le shell commun des pages gÃ©rant (.gerant-maq1).
+   On ne garde ici que l'Ã©tat actif de l'entrÃ©e Â« Mon abonnement Â». */
 .gerant-maq1.premium-maq .sub.on {
   color: #ea580c;
   font-weight: 600;
@@ -291,7 +291,7 @@ html:has(.premium-maq)::before {
   color: rgba(255, 255, 255, 0.85);
 }
 
-/* Masque la barre de défilement de la sidebar, le scroll reste actif. */
+/* Masque la barre de dÃ©filement de la sidebar, le scroll reste actif. */
 .premium-maq aside {
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -302,7 +302,7 @@ html:has(.premium-maq)::before {
 }
 
 /* ==========================================================================
-   Ancienne page premium (classes conservées pour compatibilité)
+   Ancienne page premium (classes conservÃ©es pour compatibilitÃ©)
    ========================================================================== */
 
 .premium-hero {
@@ -458,7 +458,7 @@ html:has(.premium-maq)::before {
   color: rgba(255, 255, 255, 0.45);
 }
 
-/* État actif */
+/* Ã‰tat actif */
 .premium-active {
   display: flex;
   align-items: center;
@@ -628,12 +628,12 @@ html:has(.premium-maq)::before {
   }
 }
 
-/* ── Messagerie client ↔ gérant ── */
+/* â”€â”€ Messagerie client â†” gÃ©rant â”€â”€ */
 .messages-page {
-  /* En-tête du site fixe (top 4px + hauteur) : le plan de travail vient s'y
-     coller, comme sous la topbar du gérant. */
+  /* En-tÃªte du site fixe (top 4px + hauteur) : le plan de travail vient s'y
+     coller, comme sous la topbar du gÃ©rant. */
   --msg-gap-top: calc(var(--header-h) + 4px);
-  /* La page ne défile pas : seul le contenu des messages défile. */
+  /* La page ne dÃ©file pas : seul le contenu des messages dÃ©file. */
   display: flex;
   flex-direction: column;
   height: 100dvh;
@@ -642,7 +642,7 @@ html:has(.premium-maq)::before {
 }
 
 /* Le plan de travail occupe toute la largeur (on neutralise le max-width de
-   .container) et toute la hauteur restante sous l'en-tête. */
+   .container) et toute la hauteur restante sous l'en-tÃªte. */
 .messages-page > .container {
   width: 100%;
   max-width: none;
@@ -652,7 +652,7 @@ html:has(.premium-maq)::before {
   flex-direction: column;
 }
 
-/* Espace gérant : on neutralise le cadre de .admin-content (padding + max-width)
+/* Espace gÃ©rant : on neutralise le cadre de .admin-content (padding + max-width)
    pour que la messagerie remplisse toute la zone de contenu, sous la topbar. */
 .admin-content:has(.messages-page) {
   flex: 1;
@@ -1044,7 +1044,7 @@ html:has(.premium-maq)::before {
   cursor: not-allowed;
 }
 
-/* ---- Panneau vide (aucune conversation sélectionnée) ---- */
+/* ---- Panneau vide (aucune conversation sÃ©lectionnÃ©e) ---- */
 .msg-panel--placeholder {
   align-items: center;
   justify-content: center;
@@ -1074,7 +1074,7 @@ html:has(.premium-maq)::before {
   line-height: 1.55;
 }
 
-/* ---- Responsive : une seule colonne visible à la fois ---- */
+/* ---- Responsive : une seule colonne visible Ã  la fois ---- */
 @media (max-width: 760px) {
   .messages-page {
     --msg-gap-top: calc(var(--header-h) + 4px);
@@ -1112,7 +1112,7 @@ html:has(.premium-maq)::before {
 }
 
 /* ==========================================================================
-   Messagerie — raffinement visuel (client & gérant)
+   Messagerie â€” raffinement visuel (client & gÃ©rant)
    ========================================================================== */
 
 .msg-panel--list {

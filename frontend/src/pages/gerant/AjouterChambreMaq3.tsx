@@ -4,6 +4,7 @@ import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
 import { formatPrice } from '../../lib/roomDisplay';
+import '../../styles/35-gerant-maq3.css';
 import { emptyForm, type PreviewSnapshot } from './ajouter-chambre/form';
 import AjouterChambreMaq3Form from './AjouterChambreMaq3Form';
 

@@ -16,16 +16,60 @@
   <!-- Polices Lato auto-hébergées (src/fonts.css) : aucune requête externe,
        la typographie survit hors-ligne. -->
 
-  <!-- Landing racine : Plus Jakarta Sans (maquette accueil). Le style est
-       scopé sous .landing dans src/styles/28-landing-accueil.css. -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Polices auto-hébergées (src/fonts.css) : plus aucune requête tierce
+       bloquante vers Google Fonts ou un CDN. Les fichiers critiques sont
+       préchargés pour éviter le passage par la police de repli. -->
+  <link rel="preload" href="/fonts/lato-9.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin />
+
+  <!-- LCP de l'accueil : le fond du hero (CSS) et l'<img> du hero de marché
+       pointent tous deux vers ce fichier — on le lance dès l'analyse du
+       document au lieu de l'attendre après la CSS + le JS. -->
+  <link rel="preload" as="image" type="image/webp" href="/images/hero-city.webp" fetchpriority="high" />
 
   <!-- Pré-ouverture des connexions tierces (DNS + TLS payés une fois) -->
   <link rel="preconnect" href="https://epic-sponge-8933.clerk.accounts.dev" crossorigin />
   <link rel="preconnect" href="https://bqzyclhnobizudnhscgv.supabase.co" crossorigin />
+
+  <!-- Démarrage des requêtes de la page d'accueil AVANT le téléchargement du
+       bundle : le JS React et les données arrivent en parallèle au lieu d'une
+       après l'autre. Les promesses sont posées dans une Map lue par
+       `cachedGet()` (src/lib/api.ts) — donc aucun doublon de requête.
+       Un seul préchargement par navigation : accueil d'un marché (/ci…) ou
+       racine (/), jamais sur une page profonde. -->
+  <script>
+    (function () {
+      try {
+        if (navigator.connection && navigator.connection.saveData) return;
+        var path = location.pathname.replace(/\/+$/, '') || '/';
+        var slug = path === '/' ? 'ci' : path.slice(1);
+        if (slug.indexOf('/') !== -1) return; // page profonde : on n'anticipe pas
+        var market = slug.toUpperCase();
+        var paths = path === '/'
+          ? ['/categories?market=CI']
+          : [
+              '/banners?market=' + market,
+              '/rooms/popular?market=' + market,
+              '/rooms?market=' + market,
+              '/categories?market=' + market,
+              '/events?market=' + market,
+              '/tourism?market=' + market,
+              '/escapades?market=' + market,
+              '/reviews/featured',
+            ];
+        var map = new Map();
+        paths.forEach(function (apiPath) {
+          // La clé inclut /api : c'est la clé lue par takePrefetched() dans
+          // src/lib/api.ts, qui reçoit des chemins sans préfixe.
+          map.set('/api' + apiPath, fetch('/api' + apiPath, { cache: 'no-cache' })
+            .then(function (res) { return res.ok ? res.json() : Promise.reject(new Error(String(res.status))); }));
+        });
+        window.__LINKHOO_PREFETCH__ = map;
+      } catch (_) { /* la page reste entièrement fonctionnelle sans ça */ }
+    })();
+  </script>
 </head>
 <body>
   <div id="root"></div>

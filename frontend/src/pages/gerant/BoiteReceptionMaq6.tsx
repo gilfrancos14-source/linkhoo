@@ -6,6 +6,7 @@ import GerantLogoutButton from '../../components/GerantLogoutButton';
 import { apiMessages, type Conversation, type Message } from '../../lib/api';
 import { fetchRoomById, type Room } from '../../data/rooms';
 import { priceWithCurrency } from '../../lib/roomDisplay';
+import '../../styles/38-gerant-maq6.css';
 
 function Icon({ id, className = 'ico w-5 h-5 shrink-0' }: { id: string; className?: string }) {
   return (

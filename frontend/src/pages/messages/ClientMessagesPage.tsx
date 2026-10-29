@@ -1,19 +1,31 @@
 import { useParams } from 'react-router-dom';
+import { useUser } from '@clerk/clerk-react';
 import { useHomePath } from '../../hooks/useHomePath';
-import ClientAccountLayout from '../../components/ClientAccountLayout';
-import MessagesWorkspace from './MessagesWorkspace';
+import { useClientUnread } from '../../hooks/useClientUnread';
+import ClientMessagesMaq from './ClientMessagesMaq';
 
-/** Espace messages du client : liste des conversations + fil sélectionné. */
+/**
+ * Espace messages du client — conversion de la maquette
+ * habici-mes-messages.html : liste des conversations + fil sélectionné,
+ * la page porte sa propre sidebar et son propre topbar.
+ */
 export default function ClientMessagesPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const homePath = useHomePath();
   const basePath = `${homePath}/messages`;
+  const unreadMessages = useClientUnread();
+  const { user } = useUser();
 
   return (
-    <ClientAccountLayout active="messages">
-      <div className="admin-content">
-        <MessagesWorkspace side="client" basePath={basePath} conversationId={conversationId} />
-      </div>
-    </ClientAccountLayout>
+    <ClientMessagesMaq
+      basePath={basePath}
+      conversationId={conversationId}
+      homePath={homePath}
+      displayName={user?.firstName || 'Client'}
+      profileFirstName={user?.firstName || ''}
+      profileLastName={user?.lastName || ''}
+      avatarUrl={user?.imageUrl}
+      unreadMessages={unreadMessages}
+    />
   );
 }

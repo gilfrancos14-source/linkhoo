@@ -11,7 +11,7 @@ import {
   type Reservation,
 } from '../../lib/reservations';
 import { formatPrice } from '../../lib/roomDisplay';
-
+import '../../styles/36-gerant-maq4.css';
 function Icon({ id, className = 'i' }: { id: string; className?: string }) {
   return (
     <svg className={className} aria-hidden="true">

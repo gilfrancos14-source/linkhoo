@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { priceWithCurrency } from '../lib/roomDisplay';
+import '../styles/05-home-staycard.css';
 import type { Room } from '../data/rooms';
+import { useFavorites } from '../contexts/FavoritesContext';
 import Icon from './landing/icons';
 
 interface SearchStayCardProps {
@@ -18,7 +19,9 @@ export default function SearchStayCard({
   meta,
   variant = 'default',
 }: SearchStayCardProps) {
-  const [saved, setSaved] = useState(false);
+  const navigate = useNavigate();
+  const { isFavorite, toggle, signedIn } = useFavorites();
+  const saved = isFavorite(room.id);
   const displayPrice = priceWithCurrency(room.price, room.priceUnit);
   const priceLabel = `${room.title}, dès ${displayPrice} ${room.priceUnit ?? ''}`.trim();
   const tag =
@@ -78,7 +81,15 @@ export default function SearchStayCard({
           className={`stay-card__favorite${saved ? ' is-saved' : ''}`}
           aria-label={saved ? `Retirer ${room.title} des favoris` : `Sauvegarder ${room.title}`}
           aria-pressed={saved}
-          onClick={() => setSaved((value) => !value)}
+          onClick={() => {
+            // Un clic sur le cœur = favori. Hors espace client connecté, on
+            // bascule vers la connexion ; la réservation n'est pas concernée.
+            if (!signedIn) {
+              navigate(`/${room.market.toLowerCase()}/login`);
+              return;
+            }
+            void toggle(room.id).catch(() => {});
+          }}
         >
           <Icon name="heart" size={18} />
         </button>

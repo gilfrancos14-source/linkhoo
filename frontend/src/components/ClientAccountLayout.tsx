@@ -1,5 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+// Chrome commun au back-office (sidebar, topbar) + styles de l'espace client.
+import '../styles/18-admin.css';
+import '../styles/23-client-compte.css';
 import { useAuth, useClerk, useUser } from '@clerk/clerk-react';
 import { useHomePath } from '../hooks/useHomePath';
 import { useClientUnread } from '../hooks/useClientUnread';
@@ -7,7 +10,7 @@ import { getMyReservations } from '../lib/reservations';
 import { setAuthTokenGetter } from '../lib/api';
 import ClientNotificationBell from './ClientNotificationBell';
 
-export type ClientSection = 'overview' | 'stays' | 'profile' | 'messages';
+export type ClientSection = 'overview' | 'stays' | 'favorites' | 'profile' | 'messages';
 
 const iconGrid: ReactNode = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="3" width="7" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="14" y="12" width="7" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="3" y="16" width="7" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.8"/></svg>
@@ -17,6 +20,9 @@ const iconCalendar: ReactNode = (
 );
 const iconChat: ReactNode = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+);
+const iconHeart: ReactNode = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-8-5.3-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.7-8 11-8 11z"/></svg>
 );
 const iconUser: ReactNode = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -139,6 +145,13 @@ export default function ClientAccountLayout({
             >
               {iconUser}
               <span>Mon profil</span>
+            </Link>
+            <Link
+              to={`${homePath}/compte?view=favorites`}
+              className={`sidebar__link ${active === 'favorites' ? 'sidebar__link--active' : ''}`}
+            >
+              {iconHeart}
+              <span>Mes favoris</span>
             </Link>
           </div>
         </nav>

@@ -1,6 +1,6 @@
 /* ==========================================================================
-   ESPACE GÉRANT — aperçu (reproduction de maquette/maq1.html)
-   L'aperçu embarque sa propre sidebar et son propre topbar : on retire le
+   ESPACE GÃ‰RANT â€” aperÃ§u (reproduction de maquette/maq1.html)
+   L'aperÃ§u embarque sa propre sidebar et son propre topbar : on retire le
    chrome de l'AdminLayout sur cette route uniquement.
    ========================================================================== */
 
@@ -26,12 +26,12 @@
 }
 
 /* La maquette maq1.html charge Tailwind avec son preflight. Le projet l'a
-   désactivé globalement : on rétablit donc un reset scopé pour obtenir
-   exactement le même rendu (bordures, boutons, tableaux, SVG, interlignes). */
+   dÃ©sactivÃ© globalement : on rÃ©tablit donc un reset scopÃ© pour obtenir
+   exactement le mÃªme rendu (bordures, boutons, tableaux, SVG, interlignes). */
 .gerant-maq1 {
   background: #f5f8fc;
   color: #0f2a5c;
-  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-family: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
@@ -52,7 +52,7 @@
   vertical-align: middle;
 }
 
-/* Preflight remet les titres à la taille/poids hérités ; les utilitaires
+/* Preflight remet les titres Ã  la taille/poids hÃ©ritÃ©s ; les utilitaires
    text-* et font-* de la maquette reprennent ensuite la main. */
 .gerant-maq1 :where(h1, h2, h3, h4, h5, h6) {
   font-size: inherit;
@@ -110,7 +110,7 @@
   color: #9ca3af;
 }
 
-/* Le site impose un anneau de focus orange et une sélection bleue : maq1
+/* Le site impose un anneau de focus orange et une sÃ©lection bleue : maq1
    conserve les styles natifs du navigateur. */
 .gerant-maq1 :focus-visible {
   outline: revert;
@@ -228,7 +228,7 @@ html:has(.gerant-maq1)::before {
   color: #fff;
 }
 
-/* Sidebar gérant : masque la barre de défilement, le scroll reste actif. */
+/* Sidebar gÃ©rant : masque la barre de dÃ©filement, le scroll reste actif. */
 .gerant-maq1 aside,
 .gerant-maq2 aside,
 .gerant-maq3 aside,

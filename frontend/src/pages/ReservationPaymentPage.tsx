@@ -4,6 +4,9 @@ import { useHomePath } from '../hooks/useHomePath';
 import { ApiError, type ReservationData } from '../lib/api';
 import { confirmReservationPayment } from '../lib/reservations';
 import { formatPrice } from '../lib/roomDisplay';
+import '../styles/15-room-detail.css';
+import '../styles/19-client-tracking.css';
+import '../styles/42-verify-cta.css';
 
 type Status = 'loading' | 'success' | 'pending' | 'error';
 

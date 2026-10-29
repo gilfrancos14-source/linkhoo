@@ -13,10 +13,10 @@ export interface Category {
 // écrit à la main : ids préfixés du slug, exactement comme les catégories
 // créées par `seedMarkets.ts` côté back.
 const CI_MODEL: ReadonlyArray<{ key: string; title: string; img: string; alt: string }> = [
-  { key: 'chambres-moins-cheres', title: 'Chambres moins chères', img: '/images/pexels-fotoaibe-1571460.jpg', alt: 'Chambres abordables' },
-  { key: 'chambres-premium', title: 'Chambres premium', img: '/images/pexels-artbovich-6782567.jpg', alt: 'Chambres premium' },
-  { key: 'appartements', title: 'Appartements', img: '/images/pexels-artbovich-7214173.jpg', alt: 'Appartements' },
-  { key: 'hotels', title: 'Hôtel', img: '/images/pexels-artbovich-7045712.jpg', alt: "Chambres d'hôtel" },
+  { key: 'chambres-moins-cheres', title: 'Chambres moins chères', img: '/images/pexels-fotoaibe-1571460.webp', alt: 'Chambres abordables' },
+  { key: 'chambres-premium', title: 'Chambres premium', img: '/images/pexels-artbovich-6782567.webp', alt: 'Chambres premium' },
+  { key: 'appartements', title: 'Appartements', img: '/images/pexels-artbovich-7214173.webp', alt: 'Appartements' },
+  { key: 'hotels', title: 'Hôtel', img: '/images/pexels-artbovich-7045712.webp', alt: "Chambres d'hôtel" },
 ];
 
 function modelCategories(market: MarketCode): Category[] {
@@ -32,10 +32,10 @@ function modelCategories(market: MarketCode): Category[] {
 
 const FALLBACK_CATEGORIES: Record<MarketCode, Category[]> = {
   CI: [
-    { id: 'ci-chambres-moins-chères', title: 'Chambres moins chères', img: '/images/pexels-artbovich-6283961.jpg', alt: 'Chambres abordables', market: 'CI' },
-    { id: 'ci-chambres-premium', title: 'Chambres premium', img: '/images/pexels-artbovich-6315808.jpg', alt: 'Chambres premium', market: 'CI' },
-    { id: 'ci-appartements', title: 'Appartements', img: '/images/pexels-artbovich-6782567.jpg', alt: 'Appartements', market: 'CI' },
-    { id: 'ci-hotel', title: 'Hôtel', img: '/images/pexels-artbovich-5998117.jpg', alt: "Chambres d'hôtel", market: 'CI' },
+    { id: 'ci-chambres-moins-chères', title: 'Chambres moins chères', img: '/images/pexels-artbovich-6283961.webp', alt: 'Chambres abordables', market: 'CI' },
+    { id: 'ci-chambres-premium', title: 'Chambres premium', img: '/images/pexels-artbovich-6315808.webp', alt: 'Chambres premium', market: 'CI' },
+    { id: 'ci-appartements', title: 'Appartements', img: '/images/pexels-artbovich-6782567.webp', alt: 'Appartements', market: 'CI' },
+    { id: 'ci-hotel', title: 'Hôtel', img: '/images/pexels-artbovich-5998117.webp', alt: "Chambres d'hôtel", market: 'CI' },
   ],
   BJ: modelCategories('BJ'),
   SN: modelCategories('SN'),

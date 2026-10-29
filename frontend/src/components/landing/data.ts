@@ -37,7 +37,7 @@ export const LISTINGS: readonly Listing[] = [
     rating: '4.8',
     reviews: '124',
     price: '25 000',
-    image: '/images/listings/cocody.jpg',
+    image: '/images/listings/cocody.webp',
     imageAlt: "Salon lumineux d'un studio moderne",
   },
   {
@@ -47,7 +47,7 @@ export const LISTINGS: readonly Listing[] = [
     rating: '4.9',
     reviews: '87',
     price: '75 000',
-    image: '/images/listings/grand-bassam.jpg',
+    image: '/images/listings/grand-bassam.webp',
     imageAlt: 'Villa contemporaine avec piscine',
   },
   {
@@ -57,7 +57,7 @@ export const LISTINGS: readonly Listing[] = [
     rating: '4.7',
     reviews: '96',
     price: '18 000',
-    image: '/images/listings/yamoussoukro.jpg',
+    image: '/images/listings/yamoussoukro.webp',
     imageAlt: 'Chambre privée climatisée',
   },
   {
@@ -67,7 +67,7 @@ export const LISTINGS: readonly Listing[] = [
     rating: '4.6',
     reviews: '73',
     price: '40 000',
-    image: '/images/listings/san-pedro.jpg',
+    image: '/images/listings/san-pedro.webp',
     imageAlt: 'Appartement ouvert sur une terrasse',
   },
   {
@@ -77,7 +77,7 @@ export const LISTINGS: readonly Listing[] = [
     rating: '4.8',
     reviews: '102',
     price: '22 000',
-    image: '/images/listings/bingerville.jpg',
+    image: '/images/listings/bingerville.webp',
     imageAlt: 'Salon cosy avec canapé bleu',
   },
   {
@@ -87,13 +87,13 @@ export const LISTINGS: readonly Listing[] = [
     rating: '4.9',
     reviews: '63',
     price: '120 000',
-    image: '/images/listings/assinie.jpg',
+    image: '/images/listings/assinie.webp',
     imageAlt: 'Villa de luxe en bord de mer',
   },
 ];
 
 const slideImage = (name: string) =>
-  `linear-gradient(90deg,rgba(15,10,10,.78),rgba(15,10,10,.1) 60%),url('/images/cities/${name}.jpg') center/cover no-repeat`;
+  `linear-gradient(90deg,rgba(15,10,10,.78),rgba(15,10,10,.1) 60%),url('/images/cities/${name}.webp') center/cover no-repeat`;
 
 export const SLIDES: readonly string[] = [
   slideImage('abidjan'),

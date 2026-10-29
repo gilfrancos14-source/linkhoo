@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+# Copie de comparaison des tailles de bundle (benchmark de performance)
+dist-baseline
 *.local
 
 # Editor directories and files

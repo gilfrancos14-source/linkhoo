@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useClerk } from '@clerk/clerk-react';
 import { marketSlugFromPath } from '../../contexts/MarketContext';
+import '../../styles/20-auth.css';
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkConfigured = clerkKey && clerkKey.startsWith('pk_');

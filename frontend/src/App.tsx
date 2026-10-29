@@ -1,6 +1,7 @@
 import { Routes, Route, useLocation, useParams, Navigate } from 'react-router-dom';
 import { lazy, Suspense, useEffect } from 'react';
 import { MarketProvider, useMarket } from './contexts/MarketContext';
+import { FavoritesProvider } from './contexts/FavoritesContext';
 import { isMarketSlug, MARKETS } from './config/markets';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -262,5 +263,9 @@ function AppRoutes() {
 }
 
 export default function App() {
-  return <AppRoutes />;
+  return (
+    <FavoritesProvider>
+      <AppRoutes />
+    </FavoritesProvider>
+  );
 }

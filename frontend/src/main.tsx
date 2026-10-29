@@ -5,6 +5,7 @@ import { ClerkProvider } from '@clerk/clerk-react'
 import './fonts.css'
 import './index.css'
 import App from './App.tsx'
+import { prefetchCommonRouteChunks } from './lib/prefetchRoutes'
 import { registerServiceWorker } from './lib/swRegister'
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
@@ -55,3 +56,7 @@ createRoot(document.getElementById('root')!).render(
 
 // Offline : PROD uniquement, jamais en dev ni pendant les tests e2e.
 registerServiceWorker()
+
+// Les chunks des pages les plus visitées (fiche chambre, recherche) sont
+// téléchargés au repos : la navigation n'attend plus rien.
+prefetchCommonRouteChunks()

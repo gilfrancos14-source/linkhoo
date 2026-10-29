@@ -5,6 +5,7 @@ import { useGerantChrome } from '../../hooks/useGerantChrome';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
 import { fetchMyRooms, type Room } from '../../data/rooms';
 import { getReservations, statutLabels, type Reservation } from '../../lib/reservations';
+import '../../styles/37-gerant-maq5.css';
 
 function Icon({ id, className = 'i' }: { id: string; className?: string }) {
   return (

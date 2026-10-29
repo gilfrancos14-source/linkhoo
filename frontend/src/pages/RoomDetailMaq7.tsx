@@ -3,12 +3,15 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
+import { useFavorites } from '../contexts/FavoritesContext';
 import LandingHeader from '../components/landing/LandingHeader';
 import { COUNTRIES } from '../components/landing/data';
 import { MAQUETTE_NAV_ITEMS } from '../maquette/nav';
 import { fetchCategoriesByMarket, type Category } from '../data/categories';
 import { fetchRoomById, type Room } from '../data/rooms';
 import { apiMessages, apiReviews, type RoomReviewsResponse } from '../lib/api';
+import '../styles/40-room-detail-maq7.css';
+import '../styles/15-room-detail.css';
 import {
   computeDateFin,
   maxDuree,
@@ -322,6 +325,7 @@ export default function RoomDetailMaq7() {
   const [searchParams] = useSearchParams();
   const { user } = useUser();
   const { isSignedIn, isLoaded: authLoaded } = useAuth();
+  const { isFavorite, toggle } = useFavorites();
 
   const [room, setRoom] = useState<Room | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -348,6 +352,16 @@ export default function RoomDetailMaq7() {
   const [contactOpen, setContactOpen] = useState(false);
 
   const signedIn = authLoaded && Boolean(isSignedIn);
+  const saved = room ? isFavorite(room.id) : false;
+
+  const handleToggleFavorite = () => {
+    if (!room) return;
+    if (!signedIn) {
+      navigate(`/${room.market.toLowerCase()}/login`);
+      return;
+    }
+    void toggle(room.id).catch(() => {});
+  };
 
   /* ----- Chargement des données ----- */
 
@@ -461,6 +475,7 @@ export default function RoomDetailMaq7() {
   const priceText = room ? priceWithCurrency(room.price, room.priceUnit) : '';
   const roomAvg = reviewsData?.room_avg ?? null;
   const roomCount = reviewsData?.room_count ?? 0;
+  const distribution = reviewsData?.room_distribution ?? [];
   const reviews = reviewsData?.reviews ?? [];
   const gerantAvg = reviewsData?.gerant_avg ?? null;
   const gerantCount = reviewsData?.gerant_count ?? 0;
@@ -727,7 +742,12 @@ export default function RoomDetailMaq7() {
                 <button type="button" onClick={handleShare} aria-label="Partager">
                   <Icon name="share" />
                 </button>
-                <button type="button" aria-label="Ajouter aux favoris">
+                <button
+                  type="button"
+                  onClick={handleToggleFavorite}
+                  aria-label={saved ? `Retirer ${room.title} des favoris` : `Sauvegarder ${room.title}`}
+                  aria-pressed={saved}
+                >
                   <Icon name="heart" />
                 </button>
                 {shareFeedback && (
@@ -767,18 +787,14 @@ export default function RoomDetailMaq7() {
               )}
             </p>
 
-            <ul className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-b border-line pb-8 text-[13px] text-slate-600 sm:grid-cols-4">
+            {/* Capacités réelles issues de la chambre (base) : plus de
+                valeurs codées en dur — nombre de chambres et de douches. */}
+            <ul className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-b border-line pb-8 text-[13px] text-slate-600 sm:grid-cols-2">
               <li className="flex items-center gap-2">
-                <Icon name="bedDouble" /> 1 lit double
+                <Icon name="bedDouble" /> {room.chambres} chambre{room.chambres > 1 ? 's' : ''}
               </li>
               <li className="flex items-center gap-2">
-                <Icon name="bath" /> Salle de bain privée
-              </li>
-              <li className="flex items-center gap-2">
-                <Icon name="wifi" /> Wi-Fi gratuit
-              </li>
-              <li className="flex items-center gap-2">
-                <Icon name="airVent" /> Climatisation
+                <Icon name="bath" /> {room.douches} douche{room.douches > 1 ? 's' : ''}
               </li>
             </ul>
           </section>
@@ -1176,27 +1192,6 @@ export default function RoomDetailMaq7() {
                 <Icon name="chevronUp" className="chev h-4 w-4" />
               </summary>
               <ul className="mt-4 grid grid-cols-1 gap-x-6 gap-y-5 rounded-xl border border-line bg-white p-5 text-[13px] sm:grid-cols-2 xl:grid-cols-3">
-                <li className="flex items-start gap-3">
-                  <Icon name="clock" className="h-5 w-5 shrink-0" />
-                  <span>
-                    Arrivée : 14h00 – 22h00
-                    <br />
-                    Départ : avant 12h00
-                  </span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <Icon name="cigaretteOff" className="h-5 w-5 shrink-0" />
-                  Non fumeur
-                </li>
-                <li className="flex items-center gap-3">
-                  <Icon name="pawPrint" className="h-5 w-5 shrink-0" />
-                  Animaux non admis
-                </li>
-                <li className="flex items-center gap-3">
-                  <Icon name="partyPopper" className="h-5 w-5 shrink-0" />
-                  Pas de fêtes ni d&apos;événements
-                </li>
-
                 {conditions.map((condition, index) => {
                   const { label, value } = conditionLabel(condition);
                   return (
@@ -1227,27 +1222,25 @@ export default function RoomDetailMaq7() {
                 </div>
                 <p className="text-xs text-mute">{roomCount} avis</p>
                 <div className="mt-3 space-y-2 text-xs">
-                  {[
-                    { label: '5 étoiles', width: '88%', value: '88%' },
-                    { label: '4 étoiles', width: '8%', value: '8%' },
-                    { label: '3 étoiles', width: '4%', value: '4%' },
-                    { label: '2 étoiles', width: '0%', value: '0%' },
-                    { label: '1 étoile', width: '0%', value: '0%' },
-                  ].map((row) => (
-                    <div
-                      key={row.label}
-                      className="grid grid-cols-[52px_1fr_32px] items-center gap-3"
-                    >
-                      <span>{row.label}</span>
-                      <span className="h-1.5 rounded-full bg-slate-100">
-                        <span
-                          className="block h-full rounded-full bg-brand"
-                          style={{ width: row.width }}
-                        />
-                      </span>
-                      <span className="text-right text-mute">{row.value}</span>
-                    </div>
-                  ))}
+                  {distribution.length > 0 ? (
+                    distribution.map((row) => (
+                      <div
+                        key={row.note}
+                        className="grid grid-cols-[52px_1fr_32px] items-center gap-3"
+                      >
+                        <span>{`${row.note} étoile${row.note > 1 ? 's' : ''}`}</span>
+                        <span className="h-1.5 rounded-full bg-slate-100">
+                          <span
+                            className="block h-full rounded-full bg-brand"
+                            style={{ width: `${row.percent}%` }}
+                          />
+                        </span>
+                        <span className="text-right text-mute">{row.percent}%</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-mute">Aucun avis pour le moment.</p>
+                  )}
                 </div>
                 <p className="mt-3 text-[13px] leading-6 text-slate-600">
                   Les avis sont publiés par les voyageurs après leur séjour.

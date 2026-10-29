@@ -37,7 +37,7 @@ export interface Room {
   gerantVerified?: boolean;
 }
 
-function mapRoom(d: RoomData): Room {
+export function mapRoom(d: RoomData): Room {
   return {
     id: d.id,
     title: d.title,

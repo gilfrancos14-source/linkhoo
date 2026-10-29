@@ -1,5 +1,5 @@
 /* ==========================================================================
-   RECHERCHE — reproduction de la maquette Stitch « Linkhoo Éditorial »
+   RECHERCHE â€” reproduction de la maquette Stitch Â« Linkhoo Ã‰ditorial Â»
    Palette : violet #5300b7 / #6d28d9, encre #17112b, sable #f4c77a,
    navy #0e1433, lilas #f3eeff, cheveu #e9e4f5, fond #fdf7ff.
    ========================================================================== */
@@ -23,7 +23,7 @@
   padding-bottom: 1rem;
   background: var(--sp-surface);
   color: var(--sp-on-surface);
-  font-family: 'Plus Jakarta Sans', var(--font-sans);
+  font-family: 'Plus Jakarta Sans Variable', var(--font-sans);
 }
 
 .search-page *,
@@ -65,8 +65,8 @@
   padding-left: 3rem;
 }
 
-/* L'en-tête et le footer éditoriaux de l'accueil sont réutilisés hors de
-   `.landing` : on leur fournit uniquement les variables dont ils dépendent. */
+/* L'en-tÃªte et le footer Ã©ditoriaux de l'accueil sont rÃ©utilisÃ©s hors de
+   `.landing` : on leur fournit uniquement les variables dont ils dÃ©pendent. */
 .search-header-scope,
 .search-footer-scope {
   --acc-brand: #6d3fd9;
@@ -122,7 +122,7 @@
 }
 
 /* ==========================================================================
-   Masthead + carte de synthèse
+   Masthead + carte de synthÃ¨se
    ========================================================================== */
 
 .search-page__masthead {
@@ -191,7 +191,7 @@
 .search-page__title {
   margin-bottom: 0.75rem;
   color: var(--sp-ink);
-  font-family: 'Plus Jakarta Sans', var(--font-sans);
+  font-family: 'Plus Jakarta Sans Variable', var(--font-sans);
   font-size: 56px;
   line-height: 64px;
   font-weight: 700;
@@ -266,7 +266,7 @@
   flex-shrink: 0;
 }
 
-/* ---------- Carte « Votre recherche » ---------- */
+/* ---------- Carte Â« Votre recherche Â» ---------- */
 .search-page__summary-card {
   width: 100%;
   padding: 1.5rem;
@@ -703,7 +703,7 @@
 }
 
 /* ==========================================================================
-   Colonne filtres + résultats
+   Colonne filtres + rÃ©sultats
    ========================================================================== */
 
 .search-page__layout {
@@ -911,7 +911,7 @@
 }
 
 /* ==========================================================================
-   Sélection premium
+   SÃ©lection premium
    ========================================================================== */
 
 .search-page__featured-shell {
@@ -975,7 +975,7 @@
 
 .search-page__featured-title {
   color: var(--sp-ink);
-  font-family: 'Plus Jakarta Sans', var(--font-sans);
+  font-family: 'Plus Jakarta Sans Variable', var(--font-sans);
   font-size: 28px;
   line-height: 34px;
   font-weight: 800;
@@ -1157,7 +1157,7 @@
 }
 
 /* ==========================================================================
-   Résultats
+   RÃ©sultats
    ========================================================================== */
 
 .search-page__results {
@@ -1379,7 +1379,7 @@
 
 .search-page .stay-card__title {
   color: var(--sp-ink);
-  font-family: 'Plus Jakarta Sans', var(--font-sans);
+  font-family: 'Plus Jakarta Sans Variable', var(--font-sans);
   font-size: 17px;
   line-height: 23px;
   font-weight: 700;
@@ -1474,9 +1474,9 @@
   min-height: 220px;
 }
 
-/* Vignette à ratio fixe : une carte au contenu plus long ne doit jamais
-   étirer l'image en portrait. L'image est centrée verticalement dans sa
-   colonne et garde un cadrage 4/3 homogène sur toutes les cartes. */
+/* Vignette Ã  ratio fixe : une carte au contenu plus long ne doit jamais
+   Ã©tirer l'image en portrait. L'image est centrÃ©e verticalement dans sa
+   colonne et garde un cadrage 4/3 homogÃ¨ne sur toutes les cartes. */
 .search-page__grid--list .stay-card__media {
   align-self: center;
   width: calc(100% - 1.5rem);
@@ -1503,7 +1503,7 @@
 }
 
 /* ==========================================================================
-   État vide
+   Ã‰tat vide
    ========================================================================== */
 
 .search-page__empty {
@@ -1866,14 +1866,14 @@
     justify-content: flex-start;
   }
 
-  /* Une seule colonne de résultats : la bascule grille/liste n'a plus
+  /* Une seule colonne de rÃ©sultats : la bascule grille/liste n'a plus
      d'effet, on ne garde que le tri. */
   .search-page__view {
     display: none;
   }
 
-  /* Toutes les catégories restent visibles : on passe du défilement
-     horizontal (qui coupait les dernières pastilles) au retour à la ligne. */
+  /* Toutes les catÃ©gories restent visibles : on passe du dÃ©filement
+     horizontal (qui coupait les derniÃ¨res pastilles) au retour Ã  la ligne. */
   .search-page__toolbar-left {
     flex-wrap: wrap;
     overflow-x: visible;
@@ -1903,8 +1903,8 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  /* Même disposition qu'en desktop : vignette à gauche, contenu à droite,
-     prix et flèche sous le contenu. On resserre seulement les colonnes. */
+  /* MÃªme disposition qu'en desktop : vignette Ã  gauche, contenu Ã  droite,
+     prix et flÃ¨che sous le contenu. On resserre seulement les colonnes. */
   .search-page__grid--list .stay-card {
     grid-template-columns: clamp(6.75rem, 34%, 9rem) minmax(0, 1fr);
     grid-template-areas:
@@ -1941,9 +1941,9 @@
     border-left: 0;
   }
 
-  /* Dans une vignette étroite, l'empilement tag + badge déborderait :
-     on ne garde que le badge de statut (Premium / Hôte vérifié), en bas
-     de l'image, et le cœur en haut à droite. */
+  /* Dans une vignette Ã©troite, l'empilement tag + badge dÃ©borderait :
+     on ne garde que le badge de statut (Premium / HÃ´te vÃ©rifiÃ©), en bas
+     de l'image, et le cÅ“ur en haut Ã  droite. */
   .search-page__grid--list .stay-card__tag {
     display: none;
   }
@@ -1979,7 +1979,7 @@
   }
 
   /* La pastille d'information est trop large pour la vignette : elle est
-     déjà reprise par les caractéristiques du contenu. */
+     dÃ©jÃ  reprise par les caractÃ©ristiques du contenu. */
   .search-page__grid--list .stay-card__rating {
     display: none;
   }

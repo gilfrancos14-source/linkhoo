@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
+import BrandLogo from '../../components/BrandLogo';
 import { fetchMyRooms, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import { getReservations, statutLabels, type Reservation } from '../../lib/reservations';
@@ -199,7 +200,7 @@ export default function DashboardPage() {
       <div className="flex min-h-screen">
         <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white px-4 py-5 lg:flex">
         <Link to={gerantPath} className="mb-6 flex items-center gap-2.5 px-2" aria-label="Linkhoo - retour à l'accueil">
-          <img className="sidebar-logo" src="/logo.jpg" alt="Logo Linkhoo" />
+          <BrandLogo />
         </Link>
 
           <nav className="space-y-3">

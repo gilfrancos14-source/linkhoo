@@ -106,9 +106,15 @@ describe('roomMeta', () => {
     expect(roomMeta({ chambres: 1 })).toEqual(['1 chambre']);
   });
 
+  it('affiche le nombre de douches en plus du nombre de chambres', () => {
+    expect(roomMeta({ chambres: 2, douches: 1 })).toEqual(['2 chambres', '1 douche']);
+    expect(roomMeta({ chambres: 1, douches: 2 })).toEqual(['1 chambre', '2 douches']);
+  });
+
   it('retire les valeurs manquantes plutôt que de laisser une puce vide', () => {
     expect(roomMeta({ chambres: 0 })).toEqual([]);
     expect(roomMeta({})).toEqual([]);
     expect(roomMeta({ chambres: null })).toEqual([]);
+    expect(roomMeta({ chambres: 2, douches: 0 })).toEqual(['2 chambres']);
   });
 });

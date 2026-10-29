@@ -13,7 +13,7 @@
 
 'use strict';
 
-const SW_VERSION = 'v1';
+const SW_VERSION = 'v3';
 const CACHE_PREFIX = 'linkhoo-';
 const PRECACHE = `${CACHE_PREFIX}precache-${SW_VERSION}`;
 const PAGES = `${CACHE_PREFIX}pages-${SW_VERSION}`;
@@ -24,9 +24,12 @@ const KEEP = [PRECACHE, PAGES, API_CACHE, IMG_CACHE];
 const NAV_TIMEOUT_MS = 3000;
 const IMG_CACHE_MAX = 60;
 
-/* Contenu statique du seed : images, polices, icônes, manifest.
-   Les assets hashés de Vite (/assets/*) sont mis en cache à la première
-   vue — leur nom de fichier change à chaque build. */
+/* Contenu strictement nécessaire au premier écran : le shell, les polices et
+   l'image LCP. Avant, l'installation téléchargeait ~3 Mo d'images (dont des
+   fichiers absents) en concurrence avec la navigation. Les autres images
+   passent par le cache runtime `handleImage`, à la première consultation.
+   Les assets hashés de Vite (/assets/*) sont mis en cache de la même façon —
+   leur nom de fichier change à chaque build. */
 const PRECACHE_URLS = [
   '/',
   '/manifest.json',
@@ -44,29 +47,12 @@ const PRECACHE_URLS = [
   '/fonts/lato-8.woff2',
   '/fonts/lato-9.woff2',
   '/fonts/lato-10.woff2',
-  '/images/1.jpg',
-  '/images/4.webp',
-  '/images/hero-city.jpg',
-  '/images/listings/cocody.jpg',
-  '/images/listings/grand-bassam.jpg',
-  '/images/listings/yamoussoukro.jpg',
-  '/images/listings/san-pedro.jpg',
-  '/images/listings/bingerville.jpg',
-  '/images/listings/assinie.jpg',
-  '/images/hero-portrait.webp',
-  '/images/ouidah.jpg',
-  '/images/tori.jpg',
-  '/images/pexels-artbovich-5998117.jpg',
-  '/images/pexels-artbovich-5998120.jpg',
-  '/images/pexels-artbovich-6238608.jpg',
-  '/images/pexels-artbovich-6283961.jpg',
-  '/images/pexels-artbovich-6315808.jpg',
-  '/images/pexels-artbovich-6758771.jpg',
-  '/images/pexels-artbovich-6782567.jpg',
-  '/images/pexels-artbovich-7045712.jpg',
-  '/images/pexels-artbovich-7214173.jpg',
-  '/images/pexels-donaldtong94-189333.jpg',
-  '/images/pexels-fotoaibe-1571460.jpg',
+  '/fonts/plus-jakarta-sans-latin.woff2',
+  '/fonts/inter-latin.woff2',
+  '/fonts/caveat-latin.woff2',
+  '/fonts/fa-solid-900.woff2',
+  '/fonts/fa-regular-400.woff2',
+  '/images/hero-city.webp',
 ];
 
 /* Allowlist des GET publics à conserver hors-ligne.
@@ -154,6 +140,25 @@ async function handleAsset(request) {
   if (cached) return cached;
   const res = await fetch(request);
   if (res && res.ok) {
+    const cache = await caches.open(PRECACHE);
+    cache.put(request, res.clone());
+  }
+  return res;
+}
+
+/* Logo : cache d'abord, mais uniquement si la réponse est réellement une
+   image. Un hébergeur en mode SPA peut répondre 200 avec le shell HTML pour
+   /logo.jpg : sans cette garde, ce HTML était mis en cache et le logo
+   restait cassé jusqu'à la version suivante du SW. */
+function isImageResponse(res) {
+  return !!res && (res.headers.get('content-type') || '').startsWith('image/');
+}
+
+async function handleLogo(request) {
+  const cached = await caches.match(request);
+  if (cached && isImageResponse(cached)) return cached;
+  const res = await fetch(request);
+  if (isImageResponse(res) && res.ok) {
     const cache = await caches.open(PRECACHE);
     cache.put(request, res.clone());
   }
@@ -258,11 +263,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Le logo a sa propre stratégie : jamais servi sans vérification du type.
+  if (url.pathname === '/logo.jpg') {
+    event.respondWith(handleLogo(request));
+    return;
+  }
+
   if (
     url.pathname.startsWith('/assets/') ||
     url.pathname.startsWith('/fonts/') ||
     url.pathname.startsWith('/icons/') ||
-    url.pathname === '/logo.jpg' ||
     url.pathname === '/manifest.json'
   ) {
     event.respondWith(handleAsset(request));

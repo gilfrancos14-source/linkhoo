@@ -3,6 +3,8 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { SignUp, useAuth } from '@clerk/clerk-react';
 import { apiAuth, setAuthTokenGetter, type AuthRole } from '../lib/api';
 import { marketBySlug } from '../config/markets';
+import '../styles/20-auth.css';
+import '../styles/22-register.css';
 
 type Role = AuthRole;
 

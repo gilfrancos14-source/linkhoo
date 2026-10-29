@@ -10,6 +10,7 @@ import {
   type AdminPermissionKey,
 } from '../../lib/adminApi';
 import { marketSlugFromPath } from '../../contexts/MarketContext';
+import '../../styles/18-admin.css';
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();

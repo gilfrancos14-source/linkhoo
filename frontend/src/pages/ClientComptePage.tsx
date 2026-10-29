@@ -3,30 +3,17 @@ import { useSearchParams } from 'react-router-dom';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { useHomePath } from '../hooks/useHomePath';
 import { useClientUnread } from '../hooks/useClientUnread';
+import { useFavorites } from '../contexts/FavoritesContext';
 import { setAuthTokenGetter, apiClients, apiReviews, type ClientMineReservationData, type ReservationPaymentStatus, type ReviewData } from '../lib/api';
 import { getMyReservations, cancelMyReservation, startReservationPayment } from '../lib/reservations';
 import { redirectTo } from '../lib/navigation';
 
 import type { View, ReviewFormState } from './client-compte/types';
 import ClientAccountLayout from '../components/ClientAccountLayout';
-import OverviewPanel from './client-compte/OverviewPanel';
-import ReservationsPanel from './client-compte/ReservationsPanel';
+import ClientDashboardMaq from './client-compte/ClientDashboardMaq';
+import ClientReservationsMaq from './client-compte/ClientReservationsMaq';
 import ProfilePanel, { type ProfileFormState } from './client-compte/ProfilePanel';
-
-const VIEW_TITLES: Record<View, string> = {
-  overview: "Vue d'ensemble",
-  stays: 'Mes séjours',
-  profile: 'Mon profil',
-};
-
-function todayLabel(): string {
-  return new Date().toLocaleDateString('fr-FR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
+import FavoritesPanel from './client-compte/FavoritesPanel';
 
 export default function ClientComptePage() {
   const homePath = useHomePath();
@@ -34,12 +21,9 @@ export default function ClientComptePage() {
   const { user } = useUser();
   const { getToken, isLoaded } = useAuth();
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const viewParam = searchParams.get('view');
-  const view: View = viewParam === 'stays' || viewParam === 'profile' ? viewParam : 'overview';
-  const setView = (next: View) => {
-    setSearchParams(next === 'overview' ? {} : { view: next });
-  };
+  const view: View = viewParam === 'stays' || viewParam === 'favorites' || viewParam === 'profile' ? viewParam : 'overview';
 
   const [reservations, setReservations] = useState<ClientMineReservationData[]>([]);
   const [reviews, setReviews] = useState<ReviewData[]>([]);
@@ -53,6 +37,7 @@ export default function ClientComptePage() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState('');
   const [reviewSuccess, setReviewSuccess] = useState('');
+  const { rooms: favorites, loading: favoritesLoading } = useFavorites();
 
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState('');
@@ -110,8 +95,6 @@ export default function ClientComptePage() {
   const reviewable = reservations.filter(
     (r) => r.statut === 'confirmee' && r.room_id && !reviewedReservationIds.has(r.id),
   );
-
-  const displayName = firstName || profileForm.prenom || 'à vous';
 
   const handleCancel = async (id: string) => {
     if (!window.confirm('Annuler cette réservation ?')) return;
@@ -229,56 +212,97 @@ export default function ClientComptePage() {
     setProfileForm((prev) => ({ ...prev, ...patch }));
   };
 
+  // La vue d'ensemble reprend intégralement la maquette du tableau de bord
+  // (sidebar, topbar et colonnes incluses) : elle porte donc son propre chrome.
+  if (view === 'overview') {
+    return (
+      <ClientDashboardMaq
+        displayName={firstName || profileForm.prenom || 'Client'}
+        email={email}
+        profileFirstName={profileForm.prenom}
+        profileLastName={profileForm.nom}
+        phone={profileForm.telephone}
+        avatarUrl={user?.imageUrl}
+        reservations={reservations}
+        favorites={favorites}
+        reviews={reviews}
+        unreadMessages={unreadMessages}
+        loading={loading}
+        error={error}
+        homePath={homePath}
+      />
+    );
+  }
+
+  // Idem pour « Mes réservations » : conversion de la maquette
+  // habici-mes-reservations.html avec son propre chrome et ses filtres.
+  if (view === 'stays') {
+    return (
+      <ClientReservationsMaq
+        displayName={firstName || profileForm.prenom || 'Client'}
+        profileFirstName={profileForm.prenom}
+        profileLastName={profileForm.nom}
+        avatarUrl={user?.imageUrl}
+        unreadMessages={unreadMessages}
+        reservations={reservations}
+        reviews={reviews}
+        loading={loading}
+        error={error}
+        homePath={homePath}
+        reviewsError={reviewsError}
+        reviewable={reviewable}
+        reviewedIds={reviewedReservationIds}
+        reviewSuccess={reviewSuccess}
+        reviewForm={reviewForm}
+        reviewError={reviewError}
+        reviewSubmitting={reviewSubmitting}
+        cancellingId={cancellingId}
+        payingId={payingId}
+        onCancel={handleCancel}
+        onOpenReviewForm={openReviewForm}
+        onChangeReview={handleChangeReview}
+        onCloseReview={() => setReviewForm(null)}
+        onSubmitReview={handleReviewSubmit}
+        onPay={handlePay}
+      />
+    );
+  }
+
+  // Vue « Mes favoris » : la liste des chambres marquées par le cœur du client.
+  if (view === 'favorites') {
+    return (
+      <ClientAccountLayout active="favorites" staysCount={favorites.length}>
+        <div className="admin-content">
+          <section className="cdash__content">
+            <header className="cdash-top">
+              <div className="cdash-top__lead">
+                <p className="cdash-top__eyebrow">Espace client</p>
+                <h1 className="cdash-top__title">Mes favoris</h1>
+              </div>
+            </header>
+            <FavoritesPanel favorites={favorites} loading={favoritesLoading} />
+          </section>
+        </div>
+      </ClientAccountLayout>
+    );
+  }
+
+  // Vue par défaut du compte client : le profil (les autres vues sont
+  // interceptées plus haut — overview, stays, favorites).
   return (
-    <ClientAccountLayout active={view} staysCount={reservations.length}>
+    <ClientAccountLayout active="profile" staysCount={reservations.length}>
       <div className="admin-content">
         <section className="cdash__content">
           <header className="cdash-top">
             <div className="cdash-top__lead">
               <p className="cdash-top__eyebrow">Espace client</p>
-              <h1 className="cdash-top__title">{VIEW_TITLES[view]}</h1>
+              <h1 className="cdash-top__title">Mon profil</h1>
             </div>
           </header>
 
           {error && <p className="client-compte__error" role="alert">{error}</p>}
 
           <div className="cdash__views" id="cdash-panel" role="tabpanel">
-            {view === 'overview' && (
-              <OverviewPanel
-                displayName={displayName}
-                todayLabel={todayLabel()}
-                reservations={reservations}
-                reviewableCount={reviewsError ? 0 : reviewable.length}
-                unreadMessages={unreadMessages}
-                homePath={homePath}
-                onGoToStays={() => setView('stays')}
-                onGoToProfile={() => setView('profile')}
-              />
-            )}
-
-            {view === 'stays' && (
-              <ReservationsPanel
-                homePath={homePath}
-                loading={loading}
-                reservations={reservations}
-                reviewsError={reviewsError}
-                reviewable={reviewable}
-                reviewedIds={reviewedReservationIds}
-                reviewSuccess={reviewSuccess}
-                reviewForm={reviewForm}
-                reviewError={reviewError}
-                reviewSubmitting={reviewSubmitting}
-                cancellingId={cancellingId}
-                payingId={payingId}
-                onCancel={handleCancel}
-                onOpenReviewForm={openReviewForm}
-                onChangeReview={handleChangeReview}
-                onCloseReview={() => setReviewForm(null)}
-                onSubmitReview={handleReviewSubmit}
-                onPay={handlePay}
-              />
-            )}
-
             {view === 'profile' && (
               <ProfilePanel
                 profileForm={profileForm}

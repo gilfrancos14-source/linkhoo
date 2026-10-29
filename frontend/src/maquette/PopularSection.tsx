@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import type { MarketCode } from '../config/markets';
+import { useFavorites } from '../contexts/FavoritesContext';
 import MaquetteBannerCarousel from './MaquetteBannerCarousel';
 import type { BannerSlide, PopularCard } from './viewModel';
 
@@ -11,6 +12,15 @@ interface PopularSectionProps {
 
 export default function PopularSection({ market, cards, banners }: PopularSectionProps) {
   const navigate = useNavigate();
+  const { isFavorite, toggle, signedIn } = useFavorites();
+
+  const toggleFavorite = (id: string) => {
+    if (!signedIn) {
+      navigate(`/${market.toLowerCase()}/login`);
+      return;
+    }
+    void toggle(id).catch(() => {});
+  };
 
   if (cards.length === 0 && banners.length === 0) return null;
 
@@ -70,11 +80,15 @@ export default function PopularSection({ market, cards, banners }: PopularSectio
                 </span>
                 <button
                   type="button"
-                  aria-label="Ajouter aux favoris"
-                  className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-slate-700 flex items-center justify-center transition"
-                  onClick={(event) => event.stopPropagation()}
+                  aria-label={isFavorite(card.id) ? `Retirer ${card.title} des favoris` : `Sauvegarder ${card.title}`}
+                  aria-pressed={isFavorite(card.id)}
+                  className={`absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-slate-700 flex items-center justify-center transition ${isFavorite(card.id) ? 'text-red-500' : ''}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    toggleFavorite(card.id);
+                  }}
                 >
-                  <i className="fa-regular fa-heart text-xs"></i>
+                  <i className={`fa-regular ${isFavorite(card.id) ? 'fa-solid' : ''} fa-heart text-xs`}></i>
                 </button>
               </div>
               <div className="p-3">
