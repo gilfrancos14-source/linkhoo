@@ -415,12 +415,11 @@ export default function ClientDashboardMaq({
               <p className="mt-3 text-xs leading-snug text-slate-200">
                 Accédez à plus de choix, plus d’avantages.
               </p>
-              <Link
-                to={homePath}
-                className="mt-4 block rounded-lg bg-habi py-2.5 text-center text-xs font-semibold hover:bg-habi-dark"
-              >
-                Découvrir l’abonnement
-              </Link>
+              <div className="mt-3 rounded-lg bg-white/10 p-3 text-[11px] leading-snug text-slate-100">
+                En réservant via la plateforme et en payant les frais de séjour, vous
+                bénéficiez d’une protection : en cas d’annulation, le remboursement est
+                pris en charge.
+              </div>
             </div>
           </div>
         </aside>
@@ -900,12 +899,11 @@ export default function ClientDashboardMaq({
                   <p className="mt-3 text-[11px] leading-snug text-slate-600">
                     Accédez à des offres exclusives, des réductions et bien plus encore.
                   </p>
-                  <Link
-                    to={homePath}
-                    className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-habi py-2.5 text-xs font-semibold text-white hover:bg-habi-dark"
-                  >
-                    Découvrir le Premium<Icon id="arrow" className="!h-4 !w-4" />
-                  </Link>
+                  <div className="mt-3 rounded-lg bg-white/70 p-3 text-[11px] leading-snug text-slate-700">
+                    En payant les frais de séjour via la plateforme, vous activez la
+                    protection : en cas d’annulation, le remboursement est géré par la
+                    plateforme.
+                  </div>
                 </div>
               </section>
 
