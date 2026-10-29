@@ -5,7 +5,7 @@ import { useHomePath } from '../hooks/useHomePath';
 import { setAuthTokenGetter, apiReviews, type ClientMineReservationData } from '../lib/api';
 import { getMyReservations } from '../lib/reservations';
 
-// Petite icône inline (lucide) pour rester fidèle à la maquette.
+// Icône inline (lucide) pour rester fidèle à la maquette.
 function Ic({ d, className = '' }: { d: string; className?: string }) {
   return (
     <svg
@@ -23,16 +23,13 @@ function Ic({ d, className = '' }: { d: string; className?: string }) {
   );
 }
 
-const STAR_ON = 'fill-[#FF6A13] text-[#FF6A13]';
-const STAR_OFF = 'fill-[#E2E8F0] text-[#E2E8F0]';
-
 function Stars({ value, size = 'w-4 h-4' }: { value: number; size?: string }) {
   const full = Math.floor(value);
   const half = value - full >= 0.5;
   return (
     <span className={`flex ${size}`}>
       {[0, 1, 2, 3, 4].map((i) => (
-        <svg key={i} className={`w-full h-full ${i < full ? STAR_ON : i === full && half ? STAR_ON : STAR_OFF}`} viewBox="0 0 24 24">
+        <svg key={i} className={`w-full h-full ${i < full || (i === full && half) ? 'fill-[#FF6A13] text-[#FF6A13]' : 'fill-[#E2E8F0] text-[#E2E8F0]'}`} viewBox="0 0 24 24">
           <path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" />
         </svg>
       ))}
@@ -40,13 +37,7 @@ function Stars({ value, size = 'w-4 h-4' }: { value: number; size?: string }) {
   );
 }
 
-function StarRating({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (n: number) => void;
-}) {
+function StarRating({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   return (
     <div className="flex gap-1.5">
       {[1, 2, 3, 4, 5].map((n) => (
@@ -66,6 +57,20 @@ function StarRating({
   );
 }
 
+const CRITERIA = [
+  { label: 'Propreté', value: 4.8 },
+  { label: 'Communication', value: 4.7 },
+  { label: 'Arrivée', value: 4.9 },
+  { label: 'Précision', value: 4.6 },
+  { label: 'Qualité-prix', value: 4.5 },
+];
+
+const REVIEWS = [
+  { name: 'Aïcha K.', date: 'Oct 2026', note: 5, text: 'Séjour parfait, chambre impeccable et hôte très réactif. Je recommande vivement !' },
+  { name: 'Marc D.', date: 'Sep 2026', note: 4, text: 'Très bon rapport qualité-prix. Petit bémol sur le bruit le soir, mais globalement satisfait.' },
+  { name: 'Fatou S.', date: 'Août 2026', note: 5, text: 'Magnifique vue, literie confortable. On reviendra sans hésiter.' },
+];
+
 export default function LaisserAvisPage() {
   const { reservationId } = useParams<{ reservationId: string }>();
   const navigate = useNavigate();
@@ -81,6 +86,17 @@ export default function LaisserAvisPage() {
   const [count, setCount] = useState(0);
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [cur, setCur] = useState(0);
+
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap';
+    document.head.appendChild(link);
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
 
   useEffect(() => {
     setAuthTokenGetter(() => getToken());
@@ -135,20 +151,12 @@ export default function LaisserAvisPage() {
 
   const title = reservation?.room_title || 'Chambre moderne avec balcon';
   const img = reservation?.room?.img || 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=1200';
-
-  useEffect(() => {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap';
-    document.head.appendChild(link);
-    return () => {
-      document.head.removeChild(link);
-    };
-  }, []);
+  const photos = [img, img, img, img, img, img, img, img];
+  const safeCur = Math.min(cur, photos.length - 1);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAFAFA] font-sans text-[#1B2A4A] antialiased" style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
+      <div className="min-h-screen bg-[#FAFAFA] antialiased" style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
         <main className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
           <p className="text-sm text-slate-500">Chargement…</p>
         </main>
@@ -158,7 +166,7 @@ export default function LaisserAvisPage() {
 
   if (error && !reservation) {
     return (
-      <div className="min-h-screen bg-[#FAFAFA] font-sans text-[#1B2A4A] antialiased" style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
+      <div className="min-h-screen bg-[#FAFAFA] antialiased" style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
         <main className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
           <p className="text-sm text-red-600" role="alert">{error}</p>
           <button
@@ -174,7 +182,7 @@ export default function LaisserAvisPage() {
   }
 
   return (
-    <div className="bg-[#FAFAFA] font-sans text-[#1B2A4A] antialiased pb-40 lg:pb-0" style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
+    <div className="bg-[#FAFAFA] antialiased pb-40 lg:pb-0" style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
       {/* ================= HEADER ================= */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 h-14 lg:h-[72px] flex items-center justify-between">
@@ -230,10 +238,23 @@ export default function LaisserAvisPage() {
           {/* Galerie */}
           <div className="flex gap-3">
             <div className="relative flex-1 h-56 sm:h-72 lg:h-72 lg:rounded-xl overflow-hidden bg-slate-200">
-              <img id="mainImg" src={img} className="w-full h-full object-cover" alt={title} />
+              <img id="mainImg" src={photos[safeCur]} className="w-full h-full object-cover" alt={title} />
+              <button onClick={() => setCur((c) => (c - 1 + photos.length) % photos.length)} className="hidden lg:grid absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 place-items-center rounded-full bg-white shadow" aria-label="Précédent">
+                <Ic d="m15 18-6-6 6-6" className="w-5 h-5" />
+              </button>
+              <button onClick={() => setCur((c) => (c + 1) % photos.length)} className="hidden lg:grid absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 place-items-center rounded-full bg-white shadow" aria-label="Suivant">
+                <Ic d="m9 18 6-6-6-6" className="w-5 h-5" />
+              </button>
               <span className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-[#1B2A4A]/70 text-white text-xs font-semibold px-2.5 py-1.5">
-                1/8
+                {safeCur + 1}/{photos.length}
               </span>
+            </div>
+            <div className="hidden lg:flex flex-col gap-3 w-24">
+              {photos.slice(0, 4).map((p, i) => (
+                <button key={i} onClick={() => setCur(i)} className={`h-[72px] w-24 rounded-lg overflow-hidden border-2 ${i === safeCur ? 'border-[#FF6A13]' : 'border-transparent'}`}>
+                  <img src={p} className="w-full h-full object-cover" alt="" />
+                </button>
+              ))}
             </div>
           </div>
 
@@ -261,7 +282,7 @@ export default function LaisserAvisPage() {
             <ul className="flex flex-wrap gap-x-5 gap-y-2 mt-4 text-sm text-slate-600">
               <li className="flex items-center gap-1.5"><Ic d="M2 20.5A4 4 0 0 1 8 17h2a4 4 0 0 1 6 3.5M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" className="w-4 h-4" />1 lit double</li>
               <li className="flex items-center gap-1.5"><Ic d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" className="w-4 h-4" />2 personnes</li>
-              <li className="flex items-center gap-1.5"><Ic d="M5 12.859a10 10 0 0 1 5.17-2.69M19 12.859a10 10 0 0 0-2.007-1.523M2 8.82a15 15 0 0 1 4.177-2.643M22 8.82a15 15 0 0 0-11.288-3.764M12 20h.01M8.5 16.429a5 5 0 0 1 7 0m2 0a5 5 0 0 0-7 0" className="w-4 h-4" />Wi-Fi</li>
+              <li className="flex items-center gap-1.5"><Ic d="M5 12.859a10 10 0 0 1 5.17-2.69M19 12.859a10 10 0 0 0-2.007-1.523M2 8.82a15 15 0 0 1 4.177-2.643M22 8.82a15 15 0 0 0-11.288-3.764M12 20h.01M8.5 16.429a5 5 0 0 1 7 0" className="w-4 h-4" />Wi-Fi</li>
               <li className="flex items-center gap-1.5"><Ic d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" className="w-4 h-4" />Balcon</li>
             </ul>
           </div>
@@ -276,6 +297,14 @@ export default function LaisserAvisPage() {
             </button>
           </aside>
         </section>
+
+        {/* Onglets (mobile) */}
+        <nav className="lg:hidden flex gap-7 overflow-x-auto no-scrollbar px-5 border-b border-slate-100 bg-white text-[15px]">
+          <a href="#" className="py-4 text-slate-600">Description</a>
+          <a href="#" className="py-4 text-slate-600">Équipements</a>
+          <a href="#" className="py-4 text-[#FF6A13] font-semibold border-b-2 border-[#FF6A13]">Avis</a>
+          <a href="#" className="py-4 text-slate-600">Localisation</a>
+        </nav>
 
         {/* ================= AVIS ================= */}
         <div className="px-4 lg:px-0 mt-4 lg:mt-5 grid lg:grid-cols-2 gap-5 items-start">
@@ -296,13 +325,7 @@ export default function LaisserAvisPage() {
               </div>
               <div className="hidden lg:grid grid-cols-[1.4fr_1fr] gap-6 mt-2 items-center">
                 <div className="space-y-3">
-                  {[
-                    { label: 'Propreté', value: 4.8 },
-                    { label: 'Communication', value: 4.7 },
-                    { label: 'Arrivée', value: 4.9 },
-                    { label: 'Précision', value: 4.6 },
-                    { label: 'Qualité-prix', value: 4.5 },
-                  ].map((c) => (
+                  {CRITERIA.map((c) => (
                     <div key={c.label} className="flex items-center gap-3">
                       <span className="w-28 text-sm text-slate-600">{c.label}</span>
                       <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
@@ -357,7 +380,7 @@ export default function LaisserAvisPage() {
               )}
               {error && <p className="mt-3 text-sm text-red-600" role="alert">{error}</p>}
               <button
-                type="submit"
+                type="button"
                 disabled={sending || success}
                 onClick={handleSubmit}
                 className="mt-5 w-full flex items-center justify-center gap-2 rounded-xl bg-[#FF6A13] hover:bg-orange-600 transition text-white font-semibold py-3.5 disabled:opacity-60"
@@ -366,6 +389,14 @@ export default function LaisserAvisPage() {
                 {sending ? 'Publication…' : 'Publier mon avis'}
               </button>
             </section>
+
+            {/* Mobile : bouton écrire un avis */}
+            <div className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-slate-100 p-4">
+              <button onClick={handleSubmit} disabled={sending || success} className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#FF6A13] text-white font-semibold py-3.5 disabled:opacity-60">
+                <Ic d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" className="w-5 h-5" />
+                Écrire un avis
+              </button>
+            </div>
           </div>
 
           {/* Colonne droite : liste des avis */}
@@ -374,7 +405,23 @@ export default function LaisserAvisPage() {
               <h2 className="text-xl font-bold">Avis récents <span className="font-medium text-slate-500">(12)</span></h2>
               <select className="rounded-lg border border-slate-200 text-xs px-3 py-2 bg-white"><option>Les plus récents</option><option>Les mieux notés</option></select>
             </div>
-            <p className="py-6 text-center text-sm text-slate-500">Les avis des voyageurs apparaîtront ici.</p>
+            <div className="mt-4 space-y-6">
+              {REVIEWS.map((r, i) => (
+                <article key={i} className="border-b border-slate-100 pb-5 last:border-0">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-slate-200 grid place-items-center font-semibold text-slate-600">{r.name.charAt(0)}</div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold">{r.name}</p>
+                        <span className="text-xs text-slate-400">{r.date}</span>
+                      </div>
+                      <div className="flex items-center gap-1 mt-0.5"><Stars value={r.note} size="w-3.5 h-3.5" /><span className="text-xs font-semibold ml-1">{r.note},0</span></div>
+                      <p className="text-sm text-slate-600 mt-2 leading-relaxed">{r.text}</p>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
           </section>
         </div>
 
