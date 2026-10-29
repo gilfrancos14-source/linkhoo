@@ -154,7 +154,6 @@ export default function ClientReservationsMaq({
   cancellingId,
   payingId,
   onCancel,
-  onOpenReviewForm,
   onChangeReview,
   onCloseReview,
   onSubmitReview,
@@ -650,7 +649,7 @@ export default function ClientReservationsMaq({
                             </button>
                           )}
                           {canReview && (
-                            <button type="button" className="btn flex-1" onClick={() => onOpenReviewForm(reservation)}>
+                            <button type="button" className="btn flex-1" onClick={() => navigate(`${homePath}/avis/${reservation.id}`)}>
                               Laisser un avis
                             </button>
                           )}

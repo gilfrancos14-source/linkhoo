@@ -27,6 +27,7 @@ const ClientReservationPage = lazy(() => import('./pages/ClientReservationPage')
 const ReservationPaymentPage = lazy(() => import('./pages/ReservationPaymentPage'));
 const ClientComptePage = lazy(() => import('./pages/ClientComptePage'));
 const ClientMessagesPage = lazy(() => import('./pages/messages/ClientMessagesPage'));
+const LaisserAvisPage = lazy(() => import('./pages/LaisserAvisPage'));
 const ClientLogin = lazy(() => import('./pages/ClientLogin'));
 const RegisterRolePage = lazy(() => import('./pages/RegisterRolePage'));
 
@@ -122,7 +123,7 @@ function MarketContent() {
     pathname === marketHome || pathname === `${marketHome}/`;
   // Espace client (/compte, /messages) : la page porte sa propre sidebar et
   // occupe toute la hauteur → aucun chrome du site (en-tête, pied, bannière).
-  const isClientSpace = /\/compte(\/|$)/.test(pathname) || /\/messages(\/|$)/.test(pathname);
+  const isClientSpace = /\/compte(\/|$)/.test(pathname) || /\/messages(\/|$)/.test(pathname) || /\/avis(\/|$)/.test(pathname);
   // La recherche porte le footer éditorial de la page d'accueil.
   const isSearchPage = /\/recherche(\/|$)/.test(pathname);
   // La fiche chambre reproduit la maquette HabiCI : elle embarque son propre
@@ -168,6 +169,16 @@ function MarketContent() {
         <Route path="/messages/:conversationId" element={
           <RoleRouteGuard role="client">
             <ClientMessagesPage />
+          </RoleRouteGuard>
+        } />
+        <Route path="/avis/:reservationId" element={
+          <RoleRouteGuard role="client">
+            <LaisserAvisPage />
+          </RoleRouteGuard>
+        } />
+        <Route path="/avis/:reservationId" element={
+          <RoleRouteGuard role="client">
+            <LaisserAvisPage />
           </RoleRouteGuard>
         } />
 
