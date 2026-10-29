@@ -410,7 +410,7 @@ export default function ClientDashboardMaq({
             <div className="rounded-xl bg-navy p-4 text-white">
               <p className="flex items-center gap-2 text-sm font-semibold">
                 <Icon id="crown" className="f h-6 w-6 text-amber-400" />
-                Devenez Premium
+                Sécurisez votre réservation
               </p>
               <p className="mt-3 text-xs leading-snug text-slate-200">
                 Accédez à plus de choix, plus d’avantages.
@@ -894,7 +894,7 @@ export default function ClientDashboardMaq({
                 <Icon id="crown" className="f h-10 w-10 text-habi" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold leading-snug text-habi">
-                    Profitez de plus d’avantages<br />avec le Premium
+                    Réservation protégée
                   </p>
                   <p className="mt-3 text-[11px] leading-snug text-slate-600">
                     Accédez à des offres exclusives, des réductions et bien plus encore.
