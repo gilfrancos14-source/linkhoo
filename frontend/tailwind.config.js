@@ -17,6 +17,7 @@ export default {
     './src/pages/gerant/MesInformationsMaq.tsx',
     './src/pages/client-compte/ClientDashboardMaq.tsx',
     './src/pages/client-compte/ClientReservationsMaq.tsx',
+    './src/pages/LaisserAvisPage.tsx',
     './src/pages/messages/ClientMessagesMaq.tsx',
     './src/components/BrandLogo.tsx',
   ],

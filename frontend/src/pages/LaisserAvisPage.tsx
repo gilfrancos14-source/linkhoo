@@ -136,9 +136,19 @@ export default function LaisserAvisPage() {
   const title = reservation?.room_title || 'Chambre moderne avec balcon';
   const img = reservation?.room?.img || 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=1200';
 
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap';
+    document.head.appendChild(link);
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#FAFAFA] font-sans text-[#1B2A4A] antialiased">
+      <div className="min-h-screen bg-[#FAFAFA] font-sans text-[#1B2A4A] antialiased" style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
         <main className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
           <p className="text-sm text-slate-500">Chargement…</p>
         </main>
@@ -148,7 +158,7 @@ export default function LaisserAvisPage() {
 
   if (error && !reservation) {
     return (
-      <div className="min-h-screen bg-[#FAFAFA] font-sans text-[#1B2A4A] antialiased">
+      <div className="min-h-screen bg-[#FAFAFA] font-sans text-[#1B2A4A] antialiased" style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
         <main className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
           <p className="text-sm text-red-600" role="alert">{error}</p>
           <button
@@ -164,7 +174,7 @@ export default function LaisserAvisPage() {
   }
 
   return (
-    <div className="bg-[#FAFAFA] font-sans text-[#1B2A4A] antialiased pb-40 lg:pb-0">
+    <div className="bg-[#FAFAFA] font-sans text-[#1B2A4A] antialiased pb-40 lg:pb-0" style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
       {/* ================= HEADER ================= */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 h-14 lg:h-[72px] flex items-center justify-between">
