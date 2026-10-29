@@ -817,6 +817,12 @@ export default function RoomDetailMaq7() {
                   >
                     Retourner à l&apos;annonce
                   </button>
+                  <Link
+                    to={`${homePath}/suivi-reservation`}
+                    className="mt-2 block w-full rounded-lg bg-brand py-2.5 text-center text-[13px] font-bold text-white transition hover:bg-brand-dark"
+                  >
+                    Suivre ma réservation
+                  </Link>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} noValidate>

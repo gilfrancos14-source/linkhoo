@@ -137,6 +137,18 @@ const adminMeResponse = {
   email: 'admin@linkhoo.com',
   nom: 'Linkhoo',
   prenom: 'Awa',
+  // Toutes les sections du back-office : sans ces permissions la sidebar
+  // n'affiche que « Mot de passe » (cf. `SuperAdminLayout.can()`).
+  permissions: [
+    'stats',
+    'reservations',
+    'gerants',
+    'bannieres',
+    'evenements',
+    'destinations',
+    'escapades',
+    'promotions',
+  ],
 };
 
 const adminStatsResponse = {
@@ -179,13 +191,23 @@ export interface MockApiOptions {
   verification?: Record<string, unknown>;
 }
 
-async function respond(route: Route, body: unknown, status = 200): Promise<void> {
+async function respond(
+  route: Route,
+  body: unknown,
+  status = 200,
+  headers: Record<string, string> = {},
+): Promise<void> {
   await route.fulfill({
     status,
     contentType: 'application/json',
+    headers,
     body: JSON.stringify(body),
   });
 }
+
+/** Cookie HttpOnly posé par le serveur au login admin (cf. `adminApi.ts`). */
+const ADMIN_COOKIE = 'admin_token=e2e-admin-token; Path=/; HttpOnly; SameSite=Lax';
+const ADMIN_COOKIE_EXPIRED = 'admin_token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0';
 
 export async function mockApi(page: Page, options: MockApiOptions = {}): Promise<void> {
   await page.route('**/api/**', async (route: Route) => {
@@ -215,7 +237,16 @@ export async function mockApi(page: Page, options: MockApiOptions = {}): Promise
         if (options.adminLoginFails) {
           return respond(route, { error: 'Identifiants invalides' }, 401);
         }
-        return respond(route, { token: 'e2e-admin-token', admin: adminMeResponse });
+        // Le jeton vit dans un cookie HttpOnly : aucun secret lisible en JS.
+        return respond(
+          route,
+          { admin: adminMeResponse },
+          200,
+          { 'set-cookie': ADMIN_COOKIE },
+        );
+      }
+      if (path === '/admin/logout') {
+        return respond(route, { ok: true }, 200, { 'set-cookie': ADMIN_COOKIE_EXPIRED });
       }
       if (path === '/admin/change-password') {
         return respond(route, { message: 'Mot de passe modifié avec succès' });
@@ -355,9 +386,13 @@ export async function mockApi(page: Page, options: MockApiOptions = {}): Promise
       return respond(route, { status: 'none' });
     }
 
-    // Back-office admin (aucun Clerk : jeton localStorage + Bearer).
+    // Back-office admin : session = cookie HttpOnly, comme en production.
+    // Sans cookie (ou cookie refusé), /admin/me répond 401 et le guard redirige.
     if (path === '/admin/me') {
-      if (options.adminMeUnauthorized) return respond(route, { error: 'Jeton invalide' }, 401);
+      const cookie = route.request().headers()['cookie'] ?? '';
+      if (options.adminMeUnauthorized || !cookie.includes('admin_token=')) {
+        return respond(route, { error: 'Jeton invalide' }, 401);
+      }
       return respond(route, adminMeResponse);
     }
     if (path === '/admin/stats') return respond(route, adminStatsResponse);
@@ -385,11 +420,14 @@ export async function mockApi(page: Page, options: MockApiOptions = {}): Promise
 }
 
 /**
- * Pose le jeton admin avant le premier chargement de la page : `adminApi.ts`
- * lit `localStorage['admin_token']` au chargement du module.
+ * Pose la session admin avant le premier chargement de la page : cookie
+ * HttpOnly simulé + indice `admin_session` (ce que fait `setAdminToken()`).
  */
 export async function loginAdmin(page: Page): Promise<void> {
+  await page.context().addCookies([
+    { name: 'admin_token', value: 'e2e-admin-token', url: 'http://127.0.0.1:5173' },
+  ]);
   await page.addInitScript(() => {
-    window.localStorage.setItem('admin_token', 'e2e-admin-token');
+    window.sessionStorage.setItem('admin_session', '1');
   });
 }

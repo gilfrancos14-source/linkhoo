@@ -30,7 +30,9 @@ test.describe('suivi de réservation', () => {
 
     await browse.click();
     await expect(page).toHaveURL(/\/ci$/);
-    await expect(page.locator('h1.hero__tagline')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'Trouvez le lieu idéal',
+    );
   });
 
   test('affiche le fil dariane menant à laccueil', async ({ page }) => {
@@ -48,16 +50,16 @@ test.describe('suivi de réservation', () => {
     await mockApi(page);
 
     await page.goto('/ci/chambre/rm-1');
-    await page.fill('#rd-name', 'Aya Koné');
-    await page.fill('#rd-email', 'aya@example.ci');
-    await page.fill('#rd-phone', '0707070707');
-    await page.fill('#rd-date-debut', '2026-11-01');
-    await page.fill('#rd-duree', '2');
-    await page.getByRole('button', { name: 'Envoyer la demande' }).click();
+    await page.getByText('Vos coordonnées').click();
+    await page.fill('#room-name', 'Aya Koné');
+    await page.fill('#room-email', 'aya@example.ci');
+    await page.fill('#room-phone', '0707070707');
+    await page.fill('#room-start', '2026-11-01');
+    await page.fill('#room-duration', '2');
+    await page.getByRole('button', { name: 'Réserver maintenant' }).click();
 
-    const track = page.locator('.room-detail__track-link');
+    const track = page.getByRole('link', { name: 'Suivre ma réservation' });
     await expect(track).toBeVisible();
-    await expect(track).toHaveText('Suivre ma réservation');
     await expect(track).toHaveAttribute('href', '/ci/suivi-reservation');
 
     await track.click();

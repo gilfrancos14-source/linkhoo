@@ -17,7 +17,9 @@ test.describe('navigation', () => {
     await page.goto('/ci/page-inexistante');
     await page.locator('.error-page__link').click();
 
-    await expect(page.locator('h2.section-title').first()).toContainText('plus demand');
+    await expect(
+      page.getByRole('heading', { level: 2, name: /plus demandés/ }),
+    ).toBeVisible();
     expect(page.url()).toContain('/ci');
   });
 

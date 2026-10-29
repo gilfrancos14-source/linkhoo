@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { mockApi } from './fixtures';
+
+/** Cartes de la section « Nos biens les plus demandés » (accueil maquette). */
+function popularCards(page: Page) {
+  return page.locator('[data-purpose="popular-listings"] article[role="link"]');
+}
 
 test.describe('marché Bénin', () => {
   test('affiche laccueil du marché BJ', async ({ page }) => {
@@ -8,11 +14,12 @@ test.describe('marché Bénin', () => {
     await page.goto('/bj');
 
     await expect(page.locator('html')).toHaveAttribute('data-market', 'BJ');
-    await expect(page.locator('h1.hero__tagline')).toContainText('Trouvez le lieu idéal');
-    await expect(page.locator('#categories .cat-card__title')).toHaveText([
-      'Appartements moins chers',
-      'Hôtels',
-    ]);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'Trouvez le lieu idéal',
+    );
+    const categories = page.locator('[data-purpose="categories-section"]');
+    await expect(categories).toContainText('Appartements moins chers');
+    await expect(categories).toContainText('Hôtels');
   });
 
   test('préfixe les liens de la page par /bj', async ({ page }) => {
@@ -20,11 +27,12 @@ test.describe('marché Bénin', () => {
 
     await page.goto('/bj');
 
-    await expect(page.locator('.stay-card__link').first()).toHaveAttribute(
-      'href',
-      /^\/bj\/chambre\//,
-    );
-    await expect(page.locator('.logo').first()).toHaveAttribute('href', '/bj');
+    await expect(page.locator('.acc-brand')).toHaveAttribute('href', '/bj');
+
+    const firstCard = popularCards(page).first();
+    await expect(firstCard).toBeVisible();
+    await firstCard.click();
+    await expect(page).toHaveURL(/\/bj\/chambre\//);
   });
 
   test('drapeau seul sur la page de marché, sélection du pays depuis l’accueil', async ({ page }) => {
@@ -33,7 +41,7 @@ test.describe('marché Bénin', () => {
     // Page de marché : uniquement le drapeau, pas de changement possible.
     await page.goto('/ci');
     await expect(page.locator('html')).toHaveAttribute('data-market', 'CI');
-    await expect(page.locator('.market-selector--static')).toBeVisible();
+    await expect(page.getByRole('button', { name: "Pays : Côte d'Ivoire" })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Choisir le marché' })).toHaveCount(0);
 
     // Accueil : la Côte d'Ivoire est sélectionnée par défaut.
@@ -63,12 +71,15 @@ test.describe('nouveaux marchés', () => {
     await page.goto('/sn');
 
     await expect(page.locator('html')).toHaveAttribute('data-market', 'SN');
-    await expect(page.locator('h1.hero__tagline')).toContainText('Trouvez le lieu idéal');
-    await expect(page.locator('.logo').first()).toHaveAttribute('href', '/sn');
-    await expect(page.locator('.stay-card__link').first()).toHaveAttribute(
-      'href',
-      /^\/sn\/chambre\//,
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'Trouvez le lieu idéal',
     );
+    await expect(page.locator('.acc-brand')).toHaveAttribute('href', '/sn');
+
+    const firstCard = popularCards(page).first();
+    await expect(firstCard).toBeVisible();
+    await firstCard.click();
+    await expect(page).toHaveURL(/\/sn\/chambre\//);
   });
 
   test('la grille de la landing propose les 12 marchés du registre', async ({ page }) => {
@@ -79,6 +90,6 @@ test.describe('nouveaux marchés', () => {
     const cards = page.locator('.acc-country-grid > button');
     await expect(cards).toHaveCount(12);
     await expect(cards.filter({ hasText: 'Sénégal' })).toBeVisible();
-    await expect(cards.filter({ hasText: 'Cap-Vert' })).toBeVisible();
+    await expect(cards.filter({ hasText: 'RDC' })).toBeVisible();
   });
 });

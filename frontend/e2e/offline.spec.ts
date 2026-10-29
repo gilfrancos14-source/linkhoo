@@ -51,7 +51,7 @@ test.describe('consultation hors-ligne', () => {
   }) => {
     // 1. Première visite en ligne : le SW s'installe en arrière-plan.
     await page.goto('/ci');
-    await expect(page.locator('#plus-loues')).toBeVisible();
+    await expect(page.locator('[data-purpose="popular-listings"]')).toBeVisible();
     await waitForServiceWorkerControl(page);
 
     // 2. Rechargement sous contrôle du SW : les caches se remplissent.
@@ -65,7 +65,7 @@ test.describe('consultation hors-ligne', () => {
 
     // Données d'API servies depuis le cache : les cartes populaires
     // réapparaissent (sans cache API, PopularSection se masque en erreur).
-    await expect(page.locator('#plus-loues')).toBeVisible();
+    await expect(page.locator('[data-purpose="popular-listings"]')).toBeVisible();
     await expect(page.getByRole('heading', { name: /plus demandés/ })).toBeVisible();
     await expect(page.getByText('Studio Cocody Riviera').first()).toBeVisible();
 
@@ -124,7 +124,7 @@ test.describe('consultation hors-ligne', () => {
     // (index.html, JS, CSS) soit en cache — sans ça, une page jamais
     // visitée ne reçoit même pas les assets du bundle.
     await page.reload();
-    await expect(page.locator('#plus-loues')).toBeVisible();
+    await expect(page.locator('[data-purpose="popular-listings"]')).toBeVisible();
 
     await context.setOffline(true);
     // Route non pré-cachée : le SW sert son document de repli (503) ou le

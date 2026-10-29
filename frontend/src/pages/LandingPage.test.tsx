@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { MarketProvider } from '../contexts/MarketContext';
 import LandingPage from './LandingPage';
 
 const mocks = vi.hoisted(() => ({
@@ -39,7 +40,9 @@ const REVIEWS = [
 function renderLanding() {
   return render(
     <MemoryRouter>
-      <LandingPage />
+      <MarketProvider>
+        <LandingPage />
+      </MarketProvider>
     </MemoryRouter>,
   );
 }

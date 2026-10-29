@@ -27,6 +27,7 @@ test.describe('connexion admin', () => {
 
     await expect(page.locator('.admin-login__error')).toContainText('Identifiants invalides');
     await expect(page).toHaveURL(/\/admin\/login$/);
+    expect(await page.evaluate(() => window.sessionStorage.getItem('admin_session'))).toBeNull();
     expect(await page.evaluate(() => window.localStorage.getItem('admin_token'))).toBeNull();
   });
 
@@ -40,8 +41,11 @@ test.describe('connexion admin', () => {
 
     await expect(page).toHaveURL(/\/admin$/);
     await expect(page.locator('h1', { hasText: 'Tableau de bord' })).toBeVisible();
-    const token = await page.evaluate(() => window.localStorage.getItem('admin_token'));
-    expect(token).toBe('e2e-admin-token');
+    // Session = cookie HttpOnly côté serveur ; côté client seul l'indice
+    // non sensible `admin_session` est conservé (aucun jeton en localStorage).
+    const hint = await page.evaluate(() => window.sessionStorage.getItem('admin_session'));
+    expect(hint).toBe('1');
+    expect(await page.evaluate(() => window.localStorage.getItem('admin_token'))).toBeNull();
   });
 
   test('affiche le miroir du marché Bénin', async ({ page }) => {
@@ -79,7 +83,7 @@ test.describe('gardes du back-office', () => {
   test('renvoie à la connexion quand le jeton est refusé', async ({ page }) => {
     await mockApi(page, { adminMeUnauthorized: true });
     await page.addInitScript(() => {
-      window.localStorage.setItem('admin_token', 'e2e-expired');
+      window.sessionStorage.setItem('admin_session', '1');
     });
 
     await page.goto('/admin');

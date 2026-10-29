@@ -1,5 +1,13 @@
+import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from './icons';
+import { useHomePath } from '../../hooks/useHomePath';
+import { useMarket } from '../../contexts/MarketContext';
+import { apiNewsletter } from '../../lib/api';
+import { isValidEmail } from '../../utils/validators';
+
+const DEFAULT_NOTE =
+  'Nouveaux biens disponibles et offres de séjour, une fois par mois.';
 
 const SOCIALS = [
   { name: 'facebook' as const, label: 'Facebook' },
@@ -10,6 +18,43 @@ const SOCIALS = [
 ];
 
 export default function LandingFooter() {
+  const homePath = useHomePath();
+  const { market } = useMarket();
+  const [email, setEmail] = useState('');
+  const [note, setNote] = useState(DEFAULT_NOTE);
+  const [emailError, setEmailError] = useState('');
+  const [submitError, setSubmitError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleNewsletter = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const value = email.trim();
+
+    if (!value) {
+      setEmailError('Veuillez entrer votre adresse email.');
+      return;
+    }
+    if (!isValidEmail(value)) {
+      setEmailError('Adresse email invalide.');
+      return;
+    }
+
+    setEmailError('');
+    setSubmitError('');
+    setSubmitting(true);
+    try {
+      await apiNewsletter.subscribe({ email: value, market });
+      setEmail('');
+      setNote('Merci ! Vous recevrez nos prochaines offres.');
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : 'Une erreur est survenue. Veuillez réessayer.',
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <footer className="acc-footer">
       <div className="acc-container acc-footer__inner">
@@ -59,26 +104,67 @@ export default function LandingFooter() {
             <p className="acc-footer__text">
               Restez informé de nos nouveautés et offres exclusives.
             </p>
-            <form className="acc-newsletter" onSubmit={(event) => event.preventDefault()}>
-              <input type="email" placeholder="Votre adresse e-mail" aria-label="Votre adresse e-mail" />
-              <button type="submit" aria-label="Envoyer">
+            <form
+              id="newsletter-form"
+              className="acc-newsletter"
+              onSubmit={handleNewsletter}
+              noValidate
+            >
+              <input
+                id="newsletter-email"
+                name="newsletter-email"
+                type="email"
+                placeholder="Votre adresse e-mail"
+                aria-label="Votre adresse e-mail"
+                aria-describedby={
+                  emailError || submitError ? 'newsletter-error' : undefined
+                }
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  if (emailError) setEmailError('');
+                }}
+              />
+              <button
+                type="submit"
+                aria-label="S'abonner à la newsletter"
+                disabled={submitting}
+              >
                 <Icon name="send" size={12} />
               </button>
             </form>
+            {(emailError || submitError) && (
+              <p className="newsletter__error" id="newsletter-error" role="alert">
+                {emailError || submitError}
+              </p>
+            )}
+            <p className="newsletter__note" aria-live="polite">
+              {note}
+            </p>
           </div>
 
           <div>
-            <h3>Liens légaux</h3>
-            <ul className="acc-footer__list">
-              <li>Conditions d&apos;utilisation</li>
-              <li>
-                <Link to="/politique-de-confidentialite">Politique de confidentialité</Link>
-              </li>
-              <li>
-                <Link to="/mentions-legales">Mentions légales</Link>
-              </li>
-              <li>Cookies</li>
-            </ul>
+            <nav className="acc-footer__legal" aria-label="Informations légales">
+              <h3>Liens légaux</h3>
+              <ul className="acc-footer__list">
+                <li>
+                  <Link to="/a-propos">À propos</Link>
+                </li>
+                <li>
+                  <Link to="/contact">Contact</Link>
+                </li>
+                <li>Conditions d&apos;utilisation</li>
+                <li>
+                  <Link to={`${homePath}/politique-de-confidentialite`}>
+                    Politique de confidentialité
+                  </Link>
+                </li>
+                <li>
+                  <Link to={`${homePath}/mentions-legales`}>Mentions légales</Link>
+                </li>
+                <li>Cookies</li>
+              </ul>
+            </nav>
           </div>
 
           <div>

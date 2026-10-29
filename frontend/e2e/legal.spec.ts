@@ -73,6 +73,8 @@ test.describe('pages légales', () => {
     await page.locator('.page-legal__back').click();
 
     await expect(page).toHaveURL(/\/bj$/);
-    await expect(page.locator('h1.hero__tagline')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'Trouvez le lieu idéal',
+    );
   });
 });
