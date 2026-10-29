@@ -48,7 +48,7 @@
     @apply ml-auto grid place-items-center w-5 h-5 rounded-full bg-[#ff4d1a] text-white text-[11px] font-bold;
   }
   .res-maq .btn {
-    @apply grid place-items-center h-[30px] rounded-md border border-[#2f5bbf] bg-white text-[11.5px] font-semibold text-[#2f5bbf];
+    @apply grid place-items-center min-h-[30px] rounded-md border border-[#2f5bbf] bg-white px-2 py-1 text-[11.5px] font-semibold text-[#2f5bbf];
   }
   .res-maq .btn.o {
     @apply border-[#ff5a14] bg-[#ff5a14] text-white;

@@ -624,7 +624,7 @@ export default function ClientReservationsMaq({
                         )}
                         {total !== null && <p className="tt">Total : {formatPrice(total)} FCFA</p>}
 
-                        <div className="mt-3 flex gap-2">
+                        <div className="mt-3 flex flex-wrap gap-2">
                           <Link to={detailPath} className="btn w-[120px]">Voir le détail</Link>
                           {showSuivi && (
                             <Link to={`${homePath}/suivi-reservation`} className="btn o flex-1">Voir le suivi</Link>
