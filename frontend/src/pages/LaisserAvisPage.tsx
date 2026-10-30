@@ -66,13 +66,8 @@ export default function LaisserAvisPage() {
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [mobileFormOpen, setMobileFormOpen] = useState(false);
 
-  useEffect(() => {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap';
-    document.head.appendChild(link);
-    return () => { document.head.removeChild(link); };
-  }, []);
+  // La police « Plus Jakarta Sans » est auto-hébergée (src/fonts.css) :
+  // aucune requête vers Google Fonts, contrairement à la maquette statique.
 
   useEffect(() => {
     setAuthTokenGetter(() => getToken());
@@ -155,7 +150,7 @@ export default function LaisserAvisPage() {
   }
 
   return (
-    <div className="linkhoo-avis bg-[#FAFAFA] text-[#1B2A4A] antialiased pb-40 lg:pb-0" style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
+    <div className="linkhoo-avis min-h-screen bg-[#FAFAFA] text-[#1B2A4A] antialiased pb-40 lg:pb-0" style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
       {/* HEADER */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 h-14 lg:h-[72px] flex items-center justify-between">
