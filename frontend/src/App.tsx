@@ -176,11 +176,6 @@ function MarketContent() {
             <LaisserAvisPage />
           </RoleRouteGuard>
         } />
-        <Route path="/avis/:reservationId" element={
-          <RoleRouteGuard role="client">
-            <LaisserAvisPage />
-          </RoleRouteGuard>
-        } />
 
         <Route path="/login/gerant/*" element={<GerantLogin />} />
         <Route path="/login/*" element={<ClientLogin />} />

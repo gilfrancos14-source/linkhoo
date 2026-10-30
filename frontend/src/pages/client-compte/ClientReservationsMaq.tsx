@@ -649,7 +649,7 @@ export default function ClientReservationsMaq({
                             </button>
                           )}
                           {canReview && (
-                            <button type="button" className="btn flex-1" onClick={() => window.location.assign('/linkhoo-avis.html')}>
+                            <button type="button" className="btn flex-1" onClick={() => navigate(`${homePath}/avis/${reservation.id}`)}>
                               Laisser un avis
                             </button>
                           )}

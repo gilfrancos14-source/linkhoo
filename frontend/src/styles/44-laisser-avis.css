@@ -1,0 +1,53 @@
+/* ==========================================================================
+   PAGE « LAISSER UN AVIS » — reproduction de docs/maquettes/linkhoo-avis (1).html
+   Les utilitaires sont ceux de Tailwind (config locale du projet). Ce fichier
+   ne contient que :
+     - la suppression de la barre d'accent marché (absente de la maquette) ;
+     - un reset local des contrôles natifs, car `preflight` est désactivé
+       globalement : sans lui, <button>/<textarea> gardent les styles du
+       navigateur (bordure grise, fond gris, police système).
+   Toutes les règles utilisent `:where()` : spécificité nulle, donc chaque
+   classe utilitaire Tailwind reste prioritaire.
+   ========================================================================== */
+
+html:has(.linkhoo-avis)[data-market]::before {
+  display: none;
+}
+
+.linkhoo-avis :where(button, input, select, textarea) {
+  font: inherit;
+  color: inherit;
+}
+
+.linkhoo-avis :where(button) {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  appearance: none;
+}
+
+.linkhoo-avis :where(select) {
+  background-color: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.linkhoo-avis :where(textarea) {
+  background-color: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+}
+
+.linkhoo-avis :where(textarea):focus {
+  outline: none;
+  border-color: #ff6a13;
+  box-shadow: 0 0 0 3px rgb(255 106 19 / 0.4);
+}
+
+.linkhoo-avis :where(a) {
+  text-decoration: none;
+  color: inherit;
+}

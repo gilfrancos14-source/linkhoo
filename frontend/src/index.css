@@ -25,7 +25,15 @@
    Tailwind pour que h-6, w-10, !h-3… gardent la priorité). */
 @import "./styles/42-client-reservations.css";
 @import "./styles/43-client-messages.css";
+@import "./styles/44-laisser-avis.css";
 
 
 /* Utilitaires Tailwind (accueil marché, fiche chambre, dashboard client). */
 @import "./maquette/maquette.css";
+
+@layer utilities {
+  :where(svg.lucide) { width: 1.25rem; height: 1.25rem; }
+  .star-on { fill: #FF6A13; color: #FF6A13; }
+  .star-off { fill: #E2E8F0; color: #E2E8F0; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+}
