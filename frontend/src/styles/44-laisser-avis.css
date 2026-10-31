@@ -51,3 +51,21 @@ html:has(.linkhoo-avis)[data-market]::before {
   text-decoration: none;
   color: inherit;
 }
+
+/* Le footer éditorial de l'accueil est réutilisé hors de `.landing` : on lui
+   fournit les variables dont il dépend et on laisse la barre fixe mobile
+   au-dessus. */
+.linkhoo-avis__footer {
+  --acc-brand: #6d3fd9;
+  --acc-brand-2: #5b3fd6;
+  --acc-ink: #14122b;
+  --acc-navy: #0e1433;
+  --acc-line: #ebe9f3;
+  background: var(--acc-navy);
+}
+
+@media (max-width: 1023px) {
+  .linkhoo-avis__footer {
+    padding-bottom: 8.5rem;
+  }
+}

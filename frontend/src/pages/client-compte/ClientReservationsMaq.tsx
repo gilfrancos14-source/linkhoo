@@ -286,7 +286,7 @@ export default function ClientReservationsMaq({
       </svg>
 
       {/* ============ SIDEBAR ============ */}
-      <aside className="fixed inset-y-0 left-0 z-20 flex w-[244px] flex-col overflow-y-auto border-r border-[#e6ebf5] bg-white">
+      <aside className="fixed inset-y-0 left-0 z-20 flex w-[244px] flex-col border-r border-[#e6ebf5] bg-white">
         <div className="flex h-[70px] flex-none items-center gap-2.5 px-[36px]">
           <img className="sidebar-logo" src="/logo.jpg" alt="Logo Linkhoo" />
         </div>
@@ -412,7 +412,7 @@ export default function ClientReservationsMaq({
           </div>
         </header>
 
-        <div className="grid grid-cols-[minmax(0,1fr)_clamp(300px,25vw,388px)] max-xl:grid-cols-1">
+        <div className="grid grid-cols-[minmax(0,1fr)_clamp(300px,25vw,388px)] max-lg:grid-cols-[391fr_516fr] max-xl:grid-cols-1">
           {/* ===== Colonne centrale ===== */}
           <main className="pb-8 pl-[23px] pr-[15px]">
             <div className="flex items-start justify-between pt-3">
@@ -566,7 +566,7 @@ export default function ClientReservationsMaq({
                   const canPay = !!onPay && canPayReservation(reservation.payment_status);
                   const showSuivi = statut === 'en_cours';
                   const showPay = !showSuivi && canPay;
-                  const showCancel = !showSuivi && !showPay && reservation.statut !== 'annulee';
+                  const showCancel = !showPay && reservation.statut !== 'annulee';
                   const detailPath = reservation.room_id
                     ? `${homePath}/chambre/${reservation.room_id}`
                     : searchPath;
@@ -626,7 +626,14 @@ export default function ClientReservationsMaq({
                         <div className="mt-3 flex flex-wrap gap-2">
                           <Link to={detailPath} className="btn w-[120px]">Voir le détail</Link>
                           {showSuivi && (
-                            <Link to={`${homePath}/suivi-reservation`} className="btn o flex-1">Voir le suivi</Link>
+                            <button
+                              type="button"
+                              className="btn o flex-1"
+                              disabled={cancellingId === reservation.id}
+                              onClick={() => onCancel(reservation.id)}
+                            >
+                              {cancellingId === reservation.id ? 'Annulation…' : 'Annuler'}
+                            </button>
                           )}
                           {showPay && (
                             <button
@@ -638,7 +645,7 @@ export default function ClientReservationsMaq({
                               {payingId === reservation.id ? 'Paiement…' : 'Payer maintenant'}
                             </button>
                           )}
-                          {showCancel && (
+                          {showCancel && !showSuivi && (
                             <button
                               type="button"
                               className="btn o flex-1"
@@ -648,15 +655,16 @@ export default function ClientReservationsMaq({
                               {cancellingId === reservation.id ? 'Annulation…' : 'Annuler la réservation'}
                             </button>
                           )}
-                          {canReview && (
+                          {canReview ? (
                             <button type="button" className="btn flex-1" onClick={() => navigate(`${homePath}/avis/${reservation.id}`)}>
                               Laisser un avis
                             </button>
-                          )}
+                          ) : reviewedIds.has(reservation.id) ? (
+                            <button type="button" className="btn o flex-1" onClick={() => navigate(`${homePath}/avis/${reservation.id}`)}>
+                              Voir les avis
+                            </button>
+                          ) : null}
                         </div>
-                        {reviewedIds.has(reservation.id) && (
-                          <p className="tt">Avis publié</p>
-                        )}
                       </div>
                     </article>
                   );
@@ -680,7 +688,7 @@ export default function ClientReservationsMaq({
           </main>
 
           {/* ===== Panneau droit ===== */}
-          <aside className="space-y-4 border-l border-[#e6ebf5] bg-white/70 px-5 pb-8 pt-[19px] max-xl:border-0">
+          <aside className="space-y-4 border-l border-[#e6ebf5] bg-white/70 px-5 pb-8 pt-[19px] max-md:border-0">
             {/* Prochaines réservations */}
             <section className="card overflow-hidden pb-[14px]">
               <div className="relative flex h-[112px] items-start gap-3 bg-gradient-to-br from-[#0a1b45] to-[#2a4a7a] px-4 pt-[14px] text-white">
@@ -763,6 +771,46 @@ export default function ClientReservationsMaq({
               </div>
             </section>
 
+            {/* Actions rapides */}
+            <section className="card px-5 py-5">
+              <h2 className="flex items-center gap-3.5 text-[17px] font-bold text-[#1d3f8f]">
+                <Icon id="bulb" className="!h-[26px] !w-[26px] text-[#2f5bbf]" />Actions rapides
+              </h2>
+              <div className="mt-4">
+                {nextThree.length > 0 && (
+                  <div className="space-y-3">
+                    {nextThree.slice(0, 2).map((reservation) => {
+                      const nights = nightsOf(reservation);
+                      const total = reservation.montant ? reservation.montant * nights : null;
+                      const canPay = !!onPay && canPayReservation(reservation.payment_status);
+                      
+                      if (canPay && total !== null) {
+                        return (
+                          <div key={`quick-pay-${reservation.id}`} className="border border-[#e6ebf5] rounded-lg p-3">
+                            <div className="text-[12.5px] font-semibold text-[#1d3f8f] mb-1">
+                              {reservation.room_title}
+                            </div>
+                            <div className="text-[11px] text-[#5f86d1] mb-2">
+                              {formatShortDate(reservation.date_debut)} - {formatShortDate(reservation.date_fin)}
+                            </div>
+                            <button
+                              type="button"
+                              className="btn w-full !bg-blue-600 !text-white hover:!bg-blue-700"
+                              disabled={payingId === reservation.id}
+                              onClick={() => onPay?.(reservation)}
+                            >
+                              {payingId === reservation.id ? 'Paiement en cours...' : `Payer ${formatPrice(total)} FCFA`}
+                            </button>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                )}
+              </div>
+            </section>
+
             {/* Question */}
             <section className="card mt-5 p-[7px]">
               <div className="rounded-lg border border-orange-200/70 bg-[#fff3ec] p-3.5">
@@ -780,36 +828,6 @@ export default function ClientReservationsMaq({
                 <Link to="/contact" className="btn ml-[54px] mt-3 w-[166px] !h-[32px]">
                   Contacter le support
                 </Link>
-              </div>
-            </section>
-
-            {/* Conseils */}
-            <section className="card px-5 py-4">
-              <div className="flex items-center gap-3.5 text-[15px] font-bold text-[#1d3f8f]">
-                <Icon id="bulb" className="!h-[26px] !w-[26px] text-[#2f5bbf]" />Conseils de voyage
-                <Icon id="right" className="ml-auto !h-4 !w-4" />
-              </div>
-              <div className="mt-4 flex gap-4">
-                <div className="h-[98px] w-[100px] flex-none overflow-hidden rounded-md bg-gradient-to-b from-sky-300 to-amber-100">
-                  <img
-                    src="/images/1.jpg"
-                    alt=""
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                    onError={(event) => { event.currentTarget.style.display = 'none'; }}
-                  />
-                </div>
-                <div className="pt-2">
-                  <div className="text-[12.5px] font-bold text-[#1d3f8f]">
-                    Préparez votre séjour à {MARKET_CAPITALS[market]}
-                  </div>
-                  <p className="mt-1.5 text-[12px] leading-[1.5] text-[#5f86d1]">
-                    Découvrez nos conseils pour un séjour réussi et sans stress.
-                  </p>
-                  <Link to={homePath} className="mt-3 flex items-center gap-2 text-[11.5px] font-semibold text-[#2f5bbf]">
-                    Voir les conseils<Icon id="arrow" className="!h-3.5 !w-3.5" />
-                  </Link>
-                </div>
               </div>
             </section>
           </aside>

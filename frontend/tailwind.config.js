@@ -15,6 +15,7 @@ export default {
     './src/pages/gerant/verification/VerificationStaticSection.tsx',
     './src/pages/gerant/verification/SuiviVerificationSection.tsx',
     './src/pages/gerant/MesInformationsMaq.tsx',
+    './src/components/gerant-profile/**/*.tsx',
     './src/pages/client-compte/ClientDashboardMaq.tsx',
     './src/pages/client-compte/ClientReservationsMaq.tsx',
     './src/pages/LaisserAvisPage.tsx',

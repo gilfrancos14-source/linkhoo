@@ -134,14 +134,14 @@ describe('MesInformationsMaq', () => {
     const { container } = renderPage();
 
     expect(container.querySelector('.verif-maq')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 1, name: 'Mes informations' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Mes informations' })).toBeInTheDocument();
     expect((await screen.findAllByText('Awa Kouassi')).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('awa@ilehya.ci').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('+225 07 00 00 00').length).toBeGreaterThan(0);
-    expect(screen.getByRole('heading', { name: 'Informations personnelles' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Informations professionnelles' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Préférences & notifications' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'État de votre compte' })).toBeInTheDocument();
+    expect((await screen.findAllByText('awa@ilehya.ci')).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('+225 07 00 00 00')).length).toBeGreaterThan(0);
+    expect(await screen.findByRole('heading', { name: 'Informations personnelles' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Informations professionnelles' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Préférences & notifications' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'État de votre compte' })).toBeInTheDocument();
   });
 
   it('affiche les informations personnelles et de vérification issues de l’API', async () => {
@@ -186,7 +186,9 @@ describe('MesInformationsMaq', () => {
     const user = userEvent.setup();
     renderPage();
 
-    const marketing = screen.getByRole('switch', { name: 'Recevoir les notifications marketing' });
+    await screen.findByText('Awa Kouassi', { selector: 'h2' });
+
+    const marketing = await screen.findByRole('switch', { name: 'Recevoir les notifications marketing' });
     expect(marketing).toHaveAttribute('aria-checked', 'false');
 
     await user.click(marketing);

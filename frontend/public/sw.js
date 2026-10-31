@@ -1,280 +1,137 @@
-/* Linkhoo — service worker.
-   Objectif : la consultation publique (accueil, catégories, chambres) doit
-   fonctionner sans connexion, à partir de la dernière visite.
-   Règles d'or :
-   - Jamais de cache sur une requête portant un en-tête Authorization.
-   - Jamais de cache sur les espaces privés (admin, gérant, réservations,
-     documents de vérification à URL signée).
-   - Les naviguations passent par le réseau d'abord : un déploiement n'est
-     jamais figé pour un utilisateur en ligne.
-   - Pas de skipWaiting automatique : la nouvelle version prend le relais
-     à la fermeture des onglets, pour ne jamais supprimer les assets
-     qu'un onglet en cours a encore à charger. */
-
-'use strict';
-
-const SW_VERSION = 'v3';
-const CACHE_PREFIX = 'linkhoo-';
-const PRECACHE = `${CACHE_PREFIX}precache-${SW_VERSION}`;
-const PAGES = `${CACHE_PREFIX}pages-${SW_VERSION}`;
-const API_CACHE = `${CACHE_PREFIX}api-${SW_VERSION}`;
-const IMG_CACHE = `${CACHE_PREFIX}img-${SW_VERSION}`;
-const KEEP = [PRECACHE, PAGES, API_CACHE, IMG_CACHE];
-
-const NAV_TIMEOUT_MS = 3000;
-const IMG_CACHE_MAX = 60;
-
-/* Contenu strictement nécessaire au premier écran : le shell, les polices et
-   l'image LCP. Avant, l'installation téléchargeait ~3 Mo d'images (dont des
-   fichiers absents) en concurrence avec la navigation. Les autres images
-   passent par le cache runtime `handleImage`, à la première consultation.
-   Les assets hashés de Vite (/assets/*) sont mis en cache de la même façon —
-   leur nom de fichier change à chaque build. */
-const PRECACHE_URLS = [
+const CACHE_NAME = 'linkhoo-v1';
+const PRECACHE = [
   '/',
   '/manifest.json',
-  '/logo.jpg',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/maskable-512.png',
-  '/fonts/lato-1.woff2',
-  '/fonts/lato-2.woff2',
-  '/fonts/lato-3.woff2',
-  '/fonts/lato-4.woff2',
-  '/fonts/lato-5.woff2',
-  '/fonts/lato-6.woff2',
-  '/fonts/lato-7.woff2',
-  '/fonts/lato-8.woff2',
-  '/fonts/lato-9.woff2',
-  '/fonts/lato-10.woff2',
-  '/fonts/plus-jakarta-sans-latin.woff2',
-  '/fonts/inter-latin.woff2',
-  '/fonts/caveat-latin.woff2',
-  '/fonts/fa-solid-900.woff2',
-  '/fonts/fa-regular-400.woff2',
-  '/images/hero-city.webp',
+  '/css/41-client-dashboard.css',
+  '/css/42-client-reservations.css',
+  '/css/43-client-messages.css',
+  '/css/40-room-detail-maq7.css',
+  '/css/00-fontawesome.css',
+  '/css/01-tokens.css',
+  '/css/02-base.css',
+  '/css/03-header.css',
+  '/css/10-home-avis-footer.css',
+  '/css/11-responsive-global.css',
+  '/css/28-landing-accueil.css',
+  '/css/31-maquette.css',
 ];
-
-/* Allowlist des GET publics à conserver hors-ligne.
-   Tout le reste (recherche, disponibilité, auth, notifications, premium,
-   upload, newsletter) n'est jamais mis en cache. */
-const API_ALLOWLIST = [
-  '/api/banners',
-  '/api/categories',
-  '/api/events',
-  '/api/tourism',
-  '/api/reviews/featured',
-  '/api/rooms/popular',
-  '/api/rooms',
-];
-
-/* ---------------------------------------------------------------- helpers */
-
-function fetchWithTimeout(request, ms) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ms);
-  return fetch(request, { signal: controller.signal }).finally(() => clearTimeout(timer));
-}
-
-function isCacheableApi(url, request) {
-  if (request.method !== 'GET') return false;
-  // Requête authentifiée : on ne touche pas (données privées).
-  if (request.headers.get('Authorization')) return false;
-  if (url.origin !== self.location.origin) return false;
-  if (API_ALLOWLIST.includes(url.pathname)) return true;
-  // Fiche d'une chambre : /api/rooms/<id> (jamais les sous-routes privées).
-  if (/^\/api\/rooms\/[^/]+$/.test(url.pathname)) {
-    const last = url.pathname.split('/').pop();
-    return !['mine', 'available', 'villes', 'popular'].includes(last);
-  }
-  return false;
-}
-
-function isCacheableImage(url) {
-  // Images du seed (same-origin)…
-  if (url.origin === self.location.origin && url.pathname.startsWith('/images/')) return true;
-  // …images uploadées sur le bucket public « images » de Supabase Storage.
-  // Le pattern exclut « verification-docs » (privé, URL signée 1 h).
-  return (
-    url.hostname.endsWith('.supabase.co') &&
-    url.pathname.startsWith('/storage/v1/object/public/images/')
-  );
-}
-
-async function trimCache(name, max) {
-  const cache = await caches.open(name);
-  const keys = await cache.keys();
-  for (let i = 0; i < keys.length - max; i++) await cache.delete(keys[i]);
-}
-
-/* ------------------------------------------------------------- strategies */
-
-/* Navigations : réseau d'abord (3 s), le cache sert de repli hors-ligne.
-   La page HTML n'est donc jamais « gelée » après un déploiement. */
-async function handleNavigation(request) {
-  try {
-    const res = await fetchWithTimeout(request, NAV_TIMEOUT_MS);
-    if (res && res.ok) {
-      const cache = await caches.open(PAGES);
-      cache.put(request, res.clone());
-    }
-    return res;
-  } catch {
-    const cached =
-      (await caches.match(request, { ignoreSearch: true })) ||
-      (await caches.match('/'));
-    if (cached) return cached;
-    return new Response(
-      '<!doctype html><html lang="fr"><meta charset="utf-8"><title>Hors-ligne</title>' +
-        '<body style="font-family:sans-serif;padding:3rem;text-align:center">' +
-        '<h1>Vous êtes hors-ligne</h1><p>Cette page n\'a pas encore été visitée avec une connexion.</p>' +
-        '<p><a href="/">Retour à l\'accueil</a></p></body></html>',
-      { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
-    );
-  }
-}
-
-/* Assets hashés et fichiers statiques : cache d'abord (immutables). */
-async function handleAsset(request) {
-  const cached = await caches.match(request);
-  if (cached) return cached;
-  const res = await fetch(request);
-  if (res && res.ok) {
-    const cache = await caches.open(PRECACHE);
-    cache.put(request, res.clone());
-  }
-  return res;
-}
-
-/* Logo : cache d'abord, mais uniquement si la réponse est réellement une
-   image. Un hébergeur en mode SPA peut répondre 200 avec le shell HTML pour
-   /logo.jpg : sans cette garde, ce HTML était mis en cache et le logo
-   restait cassé jusqu'à la version suivante du SW. */
-function isImageResponse(res) {
-  return !!res && (res.headers.get('content-type') || '').startsWith('image/');
-}
-
-async function handleLogo(request) {
-  const cached = await caches.match(request);
-  if (cached && isImageResponse(cached)) return cached;
-  const res = await fetch(request);
-  if (isImageResponse(res) && res.ok) {
-    const cache = await caches.open(PRECACHE);
-    cache.put(request, res.clone());
-  }
-  return res;
-}
-
-/* API publique : stale-while-revalidate — on sert immédiatement ce qu'on a,
-   puis on revalide en arrière-plan. Hors-ligne : la dernière réponse connue. */
-async function handleApi(request) {
-  const cache = await caches.open(API_CACHE);
-  const cached = await cache.match(request);
-  const revalidate = fetch(request)
-    .then(async (res) => {
-      if (res && res.ok) await cache.put(request, res.clone());
-      return res;
-    })
-    .catch(() => undefined);
-  if (cached) {
-    void revalidate;
-    return cached;
-  }
-  const res = await revalidate;
-  if (res) return res;
-  return new Response(JSON.stringify({ error: 'offline' }), {
-    status: 503,
-    headers: { 'Content-Type': 'application/json' },
-  });
-}
-
-/* Images : cache d'abord (tous les caches : le precache du seed est
-   consulté en premier), plafonné pour ne pas déborder du quota. */
-async function handleImage(request) {
-  const cached = await caches.match(request);
-  if (cached) return cached;
-  const cache = await caches.open(IMG_CACHE);
-  const res = await fetch(request);
-  if (res && res.ok) {
-    await cache.put(request, res.clone());
-    await trimCache(IMG_CACHE, IMG_CACHE_MAX);
-  }
-  return res;
-}
-
-/* -------------------------------------------------------------- lifecycle */
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(PRECACHE).then((cache) =>
-      // Un fichier manquant ne doit pas empêcher l'installation du SW :
-      // on précharge ce qui existe, on signale le reste.
-      Promise.allSettled(
-        PRECACHE_URLS.map((url) => cache.add(new Request(url, { cache: 'reload' }))),
-      ),
-    ),
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(PRECACHE);
+    }).then(() => {
+      // Forcer le contrôle actif immédiatement
+      return self.clients.claim();
+    })
   );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    (async () => {
-      const keys = await caches.keys();
-      await Promise.all(
-        keys
-          .filter((key) => key.startsWith(CACHE_PREFIX) && !KEEP.includes(key))
-          .map((key) => caches.delete(key)),
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
       );
-      await self.clients.claim();
-    })(),
+    })
   );
-});
-
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+  // S'assurer que le SW est actif immédiatement
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  if (request.method !== 'GET') return;
-
-  const url = new URL(request.url);
-
-  if (request.mode === 'navigate') {
-    event.respondWith(handleNavigation(request));
+  // Ne pas intercepter les requêtes non-GET ou les requêtes API websocket/etc
+  if (event.request.method !== 'GET') {
     return;
   }
 
-  // Requêtes authentifiées : comportement natif, jamais interceptées.
-  if (request.headers.get('Authorization')) return;
+  const url = new URL(event.request.url);
 
-  // Images (seed same-origin + bucket public « images » de Supabase) :
-  // cache dédié, plafonné. verification-docs est exclu par isCacheableImage.
-  if (isCacheableImage(url)) {
-    event.respondWith(handleImage(request));
+  // Stratégie : réseau d'abord, fallback cache
+  // Pour les routes API et données, essayer le réseau en premier
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/messages/') || url.pathname.startsWith('/rooms/')) {
+    event.respondWith(
+      fetch(event.request).then((response) => {
+        // Mise en cache réussie : reproduire la réponse pour les prochaines fois
+        const cloned = response.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          try {
+            cache.put(event.request, cloned);
+          } catch (e) {
+            // Cache plein ou erreur — non bloquant
+          }
+        });
+        return response;
+      }).catch(() => {
+        // Hors-ligne : essayer le cache
+        return caches.match(event.request).then((cached) => {
+          if (cached) return cached;
+          // Pour la page d'accueil hors-ligne : retourner la racine
+          if (event.request.url === self.location.origin) {
+            return caches.match('/');
+          }
+          return null;
+        });
+      })
+    );
     return;
   }
 
-  // Autres origines (Clerk, tuiles, etc.) : comportement natif.
-  if (url.origin !== self.location.origin) return;
-
-  if (isCacheableApi(url, request)) {
-    event.respondWith(handleApi(request));
+  // Pour les ressources statiques (CSS, JS, images, fonts) : cache-first
+  if (url.pathname.startsWith('/css/') || url.pathname.startsWith('/icons/') || url.pathname.startsWith('/images/') || url.pathname.match(\\.(png|jpg|jpeg|svg|webp|ico|ttf|woff|woff2)$)) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          const cloned = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            try {
+              cache.put(event.request, cloned);
+            } catch (e) {}
+          });
+          return response;
+        }).catch(() => cached || offlineFallback(event.request));
+      })
+    );
     return;
   }
 
-  // Le logo a sa propre stratégie : jamais servi sans vérification du type.
-  if (url.pathname === '/logo.jpg') {
-    event.respondWith(handleLogo(request));
-    return;
-  }
-
-  if (
-    url.pathname.startsWith('/assets/') ||
-    url.pathname.startsWith('/fonts/') ||
-    url.pathname.startsWith('/icons/') ||
-    url.pathname === '/manifest.json'
-  ) {
-    event.respondWith(handleAsset(request));
-  }
+  // Pour les navigations (HTML) : réseau d'abord, fallback cache
+  event.respondWith(
+    fetch(event.request).then((response) => {
+      const cloned = response.clone();
+      caches.open(CACHE_NAME).then((cache) => {
+        try {
+          cache.put(event.request, cloned);
+        } catch (e) {}
+      });
+      return response;
+    }).catch(() => {
+      return caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        // Page offline personnalisée
+        return new Response(
+          '<!DOCTYPE html>\n<html lang="fr">\n<head>\n<meta charset="UTF-8">\n<title>Linkhoo — Hors-ligne</title>\n<link rel="manifest" href="/manifest.json">\n<style>\n  body {font-family: system-ui, sans-serif; padding: 40px; background: #f8faff; color: #0b1b3f;}\n  .container {max-width: 600px; margin: 0 auto;}\n  .offline {color: #ff5a14;}\n  a {color: #2f5bbf;}\n</style>\n</head>\n<body>\n<div class="container">\n<h1 class="offline">Hors-ligne</h1>\n<p>Vous êtes connecté en mode hors-ligne.<br/> Certaines fonctionnalités peuvent être limitées.</p>\n<p>Rechargez la page lorsque vous aurez de nouveau accès à Internet.</p>\n<div>\n<a href="/">Retour à l’accueil</a>\n</div>\n</div>\n</body>\n</html>',
+          { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+        );
+      });
+    })
+  );
 });
+
+/**
+ * Retourne une page de fallback hors-ligne pour une ressource donnée.
+ */
+function offlineFallback(request) {
+  return new Response(
+    '<!DOCTYPE html>\n<html lang="fr">\n<head>\n<meta charset="UTF-8">\n<title>Linkhoo — Hors-ligne</title>\n<link rel="manifest" href="/manifest.json">\n<style>\n  body {font-family: system-ui, sans-serif; padding: 40px; background: #f8faff; color: #0b1b3f;}\n  .container {max-width: 600px; margin: 0 auto;}\n  .offline {color: #ff5a14;}\n  a {color: #2f5bbf;}\n</style>\n</head>\n<body>\n<div class="container">\n<h1 class="offline">Hors-ligne</h1>\n<p>Vous êtes connecté en mode hors-ligne.<br/> Certaines fonctionnalités peuvent être limitées.</p>\n<p>Rechargez la page lorsque vous aurez de nouveau accès à Internet.</p>\n<div>\n<a href="/">Retour à l’accueil</a>\n</div>\n</div>\n</body>\n</html>',
+    { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+  );
+}

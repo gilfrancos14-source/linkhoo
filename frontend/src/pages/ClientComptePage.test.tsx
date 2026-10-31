@@ -460,11 +460,11 @@ describe('ClientComptePage — liste des réservations', () => {
     expect(screen.getByText('Vous avez 1 séjour(s) confirmé(s) que vous pouvez noter.')).toBeInTheDocument();
   });
 
-  it("signale un avis déjà publié pour un séjour noté", async () => {
+  it("propose de consulter l'avis déjà publié pour un séjour noté", async () => {
     await renderLoaded();
 
     const card = cardByTitle('Chambre vue');
-    expect(card).toHaveTextContent('Avis publié');
+    expect(within(card).getByRole('button', { name: 'Voir les avis' })).toBeInTheDocument();
     expect(within(card).queryByRole('button', { name: 'Laisser un avis' })).not.toBeInTheDocument();
     // Le bandeau ne compte que les séjours confirmés NON encore notés :
     // « Chambre vue » est noté, il ne reste que « Suite vue mer » → 1 (et non 2).

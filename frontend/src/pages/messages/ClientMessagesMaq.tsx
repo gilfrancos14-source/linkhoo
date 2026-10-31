@@ -574,7 +574,7 @@ export default function ClientMessagesMaq({
           </div>
         </header>
 
-        <main className="grid min-h-0 flex-1 grid-cols-[391fr_516fr_317fr] gap-x-2 pb-4 pl-[18px] pr-[22px] pt-[18px] max-xl:grid-cols-[360fr_516fr] max-lg:grid-cols-1 lg:grid-rows-[auto_minmax(0,1fr)]">
+        <main className="grid min-h-0 flex-1 grid-cols-[391fr_516fr_317fr] gap-x-2 pb-4 pl-[18px] pr-[22px] pt-[18px] max-xl:grid-cols-[360fr_516fr] max-lg:grid-cols-[391fr_516fr] max-md:grid-cols-1 lg:grid-rows-[auto_minmax(0,1fr)]">
           {/* Titre */}
           <div className="col-span-2 flex items-start gap-4 max-lg:col-span-1">
             <Icon id="msg" className="mt-1 !h-[34px] !w-[34px] flex-none text-[#1d3f8f]" />
@@ -587,7 +587,7 @@ export default function ClientMessagesMaq({
           </div>
 
           {/* ===== Panneau droit (démarre en haut) ===== */}
-          <aside className="row-span-2 ml-[9px] min-h-0 space-y-[14px] overflow-y-auto max-xl:hidden">
+          <aside className="row-span-2 ml-[9px] min-h-0 space-y-[14px] overflow-y-auto max-md:hidden">
             <section className="card p-4">
               <h2 className="flex items-center gap-3 text-[13.5px] font-bold text-[#1d3f8f]">
                 <Icon id="msg" className="!h-5 !w-5" />Détails de la chambre
@@ -647,6 +647,11 @@ export default function ClientMessagesMaq({
                 <button type="button" className="qa w-full" onClick={() => void handleShare()}>
                   <span><Icon id="share" /></span>Partager la conversation
                 </button>
+                {roomPriceValue && (
+                  <button type="button" className="qa w-full bg-[#1a6cf0] text-white">
+                    <span><Icon id="ext" /></span>Payer {roomPriceValue} FCFA
+                  </button>
+                )}
                 <Link to="/contact" className="qa">
                   <span><Icon id="alert" /></span>Signaler un problème
                 </Link>

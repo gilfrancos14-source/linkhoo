@@ -347,7 +347,7 @@ export default function ClientDashboardMaq({
 
         {/* ============ SIDEBAR ============ */}
         <aside
-          className={`${mobileOpen ? 'flex' : 'hidden'} fixed inset-y-0 left-0 z-40 w-[237px] shrink-0 flex-col overflow-y-auto border-r border-slate-200 bg-white px-4 py-5 lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:flex`}
+          className={`${mobileOpen ? 'flex' : 'hidden'} fixed inset-y-0 left-0 z-40 w-[237px] shrink-0 flex-col border-r border-slate-200 bg-white px-4 py-5 lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:flex`}
         >
           <button
             type="button"
