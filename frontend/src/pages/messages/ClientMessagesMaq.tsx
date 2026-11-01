@@ -579,8 +579,8 @@ export default function ClientMessagesMaq({
           <div className="col-span-2 flex items-start gap-4 max-lg:col-span-1">
             <Icon id="msg" className="mt-1 !h-[34px] !w-[34px] flex-none text-[#1d3f8f]" />
             <div>
-              <h1 className="text-[26px] font-extrabold leading-tight tracking-tight text-[#1d3f8f]">Mes messages</h1>
-              <p className="mt-0.5 text-[13px] text-[#2f5bbf]">
+              <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-[#1d3f8f]">Mes messages</h1>
+              <p className="mt-1 text-sm text-slate-500">
                 Retrouvez tous vos échanges avec les propriétaires et l’équipe Linkhoo.
               </p>
             </div>
@@ -647,11 +647,7 @@ export default function ClientMessagesMaq({
                 <button type="button" className="qa w-full" onClick={() => void handleShare()}>
                   <span><Icon id="share" /></span>Partager la conversation
                 </button>
-                {roomPriceValue && (
-                  <button type="button" className="qa w-full bg-[#1a6cf0] text-white">
-                    <span><Icon id="ext" /></span>Payer {roomPriceValue} FCFA
-                  </button>
-                )}
+                
                 <Link to="/contact" className="qa">
                   <span><Icon id="alert" /></span>Signaler un problème
                 </Link>

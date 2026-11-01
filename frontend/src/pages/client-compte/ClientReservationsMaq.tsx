@@ -157,6 +157,7 @@ export default function ClientReservationsMaq({
   onChangeReview,
   onCloseReview,
   onSubmitReview,
+  onOpenReviewForm,
   onPay,
 }: ClientReservationsMaqProps) {
   const { market } = useMarket();
@@ -421,9 +422,9 @@ export default function ClientReservationsMaq({
                   <span className="grid h-[36px] w-[36px] place-items-center rounded-lg border-2 border-[#1d3f8f] text-[#1d3f8f]">
                     <Icon id="cal" className="!h-5 !w-5" />
                   </span>
-                  <h1 className="text-[28px] font-extrabold tracking-tight text-[#1d3f8f]">Mes réservations</h1>
+                  <h1 className="text-3xl font-extrabold tracking-tight text-[#1d3f8f]">Mes réservations</h1>
                 </div>
-                <p className="mt-0.5 text-[15px] text-[#2f5bbf]">
+                <p className="mt-1 text-sm text-slate-500">
                   Retrouvez toutes vos réservations et gérez vos séjours en toute simplicité.
                 </p>
               </div>
@@ -656,7 +657,7 @@ export default function ClientReservationsMaq({
                             </button>
                           )}
                           {canReview ? (
-                            <button type="button" className="btn flex-1" onClick={() => navigate(`${homePath}/avis/${reservation.id}`)}>
+                            <button type="button" className="btn flex-1" onClick={() => onOpenReviewForm(reservation)}>
                               Laisser un avis
                             </button>
                           ) : reviewedIds.has(reservation.id) ? (

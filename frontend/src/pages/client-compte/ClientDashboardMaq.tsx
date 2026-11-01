@@ -523,10 +523,10 @@ export default function ClientDashboardMaq({
                   <span className="inline-block rounded-full bg-white px-3 py-1 text-xs font-medium text-navy">
                     Bienvenue sur Linkhoo !
                   </span>
-                  <h1 className="mt-3 text-3xl font-bold leading-tight">
+                  <h1 className="text-3xl font-extrabold leading-tight">
                     Votre prochain séjour<br />commence ici
                   </h1>
-                  <p className="mt-3 max-w-md text-sm font-medium leading-snug">
+                  <p className="mt-1 text-sm text-slate-500">
                     Découvrez des chambres confortables, sécurisées et au meilleur prix partout en Afrique.
                   </p>
                 </div>
@@ -786,7 +786,9 @@ export default function ClientDashboardMaq({
               {/* Récemment consultées */}
               <section className="card p-4">
                 <div className="mb-3 flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-navy">Chambres récemment consultées</h2>
+                  <h2 className="flex items-center gap-3 text-base font-semibold text-navy">
+                    <Icon id="cal" className="text-blue-700" />Chambres récemment consultées
+                  </h2>
                   <Link to={searchPath} className="link">
                     Voir toutes les chambres<Icon id="arrow" className="!h-3.5 !w-3.5" />
                   </Link>

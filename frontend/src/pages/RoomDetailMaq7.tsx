@@ -759,7 +759,7 @@ export default function RoomDetailMaq7() {
               </div>
             </div>
 
-            <h1 className="mt-2 text-2xl font-extrabold leading-tight lg:text-[28px]">
+            <h1 className="mt-2 text-3xl font-extrabold leading-tight lg:text-3xl">
               {room.title}
             </h1>
 

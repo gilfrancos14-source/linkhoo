@@ -400,7 +400,7 @@ export default function SuiviVerificationSection({ gerantPath }: SuiviVerificati
           <Link to={verificationPath} className="ml-[5px] mt-[15px] inline-flex h-5 items-center gap-[10px] text-[12.5px] font-bold">
             <svg className="ic h-[13px] w-[13px] stroke-[2.4]"><use href="#i-arrow-left" /></svg>Retour
           </Link>
-          <h1 className="mt-[5px] text-[30px] font-extrabold leading-[34px] tracking-[-0.01em] text-[#0D2150]">Suivi de votre vérification</h1>
+          <h1 className="mt-[5px] text-3xl font-extrabold leading-[34px] tracking-[-0.01em] text-[#0D2150]">Suivi de votre vérification</h1>
           <p className="text-[16px] leading-[22px] text-[#5F7396]">Suivez en temps réel l&apos;avancement de votre dossier de vérification.</p>
 
           {loading && !status ? (

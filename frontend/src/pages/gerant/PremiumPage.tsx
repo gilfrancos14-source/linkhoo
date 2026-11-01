@@ -5,7 +5,7 @@ import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
-import { apiPremium } from '../../lib/api';
+import { apiPremium, type PremiumPlanId } from '../../lib/api';
 import { isPremiumActive } from '../../lib/premium';
 import '../../styles/26-premium.css';
 const ICONS: Record<string, ReactNode> = {
@@ -266,12 +266,12 @@ export default function PremiumPage() {
 
   const isActive = isPremiumActive(chrome.gerant);
 
-  const handlePremium = async () => {
+  const handlePremium = async (plan: PremiumPlanId) => {
     if (!userId || !chrome.gerant) return;
     setProcessing(true);
     setError('');
     try {
-      const { payment_url, checkout_url } = await apiPremium.initiate(market);
+      const { payment_url, checkout_url } = await apiPremium.initiate(market, plan);
       // Hub2 fournit `checkout_url` ; FedaPay `payment_url`. Le fallback garde
       // le rollback fonctionnel sans changement de front.
       const redirectUrl = checkout_url ?? payment_url;
@@ -453,10 +453,10 @@ export default function PremiumPage() {
               <Icon name="arrow-left" className="h-4 w-4" />
               Retour à mon profil
             </Link>
-            <h1 className="mt-3 text-[30px] font-extrabold leading-tight tracking-tight">
+            <h1 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight">
               Abonnez-vous au <span className="text-[#ff5a14]">Premium</span>
             </h1>
-            <p className="text-[17.5px] font-medium text-[#2f5bbf]">
+            <p className="mt-1 text-sm text-slate-500">
               Boostez la visibilité de vos chambres et attirez plus de voyageurs
             </p>
             <p className="mt-5 max-w-[540px] text-[13.5px] leading-[1.5] text-[#5f86d1]">
@@ -551,7 +551,7 @@ export default function PremiumPage() {
                   <span>FCFA / mois</span>
                 </div>
                 <div className="old"></div>
-                <button type="button" className="cta" onClick={handlePremium} disabled={processing}>
+                <button type="button" className="cta" onClick={() => handlePremium('monthly')} disabled={processing}>
                   Choisir cette formule
                 </button>
                 <Perks />
@@ -580,7 +580,7 @@ export default function PremiumPage() {
                 <button
                   type="button"
                   className="cta !border-0 !bg-gradient-to-b !from-[#ff6a22] !to-[#ff5210] !text-white shadow-[0_4px_10px_rgba(255,90,20,.35)]"
-                  onClick={handlePremium}
+                  onClick={() => handlePremium('quarterly')}
                   disabled={processing}
                 >
                   Choisir cette formule
@@ -605,7 +605,7 @@ export default function PremiumPage() {
                   <s>180 000 FCFA</s>
                   <em>-17%</em>
                 </div>
-                <button type="button" className="cta" onClick={handlePremium} disabled={processing}>
+                <button type="button" className="cta" onClick={() => handlePremium('yearly')} disabled={processing}>
                   Choisir cette formule
                 </button>
                 <Perks extra="1 mois offert" />

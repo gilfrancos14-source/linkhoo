@@ -87,40 +87,54 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const [reservationsError, setReservationsError] = useState('');
 
+  // On utilise les données du hook pour éviter les requêtes en double
+  const hookData = useGerantChrome();
+
   useEffect(() => {
     let alive = true;
-    Promise.allSettled([fetchMyRooms(), getReservations()])
-      .then(([roomsResult, reservationsResult]) => {
-        if (!alive) return;
+    setLoading(true);
+    setError('');
+    setReservationsError('');
 
-        if (roomsResult.status === 'fulfilled') {
-          setRooms(roomsResult.value);
-        } else {
-          setError('Impossible de charger vos chambres.');
-        }
+    // On ne charge les données que si le hook n'a pas déjà chargé les réservations
+    if (hookData.reservationsCount === 0 && !hookData.error) {
+      Promise.allSettled([fetchMyRooms(), getReservations()])
+        .then(([roomsResult, reservationsResult]) => {
+          if (!alive) return;
 
-        if (reservationsResult.status === 'fulfilled') {
-          setReservations(
-            [...reservationsResult.value].sort(
-              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-            ),
-          );
-        } else {
-          const status = (reservationsResult.reason as { status?: number } | null)?.status;
-          setReservationsError(
-            status === 403
-              ? 'Les réservations sont visibles uniquement pour les gérants vérifiés.'
-              : 'Impossible de charger les demandes de réservation.',
-          );
-        }
-      })
-      .finally(() => {
-        if (alive) setLoading(false);
-      });
+          if (roomsResult.status === 'fulfilled') {
+            setRooms(roomsResult.value);
+          } else {
+            setError('Impossible de charger vos chambres.');
+          }
+
+          if (reservationsResult.status === 'fulfilled') {
+            setReservations(
+              [...reservationsResult.value].sort(
+                (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+              ),
+            );
+          } else {
+            const status = (reservationsResult.reason as { status?: number } | null)?.status;
+            setReservationsError(
+              status === 403
+                ? 'Les réservations sont visibles uniquement pour les gérants vérifiés.'
+                : 'Impossible de charger les demandes de réservation.',
+            );
+          }
+        })
+        .finally(() => {
+          if (alive) setLoading(false);
+        });
+    } else {
+      // Si le hook a déjà chargé les données, on ne fait rien
+      setLoading(false);
+    }
+    
     return () => {
       alive = false;
     };
-  }, []);
+  }, [hookData.reservationsCount, hookData.error]);
 
   const market = chrome.gerant?.market;
   useEffect(() => {
