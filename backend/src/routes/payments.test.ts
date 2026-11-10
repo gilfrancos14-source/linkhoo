@@ -30,7 +30,7 @@ const PAYMENT = {
   amount: 5_000,
   currency: 'XOF',
   amount_xof: 5_000,
-  checkout_url: 'https://pay.hub2.io/link_1',
+  checkout_url: 'https://checkout.pawapay.io/pay-1',
   expires_at: '2026-10-27T11:00:00.000Z',
   paid_at: '2026-10-27T10:05:00.000Z',
   fulfilled_at: '2026-10-27T10:05:00.000Z',
@@ -96,7 +96,7 @@ describe('GET /api/payments/:reference', () => {
       amount: 5_000,
       currency: 'XOF',
       amount_xof: 5_000,
-      checkout_url: 'https://pay.hub2.io/link_1',
+      checkout_url: 'https://checkout.pawapay.io/pay-1',
     });
     expect(res.body).not.toHaveProperty('provider_payment_id');
     expect(res.body).not.toHaveProperty('payer_clerk_user_id');

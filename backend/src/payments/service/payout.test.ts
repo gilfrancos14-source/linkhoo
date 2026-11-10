@@ -1,18 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { supabaseAdmin } from '../../config/supabase';
 import { fakeChain, useSupabaseTables } from '../../testHelpers/supertestApp';
-import { Hub2Error } from '../hub2/client';
-import { createTransfer } from '../hub2/transfers';
+import { PawapayApiError } from '../pawapay/client';
+import { createPayout } from '../pawapay/payouts';
 import {
-  applyTransferEvent,
-  buildTransferDestination,
+  buildPawapayDestination,
+  computeGerantBalance,
   computePayoutAmounts,
-  hasVerifiedPayoutDestination,
+  hasValidPawapayDestination,
   missingPayoutFields,
   newPayoutReference,
   payoutDueAt,
-  processScheduledPayouts,
-  scheduleDuePayouts,
+  processScheduledPayoutsPawapay,
+  requestWithdrawal,
+  scheduleDuePayoutsPawapay,
   type PayoutRow,
   type PayoutSettings,
 } from './payout';
@@ -22,21 +23,19 @@ vi.mock('../../config/supabase', async () => {
   return helper.createSupabaseMock();
 });
 
-vi.mock('../hub2/transfers', () => ({
-  createTransfer: vi.fn(),
-  getTransfer: vi.fn(),
-  findTransferByReference: vi.fn(),
+vi.mock('../pawapay/payouts', () => ({
+  createPayout: vi.fn(),
+  getPayout: vi.fn(),
 }));
 
-const HUB2_ENV: Record<string, string> = {
-  PAYMENTS_PROVIDER: 'hub2',
-  HUB2_API_KEY: 'sk_test_123',
-  HUB2_MERCHANT_ID: 'merchant_123',
-  HUB2_ENV: 'sandbox',
+const PAWAPAY_ENV: Record<string, string> = {
+  PAWAPAY_API_KEY: 'pawapay_api_key_test',
+  PAWAPAY_MERCHANT_ID: 'pawapay_merchant_test',
+  PAWAPAY_ENV: 'sandbox',
 };
 
 function setEnv(overrides: Record<string, string | undefined> = {}): void {
-  for (const [key, value] of Object.entries({ ...HUB2_ENV, ...overrides })) {
+  for (const [key, value] of Object.entries({ ...PAWAPAY_ENV, ...overrides })) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
   }
@@ -47,7 +46,7 @@ const SETTINGS: PayoutSettings = {
   market: 'CI',
   payout_method: 'mobile_money',
   payout_phone: '+2250700000000',
-  payout_provider: 'orange',
+  payout_provider: 'ORANGE_CIV',
   payout_bank_code: null,
   payout_bank_name: null,
   payout_account_number: null,
@@ -70,7 +69,7 @@ function payoutRow(overrides: Partial<PayoutRow> = {}): PayoutRow {
     provider_transfer_id: 'tr_1',
     destination_type: 'mobile_money',
     destination_phone: '+2250700000000',
-    destination_provider: 'orange',
+    destination_provider: 'ORANGE_CIV',
     destination_bank_code: null,
     destination_bank_name: null,
     destination_account_number: null,
@@ -80,6 +79,8 @@ function payoutRow(overrides: Partial<PayoutRow> = {}): PayoutRow {
     paid_at: null,
     failure_code: null,
     failure_message: null,
+    kind: 'reservation',
+    requested_at: null,
     created_at: '2026-10-20T00:00:00.000Z',
     updated_at: '2026-10-20T00:00:00.000Z',
     ...overrides,
@@ -92,19 +93,20 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  for (const key of Object.keys(HUB2_ENV)) delete process.env[key];
+  for (const key of Object.keys(PAWAPAY_ENV)) delete process.env[key];
 });
 
-describe('missingPayoutFields / buildTransferDestination', () => {
+describe('missingPayoutFields / buildPawapayDestination', () => {
   it('accepte une destination mobile money complète', () => {
     expect(missingPayoutFields(SETTINGS)).toEqual([]);
-    expect(buildTransferDestination(SETTINGS)).toEqual({
-      type: 'mobile_money',
-      country: 'CI',
-      msisdn: '+2250700000000',
-      provider: 'orange',
-      recipientName: 'Awa Koné',
+    expect(buildPawapayDestination(SETTINGS)).toEqual({
+      type: 'MMO',
+      accountDetails: {
+        phoneNumber: '+2250700000000',
+        provider: 'ORANGE_CIV',
+      },
     });
+    expect(hasValidPawapayDestination(SETTINGS)).toBe(true);
   });
 
   it('signale les champs manquants d’un virement', () => {
@@ -116,32 +118,17 @@ describe('missingPayoutFields / buildTransferDestination', () => {
     expect(missing).toEqual(
       expect.arrayContaining(['account_number', 'bank_code', 'bank_name']),
     );
-    expect(buildTransferDestination({ ...SETTINGS, payout_method: 'bank_transfer' })).toBeNull();
+    expect(buildPawapayDestination({ ...SETTINGS, payout_method: 'bank_transfer' })).toBeNull();
   });
 
-  it('construit un virement complet', () => {
-    const destination = buildTransferDestination({
-      ...SETTINGS,
-      payout_method: 'bank_transfer',
-      payout_bank_code: 'CI001',
-      payout_bank_name: 'Ecobank',
-      payout_account_number: '123456789',
-    });
-
-    expect(destination).toMatchObject({
-      type: 'bank_transfer',
-      country: 'CI',
-      accountNumber: '123456789',
-      accountOwner: 'Awa Koné',
-      bankCode: 'CI001',
-      bankName: 'Ecobank',
-      beneficiaryPhone: '+2250700000000',
-    });
+  it('refuse un opérateur inconnu du marché pawaPay', () => {
+    expect(hasValidPawapayDestination({ ...SETTINGS, payout_provider: 'orange' })).toBe(false);
+    expect(buildPawapayDestination({ ...SETTINGS, payout_provider: 'orange' })).toBeNull();
   });
 
-  it('exige une vérification explicite', () => {
-    expect(hasVerifiedPayoutDestination(SETTINGS)).toBe(true);
-    expect(hasVerifiedPayoutDestination({ ...SETTINGS, payout_verified_at: null })).toBe(false);
+  it('refuse un numéro que pawaPay ne peut pas normaliser', () => {
+    expect(hasValidPawapayDestination({ ...SETTINGS, payout_phone: null })).toBe(false);
+    expect(hasValidPawapayDestination({ ...SETTINGS, payout_phone: 'abc' })).toBe(false);
   });
 });
 
@@ -182,19 +169,20 @@ describe('newPayoutReference', () => {
   });
 });
 
-describe('scheduleDuePayouts', () => {
+describe('scheduleDuePayoutsPawapay', () => {
   const NOW = new Date('2026-10-28T12:00:00.000Z');
 
-  it('ne fait rien quand le prestataire actif est FedaPay', async () => {
-    setEnv({ PAYMENTS_PROVIDER: 'fedapay' });
+  it('ne fait rien quand aucune réservation n’est due', async () => {
+    useSupabaseTables(supabaseAdmin.from, {
+      reservations: fakeChain({ data: [], error: null }),
+    });
 
-    const result = await scheduleDuePayouts(NOW);
+    const result = await scheduleDuePayoutsPawapay(NOW);
 
-    expect(result.skipped).toBe(true);
-    expect(supabaseAdmin.from).not.toHaveBeenCalled();
+    expect(result).toEqual({ skipped: false, checked: 0, created: 0, blocked: 0 });
   });
 
-  it('crée un payout dû et notifie quand la destination est vérifiée', async () => {
+  it('crée un payout dû et notifie quand la destination est valide', async () => {
     const insert = fakeChain({ data: null, error: null });
     useSupabaseTables(supabaseAdmin.from, {
       reservations: fakeChain({
@@ -203,6 +191,7 @@ describe('scheduleDuePayouts', () => {
             id: 'resa-1',
             room_id: 'room-1',
             date_debut: '2026-10-20',
+            date_fin: '2026-10-24',
             payment_id: 'pay-1',
             refunded_amount: 0,
           },
@@ -231,7 +220,7 @@ describe('scheduleDuePayouts', () => {
       notifications: fakeChain({ data: null, error: null }),
     });
 
-    const result = await scheduleDuePayouts(NOW);
+    const result = await scheduleDuePayoutsPawapay(NOW);
 
     expect(result).toMatchObject({ checked: 1, created: 1, blocked: 0, skipped: false });
     expect(insert.insert).toHaveBeenCalledWith(
@@ -246,7 +235,7 @@ describe('scheduleDuePayouts', () => {
     );
   });
 
-  it('bloque le payout et notifie quand les coordonnées ne sont pas vérifiées', async () => {
+  it('bloque le payout et notifie quand les coordonnées ne sont pas valides', async () => {
     const insert = fakeChain({ data: null, error: null });
     useSupabaseTables(supabaseAdmin.from, {
       reservations: fakeChain({
@@ -255,6 +244,7 @@ describe('scheduleDuePayouts', () => {
             id: 'resa-1',
             room_id: 'room-1',
             date_debut: '2026-10-20',
+            date_fin: '2026-10-24',
             payment_id: 'pay-1',
             refunded_amount: 0,
           },
@@ -275,7 +265,7 @@ describe('scheduleDuePayouts', () => {
         error: null,
       }),
       payment_payouts: [fakeChain({ data: [], error: null }), insert],
-      gerants: fakeChain({ data: [{ ...SETTINGS, payout_verified_at: null }], error: null }),
+      gerants: fakeChain({ data: [{ ...SETTINGS, payout_phone: null }], error: null }),
       payment_policies: fakeChain({
         data: { market: 'CI', commission_percent: 0, payout_delay_hours: 24 },
         error: null,
@@ -283,7 +273,7 @@ describe('scheduleDuePayouts', () => {
       notifications: fakeChain({ data: null, error: null }),
     });
 
-    const result = await scheduleDuePayouts(NOW);
+    const result = await scheduleDuePayoutsPawapay(NOW);
 
     expect(result).toMatchObject({ checked: 1, created: 1, blocked: 1 });
     expect(insert.insert).toHaveBeenCalledWith(
@@ -300,6 +290,7 @@ describe('scheduleDuePayouts', () => {
             id: 'resa-1',
             room_id: 'room-1',
             date_debut: '2026-10-28',
+            date_fin: '2026-10-30',
             payment_id: 'pay-1',
             refunded_amount: 0,
           },
@@ -327,135 +318,350 @@ describe('scheduleDuePayouts', () => {
       }),
     });
 
-    const result = await scheduleDuePayouts(NOW);
+    const result = await scheduleDuePayoutsPawapay(NOW);
 
     expect(result).toMatchObject({ checked: 1, created: 0 });
     expect(insert.insert).not.toHaveBeenCalled();
   });
 });
 
-describe('processScheduledPayouts', () => {
+describe('processScheduledPayoutsPawapay', () => {
   const NOW = new Date('2026-10-28T12:00:00.000Z');
 
   it('envoie le transfert et marque le payout payé', async () => {
     const claim = fakeChain({ data: { id: 'payout-1' }, error: null });
-    const paidUpdate = fakeChain({ data: null, error: null });
+    const paidUpdate = fakeChain({ data: { id: 'payout-1' }, error: null });
     useSupabaseTables(supabaseAdmin.from, {
-      payment_payouts: [fakeChain({ data: [payoutRow({ status: 'scheduled' })], error: null }), claim, paidUpdate],
+      payment_payouts: [
+        fakeChain({ data: [payoutRow({ status: 'scheduled' })], error: null }),
+        claim,
+        paidUpdate,
+      ],
       gerants: fakeChain({ data: [SETTINGS], error: null }),
       notifications: fakeChain({ data: null, error: null }),
     });
-    vi.mocked(createTransfer).mockResolvedValue({
-      id: 'tr_1',
-      reference: 'OUT-ABC-123',
-      status: 'paid',
-      providerStatus: 'successful',
-      amount: 150_000,
+    vi.mocked(createPayout).mockResolvedValue({
+      payoutId: 'tr_pawa_1',
+      amount: '150000',
       currency: 'XOF',
-      failureCode: null,
-      failureMessage: null,
+      status: 'COMPLETED',
+      created: '2026-10-28T12:00:00.000Z',
     });
 
-    const result = await processScheduledPayouts(NOW);
+    const result = await processScheduledPayoutsPawapay(NOW);
 
-    expect(createTransfer).toHaveBeenCalledWith(
-      expect.objectContaining({ apiKey: 'sk_test_123' }),
+    expect(createPayout).toHaveBeenCalledWith(
       expect.objectContaining({
-        reference: 'OUT-ABC-123',
         amount: 150_000,
         currency: 'XOF',
-        destination: expect.objectContaining({ type: 'mobile_money', provider: 'orange' }),
+        phoneNumber: expect.any(String),
+        provider: 'ORANGE_CIV',
+        paymentPayoutId: 'payout-1',
       }),
     );
     expect(paidUpdate.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'paid', provider_transfer_id: 'tr_1' }),
+      expect.objectContaining({ status: 'paid', provider_transfer_id: 'tr_pawa_1' }),
     );
     expect(result).toMatchObject({ checked: 1, sent: 1, paid: 1, failed: 0 });
   });
 
-  it('marque le payout en échec sur un refus définitif de Hub2', async () => {
+  it('marque le payout en échec sur un refus définitif de pawaPay', async () => {
     const claim = fakeChain({ data: { id: 'payout-1' }, error: null });
-    const failedUpdate = fakeChain({ data: null, error: null });
+    const failedUpdate = fakeChain({ data: { id: 'payout-1' }, error: null });
     useSupabaseTables(supabaseAdmin.from, {
-      payment_payouts: [fakeChain({ data: [payoutRow({ status: 'scheduled' })], error: null }), claim, failedUpdate],
+      payment_payouts: [
+        fakeChain({ data: [payoutRow({ status: 'scheduled' })], error: null }),
+        claim,
+        failedUpdate,
+      ],
       gerants: fakeChain({ data: [SETTINGS], error: null }),
       notifications: fakeChain({ data: null, error: null }),
     });
-    vi.mocked(createTransfer).mockRejectedValue(
-      new Hub2Error('Numéro invalide', { status: 400, code: 'invalid_msisdn' }),
+    vi.mocked(createPayout).mockRejectedValue(
+      new PawapayApiError('Numéro invalide', 400),
     );
 
-    const result = await processScheduledPayouts(NOW);
+    const result = await processScheduledPayoutsPawapay(NOW);
 
     expect(failedUpdate.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'failed', failure_code: 'invalid_msisdn' }),
+      expect.objectContaining({ status: 'failed', failure_code: 'pawapay_refused' }),
     );
     expect(result).toMatchObject({ checked: 1, failed: 1 });
   });
 
-  it('laisse le payout en attente quand les coordonnées ne sont pas vérifiées', async () => {
+  it('laisse le payout en attente quand les coordonnées ne sont pas valides', async () => {
+    const deferredUpdate = fakeChain({ data: null, error: null });
     useSupabaseTables(supabaseAdmin.from, {
       payment_payouts: [
         fakeChain({ data: [payoutRow({ status: 'scheduled' })], error: null }),
-        fakeChain({ data: null, error: null }),
+        deferredUpdate,
       ],
-      gerants: fakeChain({ data: [{ ...SETTINGS, payout_verified_at: null }], error: null }),
+      gerants: fakeChain({ data: [{ ...SETTINGS, payout_phone: null }], error: null }),
     });
 
-    const result = await processScheduledPayouts(NOW);
+    const result = await processScheduledPayoutsPawapay(NOW);
 
-    expect(createTransfer).not.toHaveBeenCalled();
+    expect(createPayout).not.toHaveBeenCalled();
+    expect(deferredUpdate.update).toHaveBeenCalledWith(
+      expect.objectContaining({ failure_code: 'payout_details_missing' }),
+    );
     expect(result).toMatchObject({ checked: 1, deferred: 1, sent: 0 });
   });
 });
 
-describe('applyTransferEvent', () => {
-  const EVENT = {
-    id: 'evt-1',
-    type: 'transfer.succeeded',
-    data: { id: 'tr_1', status: 'successful' },
-    createdAt: null,
-    payload: {},
-    raw: '{}',
+// ============================================================
+// Portefeuille gérant : solde et demandes de retrait
+// ============================================================
+
+const PAWAPAY_SETTINGS: PayoutSettings = {
+  ...SETTINGS,
+  payout_provider: 'ORANGE_CIV',
+};
+
+function completedReservation() {
+  return {
+    id: 'resa-1',
+    room_id: 'room-1',
+    date_fin: '2026-10-01',
+    payment_id: 'pay-1',
+    refunded_amount: 0,
   };
+}
 
-  it('passe le payout à payé', async () => {
-    const update = fakeChain({ data: null, error: null });
-    useSupabaseTables(supabaseAdmin.from, {
-      payment_payouts: [fakeChain({ data: payoutRow(), error: null }), update],
-      notifications: fakeChain({ data: null, error: null }),
-    });
+function succeededPayment() {
+  return { id: 'pay-1', status: 'succeeded', amount: 90_000, currency: 'XOF' };
+}
 
-    const result = await applyTransferEvent(EVENT, 'transfer_succeeded', 'tr_1');
+/** Chaînes `gerants` successives : `getPayoutSettings` est appelé à chaque calcul. */
+function settingsStubs(settings: PayoutSettings, count: number) {
+  return Array.from({ length: count }, () => fakeChain({ data: settings, error: null }));
+}
 
-    expect(result.handled).toBe(true);
-    expect(update.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'paid', provider_transfer_id: 'tr_1' }),
+interface WalletStubsInput {
+  settings?: PayoutSettings | null;
+  rooms?: Array<{ id: string; market: string }>;
+  reservations?: Array<Record<string, unknown>>;
+  payments?: Array<Record<string, unknown>>;
+  commissionPercent?: number;
+  payouts?: Array<Record<string, unknown>>;
+}
+
+/**
+ * Tables lues par `computeGerantBalance` : une chaîne par requête, dans l'ordre
+ * du code. `gerants` et `payment_payouts` sont souvent surchargés par le test
+ * (appels successifs).
+ */
+function walletStubs(input: WalletStubsInput) {
+  return {
+    gerants: fakeChain({ data: input.settings ?? null, error: null }),
+    rooms: fakeChain({ data: input.rooms ?? [], error: null }),
+    reservations: fakeChain({ data: input.reservations ?? [], error: null }),
+    payments: fakeChain({ data: input.payments ?? [], error: null }),
+    payment_policies: fakeChain({
+      data: {
+        market: 'CI',
+        online_payment_enabled: true,
+        deposit_percent: 100,
+        commission_percent: input.commissionPercent ?? 0,
+        payout_delay_hours: 24,
+      },
+      error: null,
+    }),
+    payment_payouts: fakeChain({ data: input.payouts ?? [], error: null }),
+  };
+}
+
+describe('computeGerantBalance', () => {
+  it('crédite le net des séjours terminés et déduit les versements', async () => {
+    useSupabaseTables(
+      supabaseAdmin.from,
+      walletStubs({
+        settings: PAWAPAY_SETTINGS,
+        rooms: [{ id: 'room-1', market: 'CI' }],
+        reservations: [
+          {
+            id: 'resa-1',
+            room_id: 'room-1',
+            date_fin: '2026-10-01',
+            payment_id: 'pay-1',
+            refunded_amount: 5_000,
+          },
+        ],
+        payments: [{ id: 'pay-1', status: 'succeeded', amount: 100_000, currency: 'XOF' }],
+        commissionPercent: 10,
+        payouts: [
+          {
+            net_amount: 50_000,
+            currency: 'XOF',
+            status: 'paid',
+            paid_at: '2026-10-10T00:00:00.000Z',
+          },
+          { net_amount: 10_000, currency: 'XOF', status: 'scheduled', paid_at: null },
+        ],
+      }),
     );
+
+    const balance = await computeGerantBalance('user_gerant_1');
+
+    // Net = 100 000 − 10 % de commission (10 000) − 5 000 remboursés.
+    expect(balance).toEqual({
+      currency: 'XOF',
+      earned: 85_000,
+      available: 25_000,
+      pending: 10_000,
+      paid: 50_000,
+      last_payout_at: '2026-10-10T00:00:00.000Z',
+    });
   });
 
-  it('ne rétrograde jamais un payout déjà payé', async () => {
-    const update = fakeChain({ data: null, error: null });
+  it('ignore une réservation dont le paiement n’est pas encaissé', async () => {
+    useSupabaseTables(
+      supabaseAdmin.from,
+      walletStubs({
+        settings: PAWAPAY_SETTINGS,
+        rooms: [{ id: 'room-1', market: 'CI' }],
+        reservations: [completedReservation()],
+        payments: [],
+        payouts: [],
+      }),
+    );
+
+    const balance = await computeGerantBalance('user_gerant_1');
+
+    expect(balance).toMatchObject({ earned: 0, available: 0, pending: 0, paid: 0 });
+  });
+
+  it('ne rend jamais le solde disponible négatif', async () => {
+    useSupabaseTables(
+      supabaseAdmin.from,
+      walletStubs({
+        settings: PAWAPAY_SETTINGS,
+        rooms: [{ id: 'room-1', market: 'CI' }],
+        reservations: [completedReservation()],
+        payments: [succeededPayment()],
+        payouts: [
+          { net_amount: 100_000, currency: 'XOF', status: 'paid', paid_at: '2026-10-10T00:00:00.000Z' },
+        ],
+      }),
+    );
+
+    const balance = await computeGerantBalance('user_gerant_1');
+
+    expect(balance.available).toBe(0);
+    expect(balance.paid).toBe(100_000);
+  });
+});
+
+describe('requestWithdrawal', () => {
+  it('refuse une destination incomplète pour pawaPay', async () => {
     useSupabaseTables(supabaseAdmin.from, {
+      gerants: fakeChain({
+        data: { ...PAWAPAY_SETTINGS, payout_provider: 'orange' },
+        error: null,
+      }),
+    });
+
+    await expect(requestWithdrawal('user_gerant_1')).rejects.toMatchObject({
+      code: 'PAYOUT_DETAILS_INCOMPLETE',
+    });
+    expect(supabaseAdmin.from).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuse un montant supérieur au solde disponible', async () => {
+    useSupabaseTables(supabaseAdmin.from, {
+      ...walletStubs({
+        settings: PAWAPAY_SETTINGS,
+        rooms: [{ id: 'room-1', market: 'CI' }],
+        reservations: [completedReservation()],
+        payments: [succeededPayment()],
+        payouts: [],
+      }),
+      gerants: settingsStubs(PAWAPAY_SETTINGS, 2),
+    });
+
+    await expect(requestWithdrawal('user_gerant_1', 90_001)).rejects.toMatchObject({
+      code: 'PAYOUT_AMOUNT_INVALID',
+    });
+  });
+
+  it('refuse un second retrait tant que le premier est en cours', async () => {
+    useSupabaseTables(supabaseAdmin.from, {
+      ...walletStubs({
+        settings: PAWAPAY_SETTINGS,
+        rooms: [{ id: 'room-1', market: 'CI' }],
+        reservations: [completedReservation()],
+        payments: [succeededPayment()],
+        payouts: [],
+      }),
+      gerants: settingsStubs(PAWAPAY_SETTINGS, 2),
       payment_payouts: [
-        fakeChain({ data: payoutRow({ status: 'paid' }), error: null }),
-        update,
+        fakeChain({ data: [], error: null }),
+        fakeChain({ data: { id: 'payout-active' }, error: null }),
       ],
     });
 
-    const result = await applyTransferEvent(EVENT, 'transfer_failed', 'tr_1');
-
-    expect(result).toEqual({ handled: true });
-    expect(update.update).not.toHaveBeenCalled();
+    await expect(requestWithdrawal('user_gerant_1')).rejects.toMatchObject({
+      code: 'PAYOUT_WITHDRAWAL_PENDING',
+    });
   });
 
-  it('ignore un transfert inconnu', async () => {
+  it('enregistre un retrait au montant demandé et le programme', async () => {
+    const inserted = payoutRow({
+      id: 'payout-w1',
+      reference: 'OUT-W-1',
+      reservation_id: null,
+      gross_amount: 40_000,
+      commission_amount: 0,
+      refunded_amount: 0,
+      net_amount: 40_000,
+      status: 'scheduled',
+      kind: 'withdrawal',
+      requested_at: '2026-10-28T12:00:00.000Z',
+      paid_at: null,
+    });
+    const insertChain = fakeChain({ data: inserted, error: null });
+
     useSupabaseTables(supabaseAdmin.from, {
-      payment_payouts: fakeChain({ data: null, error: null }),
+      ...walletStubs({
+        settings: PAWAPAY_SETTINGS,
+        rooms: [{ id: 'room-1', market: 'CI' }],
+        reservations: [completedReservation()],
+        payments: [succeededPayment()],
+        payouts: [],
+      }),
+      gerants: settingsStubs(PAWAPAY_SETTINGS, 3),
+      payment_payouts: [
+        // 1. solde avant retrait, 2. contrôle du retrait actif, 3. insertion,
+        // 4. solde recalculé après l'insertion.
+        fakeChain({ data: [], error: null }),
+        fakeChain({ data: null, error: null }),
+        insertChain,
+        fakeChain({
+          data: [
+            { net_amount: 40_000, currency: 'XOF', status: 'scheduled', paid_at: null },
+          ],
+          error: null,
+        }),
+      ],
+      notifications: fakeChain({ data: null, error: null }),
     });
 
-    const result = await applyTransferEvent(EVENT, 'transfer_succeeded', 'tr_unknown');
+    const result = await requestWithdrawal('user_gerant_1', 40_000);
 
-    expect(result).toEqual({ handled: false, reason: 'payout_not_found' });
+    expect(insertChain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'withdrawal',
+        reservation_id: null,
+        gross_amount: 40_000,
+        commission_amount: 0,
+        refunded_amount: 0,
+        net_amount: 40_000,
+        status: 'scheduled',
+        requested_at: expect.any(String),
+      }),
+    );
+    expect(result.payout).toBe(inserted);
+    // 90 000 crédités, dont 40 000 en cours de retrait.
+    expect(result.balance).toMatchObject({ earned: 90_000, pending: 40_000, available: 50_000 });
   });
 });

@@ -7,6 +7,7 @@ const validClient = {
   nom: 'Koffi',
   prenom: 'Aya',
   telephone: '+225 07 00 00 00',
+  market: 'CI',
 };
 
 describe('clientCreateSchema', () => {
@@ -18,6 +19,7 @@ describe('clientCreateSchema', () => {
     const parsed = clientCreateSchema.safeParse({
       clerk_user_id: 'user_1',
       email: 'client@exemple.ci',
+      market: 'CI',
     });
     expect(parsed.success).toBe(true);
     if (!parsed.success) return;
@@ -27,6 +29,7 @@ describe('clientCreateSchema', () => {
       nom: '',
       prenom: '',
       telephone: '',
+      market: 'CI',
     });
   });
 

@@ -241,9 +241,19 @@ export default function AdminLayout() {
     pathname === `${gerantPath}/premium` ||
     pathname === `${gerantPath}/premium/`;
 
+  // Pages au style « admin-page » : la sidebar admin est remplacée par la
+  // sidebar gérant partagée, la topbar est conservée.
+  const isMaqSidebarPage =
+    pathname === `${gerantPath}/reservations` ||
+    pathname === `${gerantPath}/reservations/` ||
+    pathname === `${gerantPath}/reversements` ||
+    pathname === `${gerantPath}/reversements/` ||
+    pathname === `${gerantPath}/premium/success` ||
+    pathname === `${gerantPath}/premium/success/`;
+
   return (
     <GerantSessionProvider value={handleSignOut}>
-      <div className={`admin ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''} ${isBlankPage ? 'admin--blank' : ''}`}>
+      <div className={`admin ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''} ${isBlankPage ? 'admin--blank' : ''} ${isMaqSidebarPage ? 'admin--maq-sidebar' : ''}`}>
         {mobileOpen && <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} />}
       <aside className="sidebar">
         <div className="sidebar__header">

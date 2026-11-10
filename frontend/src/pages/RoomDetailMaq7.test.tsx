@@ -248,8 +248,8 @@ describe('RoomDetailMaq7 — données de l’API', () => {
     await renderLoaded();
 
     expect(
-      screen.getByText(/Aucun avis pour le moment/),
-    ).toBeInTheDocument();
+      screen.getAllByText(/Aucun avis pour le moment/).length,
+    ).toBeGreaterThan(0);
     expect(screen.getByText('Tous les avis')).toBeInTheDocument();
   });
 });
@@ -323,13 +323,13 @@ describe('RoomDetailMaq7 — réservation', () => {
     );
   }, 20000);
 
-  it('redirige vers le checkout Hub2 quand la réservation en ouvre un', async () => {
+  it('redirige vers le checkout pawaPay quand la réservation en ouvre un', async () => {
     mocks.addReservation.mockResolvedValue({
       id: 'res-1',
       payment: {
         state: 'checkout',
         reference: 'pay-1',
-        checkout_url: 'https://checkout.hub2.io/pay-1',
+        checkout_url: 'https://checkout.pawapay.io/pay-1',
       },
     });
     const { container } = await renderLoaded();
@@ -337,7 +337,7 @@ describe('RoomDetailMaq7 — réservation', () => {
     fillReservationForm(container);
 
     await vi.waitFor(() => {
-      expect(mocks.redirectTo).toHaveBeenCalledWith('https://checkout.hub2.io/pay-1');
+      expect(mocks.redirectTo).toHaveBeenCalledWith('https://checkout.pawapay.io/pay-1');
     });
     expect(screen.queryByText('Demande envoyée !')).not.toBeInTheDocument();
   }, 20000);

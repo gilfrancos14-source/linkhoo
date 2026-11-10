@@ -8,8 +8,7 @@ import PremiumSuccessPage from './PremiumSuccessPage';
 const mocks = vi.hoisted(() => ({
   userId: 'user_clerk_1' as string | null,
   isLoaded: true,
-  confirm: vi.fn<(transactionId: number) => Promise<unknown>>(),
-  confirmReference: vi.fn<(reference: string) => Promise<unknown>>(),
+  confirm: vi.fn<(reference: string) => Promise<unknown>>(),
 }));
 
 vi.mock('@clerk/clerk-react', () => ({
@@ -19,11 +18,10 @@ vi.mock('@clerk/clerk-react', () => ({
 vi.mock('../../lib/api', () => ({
   apiPremium: {
     confirm: mocks.confirm,
-    confirmReference: mocks.confirmReference,
   },
 }));
 
-function renderSuccess(entry = '/ci/premium/success?id=123') {
+function renderSuccess(entry = '/ci/premium/success?reference=PAY-2026-ABC123') {
   return render(
     <MemoryRouter initialEntries={[entry]}>
       <MarketProvider>
@@ -47,12 +45,7 @@ beforeEach(() => {
     already_active: false,
     premium_expires_at: '2027-01-01T00:00:00.000Z',
   });
-  mocks.confirmReference.mockResolvedValue({
-    success: true,
-    already_active: false,
-    premium_expires_at: '2027-01-01T00:00:00.000Z',
-  });
-  setSearch('?id=123');
+  setSearch('?reference=PAY-2026-ABC123');
 });
 
 afterEach(() => {
@@ -77,7 +70,7 @@ describe('PremiumSuccessPage', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('confirme la transaction et affiche le succès', async () => {
+  it('confirme la référence et affiche le succès', async () => {
     renderSuccess();
 
     expect(await screen.findByText('Paiement confirmé')).toBeInTheDocument();
@@ -85,44 +78,7 @@ describe('PremiumSuccessPage', () => {
       screen.getByText('Votre abonnement premium est maintenant actif !'),
     ).toBeInTheDocument();
     expect(mocks.confirm).toHaveBeenCalledTimes(1);
-    expect(mocks.confirm).toHaveBeenCalledWith(123);
-    expect(mocks.confirmReference).not.toHaveBeenCalled();
-  });
-
-  it('confirme une référence Hub2 sans appeler le flux FedaPay', async () => {
-    setSearch('?reference=PAY-2026-ABC123');
-
-    renderSuccess();
-
-    expect(await screen.findByText('Paiement confirmé')).toBeInTheDocument();
-    expect(mocks.confirmReference).toHaveBeenCalledTimes(1);
-    expect(mocks.confirmReference).toHaveBeenCalledWith('PAY-2026-ABC123');
-    expect(mocks.confirm).not.toHaveBeenCalled();
-  });
-
-  it('préfère reference à id quand les deux paramètres sont présents', async () => {
-    setSearch('?id=123&reference=PAY-2026-ABC123');
-
-    renderSuccess();
-
-    expect(await screen.findByText('Paiement confirmé')).toBeInTheDocument();
-    expect(mocks.confirmReference).toHaveBeenCalledWith('PAY-2026-ABC123');
-    expect(mocks.confirm).not.toHaveBeenCalled();
-  });
-
-  it('traduit un paiement Hub2 en attente en message d’aide', async () => {
-    setSearch('?reference=PAY-2026-ABC123');
-    mocks.confirmReference.mockRejectedValue(
-      new Error("Le paiement n'a pas encore été confirmé par Hub2."),
-    );
-
-    renderSuccess();
-
-    expect(
-      await screen.findByText(
-        "Le paiement n'a pas encore été confirmé. Si vous venez de payer, réessayez dans quelques secondes.",
-      ),
-    ).toBeInTheDocument();
+    expect(mocks.confirm).toHaveBeenCalledWith('PAY-2026-ABC123');
   });
 
   it('propose le retour au tableau de bord du marché CI après confirmation', async () => {
@@ -136,10 +92,8 @@ describe('PremiumSuccessPage', () => {
   });
 
   it('construit le lien de retour depuis le segment /bj', async () => {
-    setSearch('?id=123');
-
     render(
-      <MemoryRouter initialEntries={['/bj/premium/success?id=123']}>
+      <MemoryRouter initialEntries={['/bj/premium/success?reference=PAY-2026-ABC123']}>
         <MarketProvider>
           <PremiumSuccessPage />
         </MarketProvider>
@@ -150,19 +104,7 @@ describe('PremiumSuccessPage', () => {
       name: 'Retour au tableau de bord',
     });
     expect(link).toHaveAttribute('href', '/bj/gerant');
-    expect(mocks.confirm).toHaveBeenCalledWith(123);
-  });
-
-  it('signale des paramètres invalides quand l’identifiant est vide', async () => {
-    setSearch('?id=');
-
-    renderSuccess();
-
-    expect(
-      await screen.findByText('Paramètres de paiement invalides.'),
-    ).toBeInTheDocument();
-    expect(mocks.confirm).not.toHaveBeenCalled();
-    expect(screen.getByRole('heading', { name: 'Erreur' })).toBeInTheDocument();
+    expect(mocks.confirm).toHaveBeenCalledWith('PAY-2026-ABC123');
   });
 
   it('signale des paramètres invalides quand la référence est vide', async () => {
@@ -173,12 +115,12 @@ describe('PremiumSuccessPage', () => {
     expect(
       await screen.findByText('Paramètres de paiement invalides.'),
     ).toBeInTheDocument();
-    expect(mocks.confirmReference).not.toHaveBeenCalled();
+    expect(mocks.confirm).not.toHaveBeenCalled();
     expect(screen.getByRole('heading', { name: 'Erreur' })).toBeInTheDocument();
   });
 
-  it('signale des paramètres invalides quand l’identifiant n’est pas numérique', async () => {
-    setSearch('?id=abc');
+  it('ignore l’ancien paramètre id sans référence pawaPay', async () => {
+    setSearch('?id=123');
 
     renderSuccess();
 
@@ -186,15 +128,6 @@ describe('PremiumSuccessPage', () => {
       await screen.findByText('Paramètres de paiement invalides.'),
     ).toBeInTheDocument();
     expect(mocks.confirm).not.toHaveBeenCalled();
-  });
-
-  it('tranche l’identifiant avec parseInt (tolérance aux suffixes)', async () => {
-    setSearch('?id=42abc');
-
-    renderSuccess();
-
-    expect(await screen.findByText('Paiement confirmé')).toBeInTheDocument();
-    expect(mocks.confirm).toHaveBeenCalledWith(42);
   });
 
   it('demande une connexion quand aucun userId Clerk n’est exposé', async () => {
@@ -241,12 +174,26 @@ describe('PremiumSuccessPage', () => {
     expect(screen.getByRole('heading', { name: 'Erreur' })).toBeInTheDocument();
   });
 
-  it('affiche le message d’erreur brut du service', async () => {
-    mocks.confirm.mockRejectedValue(new Error('FedaPay indisponible'));
+  it('traduit un paiement pawaPay en attente en message d’aide', async () => {
+    mocks.confirm.mockRejectedValue(
+      new Error("Le paiement n'a pas encore été confirmé par pawaPay."),
+    );
 
     renderSuccess();
 
-    expect(await screen.findByText('FedaPay indisponible')).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Le paiement n'a pas encore été confirmé. Si vous venez de payer, réessayez dans quelques secondes.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('affiche le message d’erreur brut du service', async () => {
+    mocks.confirm.mockRejectedValue(new Error('pawaPay indisponible'));
+
+    renderSuccess();
+
+    expect(await screen.findByText('pawaPay indisponible')).toBeInTheDocument();
     expect(
       screen.queryByText(/pas encore été confirmé/),
     ).not.toBeInTheDocument();
@@ -265,11 +212,11 @@ describe('PremiumSuccessPage', () => {
   });
 
   it('relance la vérification avec le bouton « Revérifier le paiement »', async () => {
-    mocks.confirm.mockRejectedValueOnce(new Error('FedaPay indisponible'));
+    mocks.confirm.mockRejectedValueOnce(new Error('pawaPay indisponible'));
     mocks.confirm.mockResolvedValueOnce({ success: true });
     const user = userEvent.setup();
     renderSuccess();
-    await screen.findByText('FedaPay indisponible');
+    await screen.findByText('pawaPay indisponible');
 
     await user.click(
       screen.getByRole('button', { name: 'Revérifier le paiement' }),
@@ -277,17 +224,17 @@ describe('PremiumSuccessPage', () => {
 
     expect(await screen.findByText('Paiement confirmé')).toBeInTheDocument();
     expect(mocks.confirm).toHaveBeenCalledTimes(2);
-    expect(mocks.confirm).toHaveBeenNthCalledWith(1, 123);
-    expect(mocks.confirm).toHaveBeenNthCalledWith(2, 123);
+    expect(mocks.confirm).toHaveBeenNthCalledWith(1, 'PAY-2026-ABC123');
+    expect(mocks.confirm).toHaveBeenNthCalledWith(2, 'PAY-2026-ABC123');
     expect(
       screen.queryByRole('button', { name: 'Revérifier le paiement' }),
     ).not.toBeInTheDocument();
   });
 
   it('verrouille le bouton et affiche « Vérification... » pendant la relance', async () => {
-    mocks.confirm.mockRejectedValueOnce(new Error('FedaPay indisponible'));
+    mocks.confirm.mockRejectedValueOnce(new Error('pawaPay indisponible'));
     renderSuccess();
-    await screen.findByText('FedaPay indisponible');
+    await screen.findByText('pawaPay indisponible');
     mocks.confirm.mockImplementation(() => new Promise(() => {}));
 
     fireEvent.click(screen.getByRole('button', { name: 'Revérifier le paiement' }));

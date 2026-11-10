@@ -155,8 +155,8 @@ describe('isAuthRequest', () => {
 describe('isWebhookRequest', () => {
   it('reconnaît les endpoints prestataires', () => {
     expect(isWebhookRequest(fakeReq({ url: '/api/premium/webhook' }))).toBe(true);
-    expect(isWebhookRequest(fakeReq({ url: '/api/webhooks/hub2' }))).toBe(true);
-    expect(isWebhookRequest(fakeReq({ url: '/api/webhooks/hub2?retry=1' }))).toBe(true);
+    expect(isWebhookRequest(fakeReq({ url: '/api/webhooks/pawapay' }))).toBe(true);
+    expect(isWebhookRequest(fakeReq({ url: '/api/webhooks/pawapay?retry=1' }))).toBe(true);
   });
 
   it('ne confond pas les préfixes voisins', () => {
@@ -170,7 +170,7 @@ describe('skipWriteQuota', () => {
   it('exclut les GET, la connexion et les webhooks', () => {
     expect(skipWriteQuota(fakeReq({ method: 'GET', url: '/api/rooms' }))).toBe(true);
     expect(skipWriteQuota(fakeReq({ method: 'POST', url: '/api/auth/bootstrap' }))).toBe(true);
-    expect(skipWriteQuota(fakeReq({ method: 'POST', url: '/api/webhooks/hub2' }))).toBe(true);
+    expect(skipWriteQuota(fakeReq({ method: 'POST', url: '/api/webhooks/pawapay' }))).toBe(true);
     expect(skipWriteQuota(fakeReq({ method: 'POST', url: '/api/premium/webhook' }))).toBe(true);
   });
 

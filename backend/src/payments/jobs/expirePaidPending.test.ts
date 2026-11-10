@@ -29,7 +29,7 @@ describe('expirePaidPendingBookings', () => {
     });
     vi.mocked(requestReservationRefund).mockResolvedValue({
       requested: true,
-      status: 'processing',
+      status: 'succeeded',
       refundId: 'refund-1',
     });
 
@@ -43,7 +43,7 @@ describe('expirePaidPendingBookings', () => {
     expect(update.update).toHaveBeenCalledWith(
       expect.objectContaining({ statut: 'annulee' }),
     );
-    expect(result).toEqual({ checked: 1, cancelled: 1, blocked: 0 });
+    expect(result).toEqual({ checked: 1, cancelled: 1, blocked: 0, reconciled: 0 });
   });
 
   it('conserve la réservation quand le remboursement est refusé', async () => {
@@ -66,7 +66,7 @@ describe('expirePaidPendingBookings', () => {
     const result = await expirePaidPendingBookings();
 
     expect(update.update).not.toHaveBeenCalled();
-    expect(result).toEqual({ checked: 1, cancelled: 0, blocked: 1 });
+    expect(result).toEqual({ checked: 1, cancelled: 0, blocked: 1, reconciled: 0 });
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
   });
@@ -81,12 +81,12 @@ describe('expirePaidPendingBookings', () => {
         update,
       ],
     });
-    vi.mocked(requestReservationRefund).mockRejectedValue(new Error('Hub2 indisponible'));
+    vi.mocked(requestReservationRefund).mockRejectedValue(new Error('pawaPay indisponible'));
 
     const result = await expirePaidPendingBookings();
 
     expect(update.update).not.toHaveBeenCalled();
-    expect(result).toEqual({ checked: 1, cancelled: 0, blocked: 0 });
+    expect(result).toEqual({ checked: 1, cancelled: 0, blocked: 1, reconciled: 0 });
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();
   });
@@ -105,7 +105,7 @@ describe('expirePaidPendingBookings', () => {
 
     expect(requestReservationRefund).not.toHaveBeenCalled();
     expect(update.update).not.toHaveBeenCalled();
-    expect(result).toEqual({ checked: 1, cancelled: 0, blocked: 0 });
+    expect(result).toEqual({ checked: 1, cancelled: 0, blocked: 0, reconciled: 0 });
   });
 
   it('ne fait rien sans réservation éligible', async () => {
@@ -115,7 +115,7 @@ describe('expirePaidPendingBookings', () => {
 
     const result = await expirePaidPendingBookings();
 
-    expect(result).toEqual({ checked: 0, cancelled: 0, blocked: 0 });
+    expect(result).toEqual({ checked: 0, cancelled: 0, blocked: 0, reconciled: 0 });
     expect(requestReservationRefund).not.toHaveBeenCalled();
   });
 });

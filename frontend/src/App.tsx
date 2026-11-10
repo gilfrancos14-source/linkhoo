@@ -158,22 +158,30 @@ function MarketContent() {
         <Route path="/reservation/paiement" element={<ReservationPaymentPage />} />
         <Route path="/compte" element={
           <RoleRouteGuard role="client">
-            <ClientComptePage />
+            <MarketProvider>
+              <ClientComptePage />
+            </MarketProvider>
           </RoleRouteGuard>
         } />
         <Route path="/messages" element={
           <RoleRouteGuard role="client">
-            <ClientMessagesPage />
+            <MarketProvider>
+              <ClientMessagesPage />
+            </MarketProvider>
           </RoleRouteGuard>
         } />
         <Route path="/messages/:conversationId" element={
           <RoleRouteGuard role="client">
-            <ClientMessagesPage />
+            <MarketProvider>
+              <ClientMessagesPage />
+            </MarketProvider>
           </RoleRouteGuard>
         } />
         <Route path="/avis/:reservationId" element={
           <RoleRouteGuard role="client">
-            <LaisserAvisPage />
+            <MarketProvider>
+              <LaisserAvisPage />
+            </MarketProvider>
           </RoleRouteGuard>
         } />
 

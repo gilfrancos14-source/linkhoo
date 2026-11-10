@@ -140,8 +140,8 @@ export interface RequestOptions extends RequestInit {
  */
 export class ApiError extends Error {
   readonly status: number;
-  /** Détail serveur du refus (ex. `status: 'declined' | 'pending'` d'une
-      transaction FedaPay) — seul moyen de distinguer un refus d'un retard. */
+  /** Détail serveur du refus (ex. `status: 'declined' | 'pending'` d'un
+      paiement) — seul moyen de distinguer un refus d'un retard. */
   readonly detail: unknown;
 
   constructor(message: string, status: number, detail?: unknown) {
@@ -502,6 +502,8 @@ export type ReservationPaymentStart =
       state: 'checkout';
       reference: string;
       checkout_url: string;
+      redirectUrl?: string;
+      checkoutId?: string;
       amount: number;
       currency: string;
       amount_xof: number;
@@ -544,7 +546,7 @@ export const apiReservations = {
     request<ReservationCancelResult>(`/reservations/${id}/cancel`, { method: 'POST' }),
   create: (data: ReservationCreatePayload) => request<ReservationData>('/reservations', { method: 'POST', body: JSON.stringify(data) }),
   updateStatut: (id: string, statut: string) => request<ReservationData>(`/reservations/${id}`, { method: 'PATCH', body: JSON.stringify({ statut }) }),
-  /** (Ré)ouvre le checkout Hub2 d'une réservation. Aucun montant n'est envoyé. */
+  /** (Ré)ouvre le checkout pawaPay d'une réservation. Aucun montant n'est envoyé. */
   startPayment: (id: string) =>
     request<ReservationPaymentStart>(`/reservations/${id}/payment`, { method: 'POST' }),
   /** Confirme le retour de checkout ; le webhook reste le chemin nominal. */
@@ -733,6 +735,9 @@ export type PayoutMethod = 'mobile_money' | 'bank_transfer';
 /** Statut interne d'un reversement — jamais un statut prestataire brut. */
 export type PayoutStatus = 'scheduled' | 'processing' | 'paid' | 'failed' | 'canceled';
 
+/** Nature du mouvement : versement d'un séjour ou retrait demandé. */
+export type PayoutKind = 'reservation' | 'withdrawal';
+
 export interface PayoutSettingsData {
   method: PayoutMethod | null;
   phone: string | null;
@@ -746,6 +751,8 @@ export interface PayoutSettingsData {
   verified_at: string | null;
   /** Champs encore manquants (`method`, `phone`, `provider`…). */
   missing_fields: string[];
+  /** Opérateurs pawaPay autorisés sur le marché du gérant. */
+  providers: string[];
 }
 
 export interface PayoutSettingsInput {
@@ -762,6 +769,7 @@ export interface PayoutData {
   id: string;
   reference: string;
   reservation_id: string | null;
+  kind: PayoutKind;
   gross_amount: number;
   commission_amount: number;
   refunded_amount: number;
@@ -771,7 +779,28 @@ export interface PayoutData {
   scheduled_for: string;
   paid_at: string | null;
   failure_code: string | null;
+  /** Date de la demande pour un retrait explicite. */
+  requested_at: string | null;
   created_at: string;
+}
+
+/** Portefeuille du gérant : séjours terminés, retraits en cours, déjà versé. */
+export interface PayoutBalanceData {
+  currency: string;
+  /** Net cumulé des séjours terminés, payés et non annulés. */
+  earned: number;
+  /** Montant retirable maintenant. */
+  available: number;
+  /** Retraits en cours de traitement. */
+  pending: number;
+  /** Déjà versé sur le compte du gérant. */
+  paid: number;
+  last_payout_at: string | null;
+}
+
+export interface PayoutWithdrawalData {
+  payout: PayoutData;
+  balance: PayoutBalanceData;
 }
 
 export const apiPayouts = {
@@ -782,20 +811,24 @@ export const apiPayouts = {
       body: JSON.stringify(data),
     }),
   listMine: () => request<PayoutData[]>('/payouts/mine'),
+  getBalance: () => request<PayoutBalanceData>('/payouts/balance'),
+  /** Sans montant : demande tout le solde disponible. */
+  requestWithdrawal: (amount?: number) =>
+    request<PayoutWithdrawalData>('/payouts/withdrawals', {
+      method: 'POST',
+      body: JSON.stringify(amount === undefined ? {} : { amount }),
+    }),
 };
 
 // ── Premium ──
 /**
- * Réponse d'initiation. FedaPay renvoie `transaction_id` + `payment_url` ;
- * Hub2 renvoie `reference` + `checkout_url` (le reste est informatif).
- * Les deux champs sont optionnels pour que le front tolère un rollback par
- * `PAYMENTS_PROVIDER` sans redéploiement.
+ * Réponse d'initiation pawaPay : `reference` + `checkout_url` (le reste est
+ * informatif).
  */
 interface PremiumInitiateResponse {
-  transaction_id?: number;
-  payment_url?: string;
-  reference?: string;
-  checkout_url?: string;
+  reference: string;
+  checkout_url: string;
+  redirect_url?: string;
   amount?: number;
   currency?: string;
   amount_xof?: number;
@@ -809,19 +842,20 @@ interface PremiumConfirmResponse {
   gerant: GerantData;
 }
 
+/** Formules premium proposées par la page gérant. */
+export type PremiumPlanId = 'monthly' | 'quarterly' | 'yearly';
+
 export const apiPremium = {
-  initiate: (market: string) =>
+  /**
+   * Ouvre un checkout pour la formule choisie. Le montant n'est jamais envoyé :
+   * le serveur résout prix et durée à partir de `plan`.
+   */
+  initiate: (market: string, plan?: PremiumPlanId) =>
     request<PremiumInitiateResponse>('/premium/initiate', {
       method: 'POST',
-      body: JSON.stringify({ market }),
+      body: JSON.stringify(plan ? { market, plan } : { market }),
     }),
-  confirm: (transactionId: number) =>
-    request<PremiumConfirmResponse>('/premium/confirm', {
-      method: 'POST',
-      body: JSON.stringify({ transaction_id: transactionId }),
-    }),
-  /** Confirmation Hub2 : la référence interne remplace `transaction_id`. */
-  confirmReference: (reference: string) =>
+  confirm: (reference: string) =>
     request<PremiumConfirmResponse>('/premium/confirm', {
       method: 'POST',
       body: JSON.stringify({ reference }),
@@ -835,7 +869,7 @@ export interface AuthBootstrapResponse {
   role: AuthRole | null;
   profile_role: AuthRole | null;
   clerk_role: AuthRole | null;
-  /** Présent sur un 409 marché : le marché réel du compte gérant. */
+  /** Marché du compte ; présent sur un 409 quand l'URL vise un autre marché. */
   market?: string;
 }
 
@@ -856,6 +890,7 @@ export interface ClientProfileData {
   nom: string | null;
   prenom: string | null;
   telephone: string | null;
+  market: MarketCode;
   created_at: string;
 }
 
@@ -867,6 +902,7 @@ export const apiClients = {
     nom?: string;
     prenom?: string;
     telephone?: string;
+    market: MarketCode;
   }) => request<ClientProfileData>('/clients', { method: 'POST', body: JSON.stringify(data) }),
   updateMe: (data: { nom?: string; prenom?: string; telephone?: string }) =>
     request<ClientProfileData>('/clients/me', { method: 'PATCH', body: JSON.stringify(data) }),

@@ -29,23 +29,29 @@ import messagesRouter from './routes/messages';
 import premiumRouter from './routes/premium';
 import paymentsRouter from './routes/payments';
 import payoutsRouter from './routes/payouts';
-import hub2WebhookRouter from './routes/hub2Webhook';
 import adminRouter from './routes/admin';
 import authRouter from './routes/auth';
+import promotionRouter from './routes/promotionRoutes';
+import piiRouter from './routes/piiRoutes';
 import { startNotificationPurge } from './utils/notificationPurge';
 import { warmUpImageCheck } from './services/apartmentImageCheck';
-import { getPaymentsProvider } from './payments/provider';
 import { startPaymentJobs } from './payments/jobs';
+import pawapayWebhookRouter from './routes/pawapayWebhook';
 
-// Les clés du prestataire inactif ne sont pas exigées : après bascule sur
-// Hub2, FedaPay peut être retiré de l'environnement sans bloquer le démarrage.
-// Le rollback (`PAYMENTS_PROVIDER=fedapay`) les redemande.
-const requiredEnvVars = ['CLERK_SECRET_KEY', 'ADMIN_JWT_SECRET'];
-if (getPaymentsProvider() === 'hub2') {
-  requiredEnvVars.push('HUB2_API_KEY', 'HUB2_MERCHANT_ID');
-} else {
-  requiredEnvVars.push('FEDAPAY_PUBLIC_KEY', 'FEDAPAY_SECRET_KEY');
-}
+const isProduction = process.env.NODE_ENV === 'production';
+
+// pawaPay est l'unique prestataire de paiement. Ses clés sont exigées au
+// démarrage : un serveur sans token pawaPay exposerait un checkout non
+// configuré et échouerait silencieusement au moment du paiement.
+//
+// pawaPay n'a pas de secret partagé : les callbacks sont signés en
+// RFC 9421 / ECDSA P-256 avec une clé publique récupérée à la volée.
+const requiredEnvVars = [
+  'CLERK_SECRET_KEY',
+  'ADMIN_JWT_SECRET',
+  'PAWAPAY_API_KEY',
+  'PAWAPAY_MERCHANT_ID',
+];
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
     console.error(`[FATAL] Missing required environment variable: ${envVar}`);
@@ -79,7 +85,6 @@ if (rawTrustProxy) {
   if (hops > 0) app.set('trust proxy', hops);
 }
 const port = Number(process.env.PORT || 3001);
-const isProduction = process.env.NODE_ENV === 'production';
 
 // Garde-fou P0 : derrière un proxy, req.ip = IP du proxy sans TRUST_PROXY,
 // donc TOUS les clients partagent le même seau de rate limiting (les 429
@@ -105,13 +110,13 @@ if (isProduction && allowedOrigins.length === 0) {
   process.exit(1);
 }
 
-// m3 : le callback FedaPay (premium) n'utilise plus l'`Origin` du
+// m3 : le retour de checkout pawaPay n'utilise plus l'`Origin` du
 // navigateur mais APP_PUBLIC_URL. Sans cette variable, le gérant serait
 // redirigé après paiement vers http://localhost:5173 : la page de succès ne
 // se charge pas, /confirm ne tourne pas, le paiement reste invisible côté
 // gérant. Fail-fast identique à ALLOWED_ORIGINS plutôt qu'un échec muet.
 if (isProduction && !process.env.APP_PUBLIC_URL?.trim()) {
-  console.error('[FATAL] APP_PUBLIC_URL manquant en production : le callback FedaPay pointerait sur localhost (paiement jamais confirmé côté gérant).');
+  console.error('[FATAL] APP_PUBLIC_URL manquant en production : le retour pawaPay pointerait sur localhost (paiement jamais confirmé côté gérant).');
   process.exit(1);
 }
 
@@ -170,7 +175,7 @@ const webhookLimiter = rateLimit({
   message: { error: 'Trop de requêtes webhook' },
 });
 
-// F5 : les routes de paiement appellent FedaPay et permettent d'énumérer des
+// F5 : les routes de paiement appellent pawaPay et permettent d'énumérer des
 // transactions. Elles étaient absentes de tout limiteur dédié (le quota global
 // « write » ne comptait que 200 requêtes / 15 min / IP).
 const paymentFlowLimiter = rateLimit({
@@ -214,22 +219,31 @@ app.use((req, res, next) => {
   }
   next();
 });
-app.use('/api/premium/webhook', webhookLimiter, express.json({
+
+// ---------------------------------------------------------------------------
+// PARSEURS DÉDIÉS — TOUS AVANT le parser global `express.json()`
+// ---------------------------------------------------------------------------
+// Ces deux endpoints reçoivent un corps signé par pawaPay. La signature est
+// calculée sur les OCTETS BRUTS reçus : tout re-parse ou re-sérialisation
+// invalide le digest. On doit donc capturer `req.rawBody` AVANT que le parser
+// global ne consomme le corps. Sans cet ordre, `req.rawBody` est undefined dans
+// le handler et la vérification échoue (ou est contournée silencieusement).
+
+// pawaPay — DOIT être monté ici, AVANT `express.json()` global.
+// Avant ce correctif, le parseur pawaPay était monté après le parser global :
+// `req.body` était déjà consommé, `verify` n'était jamais appelé, `req.rawBody`
+// restait undefined → la vérification de signature pawaPay échouait en prod
+// (ou était silencieusement contournée en dev).
+app.use('/api/webhooks/pawapay', webhookLimiter, express.json({
   limit: '1mb',
   verify: (req, _res, buf) => {
     (req as RawBodyRequest).rawBody = buf.toString('utf8');
   },
 }));
-// Hub2 signe le corps BRUT : ce parseur dédié doit précéder l'express.json
-// global, sinon la re-sérialisation invalide la signature. 256 Ko suffisent
-// largement pour un événement ; la limite basse protège d'un envoi massif.
-app.use('/api/webhooks/hub2', webhookLimiter, express.json({
-  limit: '256kb',
-  verify: (req, _res, buf) => {
-    (req as RawBodyRequest).rawBody = buf.toString('utf8');
-  },
-}));
+
+// Parser global — pour toutes les autres routes.
 app.use(express.json({ limit: '1mb' }));
+
 // F4 : une requête admin authentifiée par cookie doit venir d'une origine
 // autorisée. SameSite=Strict bloque déjà le cross-site ; cette garde couvre les
 // navigateurs/proxys qui l'assouplissent et le cas « même site, origine non
@@ -265,12 +279,17 @@ app.use('/api/messages', messagesRouter);
 app.use('/api/premium', premiumRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/payouts', requireClerkAuth, payoutsRouter);
-app.use('/api/webhooks/hub2', hub2WebhookRouter);
+// Le parser pawaPay (avec `verify`) est monté plus haut, avant le global.
+// Ici on ne monte que le router : `req.rawBody` est déjà peuplé.
+app.use('/api/webhooks/pawapay', pawapayWebhookRouter);
 // Le limiteur ne couvre que la route de connexion ; le routeur admin n'est
 // monté qu'une fois (ci-dessous). Un second montage du routeur sous
 // `/api/admin/login` exposait inutilement tout le back-office à cette URL.
 app.use('/api/admin/login', adminLoginLimiter);
 app.use('/api/admin', adminRouter);
+// Routes de sécurité
+app.use('/api/pii', piiRouter);
+app.use('/api/promotion', promotionRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -290,7 +309,7 @@ const server = app.listen(port, () => {
   // P1 #8 : purge quotidienne des notifications de plus de 30 jours
   // (timers unref, jamais bloquant pour l'arrêt du process).
   startNotificationPurge();
-  // Réconciliation Hub2, expiration des checkouts et remboursement à 48 h.
+  // Réconciliation pawaPay, expiration des checkouts et remboursement à 48 h.
   // Inactif en test : les suites pilotent explicitement chaque job.
   if (process.env.NODE_ENV !== 'test') startPaymentJobs();
   if (process.env.NODE_ENV !== 'test') void warmUpImageCheck();

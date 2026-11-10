@@ -42,7 +42,7 @@ describe('bootstrapSchema', () => {
     expect(parsed.data).toEqual({ role: 'client' });
   });
 
-  it('accepte un bootstrap client avec marché (marché ignoré par la route mais valide)', () => {
+  it('accepte un bootstrap client avec marché (obligatoire côté route)', () => {
     const parsed = bootstrapSchema.safeParse({ role: 'client', market: 'BJ' });
     expect(parsed.success).toBe(true);
     if (!parsed.success) return;

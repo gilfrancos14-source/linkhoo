@@ -108,11 +108,25 @@ router.post('/bootstrap', async (req: Request, res: Response, next: NextFunction
     const identity = await resolveClerkIdentity(authUserId);
 
     if (requestedRole === 'client') {
+      // Un compte client est rattaché à UN marché, comme un compte gérant.
+      if (!market) {
+        return res.status(400).json({ error: 'market est requis pour un compte client' });
+      }
+
       const { data: existing } = await supabaseAdmin
         .from('clients')
-        .select('id')
+        .select('id, market')
         .eq('clerk_user_id', authUserId)
         .maybeSingle();
+
+      if (existing && existing.market !== market) {
+        // Le front redirige vers l'espace client du marché réel du compte.
+        return res.status(409).json({
+          error: `Compte client déjà enregistré sur le marché ${existing.market}`,
+          role: 'client',
+          market: existing.market,
+        });
+      }
 
       if (!existing) {
         const { error } = await supabaseAdmin.from('clients').insert({
@@ -120,6 +134,7 @@ router.post('/bootstrap', async (req: Request, res: Response, next: NextFunction
           email: identity.email,
           nom: identity.nom,
           prenom: identity.prenom,
+          market,
         });
         if (error) throw error;
       }
@@ -129,6 +144,7 @@ router.post('/bootstrap', async (req: Request, res: Response, next: NextFunction
         role: 'client',
         profile_role: 'client',
         clerk_role: 'client',
+        market: existing?.market ?? market,
       });
     }
 

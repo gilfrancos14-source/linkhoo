@@ -123,12 +123,14 @@ describe('canPayReservation', () => {
   it('autorise le paiement seulement quand rien n’est encaissé', () => {
     expect(canPayReservation('unpaid')).toBe(true);
     expect(canPayReservation('failed')).toBe(true);
+    // pawaPay permet de rouvrir un checkout encore ouvert (pending) et de
+    // compléter un acompte (deposit_paid).
+    expect(canPayReservation('pending')).toBe(true);
+    expect(canPayReservation('deposit_paid')).toBe(true);
   });
 
-  it('refuse le paiement pour les statuts engagés', () => {
-    expect(canPayReservation('pending')).toBe(false);
+  it('refuse le paiement quand l’argent est déjà encaissé ou remboursé', () => {
     expect(canPayReservation('paid')).toBe(false);
-    expect(canPayReservation('deposit_paid')).toBe(false);
     expect(canPayReservation('refund_pending')).toBe(false);
     expect(canPayReservation('refunded')).toBe(false);
     expect(canPayReservation(undefined)).toBe(false);
@@ -219,7 +221,7 @@ describe('getReservations', () => {
         payment: {
           state: 'checkout',
           reference: 'pay-1',
-          checkout_url: 'https://checkout.hub2.io/pay-1',
+          checkout_url: 'https://checkout.pawapay.io/pay-1',
           amount: 120000,
           currency: 'XOF',
         },
@@ -233,7 +235,7 @@ describe('getReservations', () => {
     expect(reservation.payment).toEqual({
       state: 'checkout',
       reference: 'pay-1',
-      checkout_url: 'https://checkout.hub2.io/pay-1',
+      checkout_url: 'https://checkout.pawapay.io/pay-1',
       amount: 120000,
       currency: 'XOF',
     });
@@ -338,7 +340,7 @@ describe('appels délégués à apiReservations', () => {
     const start = {
       state: 'checkout' as const,
       reference: 'pay-1',
-      checkout_url: 'https://checkout.hub2.io/pay-1',
+      checkout_url: 'https://checkout.pawapay.io/pay-1',
       amount: 120000,
       currency: 'XOF',
       amount_xof: 120000,

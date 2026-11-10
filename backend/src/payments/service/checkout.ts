@@ -1,33 +1,18 @@
 /**
- * Création d'une session de paiement Hub2.
- *
- * Séquence :
- *   1. générer une `reference` (`PAY-…`) unique — clé d'idempotence de bout
- *      en bout, envoyée comme `purchaseReference` ;
- *   2. convertir le prix de référence (XOF) vers la devise débitée ;
- *   3. écrire la ligne `payments` en `created` AVANT d'appeler Hub2 : si le
- *      processus meurt après la création du lien, la trace existe et la
- *      réconciliation peut retrouver le paiement par sa référence ;
- *   4. créer le Payment Link puis enregistrer `checkout_url` et passer en
- *      `pending`.
- *
- * Le montant n'est JAMAIS lu du corps de la requête : l'appelant fournit un
- * `amountXof` serveur (constante produit ou calcul depuis la chambre).
+ * Création d'une session de paiement pawaPay.
  */
 
 import { randomBytes } from 'node:crypto';
 import { supabaseAdmin } from '../../config/supabase';
 import type { MarketCode } from '../../config/markets';
-import { HUB2_MARKETS, getHub2Config, isMarketSupported } from '../config';
 import { PaymentServiceError } from '../errors';
-import { createPaymentLink } from '../hub2/paymentLinks';
-import { Hub2Error } from '../hub2/client';
-import type {
-  CheckoutSession,
-  Hub2Currency,
-  PayerType,
-  PaymentPurpose,
-} from '../types';
+import { createPawapayCheckout, resolveFxRate } from '../pawapay/checkouts';
+import { getMarketPaymentConfig, getPawapayConfig, isMarketSupported } from '../pawapay/config';
+import { PawapayApiError } from '../pawapay/client';
+import { paymentReturnBaseUrl } from '../returnUrl';
+import type { CheckoutSession, PayerType, PaymentPurpose } from '../types';
+
+const MAX_AMOUNT_XOF = 10_000_000;
 
 export interface CreateCheckoutInput {
   readonly purpose: PaymentPurpose;
@@ -40,34 +25,21 @@ export interface CreateCheckoutInput {
   readonly reservationId?: string | null;
   readonly boostId?: string | null;
   readonly description: string;
-  /** Chemin public du retour succès, ex. `/ci/gerant/premium/success`. */
   readonly returnPath: string;
-  /** Chemin public du retour échec (défaut : le retour succès). */
   readonly failurePath?: string;
   readonly metadata?: Record<string, unknown>;
-  /**
-   * Réutilise un checkout encore valide pour le même payeur/produit. Évite
-   * deux liens (et deux débits possibles) sur un double-clic.
-   */
   readonly reusePendingPayment?: boolean;
 }
 
-/** `PAY-2026-A1B2C3D4E5F6` — compatible avec le CHECK de `payments.reference`. */
 export function buildPaymentReference(now: Date = new Date()): string {
   const suffix = randomBytes(6).toString('hex').toUpperCase();
   return `PAY-${now.getUTCFullYear()}-${suffix}`;
 }
 
 function publicBaseUrl(): string {
-  return (process.env.APP_PUBLIC_URL || 'http://localhost:5173').replace(/\/+$/, '');
+  return paymentReturnBaseUrl();
 }
 
-/**
- * Construit une URL absolue à partir d'un chemin interne.
- *
- * Le chemin vient du serveur, jamais d'un en-tête `Origin` : une redirection
- * post-paiement vers un domaine tiers serait du phishing.
- */
 export function buildPublicUrl(path: string): string {
   if (!path.startsWith('/') || path.startsWith('//')) {
     throw new PaymentServiceError(
@@ -79,47 +51,11 @@ export function buildPublicUrl(path: string): string {
   return `${publicBaseUrl()}${path}`;
 }
 
-function appendReference(path: string, reference: string): string {
-  const separator = path.includes('?') ? '&' : '?';
-  return `${path}${separator}reference=${encodeURIComponent(reference)}`;
-}
-
-/**
- * Taux XOF → devise de débit. XAF est à parité fixe (1), GNF flotte.
- * Sans taux du jour, on refuse plutôt que d'inventer un montant.
- */
-export async function resolveFxRate(currency: Hub2Currency): Promise<number> {
-  if (currency === 'XOF') return 1;
-
-  const { data, error } = await supabaseAdmin
-    .from('fx_rates')
-    .select('rate')
-    .eq('base_currency', 'XOF')
-    .eq('quote_currency', currency)
-    .lte('effective_at', new Date().toISOString())
-    .order('effective_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw error;
-
-  const rate = Number((data as { rate?: unknown } | null)?.rate);
-  if (!Number.isFinite(rate) || rate <= 0) {
-    throw new PaymentServiceError(
-      'FX_RATE_MISSING',
-      `Aucun taux XOF→${currency} disponible : paiement refusé.`,
-      422,
-      { currency },
-    );
-  }
-  return rate;
-}
-
 interface PendingPaymentRow {
   reference: string;
   checkout_url: string | null;
   amount: number;
-  currency: Hub2Currency;
+  currency: CheckoutSession['currency'];
   amount_xof: number;
   fx_rate: number | string;
   expires_at: string | null;
@@ -135,12 +71,10 @@ async function findReusablePayment(
     .from('payments')
     .select('reference, checkout_url, amount, currency, amount_xof, fx_rate, expires_at')
     .eq('purpose', input.purpose)
+    .eq('amount_xof', input.amountXof)
     .in('status', ['created', 'pending', 'requires_action'])
     .gt('expires_at', new Date().toISOString());
 
-  // Une réservation n'a qu'un seul checkout vivant : la clé est l'id de
-  // réservation, pas le gérant (qui peut avoir plusieurs réservations en
-  // parallèle).
   query = input.reservationId
     ? query.eq('reservation_id', input.reservationId)
     : query.eq('gerant_clerk_user_id', input.gerantClerkUserId as string);
@@ -149,7 +83,6 @@ async function findReusablePayment(
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
-
   if (error) throw error;
 
   const row = data as PendingPaymentRow | null;
@@ -166,17 +99,18 @@ async function findReusablePayment(
   };
 }
 
-/**
- * Crée la ligne `payments`, le Payment Link Hub2, puis renvoie la session.
- *
- * @throws PaymentServiceError (marché fermé, taux absent, écriture impossible)
- * @throws Hub2Error (refus Hub2 : opérateur, montant, authentification)
- * @throws Hub2ConfigError (clés absentes)
- */
 export async function createCheckout(input: CreateCheckoutInput): Promise<CheckoutSession> {
   if (!Number.isInteger(input.amountXof) || input.amountXof <= 0) {
     throw new PaymentServiceError('PAYMENT_CREATE_FAILED', 'Montant XOF invalide.', 400);
   }
+  if (input.amountXof > MAX_AMOUNT_XOF) {
+    throw new PaymentServiceError(
+      'PAYMENT_CREATE_FAILED',
+      `Montant XOF hors limites (max ${MAX_AMOUNT_XOF}).`,
+      400,
+    );
+  }
+
   if (!isMarketSupported(input.market)) {
     throw new PaymentServiceError(
       'ONLINE_PAYMENT_DISABLED',
@@ -189,27 +123,22 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Checko
   const reusable = await findReusablePayment(input);
   if (reusable) return reusable;
 
-  const config = getHub2Config();
-  const market = HUB2_MARKETS[input.market];
-  const fxRate = await resolveFxRate(market.currency);
-  // Les devises Hub2 sont sans décimale : arrondi au franc supérieur/inférieur
-  // le plus proche, jamais de centimes inventés.
+  getPawapayConfig();
+
+  const marketConfig = getMarketPaymentConfig(input.market);
+  const chargeCurrency = marketConfig.currency;
+  const fxRate = await resolveFxRate(input.market, chargeCurrency);
   const amount = Math.round(input.amountXof * fxRate);
+
   const reference = buildPaymentReference();
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + config.paymentLinkTtlMinutes * 60_000);
-
-  const successUrl = buildPublicUrl(appendReference(input.returnPath, reference));
-  const failureUrl = buildPublicUrl(
-    appendReference(input.failurePath ?? input.returnPath, reference),
-  );
 
   const { data: inserted, error: insertError } = await supabaseAdmin
     .from('payments')
     .insert({
       reference,
       purpose: input.purpose,
-      provider: 'hub2',
+      provider: 'pawapay',
       payer_type: input.payerType,
       payer_clerk_user_id: input.payerClerkUserId ?? null,
       gerant_clerk_user_id: input.gerantClerkUserId ?? null,
@@ -218,21 +147,32 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Checko
       boost_id: input.boostId ?? null,
       market: input.market,
       amount,
-      currency: market.currency,
+      currency: chargeCurrency,
       amount_xof: input.amountXof,
       fx_rate: fxRate,
-      status: 'created',
-      expires_at: expiresAt.toISOString(),
       metadata: {
         ...input.metadata,
         return_path: input.returnPath,
         failure_path: input.failurePath ?? input.returnPath,
       },
+      status: 'created',
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
     })
     .select('id')
     .single();
 
   if (insertError) {
+    // Capture de la course sur l'index unique partiel.
+    if ((insertError as { code?: string }).code === '23505') {
+      const winner = await findReusablePayment(input);
+      if (winner) return winner;
+      throw new PaymentServiceError(
+        'PAYMENT_CREATE_FAILED',
+        'Un paiement existe déjà pour cette cible mais est introuvable.',
+        500,
+      );
+    }
     throw new PaymentServiceError(
       'PAYMENT_CREATE_FAILED',
       `Impossible d'enregistrer le paiement : ${insertError.message}`,
@@ -245,59 +185,91 @@ export async function createCheckout(input: CreateCheckoutInput): Promise<Checko
     throw new PaymentServiceError('PAYMENT_CREATE_FAILED', 'Paiement non enregistré.', 500);
   }
 
-  let link;
+  let checkoutResult;
   try {
-    link = await createPaymentLink(config, {
+    checkoutResult = await createPawapayCheckout({
+      paymentId,
       reference,
-      amount,
-      currency: market.currency,
       market: input.market,
+      amountXof: input.amountXof,
       description: input.description,
-      successUrl,
-      failureUrl,
-      expiresAt,
+      returnPath: input.returnPath,
+      failurePath: input.failurePath ?? input.returnPath,
+      metadata: input.metadata,
     });
-  } catch (error) {
-    const code = error instanceof Hub2Error ? error.code : 'HUB2_ERROR';
-    const message = error instanceof Error ? error.message : 'Création du lien impossible';
-    await supabaseAdmin
+
+    const { error: pawapayUpdateError } = await supabaseAdmin
       .from('payments')
       .update({
-        status: 'failed',
-        failure_code: code,
-        failure_message: message.slice(0, 500),
+        amount: checkoutResult.amount,
+        currency: checkoutResult.currency,
+        amount_xof: input.amountXof,
+        fx_rate: checkoutResult.fxRate,
+        expires_at: checkoutResult.expiresAt,
+        pawapay_checkout_id: checkoutResult.checkoutId,
+        checkout_url: checkoutResult.checkoutUrl,
+        status: 'pending',
         updated_at: new Date().toISOString(),
       })
       .eq('id', paymentId);
+
+    if (pawapayUpdateError) {
+      try {
+        await supabaseAdmin
+          .from('payments')
+          .update({
+            status: 'failed',
+            failure_code: 'checkout_persist_failed',
+            failure_message: `Checkout pawaPay créé (${checkoutResult.checkoutId}) mais non enregistré : ${pawapayUpdateError.message}`.slice(0, 500),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', paymentId);
+      } catch (markError) {
+        console.error('[checkout] mark-failed impossible (pawaPay)', markError);
+      }
+      throw new PaymentServiceError(
+        'PAYMENT_CREATE_FAILED',
+        `Checkout créé mais non enregistré : ${pawapayUpdateError.message}`,
+        500,
+        { payment_id: paymentId, provider_checkout_id: checkoutResult.checkoutId },
+      );
+    }
+  } catch (error) {
+    // mark-failed protégé : l'erreur d'origine n'est pas masquée.
+    const code =
+      error instanceof PawapayApiError
+        ? 'PAWAPAY_ERROR'
+        : error instanceof Error
+          ? error.name
+          : 'PROVIDER_ERROR';
+    const message = error instanceof Error ? error.message : 'Création du checkout impossible';
+
+    try {
+      await supabaseAdmin
+        .from('payments')
+        .update({
+          status: 'failed',
+          failure_code: code,
+          failure_message: message.slice(0, 500),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', paymentId);
+    } catch (markError) {
+      console.error('[checkout] mark-failed impossible (catch)', markError);
+    }
+
     throw error;
   }
 
-  const { error: updateError } = await supabaseAdmin
-    .from('payments')
-    .update({
-      provider_payment_link_id: link.id,
-      checkout_url: link.url,
-      status: 'pending',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', paymentId);
-
-  if (updateError) {
-    throw new PaymentServiceError(
-      'PAYMENT_UPDATE_FAILED',
-      `Lien créé mais non enregistré : ${updateError.message}`,
-      500,
-      { reference },
-    );
-  }
-
   return {
-    reference,
-    checkoutUrl: link.url,
-    amount,
-    currency: market.currency,
-    amountXof: input.amountXof,
-    fxRate,
-    expiresAt: expiresAt.toISOString(),
+    reference: checkoutResult.reference,
+    checkoutUrl: checkoutResult.checkoutUrl,
+    redirectUrl: checkoutResult.redirectUrl ?? checkoutResult.checkoutUrl,
+    checkoutId: checkoutResult.checkoutId,
+    amount: checkoutResult.amount,
+    currency: checkoutResult.currency,
+    amountXof: checkoutResult.amountXof,
+    fxRate: checkoutResult.fxRate,
+    expiresAt: checkoutResult.expiresAt,
   };
 }

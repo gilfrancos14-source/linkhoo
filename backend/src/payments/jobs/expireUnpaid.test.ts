@@ -11,11 +11,10 @@ vi.mock('../../config/supabase', async () => {
 
 vi.mock('../service/providerStatus', () => ({ lookupProviderPayment: vi.fn() }));
 
-const HUB2_ENV: Record<string, string> = {
-  PAYMENTS_PROVIDER: 'hub2',
-  HUB2_API_KEY: 'sk_test_123',
-  HUB2_MERCHANT_ID: 'merchant_123',
-  HUB2_ENV: 'sandbox',
+const PAWAPAY_ENV: Record<string, string> = {
+  PAWAPAY_API_KEY: 'pawapay_api_key_test',
+  PAWAPAY_MERCHANT_ID: 'pawapay_merchant_test',
+  PAWAPAY_ENV: 'sandbox',
 };
 
 const PAYMENT = {
@@ -31,7 +30,7 @@ const PAYMENT = {
 const RESERVATION = { id: 'resa-1', statut: 'en_attente', payment_status: 'pending' };
 
 function setEnv(overrides: Record<string, string | undefined> = {}): void {
-  for (const [key, value] of Object.entries({ ...HUB2_ENV, ...overrides })) {
+  for (const [key, value] of Object.entries({ ...PAWAPAY_ENV, ...overrides })) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
   }
@@ -43,12 +42,12 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  for (const key of Object.keys(HUB2_ENV)) delete process.env[key];
+  for (const key of Object.keys(PAWAPAY_ENV)) delete process.env[key];
 });
 
 describe('expireUnpaidBookings', () => {
-  it('ne fait rien quand le prestataire actif est FedaPay', async () => {
-    setEnv({ PAYMENTS_PROVIDER: 'fedapay' });
+  it('ne fait rien quand pawaPay n’est pas configuré', async () => {
+    setEnv({ PAWAPAY_API_KEY: undefined });
 
     const result = await expireUnpaidBookings();
 
@@ -89,12 +88,12 @@ describe('expireUnpaidBookings', () => {
     });
   });
 
-  it('active le paiement au lieu de l’expirer si Hub2 le confirme', async () => {
+  it('active le paiement au lieu de l’expirer si pawaPay le confirme', async () => {
     useSupabaseTables(supabaseAdmin.from, {
       payments: fakeChain({ data: [PAYMENT], error: null }),
     });
     vi.mocked(lookupProviderPayment).mockResolvedValue({
-      payment: { id: 'pay_hub2', amount: 150_000, currency: 'XOF' },
+      payment: { id: 'dep_pawapay', amount: 150_000, currency: 'XOF' },
       latestStatus: 'succeeded',
     });
     vi.mocked(supabaseAdmin.rpc).mockResolvedValue({ data: null, error: null } as never);
@@ -103,7 +102,7 @@ describe('expireUnpaidBookings', () => {
 
     expect(supabaseAdmin.rpc).toHaveBeenCalledWith('payment_claim_booking', {
       p_reference: PAYMENT.reference,
-      p_provider_payment_id: 'pay_hub2',
+      p_provider_payment_id: 'dep_pawapay',
       p_amount: 150_000,
       p_currency: 'XOF',
     });
@@ -136,7 +135,7 @@ describe('expireUnpaidBookings', () => {
     expect(result).toMatchObject({ checked: 1, expired: 1, cancelledReservations: 0 });
   });
 
-  it('ne touche à rien quand Hub2 est injoignable', async () => {
+  it('ne touche à rien quand pawaPay est injoignable', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const paymentUpdate = fakeChain({ data: null, error: null });
     useSupabaseTables(supabaseAdmin.from, {

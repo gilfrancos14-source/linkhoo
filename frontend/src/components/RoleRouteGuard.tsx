@@ -20,14 +20,24 @@ function isTransientError(err: unknown): boolean {
 
 // Routes de sortie par rôle : le rôle attendu décide où rediriger quand
 // l'utilisateur n'est pas connecté ou possède un autre rôle.
-const rolePaths: Record<AuthRole, { login: (m: string) => string; wrongRole: (m: string) => string }> = {
+const rolePaths: Record<
+  AuthRole,
+  {
+    login: (m: string) => string;
+    wrongRole: (m: string) => string;
+    /** Espace du même rôle sur le marché réel du compte (409 mauvais marché). */
+    wrongMarket: (m: string) => string;
+  }
+> = {
   client: {
     login: (m) => `/${m}/login`,
     wrongRole: (m) => `/${m}/gerant`,
+    wrongMarket: (m) => `/${m}/compte`,
   },
   gerant: {
     login: (m) => `/${m}/login/gerant`,
     wrongRole: (m) => `/${m}/compte`,
+    wrongMarket: (m) => `/${m}/gerant`,
   },
 };
 
@@ -49,13 +59,10 @@ export function resetAuthRedirectBudget(): void {
   authRedirectBudget = 0;
 }
 
+import { LoadingScreen } from './LoadingComponents/LoadingSpinner';
+
 function Loading() {
-  return (
-    <div className="auth-loading">
-      <div className="auth-loading__spinner" />
-      <p>Chargement...</p>
-    </div>
-  );
+  return <LoadingScreen message="Authentification..." submessage="Veuillez patienter pendant que nous vérifions vos informations" />;
 }
 
 function ErrorScreen({
@@ -106,10 +113,12 @@ export type GuardDestination =
 export function resolveDestination({
   outcome,
   wrongRolePath,
+  wrongMarketPath = (market) => `/${market.toLowerCase()}/gerant`,
   currentPath,
 }: {
   outcome: GuardOutcome | null;
   wrongRolePath: string;
+  wrongMarketPath?: (market: MarketCode) => string;
   currentPath: string;
 }): GuardDestination {
   if (!outcome) return { kind: 'loading' };
@@ -124,7 +133,7 @@ export function resolveDestination({
         ? { kind: 'error', message: 'Espace introuvable pour ce compte.' }
         : { kind: 'redirect', path: wrongRolePath };
     case 'wrong-market': {
-      const path = `/${outcome.market.toLowerCase()}/gerant`;
+      const path = wrongMarketPath(outcome.market);
       // Déjà sur le bon marché : rien à rediriger (sinon, boucle sur soi-même).
       return path === currentPath ? { kind: 'ok' } : { kind: 'redirect', path };
     }
@@ -182,9 +191,10 @@ function AuthenticatedGuard({
         });
       } catch (err) {
         if (cancelled) return;
-        // 409 avec un marché renvoyé : le compte gérant est rattaché à un
-        // autre marché que celui de l'URL → on redirige vers le bon espace.
-        if (err instanceof ApiError && err.status === 409 && expectedRole === 'gerant') {
+        // 409 avec un marché renvoyé : le compte (client ou gérant) est
+        // rattaché à un autre marché que celui de l'URL → on redirige vers
+        // l'espace correspondant du marché réel.
+        if (err instanceof ApiError && err.status === 409) {
           const detail = err.detail as { market?: string } | undefined;
           const actualMarket = detail?.market;
           if (actualMarket && isMarketCode(actualMarket)) {
@@ -216,7 +226,12 @@ function AuthenticatedGuard({
     };
   }, [isLoaded, isSignedIn, expectedRole, market, retryToken, identity]);
 
-  const dest = resolveDestination({ outcome, wrongRolePath, currentPath: pathname });
+  const dest = resolveDestination({
+    outcome,
+    wrongRolePath,
+    wrongMarketPath: rolePaths[expectedRole].wrongMarket,
+    currentPath: pathname,
+  });
   const redirectPath = dest.kind === 'redirect' ? dest.path : null;
 
   // Disjoncteur : compte les redirections d'une même session. Dès qu'un espace

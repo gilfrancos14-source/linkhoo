@@ -27,7 +27,7 @@ export const CLIENT_NOTIFICATION_COLUMNS =
   'id, type, room_title, room_id, client_email, message, date, read';
 
 export const CLIENT_COLUMNS =
-  'id, clerk_user_id, email, nom, prenom, telephone, created_at, updated_at';
+  'id, clerk_user_id, email, nom, prenom, telephone, market, created_at, updated_at';
 
 export const EVENT_COLUMNS = 'id, market, city, title, description, event_date, img, alt, created_at';
 

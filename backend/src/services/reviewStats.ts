@@ -21,6 +21,13 @@ interface ReviewNoteRow {
  * chambre, pas seulement sur les avis commentés.
  * Une chambre sans avis n'apparaît pas dans la Map : l'appelant décide du
  * repli (note individuelle ou null).
+ *
+ * CORRECTIF : la distribution est alimentée sur `Math.round(note)` (bucket
+ * entier 1..5), tandis que la moyenne utilise la note brute. Sans ça, une
+ * note décimale (4.5) n'apparaissait dans AUCUN bucket de la distribution
+ * alors que `count` et `rating` restaient corrects — l'histogramme affiché
+ * était faux. La note brute est aussi bornée à [1, 5] pour éviter qu'une
+ * valeur aberrante ne pollue le dénominateur.
  */
 export async function fetchRoomReviewStats(
   roomIds: readonly string[],
@@ -39,15 +46,25 @@ export async function fetchRoomReviewStats(
   const notesByRoom = new Map<string, Map<number, number>>();
   for (const row of (data ?? []) as ReviewNoteRow[]) {
     if (!row.room_id) continue;
-    const note = Number(row.note_appartement);
-    if (!Number.isFinite(note)) continue;
+    const rawNote = Number(row.note_appartement);
+    if (!Number.isFinite(rawNote)) continue;
+
+    // CORRECTIF défensif : on arrondit à l'entier le plus proche pour que
+    // chaque note tombe dans un bucket de la distribution. On rejette les
+    // notes hors [1, 5] (sécurité si le schéma Zod ou un import manuel
+    // laissait passer une valeur aberrante).
+    const bucket = Math.round(rawNote);
+    if (bucket < 1 || bucket > 5) continue;
+
     const current = sums.get(row.room_id) ?? { total: 0, count: 0 };
-    current.total += note;
+    // Moyenne sur la note brute, pas arrondie — la précision est conservée
+    // pour `rating`.
+    current.total += rawNote;
     current.count += 1;
     sums.set(row.room_id, current);
 
     const byNote = notesByRoom.get(row.room_id) ?? new Map<number, number>();
-    byNote.set(note, (byNote.get(note) ?? 0) + 1);
+    byNote.set(bucket, (byNote.get(bucket) ?? 0) + 1);
     notesByRoom.set(row.room_id, byNote);
   }
 

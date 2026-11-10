@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { emailSchema } from './common';
+import { emailSchema, marketSchema } from './common';
 
 const phoneSchema = z
   .string()
@@ -16,6 +16,7 @@ export const clientCreateSchema = z
     nom: z.string().trim().max(100).optional().default(''),
     prenom: z.string().trim().max(100).optional().default(''),
     telephone: phoneSchema,
+    market: marketSchema,
   })
   .strict();
 

@@ -11,11 +11,10 @@ vi.mock('../../config/supabase', async () => {
 
 vi.mock('../service/providerStatus', () => ({ lookupProviderPayment: vi.fn() }));
 
-const HUB2_ENV: Record<string, string> = {
-  PAYMENTS_PROVIDER: 'hub2',
-  HUB2_API_KEY: 'sk_test_123',
-  HUB2_MERCHANT_ID: 'merchant_123',
-  HUB2_ENV: 'sandbox',
+const PAWAPAY_ENV: Record<string, string> = {
+  PAWAPAY_API_KEY: 'pawapay_api_key_test',
+  PAWAPAY_MERCHANT_ID: 'pawapay_merchant_test',
+  PAWAPAY_ENV: 'sandbox',
 };
 
 const PAYMENT = {
@@ -27,7 +26,7 @@ const PAYMENT = {
 };
 
 function setEnv(overrides: Record<string, string | undefined> = {}): void {
-  for (const [key, value] of Object.entries({ ...HUB2_ENV, ...overrides })) {
+  for (const [key, value] of Object.entries({ ...PAWAPAY_ENV, ...overrides })) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
   }
@@ -39,12 +38,12 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  for (const key of Object.keys(HUB2_ENV)) delete process.env[key];
+  for (const key of Object.keys(PAWAPAY_ENV)) delete process.env[key];
 });
 
 describe('reconcilePendingPayments', () => {
-  it('ne fait rien quand le prestataire actif est FedaPay', async () => {
-    setEnv({ PAYMENTS_PROVIDER: 'fedapay' });
+  it('ne fait rien quand pawaPay n’est pas configuré', async () => {
+    setEnv({ PAWAPAY_API_KEY: undefined });
 
     const result = await reconcilePendingPayments();
 
@@ -52,12 +51,12 @@ describe('reconcilePendingPayments', () => {
     expect(supabaseAdmin.from).not.toHaveBeenCalled();
   });
 
-  it('active un paiement confirmé par Hub2 via la RPC de réservation', async () => {
+  it('active un paiement confirmé par pawaPay via la RPC de réservation', async () => {
     useSupabaseTables(supabaseAdmin.from, {
       payments: fakeChain({ data: [PAYMENT], error: null }),
     });
     vi.mocked(lookupProviderPayment).mockResolvedValue({
-      payment: { id: 'pay_hub2', amount: 150_000, currency: 'XOF' },
+      payment: { id: 'dep_pawapay', amount: 150_000, currency: 'XOF' },
       latestStatus: 'succeeded',
     });
     vi.mocked(supabaseAdmin.rpc).mockResolvedValue({ data: null, error: null } as never);
@@ -66,14 +65,14 @@ describe('reconcilePendingPayments', () => {
 
     expect(supabaseAdmin.rpc).toHaveBeenCalledWith('payment_claim_booking', {
       p_reference: PAYMENT.reference,
-      p_provider_payment_id: 'pay_hub2',
+      p_provider_payment_id: 'dep_pawapay',
       p_amount: 150_000,
       p_currency: 'XOF',
     });
     expect(result).toMatchObject({ checked: 1, claimed: 1, closed: 0, skipped: false });
   });
 
-  it('ferme un paiement que Hub2 déclare échoué', async () => {
+  it('ferme un paiement que pawaPay déclare échoué', async () => {
     const close = fakeChain({ data: null, error: null });
     useSupabaseTables(supabaseAdmin.from, {
       payments: [fakeChain({ data: [PAYMENT], error: null }), close],
@@ -107,7 +106,7 @@ describe('reconcilePendingPayments', () => {
     expect(result).toMatchObject({ checked: 1, claimed: 0, closed: 0 });
   });
 
-  it('continue le lot quand Hub2 échoue sur un paiement', async () => {
+  it('continue le lot quand pawaPay échoue sur un paiement', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     useSupabaseTables(supabaseAdmin.from, {
       payments: fakeChain({ data: [PAYMENT], error: null }),

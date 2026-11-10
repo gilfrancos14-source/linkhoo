@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { supabaseAdmin } from '../../config/supabase';
 import { fakeChain, useSupabaseTables } from '../../testHelpers/supertestApp';
 import { startBookingPayment, confirmBookingPayment } from './booking';
@@ -14,23 +14,8 @@ vi.mock('./checkout', () => ({ createCheckout: vi.fn() }));
 
 vi.mock('./providerStatus', () => ({ lookupProviderPayment: vi.fn() }));
 
-const HUB2_ENV: Record<string, string> = {
-  PAYMENTS_PROVIDER: 'hub2',
-  HUB2_API_KEY: 'sk_test_123',
-  HUB2_MERCHANT_ID: 'merchant_123',
-  HUB2_ENV: 'sandbox',
-  APP_PUBLIC_URL: 'https://app.linkhoo.test',
-};
-
-function setEnv(overrides: Record<string, string | undefined> = {}): void {
-  for (const [key, value] of Object.entries({ ...HUB2_ENV, ...overrides })) {
-    if (value === undefined) delete process.env[key];
-    else process.env[key] = value;
-  }
-}
-
 const RESERVATION = {
-  id: 'resa-1',
+  id: '11111111-1111-4111-8111-111111111111',
   room_id: 'room-1',
   montant: 150_000,
   statut: 'en_attente',
@@ -47,7 +32,8 @@ const ROOM = {
 
 const SESSION = {
   reference: 'PAY-2026-ABC123',
-  checkoutUrl: 'https://pay.hub2.io/link_1',
+  checkoutUrl: 'https://checkout.pawapay.io/pay-1',
+  redirectUrl: 'https://checkout.pawapay.io/pay-1',
   amount: 150_000,
   currency: 'XOF' as const,
   amountXof: 150_000,
@@ -74,28 +60,13 @@ function policyChain(enabled = true) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  setEnv();
-});
-
-afterEach(() => {
-  for (const key of Object.keys(HUB2_ENV)) delete process.env[key];
 });
 
 describe('startBookingPayment', () => {
-  it('ne crée aucun lien quand le prestataire est FedaPay', async () => {
-    setEnv({ PAYMENTS_PROVIDER: 'fedapay' });
-
-    const result = await startBookingPayment('resa-1');
-
-    expect(result).toEqual({ state: 'unavailable', reason: 'provider_disabled' });
-    expect(supabaseAdmin.from).not.toHaveBeenCalled();
-    expect(createCheckout).not.toHaveBeenCalled();
-  });
-
   it('404 quand la réservation est inconnue', async () => {
     stubTables({ reservations: fakeChain({ data: null, error: null }) });
 
-    await expect(startBookingPayment('resa-1')).rejects.toMatchObject({
+    await expect(startBookingPayment('11111111-1111-4111-8111-111111111111')).rejects.toMatchObject({
       code: 'PAYMENT_NOT_FOUND',
       status: 404,
     });
@@ -106,7 +77,7 @@ describe('startBookingPayment', () => {
       reservations: fakeChain({ data: { ...RESERVATION, statut: 'annulee' }, error: null }),
     });
 
-    await expect(startBookingPayment('resa-1')).rejects.toMatchObject({
+    await expect(startBookingPayment('11111111-1111-4111-8111-111111111111')).rejects.toMatchObject({
       code: 'PAYMENT_NOT_PAYABLE',
       status: 409,
     });
@@ -121,7 +92,7 @@ describe('startBookingPayment', () => {
       payments: fakeChain({ data: { reference: 'PAY-2026-ABC123' }, error: null }),
     });
 
-    const result = await startBookingPayment('resa-1');
+    const result = await startBookingPayment('11111111-1111-4111-8111-111111111111');
 
     expect(result).toEqual({ state: 'paid', reference: 'PAY-2026-ABC123' });
     expect(createCheckout).not.toHaveBeenCalled();
@@ -134,7 +105,7 @@ describe('startBookingPayment', () => {
       payment_policies: policyChain(false),
     });
 
-    const result = await startBookingPayment('resa-1');
+    const result = await startBookingPayment('11111111-1111-4111-8111-111111111111');
 
     expect(result).toEqual({ state: 'unavailable', reason: 'online_payment_disabled' });
     expect(createCheckout).not.toHaveBeenCalled();
@@ -150,7 +121,7 @@ describe('startBookingPayment', () => {
     });
     vi.mocked(createCheckout).mockResolvedValue(SESSION);
 
-    const result = await startBookingPayment('resa-1');
+    const result = await startBookingPayment('11111111-1111-4111-8111-111111111111');
 
     expect(createCheckout).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -167,7 +138,18 @@ describe('startBookingPayment', () => {
       payment_status: 'pending',
       payment_id: 'pay-1',
     });
-    expect(result).toEqual({ state: 'checkout', session: SESSION });
+    expect(result).toMatchObject({
+      state: 'checkout',
+      session: {
+        reference: SESSION.reference,
+        checkoutUrl: SESSION.checkoutUrl,
+        redirectUrl: SESSION.redirectUrl,
+        amount: SESSION.amount,
+        currency: SESSION.currency,
+        amountXof: SESSION.amountXof,
+        expiresAt: SESSION.expiresAt,
+      },
+    });
   });
 });
 
@@ -179,13 +161,13 @@ describe('confirmBookingPayment', () => {
     status: 'pending',
     amount: 150_000,
     currency: 'XOF',
-    reservation_id: 'resa-1',
+    reservation_id: '11111111-1111-4111-8111-111111111111',
     provider_payment_link_id: null,
     fulfilled_at: null,
   };
 
   const CONFIRMED = {
-    id: 'resa-1',
+    id: '11111111-1111-4111-8111-111111111111',
     room_title: 'Studio Cocody',
     date_debut: '2026-05-01',
     date_fin: '2026-05-04',
@@ -215,7 +197,7 @@ describe('confirmBookingPayment', () => {
     });
   });
 
-  it('ne rappelle pas Hub2 quand le webhook a déjà tout traité', async () => {
+  it('ne rappelle pas pawaPay quand le webhook a déjà tout traité', async () => {
     stubTables({
       payments: fakeChain({
         data: { ...PAYMENT, status: 'succeeded', fulfilled_at: '2026-10-27T10:00:00.000Z' },
@@ -235,7 +217,7 @@ describe('confirmBookingPayment', () => {
     expect(supabaseAdmin.rpc).not.toHaveBeenCalled();
   });
 
-  it('refuse tant que Hub2 n’a pas confirmé', async () => {
+  it('refuse tant que pawaPay n’a pas confirmé', async () => {
     stubTables({ payments: fakeChain({ data: PAYMENT, error: null }) });
     vi.mocked(lookupProviderPayment).mockResolvedValue({
       payment: null,
@@ -256,11 +238,11 @@ describe('confirmBookingPayment', () => {
       reservations: fakeChain({ data: CONFIRMED, error: null }),
     });
     vi.mocked(lookupProviderPayment).mockResolvedValue({
-      payment: { id: 'pay_hub2', amount: 150_000, currency: 'XOF' },
+      payment: { id: 'dep_pawapay', amount: 150_000, currency: 'XOF' },
       latestStatus: 'succeeded',
     });
     vi.mocked(supabaseAdmin.rpc).mockResolvedValue({
-      data: [{ payment_id: 'pay-1', reservation_id: 'resa-1', already_claimed: false }],
+      data: [{ payment_id: 'pay-1', reservation_id: '11111111-1111-4111-8111-111111111111', already_claimed: false }],
       error: null,
     } as never);
 
@@ -268,7 +250,7 @@ describe('confirmBookingPayment', () => {
 
     expect(supabaseAdmin.rpc).toHaveBeenCalledWith('payment_claim_booking', {
       p_reference: 'PAY-2026-ABC123',
-      p_provider_payment_id: 'pay_hub2',
+      p_provider_payment_id: 'dep_pawapay',
       p_amount: 150_000,
       p_currency: 'XOF',
     });
@@ -278,7 +260,7 @@ describe('confirmBookingPayment', () => {
   it('traduit un écart de montant en 409', async () => {
     stubTables({ payments: fakeChain({ data: PAYMENT, error: null }) });
     vi.mocked(lookupProviderPayment).mockResolvedValue({
-      payment: { id: 'pay_hub2', amount: 100, currency: 'XOF' },
+      payment: { id: 'dep_pawapay', amount: 100, currency: 'XOF' },
       latestStatus: 'succeeded',
     });
     vi.mocked(supabaseAdmin.rpc).mockResolvedValue({
@@ -295,7 +277,7 @@ describe('confirmBookingPayment', () => {
   it('traduit un paiement non-réservation renvoyé par la RPC en 400', async () => {
     stubTables({ payments: fakeChain({ data: PAYMENT, error: null }) });
     vi.mocked(lookupProviderPayment).mockResolvedValue({
-      payment: { id: 'pay_hub2', amount: 150_000, currency: 'XOF' },
+      payment: { id: 'dep_pawapay', amount: 150_000, currency: 'XOF' },
       latestStatus: 'succeeded',
     });
     vi.mocked(supabaseAdmin.rpc).mockResolvedValue({

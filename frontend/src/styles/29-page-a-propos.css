@@ -14,7 +14,7 @@
   --ab-muted: #64748b;
   --ab-line: #ece8f8;
 
-  font-family: 'Inter Variable', system-ui, sans-serif;
+  font-family: 'Poppins', system-ui, sans-serif;
   color: var(--ab-ink);
   background: #fff;
 }
@@ -33,7 +33,7 @@
 }
 
 .about-page .ab-hand {
-  font-family: 'Caveat Variable', cursive;
+  font-family: 'Poppins', cursive;
   font-weight: 600;
 }
 

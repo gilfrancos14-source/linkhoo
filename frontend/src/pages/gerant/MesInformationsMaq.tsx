@@ -10,8 +10,8 @@ import {
 } from '../../lib/api';
 import { isPremiumActive } from '../../lib/premium';
 import { formatDateLong } from '../../lib/formatDate';
-import { ProfileSidebar } from '../../components/gerant-profile/ProfileSidebar';
 import { ProfileHeader } from '../../components/gerant-profile/ProfileHeader';
+import GerantSidebar from '../../components/gerant/GerantSidebar';
 import { ProfileBreadcrumb } from '../../components/gerant-profile/ProfileBreadcrumb';
 import { ProfileBanner } from '../../components/gerant-profile/ProfileBanner';
 import { PersonalInfoSection } from '../../components/gerant-profile/PersonalInfoSection';
@@ -83,7 +83,7 @@ export default function MesInformationsMaq() {
   if (!gerant) {
     return (
       <div className="verif-maq flex min-h-screen">
-        <ProfileSidebar active="" />
+        <GerantSidebar />
         <div className="min-w-0 flex-1">
           <ProfileHeader userName="Chargement…" />
           <main className="pb-10 pl-[22px] pr-[25px]">
@@ -147,7 +147,7 @@ export default function MesInformationsMaq() {
 
   return (
     <div className="verif-maq flex min-h-screen">
-      <ProfileSidebar active="profil" />
+      <GerantSidebar />
       <div className="min-w-0 flex-1">
         <ProfileHeader userName={fullName} />
         <main className="pb-10 pl-[22px] pr-[25px]">

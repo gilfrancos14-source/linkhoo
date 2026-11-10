@@ -31,7 +31,7 @@ const SETTINGS = {
   market: 'CI',
   payout_method: 'mobile_money',
   payout_phone: '+2250700000000',
-  payout_provider: 'orange',
+  payout_provider: 'ORANGE_CIV',
   payout_bank_code: null,
   payout_bank_name: null,
   payout_account_number: null,
@@ -75,7 +75,7 @@ describe('GET /api/payouts/settings', () => {
     expect(res.body).toMatchObject({
       method: 'mobile_money',
       phone: '+2250700000000',
-      provider: 'orange',
+      provider: 'ORANGE_CIV',
       holder_name: 'Awa Koné',
       verified: true,
       missing_fields: [],
@@ -121,7 +121,7 @@ describe('PUT /api/payouts/settings', () => {
       .send({
         method: 'mobile_money',
         phone: '+2250700000001',
-        provider: 'mtn',
+        provider: 'MTN_MOMO_CIV',
         holder_name: 'Awa Koné',
       });
 
@@ -129,11 +129,14 @@ describe('PUT /api/payouts/settings', () => {
     expect(update.update).toHaveBeenCalledWith(
       expect.objectContaining({
         payout_phone: '+2250700000001',
-        payout_provider: 'mtn',
+        payout_provider: 'MTN_MOMO_CIV',
         payout_verified_at: null,
       }),
     );
-    expect(res.body.verified).toBe(false);
+    // `verified` reflète désormais la validité pawaPay de la destination ;
+    // `verified_at` reste remis à zéro pour forcer un nouveau contrôle.
+    expect(res.body.verified).toBe(true);
+    expect(res.body.verified_at).toBeNull();
   });
 });
 

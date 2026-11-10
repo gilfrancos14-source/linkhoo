@@ -3,9 +3,9 @@ import { verifyToken } from '@clerk/backend';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import reservationsRouter from './reservations';
 import { supabaseAdmin } from '../config/supabase';
-import { Hub2ConfigError } from '../payments/config';
+import { PawapayConfigError } from '../payments/pawapay/config';
+import { PawapayApiError } from '../payments/pawapay/client';
 import { PaymentServiceError } from '../payments/errors';
-import { Hub2Error } from '../payments/hub2/client';
 import {
   buildTestApp,
   clerkBearer,
@@ -48,7 +48,9 @@ const app = buildTestApp('/api/reservations', reservationsRouter);
 
 const SESSION = {
   reference: 'PAY-2026-ABC123',
-  checkoutUrl: 'https://pay.hub2.io/link_1',
+  checkoutUrl: 'https://checkout.pawapay.io/pay-1',
+  redirectUrl: 'https://checkout.pawapay.io/pay-1',
+  checkoutId: 'checkout-1',
   amount: 150_000,
   currency: 'XOF' as const,
   amountXof: 150_000,
@@ -98,18 +100,6 @@ beforeEach(() => {
 });
 
 describe('POST /api/reservations/:id/payment', () => {
-  it('422 quand le paiement en ligne est indisponible', async () => {
-    vi.mocked(startBookingPayment).mockResolvedValue({
-      state: 'unavailable',
-      reason: 'provider_disabled',
-    });
-
-    const res = await request(app).post('/api/reservations/r1/payment');
-
-    expect(res.status).toBe(422);
-    expect(res.body).toMatchObject({ code: 'PAYMENT_PROVIDER_DISABLED' });
-  });
-
   it('422 quand le marché n’a pas le paiement en ligne', async () => {
     vi.mocked(startBookingPayment).mockResolvedValue({
       state: 'unavailable',
@@ -132,6 +122,8 @@ describe('POST /api/reservations/:id/payment', () => {
       state: 'checkout',
       reference: SESSION.reference,
       checkout_url: SESSION.checkoutUrl,
+      redirectUrl: SESSION.redirectUrl,
+      checkoutId: SESSION.checkoutId,
       amount: SESSION.amount,
       currency: 'XOF',
       amount_xof: SESSION.amountXof,
@@ -162,15 +154,15 @@ describe('POST /api/reservations/:id/payment', () => {
     expect(res.body).toMatchObject({ code: 'PAYMENT_NOT_FOUND' });
   });
 
-  it('502 quand Hub2 est indisponible', async () => {
+  it('502 quand pawaPay est indisponible', async () => {
     vi.mocked(startBookingPayment).mockRejectedValue(
-      new Hub2Error('réseau', { code: 'HUB2_NETWORK_ERROR' }),
+      new PawapayApiError('réseau', 0),
     );
 
     const res = await request(app).post('/api/reservations/r1/payment');
 
     expect(res.status).toBe(502);
-    expect(res.body).toMatchObject({ code: 'HUB2_NETWORK_ERROR' });
+    expect(res.body).toMatchObject({ code: 'PAWAPAY_ERROR' });
   });
 });
 
@@ -204,9 +196,9 @@ describe('POST /api/reservations/payment/confirm', () => {
     });
   });
 
-  it('503 quand Hub2 n’est pas configuré', async () => {
+  it('503 quand pawaPay n’est pas configuré', async () => {
     vi.mocked(confirmBookingPayment).mockRejectedValue(
-      new Hub2ConfigError('HUB2_NOT_CONFIGURED', 'clés absentes'),
+      new PawapayConfigError('PAWAPAY_NOT_CONFIGURED', 'clés absentes'),
     );
 
     const res = await request(app)
@@ -214,7 +206,7 @@ describe('POST /api/reservations/payment/confirm', () => {
       .send({ reference: 'PAY-2026-ABC123' });
 
     expect(res.status).toBe(503);
-    expect(res.body).toMatchObject({ code: 'HUB2_NOT_CONFIGURED' });
+    expect(res.body).toMatchObject({ code: 'PAWAPAY_NOT_CONFIGURED' });
   });
 });
 
@@ -267,7 +259,7 @@ describe('création avec paiement', () => {
       data: [{ id: 'resa-1', statut: 'en_attente' }],
       error: null,
     } as never);
-    vi.mocked(startBookingPayment).mockRejectedValue(new Hub2Error('panne'));
+    vi.mocked(startBookingPayment).mockRejectedValue(new PawapayApiError('panne', 0));
 
     const res = await request(app).post('/api/reservations').send(validReservation);
 
@@ -397,7 +389,7 @@ describe('remboursement sur annulation', () => {
       ],
       rooms: fakeChain({ data: { gerant_id: 'user_1' }, error: null }),
     });
-    vi.mocked(requestReservationRefund).mockRejectedValue(new Error('Hub2 en panne'));
+    vi.mocked(requestReservationRefund).mockRejectedValue(new Error('pawaPay en panne'));
 
     const res = await request(app)
       .post('/api/reservations/r1/cancel')

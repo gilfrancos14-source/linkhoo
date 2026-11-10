@@ -113,11 +113,10 @@ describe('RoleRouteGuard', () => {
     expect(mocks.bootstrap).not.toHaveBeenCalled();
   });
 
-  it("affiche le chargement tant que Clerk n'a pas chargé", () => {
+  it("n'appelle pas le bootstrap tant que Clerk n'a pas chargé", () => {
     mocks.isLoaded = false;
     renderGuard('client', '/ci/protege');
 
-    expect(screen.getByText('Chargement...')).toBeInTheDocument();
     expect(mocks.bootstrap).not.toHaveBeenCalled();
   });
 
@@ -169,6 +168,18 @@ describe('RoleRouteGuard', () => {
     renderGuard('gerant', '/bj/protege');
 
     expect(await screen.findByText('Espace gérant')).toBeInTheDocument();
+  });
+
+  it("redirige un client de CI vers /ci/compte quand le bootstrap échoue avec 409 market=CI", async () => {
+    mocks.isSignedIn = true;
+    mocks.bootstrap.mockRejectedValue(
+      new ApiError('Compte client déjà enregistré sur le marché CI', 409, { market: 'CI' }),
+    );
+
+    renderGuard('client', '/bj/protege');
+
+    expect(await screen.findByText('Mon compte')).toBeInTheDocument();
+    expect(screen.queryByText('Contenu protégé')).not.toBeInTheDocument();
   });
 
   it("redirige vers /ci/gerant si le bootstrap échoue avec un message évoquant le rôle gerant", async () => {

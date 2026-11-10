@@ -42,8 +42,6 @@ router.get('/', requireAdminForPast, async (req: Request, res: Response, next: N
     }
 
     let query = supabasePublic.from('events').select(EVENT_COLUMNS);
-    // Marché omis (back-office avec include_past=1) : on renvoie TOUS les
-    // marchés en une seule requête, sinon on filtre sur le marché demandé.
     if (parsedQuery.data.market) {
       query = query.eq('market', parsedQuery.data.market);
     }
@@ -67,9 +65,10 @@ router.post('/', requireAdminAuth, requirePermission('evenements'), async (req: 
       return res.status(400).json({ error: "Données d'événement invalides" });
     }
 
+    // CORRECTIF : id server-side prioritaire (évite l'override client).
     const { data, error } = await supabaseAdmin
       .from('events')
-      .insert({ id: randomUUID(), ...parsedBody.data })
+      .insert({ ...parsedBody.data, id: randomUUID() })
       .select(EVENT_COLUMNS)
       .single();
     if (error) throw error;
@@ -87,9 +86,15 @@ router.put('/:id', requireAdminAuth, requirePermission('evenements'), async (req
       return res.status(400).json({ error: "Données d'événement invalides" });
     }
 
+    // CORRECTIF : on ne permet pas de changer l'id via update.
+    const { id: _ignoredId, ...patch } = parsedBody.data as Record<string, unknown>;
+    if (Object.keys(patch).length === 0) {
+      return res.status(400).json({ error: "Données d'événement invalides" });
+    }
+
     const { data, error } = await supabaseAdmin
       .from('events')
-      .update(parsedBody.data)
+      .update(patch)
       .eq('id', parsedParams.data.id)
       .select(EVENT_COLUMNS)
       .maybeSingle();

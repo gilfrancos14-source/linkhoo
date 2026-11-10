@@ -1,29 +1,24 @@
 /**
- * Flux Premium Hub2.
- *
- * Deux chemins convergent vers la même RPC atomique
- * `payment_claim_premium(reference, …)` :
- *
- *   - le webhook `payment_intent.succeeded` (nominal) ;
- *   - le retour navigateur `/api/premium/confirm` (secours), qui interroge
- *     Hub2 par `purchaseReference` quand la base n'a pas encore été mise à
- *     jour.
- *
- * Le second reçoit `already_claimed = true` si le premier est déjà passé :
- * l'abonnement n'est jamais prolongé deux fois.
+ * Flux Premium pawaPay.
  */
 
 import { supabaseAdmin } from '../../config/supabase';
 import type { MarketCode } from '../../config/markets';
-import { getHub2Config } from '../config';
+import type { PawapayCurrency } from '../pawapay/types';
 import { PaymentServiceError } from '../errors';
-import type { CheckoutSession, Hub2Currency } from '../types';
+import type { CheckoutSession } from '../types';
 import { GERANT_COLUMNS } from '../../utils/gerantSelect';
 import { createCheckout } from './checkout';
 import { lookupProviderPayment } from './providerStatus';
+import {
+  PREMIUM_PLANS,
+  premiumDaysFromMetadata,
+  resolvePremiumPlan,
+  type PremiumPlanId,
+} from '../premiumPlans';
 
-export const PREMIUM_AMOUNT_XOF = 5_000;
-export const PREMIUM_DURATION_DAYS = 30;
+export const PREMIUM_AMOUNT_XOF = PREMIUM_PLANS.monthly.amountXof;
+export const PREMIUM_DURATION_DAYS = PREMIUM_PLANS.monthly.days;
 
 interface PaymentRow {
   id: string;
@@ -31,11 +26,13 @@ interface PaymentRow {
   purpose: string;
   status: string;
   amount: number;
-  currency: Hub2Currency;
+  currency: PawapayCurrency;
   amount_xof: number;
   gerant_clerk_user_id: string | null;
   provider_payment_link_id: string | null;
+  pawapay_checkout_id: string | null;
   fulfilled_at: string | null;
+  metadata: Record<string, unknown> | null;
 }
 
 interface RpcClaimRow {
@@ -52,23 +49,28 @@ export interface PremiumConfirmation {
   gerant: Record<string, unknown> | null;
 }
 
-/** Crée (ou réutilise) un checkout Premium pour le gérant connecté. */
 export async function createPremiumCheckout(input: {
   market: MarketCode;
   clerkUserId: string;
   email: string;
+  plan?: PremiumPlanId;
 }): Promise<CheckoutSession> {
+  const plan = resolvePremiumPlan(input.plan);
   return createCheckout({
     purpose: 'premium',
     market: input.market,
-    amountXof: PREMIUM_AMOUNT_XOF,
+    amountXof: plan.amountXof,
     payerType: 'gerant',
     payerClerkUserId: input.clerkUserId,
     gerantClerkUserId: input.clerkUserId,
-    description: `Abonnement Premium ${input.market} - ${PREMIUM_DURATION_DAYS} jours`,
+    description: `Abonnement Premium ${plan.label} ${input.market} - ${plan.days} jours`,
     returnPath: `/${input.market.toLowerCase()}/gerant/premium/success`,
     failurePath: `/${input.market.toLowerCase()}/gerant/premium`,
-    metadata: { email: input.email },
+    metadata: {
+      email: input.email,
+      premium_plan: plan.id,
+      premium_days: plan.days,
+    },
     reusePendingPayment: true,
   });
 }
@@ -77,11 +79,10 @@ async function fetchPayment(reference: string): Promise<PaymentRow | null> {
   const { data, error } = await supabaseAdmin
     .from('payments')
     .select(
-      'id, reference, purpose, status, amount, currency, amount_xof, gerant_clerk_user_id, provider_payment_link_id, fulfilled_at',
+      'id, reference, purpose, status, amount, currency, amount_xof, gerant_clerk_user_id, provider_payment_link_id, pawapay_checkout_id, fulfilled_at, metadata',
     )
     .eq('reference', reference)
     .maybeSingle();
-
   if (error) throw error;
   return (data as PaymentRow | null) ?? null;
 }
@@ -118,26 +119,22 @@ function assertPremium(payment: PaymentRow): void {
 
 function rpcError(error: { message?: string; code?: string }): PaymentServiceError {
   const message = error.message ?? 'Activation premium impossible';
-  if (message.includes('PAYMENT_NOT_FOUND')) {
+  if (message.includes('PAYMENT_NOT_FOUND'))
     return new PaymentServiceError('PAYMENT_NOT_FOUND', 'Paiement introuvable.', 404);
-  }
-  if (message.includes('PAYMENT_NOT_PREMIUM')) {
+  if (message.includes('PAYMENT_NOT_PREMIUM'))
     return new PaymentServiceError('PAYMENT_NOT_PREMIUM', 'Paiement non premium.', 400);
-  }
-  if (message.includes('PAYMENT_AMOUNT_MISMATCH')) {
+  if (message.includes('PAYMENT_AMOUNT_MISMATCH'))
     return new PaymentServiceError(
       'PAYMENT_AMOUNT_MISMATCH',
       'Le montant reçu ne correspond pas au paiement attendu.',
       409,
     );
-  }
-  if (message.includes('PAYMENT_NOT_PAYABLE')) {
+  if (message.includes('PAYMENT_NOT_PAYABLE'))
     return new PaymentServiceError(
       'PAYMENT_NOT_PAYABLE',
       'Ce paiement ne peut plus être activé.',
       409,
     );
-  }
   return new PaymentServiceError('PAYMENT_NOT_SUCCEEDED', message, 500);
 }
 
@@ -152,9 +149,8 @@ async function claimPremium(
     p_provider_payment_id: providerPaymentId,
     p_amount: amount,
     p_currency: currency,
-    p_days: PREMIUM_DURATION_DAYS,
+    p_days: premiumDaysFromMetadata(payment.metadata),
   });
-
   if (error) throw rpcError(error);
 
   const row = (Array.isArray(data) ? data[0] : data) as RpcClaimRow | undefined;
@@ -168,12 +164,6 @@ async function claimPremium(
   return row;
 }
 
-/**
- * Confirme un paiement Premium depuis le retour navigateur.
- *
- * @throws PaymentServiceError (404/403/400/409/500)
- * @throws Hub2ConfigError (clés Hub2 absentes → 503 côté route)
- */
 export async function confirmPremiumPayment(
   reference: string,
   clerkUserId: string,
@@ -185,7 +175,6 @@ export async function confirmPremiumPayment(
   assertOwnership(payment, clerkUserId);
   assertPremium(payment);
 
-  // Déjà activé par le webhook : aucune requête réseau nécessaire.
   if (payment.status === 'succeeded' && payment.fulfilled_at) {
     const gerant = await fetchGerant(clerkUserId);
     return {
@@ -195,16 +184,21 @@ export async function confirmPremiumPayment(
     };
   }
 
-  const { payment: providerPayment, latestStatus } = await lookupProviderPayment(
-    getHub2Config(),
-    reference,
-    payment.provider_payment_link_id,
-  );
+  const checkoutCode = payment.pawapay_checkout_id;
+  if (!checkoutCode) {
+    throw new PaymentServiceError(
+      'PAYMENT_NOT_SUCCEEDED',
+      "Le paiement n'a pas encore été confirmé par pawaPay.",
+      400,
+    );
+  }
+
+  const { payment: providerPayment, latestStatus } = await lookupProviderPayment(reference);
 
   if (!providerPayment) {
     throw new PaymentServiceError(
       'PAYMENT_NOT_SUCCEEDED',
-      "Le paiement n'a pas encore été confirmé par Hub2.",
+      "Le paiement n'a pas encore été confirmé par pawaPay.",
       400,
       { status: latestStatus },
     );

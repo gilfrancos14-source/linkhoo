@@ -1,40 +1,34 @@
 /**
  * Réconciliation des paiements restés ouverts.
  *
- * Le webhook est le chemin nominal, mais il peut être perdu (endpoint
- * indisponible, événement non souscrit dans le dashboard). Ce job interroge
- * Hub2 pour les paiements encore `created`/`pending`/`requires_action` :
+ * Si le client ferme l'onglet avant le retour navigateur, le paiement peut
+ * rester bloqué en `pending` : on relit l'état réel chez pawaPay pour le
+ * clôturer (succès confirmé) ou le marquer terminal (`failed`, `canceled`,
+ * `expired`).
  *
- *   - succès confirmé → même RPC atomique que le webhook (`claimSucceededPayment`) ;
- *   - échec / expiration confirmée → statut terminal, sans rétrograder un succès ;
- *   - toujours en attente → aucune écriture, on repassera au prochain tour.
- *
- * Aucun montant n'est décidé ici : la ligne `payments` reste la source de
- * vérité et la RPC revérifie montant + devise.
+ * `'cancelled'` (2 L, pawaPay) est normalisé en `'canceled'` (1 L, DB) sinon
+ * les checkouts pawaPay CANCELLED ne sont jamais clôturés.
  */
 
 import { supabaseAdmin } from '../../config/supabase';
-import { getHub2Config, Hub2ConfigError } from '../config';
-import { isHub2Provider } from '../provider';
-import type { Hub2Currency } from '../types';
+import { getPawapayConfig, PawapayConfigError } from '../pawapay/config';
+import type { PawapayCurrency } from '../pawapay/types';
 import {
   claimSucceededPayment,
   OPEN_PAYMENT_STATUSES,
   setPaymentStatusIfOpen,
+  type NonTerminalStatus,
 } from '../service/applyEvent';
 import { lookupProviderPayment } from '../service/providerStatus';
 
-/** On laisse au webhook le temps d'arriver avant d'interroger Hub2. */
 export const RECONCILE_MIN_AGE_MS = 2 * 60 * 1000;
-
 export const RECONCILE_BATCH_SIZE = 50;
 
 interface PendingPaymentRow {
   reference: string;
   purpose: string;
   amount: number;
-  currency: Hub2Currency;
-  provider_payment_link_id: string | null;
+  currency: PawapayCurrency;
 }
 
 export interface ReconcileResult {
@@ -44,28 +38,26 @@ export interface ReconcileResult {
   readonly skipped: boolean;
 }
 
-const TERMINAL_KINDS = new Set(['failed', 'canceled', 'expired']);
+// Inclure 'cancelled' (2 L, pawaPay) pour ne pas laisser les checkouts
+// CANCELLED en `pending` éternel.
+const TERMINAL_KINDS = new Set<string>(['failed', 'canceled', 'cancelled', 'expired']);
 
-/**
- * Interroge Hub2 pour chaque paiement ouvert un peu ancien.
- *
- * Ne lève pas pour un incident prestataire : un lot ne doit pas être perdu
- * parce qu'un appel réseau a échoué. Les erreurs sont journalisées et la ligne
- * reste ouverte pour le tour suivant.
- */
+/** Normalise les alias provider vers les statuts DB (`canceled` à 1 L). */
+function normalizeTerminalStatus(status: string): NonTerminalStatus | null {
+  if (status === 'cancelled' || status === 'canceled') return 'canceled';
+  if (status === 'failed') return 'failed';
+  if (status === 'expired') return 'expired';
+  return null;
+}
+
 export async function reconcilePendingPayments(
   now: Date = new Date(),
 ): Promise<ReconcileResult> {
-  if (!isHub2Provider()) {
-    return { checked: 0, claimed: 0, closed: 0, skipped: true };
-  }
-
-  let config;
   try {
-    config = getHub2Config();
+    getPawapayConfig();
   } catch (error) {
-    if (error instanceof Hub2ConfigError) {
-      console.warn(`[payments:reconcile] Hub2 non configuré : ${error.code}`);
+    if (error instanceof PawapayConfigError) {
+      console.warn(`[payments:reconcile] pawaPay non configuré : ${error.code}`);
       return { checked: 0, claimed: 0, closed: 0, skipped: true };
     }
     throw error;
@@ -74,7 +66,7 @@ export async function reconcilePendingPayments(
   const cutoff = new Date(now.getTime() - RECONCILE_MIN_AGE_MS).toISOString();
   const { data, error } = await supabaseAdmin
     .from('payments')
-    .select('reference, purpose, amount, currency, provider_payment_link_id')
+    .select('reference, purpose, amount, currency')
     .in('status', [...OPEN_PAYMENT_STATUSES])
     .lt('created_at', cutoff)
     .order('created_at', { ascending: true })
@@ -89,9 +81,7 @@ export async function reconcilePendingPayments(
   for (const payment of rows) {
     try {
       const { payment: providerPayment, latestStatus } = await lookupProviderPayment(
-        config,
         payment.reference,
-        payment.provider_payment_link_id,
       );
 
       if (providerPayment) {
@@ -107,11 +97,11 @@ export async function reconcilePendingPayments(
       }
 
       if (TERMINAL_KINDS.has(latestStatus)) {
-        await setPaymentStatusIfOpen(
-          payment.reference,
-          latestStatus as 'failed' | 'canceled' | 'expired',
-        );
-        closed += 1;
+        const normalized = normalizeTerminalStatus(latestStatus);
+        if (normalized) {
+          await setPaymentStatusIfOpen(payment.reference, normalized);
+          closed += 1;
+        }
       }
     } catch (err) {
       console.error(

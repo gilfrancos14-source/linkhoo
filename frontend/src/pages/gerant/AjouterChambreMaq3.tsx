@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
+import GerantSidebar from '../../components/gerant/GerantSidebar';
 import { formatPrice } from '../../lib/roomDisplay';
 import '../../styles/35-gerant-maq3.css';
 import { emptyForm, type PreviewSnapshot } from './ajouter-chambre/form';
@@ -75,62 +76,7 @@ export default function AjouterChambreMaq3() {
       </svg>
 
       <div className="flex min-h-screen">
-        <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white px-4 py-5 lg:flex">
-          <Link to={gerantPath} className="mb-6 flex items-center gap-2.5 px-2" aria-label="Linkhoo - retour à l'accueil">
-            <img className="sidebar-logo" src="/logo.jpg" alt="Logo Linkhoo" />
-          </Link>
-
-          <nav className="space-y-3">
-            <Link to={gerantPath} className="grp"><Icon id="home" />Aperçu</Link>
-
-            <div>
-              <div className="grp justify-between"><span className="flex items-center gap-3"><Icon id="bed" />Chambres</span><Icon id="up" className="i !h-4 !w-4" /></div>
-              <div className="pl-2">
-                <Link to={chambresPath} className="sub"><Icon id="list" />Toutes les chambres</Link>
-                <Link to={`${chambresPath}/ajouter`} className="sub on" aria-current="page"><Icon id="plus" />Ajouter une chambre</Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp"><Icon id="cal" />Réservations{chrome.reservationsCount > 0 && <span className="badge">{chrome.reservationsCount}</span>}</div>
-              <div className="pl-2">
-                <Link to={`${gerantPath}/reservations/demandes`} className="sub"><Icon id="user" />Demandes</Link>
-                <Link to={`${gerantPath}/reservations/calendrier`} className="sub"><Icon id="cal" />Calendrier</Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp"><Icon id="chat" />Messages{chrome.messagesUnread > 0 && <span className="badge">{chrome.messagesUnread}</span>}</div>
-              <div className="pl-2">
-                <Link to={`${gerantPath}/messages/boite-reception`} className="sub"><Icon id="mail" />Boîte de réception</Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp justify-between"><span className="flex items-center gap-3"><Icon id="shield" />Vérification</span><Icon id="down" className="i !h-4 !w-4" /></div>
-              <div className="pl-2">
-                <Link to={`${gerantPath}/verification`} className="sub"><Icon id="doc" />Mes documents</Link>
-                <a href="#" className="sub"><Icon id="doc" />Suivi de vérification</a>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp justify-between"><span className="flex items-center gap-3"><Icon id="user" />Profil</span><Icon id="down" className="i !h-4 !w-4" /></div>
-              <div className="pl-2"><a href="#" className="sub"><Icon id="user" />Mes informations</a></div>
-            </div>
-
-            <div>
-              <div className="grp"><Icon id="crown" className="i text-dash-brand" />Premium</div>
-              <div className="pl-2"><a href="#" className="sub"><Icon id="cal" />Mon abonnement</a></div>
-            </div>
-          </nav>
-
-          <div className="mt-auto rounded-2xl border border-orange-100 bg-dash-brand-soft p-4 pt-5">
-            <p className="flex items-center gap-2 text-sm font-bold"><Icon id="crown" className="i h-5 w-5 text-dash-brand" />Passez au Premium</p>
-            <p className="mt-2 text-[11px] text-slate-500">Plus de visibilité, plus de réservations !</p>
-            <a href="#" className="mt-3 block rounded-lg bg-dash-brand py-2 text-center text-xs font-semibold text-white hover:bg-dash-brand-dark">Voir les avantages</a>
-          </div>
-        </aside>
+        <GerantSidebar />
 
         <main className="min-w-0 flex-1 px-4 py-4 lg:px-7">
           <header className="flex items-center gap-4">
@@ -150,7 +96,7 @@ export default function AjouterChambreMaq3() {
           </header>
 
           <Link to={chambresPath} className="mt-7 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-dash-navy"><Icon id="back" className="i h-4 w-4 text-dash-brand-dark" />Retour</Link>
-          <h1 className="mt-3 text-3xl font-extrabold">Ajouter une chambre</h1>
+          <h1 className="dash-page-head mt-3">Ajouter une chambre</h1>
           <p className="mt-1 text-sm text-slate-500">Suivez les étapes pour publier votre chambre rapidement.</p>
 
           <div className="mt-5 grid items-start gap-5 xl:grid-cols-[1fr_340px]">
@@ -159,7 +105,7 @@ export default function AjouterChambreMaq3() {
             </div>
 
             <aside className="card p-5">
-              <h2 className="mb-4 text-lg font-bold">Aperçu de votre chambre</h2>
+              <h2 className="dash-page-head mb-4">Aperçu de votre chambre</h2>
 
               <div className="relative h-52 overflow-hidden rounded-xl bg-slate-100">
                 {previewPhoto ? (

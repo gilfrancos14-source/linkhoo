@@ -109,7 +109,7 @@ describe('ReservationPaymentPage', () => {
 
   it('traite PAYMENT_NOT_SUCCEEDED comme un paiement en attente', async () => {
     mocks.confirm.mockRejectedValue(
-      new ApiError('Le paiement n’a pas encore été confirmé par Hub2.', 409, {
+      new ApiError('Le paiement n’a pas encore été confirmé par pawaPay.', 409, {
         code: 'PAYMENT_NOT_SUCCEEDED',
       }),
     );
@@ -145,11 +145,11 @@ describe('ReservationPaymentPage', () => {
   });
 
   it('affiche le message d’erreur brut du service', async () => {
-    mocks.confirm.mockRejectedValue(new Error('Hub2 indisponible'));
+    mocks.confirm.mockRejectedValue(new Error('pawaPay indisponible'));
 
     renderPage();
 
-    expect(await screen.findByText('Hub2 indisponible')).toBeInTheDocument();
+    expect(await screen.findByText('pawaPay indisponible')).toBeInTheDocument();
     expect(
       screen.queryByText(/pas encore été confirmé/),
     ).not.toBeInTheDocument();
@@ -167,10 +167,10 @@ describe('ReservationPaymentPage', () => {
 
   it('relance la vérification avec le bouton « Revérifier le paiement »', async () => {
     mocks.confirm
-      .mockRejectedValueOnce(new Error('Hub2 indisponible'))
+      .mockRejectedValueOnce(new Error('pawaPay indisponible'))
       .mockResolvedValueOnce(confirmation());
     renderPage();
-    await screen.findByText('Hub2 indisponible');
+    await screen.findByText('pawaPay indisponible');
 
     fireEvent.click(screen.getByRole('button', { name: 'Revérifier le paiement' }));
 
@@ -184,9 +184,9 @@ describe('ReservationPaymentPage', () => {
   });
 
   it('verrouille le bouton et affiche « Vérification... » pendant la relance', async () => {
-    mocks.confirm.mockRejectedValueOnce(new Error('Hub2 indisponible'));
+    mocks.confirm.mockRejectedValueOnce(new Error('pawaPay indisponible'));
     renderPage();
-    await screen.findByText('Hub2 indisponible');
+    await screen.findByText('pawaPay indisponible');
     mocks.confirm.mockImplementation(() => new Promise(() => {}));
 
     fireEvent.click(screen.getByRole('button', { name: 'Revérifier le paiement' }));

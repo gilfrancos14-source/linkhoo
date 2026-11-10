@@ -19,10 +19,10 @@ function formatDate(value: string | null | undefined): string {
 }
 
 /**
- * Retour du checkout hébergé Hub2 pour une réservation.
+ * Retour du checkout hébergé pawaPay pour une réservation.
  *
  * Le webhook est le chemin nominal : cette page ne fait que le doubler en
- * interrogeant Hub2 à partir de `?reference=PAY-…`. Elle est publique (la
+ * interrogeant le prestataire à partir de `?reference=PAY-…`. Elle est publique (la
  * réservation l'est aussi) et n'affiche aucune donnée personnelle.
  */
 export default function ReservationPaymentPage() {
@@ -33,7 +33,11 @@ export default function ReservationPaymentPage() {
   const [rechecking, setRechecking] = useState(false);
 
   const verify = useCallback(async () => {
-    const reference = new URLSearchParams(window.location.search).get('reference');
+    const rawReference = new URLSearchParams(window.location.search).get('reference');
+    // pawaPay ajoute `?checkoutCode=…` à l'URL de retour. Si l'ajout est
+    // concaténé sans `&`, la valeur de `reference` embarque un second `?` :
+    // on ne garde que la référence interne.
+    const reference = rawReference?.split(/[?&]/)[0];
     if (!reference) {
       setStatus('error');
       setMessage('Référence de paiement manquante.');

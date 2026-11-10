@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page des Favoris</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .error {
+            color: red;
+            background-color: #ffeeee;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test de la page des favoris</h1>
+    <div id="errors"></div>
+    
+    <script>
+        // Vérifier si la page se charge correctement
+        window.addEventListener('load', function() {
+            fetch('http://localhost:5173/compte?view=favorites')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('La page ne se charge pas correctement');
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    document.getElementById('errors').innerHTML = '<div class="error">Aucune erreur détectée</div>';
+                })
+                .catch(error => {
+                    document.getElementById('errors').innerHTML = '<div class="error">Erreur: ' + error.message + '</div>';
+                });
+        });
+    </script>
+</body>
+</html>

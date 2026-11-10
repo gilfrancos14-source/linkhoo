@@ -4,6 +4,7 @@ import { useClerk } from '@clerk/clerk-react';
 import { isMarketCode, marketByCode } from '../../config/markets';
 import { apiMessages, apiReviews, apiRooms, type Conversation, type Message, type RoomData } from '../../lib/api';
 import { formatPrice } from '../../lib/roomDisplay';
+import ClientSidebar from '../../components/client/ClientSidebar';
 
 /**
  * Espace client — « Mes messages ».
@@ -145,7 +146,7 @@ export default function ClientMessagesMaq({
   const staysPath = `${homePath}/compte?view=stays`;
   const messagesPath = `${homePath}/messages`;
   const searchPath = `${homePath}/recherche`;
-  const favoritesPath = `${homePath}/compte?view=favorites`;
+  
 
   const fullName = [profileFirstName, profileLastName].filter(Boolean).join(' ') || displayName || 'Client';
 
@@ -414,7 +415,7 @@ export default function ClientMessagesMaq({
   ];
 
   return (
-    <div className="msg-maq font-inter min-h-screen bg-[#f8faff] text-[#0b1b3f] antialiased">
+    <div className="msg-maq font-sans min-h-screen bg-[#f8faff] text-[#0b1b3f] antialiased">
       <svg className="hidden" aria-hidden="true">
         <symbol id="cm-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /></symbol>
         <symbol id="cm-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4" /></symbol>
@@ -450,66 +451,11 @@ export default function ClientMessagesMaq({
         <symbol id="cm-building2" viewBox="0 0 24 24"><path d="M6 22V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M2 22h20M10 8h4M10 12h4M10 16h4" /></symbol>
       </svg>
 
-      {/* ============ SIDEBAR ============ */}
-      <aside className="fixed inset-y-0 left-0 z-20 flex w-[247px] flex-col overflow-y-auto border-r border-[#e6ebf5] bg-white">
-        <div className="flex h-[70px] flex-none items-center gap-2.5 px-[34px]">
-          <img className="sidebar-logo" src="/logo.jpg" alt="Logo Linkhoo" />
-        </div>
-
-        <nav className="mt-3 space-y-[4px] px-[15px]">
-          <Link to={`${homePath}/compte`} className="nv">
-            <Icon id="home" />Accueil
-          </Link>
-          <Link to={staysPath} className="nv">
-            <Icon id="cal" />Mes réservations
-          </Link>
-          <Link to={messagesPath} className="nv on" aria-current="page">
-            <Icon id="msg" />Mes messages
-            {unreadCount > 0 && (
-              <span className="bd">{unreadCount > 9 ? '9+' : unreadCount}</span>
-            )}
-          </Link>
-          <Link to={favoritesPath} className="nv">
-            <Icon id="heart" />Mes favoris
-          </Link>
-          <Link to={profilePath} className="nv">
-            <Icon id="user" />Mon profil
-          </Link>
-          <Link to={profilePath} className="nv">
-            <Icon id="cog" />Paramètres
-          </Link>
-        </nav>
-
-        <div className="mx-[18px] mt-[56px] rounded-xl border border-[#e6ebf5] bg-[#f5f8ff] p-3">
-          <div className="flex gap-3">
-            <Icon id="help" className="mt-1 !h-8 !w-8 flex-none text-[#1d3f8f]" />
-            <div>
-              <div className="text-[12.5px] font-bold">Besoin d’aide ?</div>
-              <p className="mt-1 text-[11px] leading-[1.45] text-[#5f86d1]">
-                Notre équipe est disponible pour vous accompagner.
-              </p>
-            </div>
-          </div>
-          <Link to="/contact" className="btn mt-3 !h-[34px] !text-[12px]">
-            Contacter le support
-          </Link>
-        </div>
-
-        <div className="mt-auto pb-12 text-center [@media(max-height:820px)]:hidden">
-          <div className="flex items-end justify-center gap-0.5 text-blue-400">
-            <Icon id="building" className="!h-10 !w-10 stroke-[1.2]" />
-            <Icon id="building2" className="!h-16 !w-16 stroke-[1.2]" />
-            <Icon id="building" className="!h-9 !w-9 stroke-[1.2]" />
-          </div>
-          <div className="text-[18px] font-extrabold tracking-tight text-[#1d3f8f]">
-            Link<span className="text-[#ff5a14]">hoo</span>
-          </div>
-          <p className="mt-1 text-[13px] text-[#5f86d1]">Votre séjour, notre priorité !</p>
-        </div>
-      </aside>
+      {/* Utiliser la nouvelle sidebar unifiée */}
+      <ClientSidebar />
 
       {/* ============ MAIN ============ */}
-      <div className="ml-[247px] lg:flex lg:h-screen lg:flex-col">
+      <div className="client-main lg:flex lg:h-screen lg:flex-col">
         <header className="flex h-[67px] flex-none items-center justify-between border-b border-[#e6ebf5]/70 pl-[21px] pr-[22px]">
           <form
             onSubmit={handleSearch}

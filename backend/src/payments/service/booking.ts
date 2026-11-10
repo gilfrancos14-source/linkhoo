@@ -5,28 +5,26 @@
  * la demande, puis reverse au gérant après le séjour. Le gérant confirme ou
  * refuse ensuite une réservation déjà payée ; un refus déclenche un
  * remboursement total.
- *
- * Deux chemins, comme pour le premium :
- *   - webhook `payment_intent.succeeded` / `payment_links.paid` (nominal) ;
- *   - retour navigateur `POST /api/reservations/payment/confirm` (secours),
- *     qui interroge Hub2 puis appelle la même RPC `payment_claim_booking`.
  */
 
 import { supabaseAdmin } from '../../config/supabase';
 import type { MarketCode } from '../../config/markets';
-import { getHub2Config } from '../config';
+import { isMarketSupported } from '../pawapay/config';
 import { PaymentServiceError } from '../errors';
-import { getPaymentPolicy } from '../policies';
-import { isHub2Provider } from '../provider';
-import type { Hub2Currency } from '../types';
+import type { PawapayCurrency } from '../types';
 import { createCheckout } from './checkout';
 import { lookupProviderPayment } from './providerStatus';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const REFERENCE_RE = /^PAY-\d{4}-[A-Z0-9]+$/;
 
 export interface BookingPaymentSession {
   readonly reference: string;
   readonly checkoutUrl: string;
+  readonly redirectUrl?: string;
+  readonly checkoutId?: string;
   readonly amount: number;
-  readonly currency: Hub2Currency;
+  readonly currency: PawapayCurrency;
   readonly amountXof: number;
   readonly expiresAt: string;
 }
@@ -34,10 +32,7 @@ export interface BookingPaymentSession {
 export type BookingPaymentStart =
   | { readonly state: 'checkout'; readonly session: BookingPaymentSession }
   | { readonly state: 'paid'; readonly reference: string | null }
-  | {
-      readonly state: 'unavailable';
-      readonly reason: 'online_payment_disabled' | 'provider_disabled';
-    };
+  | { readonly state: 'unavailable'; readonly reason: 'online_payment_disabled' };
 
 interface ReservationRow {
   id: string;
@@ -61,7 +56,7 @@ interface PaymentRow {
   purpose: string;
   status: string;
   amount: number;
-  currency: Hub2Currency;
+  currency: PawapayCurrency;
   reservation_id: string | null;
   provider_payment_link_id: string | null;
   fulfilled_at: string | null;
@@ -89,7 +84,6 @@ async function fetchReservation(reservationId: string): Promise<ReservationRow |
     .select(RESERVATION_PAYMENT_COLUMNS)
     .eq('id', reservationId)
     .maybeSingle();
-
   if (error) throw error;
   return (data as ReservationRow | null) ?? null;
 }
@@ -100,7 +94,6 @@ async function fetchRoom(roomId: string): Promise<RoomRow | null> {
     .select('id, market, gerant_id, title')
     .eq('id', roomId)
     .maybeSingle();
-
   if (error) throw error;
   return (data as RoomRow | null) ?? null;
 }
@@ -111,37 +104,25 @@ async function findPaymentId(reference: string): Promise<string | null> {
     .select('id')
     .eq('reference', reference)
     .maybeSingle();
-
   if (error) throw error;
   return (data as { id?: string } | null)?.id ?? null;
 }
 
 async function attachPaymentToReservation(
   reservationId: string,
-  paymentId: string | null,
+  paymentId: string,
 ): Promise<void> {
-  // Ne rétrograde jamais une réservation déjà payée : le webhook peut avoir
-  // traité le paiement entre la création du lien et cette écriture.
   const { error } = await supabaseAdmin
     .from('reservations')
     .update({ payment_status: 'pending', payment_id: paymentId })
     .eq('id', reservationId)
     .in('payment_status', ['unpaid', 'failed', 'pending']);
-
   if (error) throw error;
 }
 
-/**
- * Ouvre (ou rouvre) le checkout d'une réservation.
- *
- * Idempotent : un lien encore valide est réutilisé, une réservation déjà payée
- * renvoie `state: 'paid'`. Ne lève pas pour un marché sans paiement en ligne :
- * la réservation reste valable en paiement direct.
- */
 export async function startBookingPayment(reservationId: string): Promise<BookingPaymentStart> {
-  // Rollback FedaPay : aucun lien Hub2 ne doit être créé.
-  if (!isHub2Provider()) {
-    return { state: 'unavailable', reason: 'provider_disabled' };
+  if (!UUID_RE.test(reservationId)) {
+    throw new PaymentServiceError('PAYMENT_NOT_FOUND', 'Réservation introuvable.', 404);
   }
 
   const reservation = await fetchReservation(reservationId);
@@ -149,11 +130,7 @@ export async function startBookingPayment(reservationId: string): Promise<Bookin
     throw new PaymentServiceError('PAYMENT_NOT_FOUND', 'Réservation introuvable.', 404);
   }
   if (reservation.statut === 'annulee') {
-    throw new PaymentServiceError(
-      'PAYMENT_NOT_PAYABLE',
-      'Cette réservation est annulée.',
-      409,
-    );
+    throw new PaymentServiceError('PAYMENT_NOT_PAYABLE', 'Cette réservation est annulée.', 409);
   }
   if (reservation.payment_status === 'paid' || reservation.payment_status === 'deposit_paid') {
     const { data } = await supabaseAdmin
@@ -172,8 +149,7 @@ export async function startBookingPayment(reservationId: string): Promise<Bookin
     throw new PaymentServiceError('PAYMENT_NOT_FOUND', 'Chambre introuvable.', 404);
   }
 
-  const policy = await getPaymentPolicy(room.market);
-  if (!policy.onlinePaymentEnabled) {
+  if (!isMarketSupported(room.market)) {
     return { state: 'unavailable', reason: 'online_payment_disabled' };
   }
 
@@ -191,9 +167,31 @@ export async function startBookingPayment(reservationId: string): Promise<Bookin
     reusePendingPayment: true,
   });
 
-  await attachPaymentToReservation(reservation.id, await findPaymentId(session.reference));
+  // CORRECTIF : lève si introuvable (plus de payment_id = null silencieux).
+  const paymentId = await findPaymentId(session.reference);
+  if (!paymentId) {
+    throw new PaymentServiceError(
+      'PAYMENT_CREATE_FAILED',
+      'Paiement introuvable après création du checkout.',
+      500,
+      { reference: session.reference, reservation_id: reservation.id },
+    );
+  }
+  await attachPaymentToReservation(reservation.id, paymentId);
 
-  return { state: 'checkout', session };
+  return {
+    state: 'checkout',
+    session: {
+      reference: session.reference,
+      checkoutUrl: session.checkoutUrl,
+      redirectUrl: session.redirectUrl ?? session.checkoutUrl,
+      checkoutId: session.checkoutId,
+      amount: session.amount,
+      currency: session.currency,
+      amountXof: session.amountXof,
+      expiresAt: session.expiresAt,
+    },
+  };
 }
 
 async function fetchPayment(reference: string): Promise<PaymentRow | null> {
@@ -204,7 +202,6 @@ async function fetchPayment(reference: string): Promise<PaymentRow | null> {
     )
     .eq('reference', reference)
     .maybeSingle();
-
   if (error) throw error;
   return (data as PaymentRow | null) ?? null;
 }
@@ -219,12 +216,9 @@ async function buildConfirmation(
 
   const { data, error } = await supabaseAdmin
     .from('reservations')
-    .select(
-      'id, room_title, date_debut, date_fin, montant, statut, payment_status, paid_at',
-    )
+    .select('id, room_title, date_debut, date_fin, montant, statut, payment_status, paid_at')
     .eq('id', reservationId)
     .maybeSingle();
-
   if (error) throw error;
 
   const reservation = (data as Record<string, unknown> | null) ?? null;
@@ -239,36 +233,30 @@ async function buildConfirmation(
 
 function rpcError(error: { message?: string; code?: string }): PaymentServiceError {
   const message = error.message ?? 'Activation de la réservation impossible';
-  if (message.includes('PAYMENT_NOT_FOUND')) {
+  if (message.includes('PAYMENT_NOT_FOUND'))
     return new PaymentServiceError('PAYMENT_NOT_FOUND', 'Paiement introuvable.', 404);
-  }
-  if (message.includes('PAYMENT_NOT_BOOKING')) {
+  if (message.includes('PAYMENT_NOT_BOOKING'))
     return new PaymentServiceError('PAYMENT_NOT_BOOKING', 'Paiement non lié à une réservation.', 400);
-  }
-  if (message.includes('PAYMENT_AMOUNT_MISMATCH')) {
+  if (message.includes('PAYMENT_AMOUNT_MISMATCH'))
     return new PaymentServiceError(
       'PAYMENT_AMOUNT_MISMATCH',
       'Le montant reçu ne correspond pas au paiement attendu.',
       409,
     );
-  }
-  if (message.includes('PAYMENT_NOT_PAYABLE')) {
+  if (message.includes('PAYMENT_NOT_PAYABLE'))
     return new PaymentServiceError(
       'PAYMENT_NOT_PAYABLE',
       'Ce paiement ne peut plus être activé.',
       409,
     );
-  }
   return new PaymentServiceError('PAYMENT_NOT_SUCCEEDED', message, 500);
 }
 
-/**
- * Confirme le paiement d'une réservation depuis le retour navigateur.
- *
- * @throws PaymentServiceError (404/400/409/500)
- * @throws Hub2ConfigError (clés Hub2 absentes → 503 côté route)
- */
 export async function confirmBookingPayment(reference: string): Promise<BookingConfirmation> {
+  if (!REFERENCE_RE.test(reference)) {
+    throw new PaymentServiceError('PAYMENT_NOT_FOUND', 'Paiement introuvable.', 404);
+  }
+
   const payment = await fetchPayment(reference);
   if (!payment) {
     throw new PaymentServiceError('PAYMENT_NOT_FOUND', 'Paiement introuvable.', 404);
@@ -281,21 +269,16 @@ export async function confirmBookingPayment(reference: string): Promise<BookingC
     );
   }
 
-  // Déjà traité par le webhook : aucune requête réseau nécessaire.
   if (payment.status === 'succeeded' && payment.fulfilled_at) {
     return buildConfirmation(payment.reservation_id, true);
   }
 
-  const { payment: providerPayment, latestStatus } = await lookupProviderPayment(
-    getHub2Config(),
-    reference,
-    payment.provider_payment_link_id,
-  );
+  const { payment: providerPayment, latestStatus } = await lookupProviderPayment(reference);
 
   if (!providerPayment) {
     throw new PaymentServiceError(
       'PAYMENT_NOT_SUCCEEDED',
-      "Le paiement n'a pas encore été confirmé par Hub2.",
+      "Le paiement n'a pas encore été confirmé par pawaPay.",
       400,
       { status: latestStatus },
     );

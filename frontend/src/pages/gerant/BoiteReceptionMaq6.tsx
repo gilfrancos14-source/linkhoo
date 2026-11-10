@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
+import GerantSidebar from '../../components/gerant/GerantSidebar';
 import { apiMessages, type Conversation, type Message } from '../../lib/api';
 import { fetchRoomById, type Room } from '../../data/rooms';
 import { priceWithCurrency } from '../../lib/roomDisplay';
@@ -16,11 +17,6 @@ function Icon({ id, className = 'ico w-5 h-5 shrink-0' }: { id: string; classNam
   );
 }
 
-const navCls =
-  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold text-[#1E2A44] hover:bg-slate-50';
-const subCls =
-  'flex items-center gap-3 pl-9 pr-3 py-1.5 rounded-lg text-xs text-slate-500 hover:bg-orange-50';
-const subOnCls = `${subCls} bg-orange-50 text-[#F26A21] font-semibold`;
 const cardCls = 'bg-white rounded-xl border border-slate-100 shadow-sm';
 const badgeCls =
   'grid place-items-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-[#F26A21] text-white text-[11px] font-bold';
@@ -100,8 +96,6 @@ export default function BoiteReceptionMaq6() {
   const gerantPath = `${homePath}/gerant`;
   const chambresPath = `${gerantPath}/chambres`;
   const demandesPath = `${gerantPath}/reservations/demandes`;
-  const calendrierPath = `${gerantPath}/reservations/calendrier`;
-  const inboxPath = `${gerantPath}/messages/boite-reception`;
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -302,42 +296,7 @@ export default function BoiteReceptionMaq6() {
       </svg>
 
       <div className="flex min-h-screen">
-        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-1 overflow-y-auto border-r border-slate-100 bg-white p-4 lg:flex">
-        <Link to={gerantPath} className="mb-6 flex items-center gap-2.5 px-2" aria-label="Linkhoo - retour à l'accueil">
-          <img className="sidebar-logo" src="/logo.jpg" alt="Logo Linkhoo" />
-        </Link>
-
-          <Link to={gerantPath} className={navCls}><Icon id="home" />Aperçu</Link>
-
-          <Link to={chambresPath} className={`${navCls} mt-1`}><Icon id="bed" />Chambres<Icon id="down" className="ico ml-auto h-4 w-4 rotate-180" /></Link>
-          <Link to={chambresPath} className={subCls}><Icon id="bed" className="ico h-4 w-4 shrink-0" />Toutes les chambres</Link>
-          <Link to={`${chambresPath}/ajouter`} className={subCls}><Icon id="plus" className="ico h-4 w-4 shrink-0" />Ajouter une chambre</Link>
-
-          <Link to={`${gerantPath}/reservations`} className={`${navCls} mt-1`}><Icon id="cal" />Réservations{chrome.reservationsCount > 0 && <span className={`${badgeCls} ml-auto`}>{chrome.reservationsCount}</span>}</Link>
-          <Link to={demandesPath} className={subCls}><Icon id="file" className="ico h-4 w-4 shrink-0" />Demandes</Link>
-          <Link to={calendrierPath} className={subCls}><Icon id="cal" className="ico h-4 w-4 shrink-0" />Calendrier</Link>
-
-          <Link to={inboxPath} className={`${navCls} mt-1`}><Icon id="msg" />Messages{chrome.messagesUnread > 0 && <span className={`${badgeCls} ml-auto`}>{chrome.messagesUnread}</span>}</Link>
-          <Link to={inboxPath} className={subOnCls} aria-current="page"><Icon id="msg" className="ico h-4 w-4 shrink-0" />Boîte de réception</Link>
-
-          <Link to={`${gerantPath}/verification`} className={`${navCls} mt-1`}><Icon id="shield" />Vérification<Icon id="down" className="ico ml-auto h-4 w-4" /></Link>
-          <Link to={`${gerantPath}/verification`} className={subCls}><Icon id="file" className="ico h-4 w-4 shrink-0" />Mes documents</Link>
-          <Link to={`${gerantPath}/verification`} className={subCls}><Icon id="shield" className="ico h-4 w-4 shrink-0" />Suivi de vérification</Link>
-
-          <Link to={`${gerantPath}/profil`} className={`${navCls} mt-1`}><Icon id="user" />Profil<Icon id="down" className="ico ml-auto h-4 w-4" /></Link>
-          <Link to={`${gerantPath}/profil`} className={subCls}><Icon id="user" className="ico h-4 w-4 shrink-0" />Mes informations</Link>
-
-          <Link to={`${gerantPath}/premium`} className={`${navCls} mt-1`}><Icon id="crown" className="ico w-5 h-5 shrink-0 text-[#F26A21]" />Premium</Link>
-          <Link to={`${gerantPath}/premium`} className={subCls}><Icon id="cal" className="ico h-4 w-4 shrink-0" />Mon abonnement</Link>
-
-          <div className="mt-auto pt-4">
-            <div className="rounded-xl border border-orange-100 bg-[#FDEBDF] p-4">
-              <p className="flex items-center gap-2 text-sm font-bold"><Icon id="crown" className="ico w-5 h-5 shrink-0 text-[#F26A21]" />Passez au Premium</p>
-              <p className="mt-2 text-xs text-slate-500">Plus de visibilité, plus de réservations !</p>
-              <Link to={`${gerantPath}/premium`} className="mt-3 block rounded-lg bg-[#F26A21] py-2 text-center text-xs font-bold text-white hover:bg-orange-600">Voir les avantages</Link>
-            </div>
-          </div>
-        </aside>
+        <GerantSidebar />
 
         <div className="min-w-0 flex-1">
           <header className="flex items-center justify-between gap-4 px-6 py-4 lg:px-8">
@@ -365,7 +324,7 @@ export default function BoiteReceptionMaq6() {
           </header>
 
           <main className="px-6 pb-10 lg:px-8">
-            <h1 className="text-3xl font-extrabold">Boîte de réception</h1>
+            <h1 className="dash-page-head">Boîte de réception</h1>
             <p className="mt-1 text-sm text-slate-500">Consultez et gérez tous vos messages en un seul endroit.</p>
 
             <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">

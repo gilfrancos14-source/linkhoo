@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   reservationsCount: 3,
   messagesUnread: 2,
   initiate: vi.fn<
-    (market: string) => Promise<{
+    (market: string, plan?: 'monthly' | 'quarterly' | 'yearly') => Promise<{
       transaction_id?: number;
       payment_url?: string;
       reference?: string;
@@ -85,8 +85,8 @@ beforeEach(() => {
   mocks.reservationsCount = 3;
   mocks.messagesUnread = 2;
   mocks.initiate.mockResolvedValue({
-    transaction_id: 42,
-    payment_url: 'https://fedapay.test/checkout/42',
+    reference: 'PAY-2026-ABC123',
+    checkout_url: 'https://checkout.pawapay.io/pay-1',
   });
 });
 
@@ -162,7 +162,7 @@ describe('PremiumPage', () => {
     await user.click(screen.getAllByRole('button', { name: 'Choisir cette formule' })[0]);
 
     expect(mocks.initiate).toHaveBeenCalledTimes(1);
-    expect(mocks.initiate).toHaveBeenCalledWith('CI');
+    expect(mocks.initiate).toHaveBeenCalledWith('CI', 'monthly');
   });
 
   it('transmet le marché BJ déduit de l’URL', async () => {
@@ -171,13 +171,31 @@ describe('PremiumPage', () => {
 
     await user.click(screen.getAllByRole('button', { name: 'Choisir cette formule' })[0]);
 
-    expect(mocks.initiate).toHaveBeenCalledWith('BJ');
+    expect(mocks.initiate).toHaveBeenCalledWith('BJ', 'monthly');
   });
 
-  it('utilise checkout_url quand Hub2 le fournit (sans payment_url)', async () => {
+  it('envoie la formule trimestrielle', async () => {
+    const user = userEvent.setup();
+    renderPremium();
+
+    await user.click(screen.getAllByRole('button', { name: 'Choisir cette formule' })[1]);
+
+    expect(mocks.initiate).toHaveBeenCalledWith('CI', 'quarterly');
+  });
+
+  it('envoie la formule annuelle', async () => {
+    const user = userEvent.setup();
+    renderPremium();
+
+    await user.click(screen.getAllByRole('button', { name: 'Choisir cette formule' })[2]);
+
+    expect(mocks.initiate).toHaveBeenCalledWith('CI', 'yearly');
+  });
+
+  it('utilise checkout_url fourni par pawaPay', async () => {
     mocks.initiate.mockResolvedValue({
       reference: 'PAY-2026-ABC123',
-      checkout_url: 'https://pay.hub2.io/link_1',
+      checkout_url: 'https://checkout.pawapay.io/pay-1',
     });
     const user = userEvent.setup();
     renderPremium();
@@ -202,7 +220,11 @@ describe('PremiumPage', () => {
       () =>
         new Promise((resolve) => {
           setTimeout(
-            () => resolve({ transaction_id: 1, payment_url: 'https://p.test/1' }),
+            () =>
+              resolve({
+                reference: 'PAY-2026-ABC123',
+                checkout_url: 'https://checkout.pawapay.io/pay-1',
+              }),
             50,
           );
         }),

@@ -1,21 +1,20 @@
 /**
- * Sélection du prestataire de paiement.
+ * Prestataire de paiement.
  *
- * `PAYMENTS_PROVIDER` permet de revenir à FedaPay sans redéploiement de code :
- * c'est le levier de rollback du chantier Hub2. Toute valeur absente ou
- * inconnue retombe sur `fedapay` — un basculement silencieux vers Hub2 en cas
- * de faute de frappe exposerait un checkout non configuré.
+ * pawaPay est l'unique prestataire de paiement de la plateforme.
+ * La fonction est conservée pour que les appelants n'aient pas à connaître ce
+ * détail, et pour garder un point d'extension si un second prestataire devait
+ * être rebranché un jour.
  */
 
-export type PaymentsProvider = 'fedapay' | 'hub2';
+export type PaymentsProvider = 'pawapay';
 
-export const PAYMENTS_PROVIDERS: readonly PaymentsProvider[] = ['fedapay', 'hub2'];
+export const PAYMENTS_PROVIDERS: readonly PaymentsProvider[] = ['pawapay'];
 
-export function getPaymentsProvider(env: NodeJS.ProcessEnv = process.env): PaymentsProvider {
-  const raw = (env.PAYMENTS_PROVIDER || '').trim().toLowerCase();
-  return raw === 'hub2' ? 'hub2' : 'fedapay';
+export function getPaymentsProvider(): PaymentsProvider {
+  return 'pawapay';
 }
 
-export function isHub2Provider(env: NodeJS.ProcessEnv = process.env): boolean {
-  return getPaymentsProvider(env) === 'hub2';
+export function isPawapayProvider(): boolean {
+  return true;
 }

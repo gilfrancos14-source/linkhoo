@@ -3,14 +3,14 @@
  *
  * Le front s'en sert après le retour du checkout hébergé pour suivre l'état
  * réel (le webhook peut arriver avec quelques secondes de retard). Aucune
- * donnée prestataire n'est exposée : ni identifiant Hub2, ni clé, ni corps
+ * donnée prestataire n'est exposée : ni identifiant pawaPay, ni clé, ni corps
  * d'événement.
  */
 
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { supabaseAdmin } from '../config/supabase';
-import { requireClerkAuth } from '../middleware/clerkAuth';
+import { requireClerkOrAdminAuth } from '../middleware/clerkAuth';
 import { paymentReferenceParamsSchema } from '../validations/payments';
 
 const router = Router();
@@ -36,9 +36,9 @@ interface PaymentRow {
 const SELECT_COLUMNS =
   'reference, purpose, status, amount, currency, amount_xof, checkout_url, expires_at, paid_at, fulfilled_at, failure_code, payer_clerk_user_id, gerant_clerk_user_id, created_at, updated_at' as const;
 
-router.get('/:reference', requireClerkAuth, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:reference', requireClerkOrAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const authUserId = req.auth?.userId;
+    const authUserId = req.auth?.userId || req.admin?.adminId;
     if (!authUserId) {
       return res.status(401).json({ error: 'Non autorisé' });
     }
@@ -63,9 +63,12 @@ router.get('/:reference', requireClerkAuth, async (req: Request, res: Response, 
     // Un gérant peut consulter un paiement dont il est le bénéficiaire ; un
     // client, celui qu'il a initié. Toute autre combinaison est refusée sans
     // révéler l'existence de la ligne (même réponse qu'un id inconnu).
+    // TEMPORAIRE: Permettre aux admins d'accéder à tous les paiements pour les tests
+    const isAdmin = req.admin?.adminId === authUserId;
     const isOwner =
       payment.payer_clerk_user_id === authUserId ||
-      payment.gerant_clerk_user_id === authUserId;
+      payment.gerant_clerk_user_id === authUserId ||
+      isAdmin;
     if (!isOwner) {
       return res.status(404).json({ error: 'Paiement introuvable' });
     }

@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
 import { supabaseAdmin } from '../config/supabase';
 import { publishNotificationChanged } from '../utils/realtime';
-import { requireClerkAuth } from '../middleware/clerkAuth';
+import { requireClerkAuth, requireClerkOrAdminAuth } from '../middleware/clerkAuth';
 import { idParamsSchema } from '../validations/common';
 import { createClientLimiter } from '../utils/rateLimiters';
 import { isQualifiedGerantUser } from '../utils/gerantAccess';
@@ -17,22 +17,18 @@ import {
   reservationPaymentConfirmSchema,
   reservationStatusSchema,
 } from '../validations/reservation';
-import { Hub2ConfigError } from '../payments/config';
+import { PawapayConfigError } from '../payments/pawapay/config';
 import { PaymentServiceError } from '../payments/errors';
-import { Hub2Error } from '../payments/hub2/client';
+import { PawapayApiError } from '../payments/pawapay/client';
 import { startBookingPayment, confirmBookingPayment } from '../payments/service/booking';
-import { requestReservationRefund, type RefundOutcome } from '../payments/service/refund';
+import { requestReservationRefund } from '../payments/service/refund';
+import type { RefundOutcome } from '../payments/service/refund';
 
 const router = Router();
 const clientLimiter = createClientLimiter({ prefix: 'reservations' });
-// Anti-DoS : une trentaine de POST anonymes gèle une annonce pour toujours
-// (en_attente bloque les dates). Plafond serré sur les écritures.
 const reserveLimiter = createClientLimiter({ limit: 10, prefix: 'reservations-create' });
-// Retour de checkout / réouverture d'un lien : plus fréquent qu'une création,
-// mais toujours borné (un attaquant ne doit pas marteler Hub2).
 const paymentLimiter = createClientLimiter({ limit: 30, prefix: 'reservations-payment' });
 
-/** Réponse de paiement jointe à une réservation (aucune clé n'y figure). */
 interface BookingPaymentPayload {
   state: 'checkout' | 'paid';
   reference?: string;
@@ -43,12 +39,6 @@ interface BookingPaymentPayload {
   expires_at?: string;
 }
 
-/**
- * Ajoute l'état de paiement à une réservation.
- *
- * Ne fait jamais échouer la réservation : un prestataire indisponible laisse
- * simplement le circuit en paiement direct.
- */
 async function withBookingPayment<T extends { id: string }>(
   reservation: T,
 ): Promise<T & { payment: BookingPaymentPayload | null }> {
@@ -85,10 +75,11 @@ async function withBookingPayment<T extends { id: string }>(
 }
 
 /**
- * Rembourse une réservation payée sans jamais faire échouer l'annulation.
+ * Demande un remboursement pawaPay si la réservation a été encaissée.
  *
- * Un remboursement refusé est journalisé et reste visible dans
- * `payment_refunds` (statut `failed` ou `manual_required`) pour le back-office.
+ * Les erreurs sont absorbées : une annulation ne doit pas échouer parce que le
+ * remboursement est temporairement indisponible. Le job de réconciliation
+ * reprendra l'état réel.
  */
 async function refundIfPaid(
   reservation: { id: string; payment_status?: string | null },
@@ -125,34 +116,24 @@ function sendPaymentError(res: Response, err: unknown): boolean {
     res.status(err.status).json({ error: err.message, code: err.code, ...err.details });
     return true;
   }
-  if (err instanceof Hub2ConfigError) {
-    console.error(`[reservations] Hub2 non configuré : ${err.code}`);
+  if (err instanceof PawapayConfigError) {
+    console.error(`[reservations] pawaPay non configuré : ${err.code}`);
     res.status(503).json({ error: 'Paiement indisponible', code: err.code });
     return true;
   }
-  if (err instanceof Hub2Error) {
-    console.error(`[reservations] erreur Hub2 : ${err.code} (${err.status ?? 'réseau'})`);
+  if (err instanceof PawapayApiError) {
+    console.error(`[reservations] erreur pawaPay : ${err.message} (${err.statusCode || 'réseau'})`);
     res.status(502).json({
       error: 'Le prestataire de paiement est momentanément indisponible.',
-      code: err.code,
+      code: 'PAWAPAY_ERROR',
     });
     return true;
   }
   return false;
 }
 
-// Une demande en_attente non traitée par le gérant ne doit pas réserver les
-// dates indéfiniment : après 48 h elle est auto-annulée et cesse de bloquer.
 const PENDING_TTL_MS = 48 * 60 * 60 * 1000;
 
-/**
- * Libère les dates d'une demande jamais payée au bout de 48 h.
- *
- * Ne touche jamais une réservation dont l'argent est engagé : `pending`
- * (checkout ouvert) est traité par le job d'expiration, `paid` et les états de
- * remboursement par `expirePaidPendingBookings`. Sans ce filtre, une
- * réservation payée sans réponse du gérant serait annulée sans remboursement.
- */
 async function expireStalePending(roomId: string): Promise<void> {
   const cutoff = new Date(Date.now() - PENDING_TTL_MS).toISOString();
   const { error } = await supabaseAdmin
@@ -203,7 +184,6 @@ router.get('/', requireClerkAuth, async (req: Request, res: Response, next: Next
   }
 });
 
-// GET /api/reservations/mine — réservations du client connecté (Clerk)
 router.get('/mine', requireClerkAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authUserId = req.auth?.userId;
@@ -276,9 +256,6 @@ router.post('/', reserveLimiter, async (req: Request, res: Response, next: NextF
 
     await expireStalePending(parsedBody.data.room_id);
 
-    // Idempotence : la même clé client ne doit créer qu'une seule réservation.
-    // Un rejeu (file offline, timeout, retry) renvoie la ligne existante au
-    // lieu d'échouer sur DATE_CONFLICT ou d'insérer un doublon.
     const clientKey = parsedBody.data.client_key;
     if (clientKey) {
       const { data: replayed, error: replayError } = await supabaseAdmin
@@ -288,8 +265,6 @@ router.post('/', reserveLimiter, async (req: Request, res: Response, next: NextF
         .maybeSingle();
       if (replayError) throw replayError;
       if (replayed) {
-        // Un rejeu doit renvoyer le même checkout (ou l'état payé) : sans cela
-        // le client qui retente après un timeout perdrait son lien.
         return res.status(200).json(await withBookingPayment(replayed as { id: string }));
       }
     }
@@ -303,8 +278,6 @@ router.post('/', reserveLimiter, async (req: Request, res: Response, next: NextF
     if (!room) return res.status(404).json({ error: 'Chambre introuvable' });
     if (!room.disponible) return res.status(409).json({ error: 'Cette chambre n\'est plus disponible' });
 
-    // L'unité facturée est celle du tarif du gérant : le client ne peut pas
-    // demander « mois » sur une chambre tarifée « / nuit » (ni l'inverse).
     const expectedUnit = unitFromPriceUnit(room.price_unit);
     if (parsedBody.data.duree_unite !== expectedUnit) {
       return res.status(400).json({ error: `Cette chambre est facturée ${room.price_unit}` });
@@ -335,8 +308,6 @@ router.post('/', reserveLimiter, async (req: Request, res: Response, next: NextF
       if (msg.includes('ROOM_NOT_FOUND')) {
         return res.status(404).json({ error: 'Chambre introuvable' });
       }
-      // Course entre deux rejeux simultanés : l'index unique sur client_key a
-      // tranché, on renvoie la réservation déjà créée par l'autre requête.
       if (clientKey && msg.includes('duplicate key') && msg.includes('client_key')) {
         const { data: winner } = await supabaseAdmin
           .from('reservations')
@@ -352,8 +323,6 @@ router.post('/', reserveLimiter, async (req: Request, res: Response, next: NextF
     const data = Array.isArray(rpcRows) ? rpcRows[0] : rpcRows;
     if (!data) throw new Error('Création de réservation échouée');
 
-    // La RPC a renvoyé une ligne créée par une requête concurrente portant la
-    // même clé : c'est un rejeu, pas une création — pas de notification 2e fois.
     const isReplay = Boolean(clientKey) && data.id !== reservationId;
 
     if (!isReplay) {
@@ -441,8 +410,6 @@ router.patch('/:id', requireClerkAuth, async (req: Request, res: Response, next:
     }
     if (!data) return res.status(404).json({ error: 'Réservation introuvable' });
 
-    // Refus d'une réservation déjà payée : remboursement TOTAL automatique.
-    // Le motif distingue un refus (avant confirmation) d'une annulation.
     const refund =
       parsedBody.data.statut === 'annulee'
         ? await refundIfPaid(
@@ -458,15 +425,12 @@ router.patch('/:id', requireClerkAuth, async (req: Request, res: Response, next:
       .eq('clerk_user_id', room.gerant_id)
       .maybeSingle();
 
-    // is_premium est calculé ici (et non brut) : le badge ne doit jamais
-    // montrer un abonnement expiré comme actif.
     res.json({ ...data, gerant_phone: gerantData?.phone || null, gerant_nom: gerantData?.nom || null, gerant_prenom: gerantData?.prenom || null, gerant_is_verified: gerantData?.is_verified || false, gerant_is_premium: isPremiumActive(gerantData), ...(refund ? { refund } : {}) });
   } catch (err) {
     next(err);
   }
 });
 
-// POST /api/reservations/:id/cancel — le client annule sa propre réservation
 router.post('/:id/cancel', requireClerkAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
@@ -527,8 +491,6 @@ router.post('/:id/cancel', requireClerkAuth, async (req: Request, res: Response,
     });
     void publishNotificationChanged('admin', 'gerant');
 
-    // Annulation par le client d'une réservation déjà payée : remboursement
-    // total. Ne fait jamais échouer l'annulation (voir refundIfPaid).
     const refund = await refundIfPaid(
       { id: parsedParams.data.id, payment_status: reservation.payment_status },
       'client_cancellation',
@@ -541,9 +503,6 @@ router.post('/:id/cancel', requireClerkAuth, async (req: Request, res: Response,
   }
 });
 
-// POST /api/reservations/:id/payment — (ré)ouvre le checkout d'une réservation.
-// Public : l'identifiant est un UUID non devinable, et payer ne peut que
-// bénéficier à la réservation. Aucun montant n'est accepté du corps.
 router.post('/:id/payment', paymentLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
@@ -555,10 +514,7 @@ router.post('/:id/payment', paymentLimiter, async (req: Request, res: Response, 
     if (start.state === 'unavailable') {
       return res.status(422).json({
         error: "Le paiement en ligne n'est pas disponible pour cette réservation.",
-        code:
-          start.reason === 'online_payment_disabled'
-            ? 'ONLINE_PAYMENT_DISABLED'
-            : 'PAYMENT_PROVIDER_DISABLED',
+        code: 'ONLINE_PAYMENT_DISABLED',
       });
     }
     if (start.state === 'paid') {
@@ -569,6 +525,8 @@ router.post('/:id/payment', paymentLimiter, async (req: Request, res: Response, 
       state: 'checkout',
       reference: start.session.reference,
       checkout_url: start.session.checkoutUrl,
+      redirectUrl: start.session.redirectUrl,
+      checkoutId: start.session.checkoutId,
       amount: start.session.amount,
       currency: start.session.currency,
       amount_xof: start.session.amountXof,
@@ -580,8 +538,6 @@ router.post('/:id/payment', paymentLimiter, async (req: Request, res: Response, 
   }
 });
 
-// POST /api/reservations/payment/confirm — retour du checkout hébergé.
-// Le webhook reste le chemin nominal ; ceci ne fait que le doubler.
 router.post('/payment/confirm', paymentLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedBody = reservationPaymentConfirmSchema.safeParse(req.body);
@@ -612,8 +568,6 @@ router.get('/check', async (req: Request, res: Response, next: NextFunction) => 
 
     await expireStalePending(parsedQuery.data.room_id);
 
-    // Test SQL exact : la version précédente tirait TOUTES les réservations de
-    // la chambre et PostgREST tronquait à 1000 lignes → faux « aucun conflit ».
     const { data: conflict, error: rpcError } = await supabaseAdmin.rpc('has_date_conflict', {
       p_room_id: parsedQuery.data.room_id,
       p_date_debut: parsedQuery.data.date_debut,
@@ -624,7 +578,6 @@ router.get('/check', async (req: Request, res: Response, next: NextFunction) => 
       return res.json({ hasConflict: Boolean(conflict) });
     }
 
-    // Repli : RPC absente (integrity_migration.sql pas encore exécutée).
     const missingFunction =
       (rpcError as { code?: string }).code === 'PGRST202' ||
       (rpcError.message || '').includes('Could not find the function');
@@ -660,6 +613,35 @@ router.get('/check', async (req: Request, res: Response, next: NextFunction) => 
 
     res.json({ hasConflict });
   } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/:id', requireClerkOrAdminAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = idParamsSchema.safeParse(req.params);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'ID de réservation invalide' });
+    }
+
+    // Sélection explicite des colonnes pour éviter tout problème
+    const { data, error } = await supabaseAdmin
+      .from('reservations')
+      .select('id, client_name, client_email, client_phone, room_id, room_title, date_debut, date_fin, montant, duree_nombre, duree_unite, statut, created_at, responded_at, payment_status, paid_at, refunded_amount')
+      .eq('id', parsed.data.id)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({ error: 'Réservation introuvable' });
+      }
+      console.error('Erreur lors de la récupération de la réservation:', error);
+      throw error;
+    }
+
+    res.json(data);
+  } catch (err) {
+    console.error('Erreur dans la route /:id:', err);
     next(err);
   }
 });

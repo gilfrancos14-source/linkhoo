@@ -37,6 +37,7 @@ const validClient = {
   nom: 'Koffi',
   prenom: 'Aya',
   telephone: '+225 07 00 00 00',
+  market: 'CI',
 };
 
 type TableName = 'clients' | 'gerants';
@@ -312,7 +313,7 @@ describe('POST /api/clients', () => {
     const res = await request(app)
       .post('/api/clients')
       .set('Authorization', clerkBearer('user_1'))
-      .send({ clerk_user_id: 'user_1', email: 'victim@exemple.ci', nom: 'Koffi' });
+      .send({ clerk_user_id: 'user_1', email: 'victim@exemple.ci', nom: 'Koffi', market: 'CI' });
 
     expect(res.status).toBe(201);
     expect(res.body).toEqual(expect.objectContaining({ id: 'c1' }));
@@ -323,6 +324,7 @@ describe('POST /api/clients', () => {
         nom: 'Koffi',
         prenom: '',
         telephone: '',
+        market: 'CI',
       }),
     );
   });

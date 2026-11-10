@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   getReservations: vi.fn<() => Promise<Reservation[]>>(),
   getMe: vi.fn<() => Promise<GerantData>>(),
   gerantUnread: vi.fn<() => Promise<{ count: number }>>(),
+  getBalance: vi.fn<() => Promise<unknown>>(),
 }));
 
 vi.mock('../../data/rooms', () => ({
@@ -27,6 +28,7 @@ vi.mock('../../data/categories', () => ({
 vi.mock('../../lib/api', () => ({
   apiGerants: { getMe: mocks.getMe },
   apiMessages: { gerantUnread: mocks.gerantUnread },
+  apiPayouts: { getBalance: mocks.getBalance },
 }));
 
 vi.mock('../../lib/reservations', async (importOriginal) => {
@@ -148,6 +150,7 @@ beforeEach(() => {
   mocks.getReservations.mockResolvedValue([reservation]);
   mocks.getMe.mockResolvedValue(gerant);
   mocks.gerantUnread.mockResolvedValue({ count: 0 });
+  mocks.getBalance.mockResolvedValue(undefined);
 });
 
 afterEach(() => {

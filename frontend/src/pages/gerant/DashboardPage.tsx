@@ -3,10 +3,14 @@ import { Link } from 'react-router-dom';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
-import BrandLogo from '../../components/BrandLogo';
+import GerantSidebar from '../../components/gerant/GerantSidebar';
 import { fetchMyRooms, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import { getReservations, statutLabels, type Reservation } from '../../lib/reservations';
+import { apiPayouts, type PayoutBalanceData } from '../../lib/api';
+import { formatPrice } from '../../lib/roomDisplay';
+
+
 
 function Icon({ id, className = 'i' }: { id: string; className?: string }) {
   return (
@@ -83,12 +87,11 @@ export default function DashboardPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [reservationsError, setReservationsError] = useState('');
-
-  // On utilise les données du hook pour éviter les requêtes en double
-  const hookData = useGerantChrome();
+  const [globalLoading, setGlobalLoading] = useState(true);
+  const [payoutBalance, setPayoutBalance] = useState<PayoutBalanceData | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -96,45 +99,60 @@ export default function DashboardPage() {
     setError('');
     setReservationsError('');
 
-    // On ne charge les données que si le hook n'a pas déjà chargé les réservations
-    if (hookData.reservationsCount === 0 && !hookData.error) {
-      Promise.allSettled([fetchMyRooms(), getReservations()])
-        .then(([roomsResult, reservationsResult]) => {
-          if (!alive) return;
+    // Toujours charger les données du gérant
+    Promise.allSettled([fetchMyRooms(), getReservations()])
+      .then(([roomsResult, reservationsResult]) => {
+        if (!alive) return;
 
-          if (roomsResult.status === 'fulfilled') {
-            setRooms(roomsResult.value);
-          } else {
-            setError('Impossible de charger vos chambres.');
-          }
+        if (roomsResult.status === 'fulfilled') {
+          setRooms(roomsResult.value);
+        } else {
+          setError('Impossible de charger vos chambres.');
+        }
 
-          if (reservationsResult.status === 'fulfilled') {
-            setReservations(
-              [...reservationsResult.value].sort(
-                (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-              ),
-            );
-          } else {
-            const status = (reservationsResult.reason as { status?: number } | null)?.status;
-            setReservationsError(
-              status === 403
-                ? 'Les réservations sont visibles uniquement pour les gérants vérifiés.'
-                : 'Impossible de charger les demandes de réservation.',
-            );
-          }
-        })
-        .finally(() => {
-          if (alive) setLoading(false);
-        });
-    } else {
-      // Si le hook a déjà chargé les données, on ne fait rien
-      setLoading(false);
-    }
+        if (reservationsResult.status === 'fulfilled') {
+          setReservations(
+            [...reservationsResult.value].sort(
+              (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+            ),
+          );
+        } else {
+          const status = (reservationsResult.reason as { status?: number } | null)?.status;
+          setReservationsError(
+            status === 403
+              ? 'Les réservations sont visibles uniquement pour les gérants vérifiés.'
+              : 'Impossible de charger les demandes de réservation.',
+          );
+        }
+      })
+      .finally(() => {
+        if (alive) {
+          setLoading(false);
+          setGlobalLoading(false);
+        }
+      });
     
     return () => {
       alive = false;
     };
-  }, [hookData.reservationsCount, hookData.error]);
+  }, []);
+
+  // Solde affiché à titre indicatif : la page Reversements reste la source
+  // pour demander un retrait (le backend revérifie toujours le montant).
+  useEffect(() => {
+    let alive = true;
+    apiPayouts
+      .getBalance()
+      .then((balance) => {
+        if (alive) setPayoutBalance(balance);
+      })
+      .catch(() => {
+        // Un solde indisponible ne doit pas casser le tableau de bord.
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const market = chrome.gerant?.market;
   useEffect(() => {
@@ -153,6 +171,16 @@ export default function DashboardPage() {
   const roomsById = useMemo(() => new Map(rooms.map((room) => [room.id, room])), [rooms]);
   const categoryTitle = (id: string): string =>
     categories.find((category) => category.id === id)?.title ?? id;
+
+  // Vérifier si toutes les données sont chargées avant de rendre le tableau
+  useEffect(() => {
+    if (chrome.isLoading || loading || !market || categories.length === 0 || rooms.length === 0) {
+      return;
+    }
+    if (chrome.gerant?.prenom && gerantPath && chambresPath && demandesPath) {
+      setGlobalLoading(false);
+    }
+  }, [chrome.isLoading, loading, market, categories, rooms, chrome.gerant?.prenom, gerantPath, chambresPath, demandesPath]);
 
   const categoryEntries = useMemo(() => {
     const map = new Map<string, { title: string; count: number }>();
@@ -180,6 +208,19 @@ export default function DashboardPage() {
     year: 'numeric',
   });
   const firstName = chrome.gerant?.prenom?.trim() || 'Gérant';
+
+  // Afficher un écran de chargement global si nécessaire
+  if (globalLoading) {
+    return (
+      <div className="gerant-maq1 bg-[#f5f8fc] text-dash-navy antialiased flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-dash-brand border-t-transparent"></div>
+          <p className="mt-4 text-lg font-medium text-dash-navy">Chargement de votre tableau de bord...</p>
+          <p className="mt-2 text-sm text-slate-500">Veuillez patienter pendant que nous récupérons vos données</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="gerant-maq1 bg-[#f5f8fc] text-dash-navy antialiased">
@@ -212,73 +253,7 @@ export default function DashboardPage() {
       </svg>
 
       <div className="flex min-h-screen">
-        <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white px-4 py-5 lg:flex">
-        <Link to={gerantPath} className="mb-6 flex items-center gap-2.5 px-2" aria-label="Linkhoo - retour à l'accueil">
-          <BrandLogo />
-        </Link>
-
-          <nav className="space-y-3">
-            <Link to={gerantPath} className="grp rounded-xl bg-dash-brand-soft text-dash-brand-dark">
-              <Icon id="home" />Aperçu
-            </Link>
-
-            <div>
-              <div className="grp justify-between">
-                <span className="flex items-center gap-3"><Icon id="bed" />Chambres</span>
-                <Icon id="up" className="i !h-4 !w-4" />
-              </div>
-              <div className="pl-3">
-                <Link to={chambresPath} className="sub"><Icon id="list" />Toutes les chambres</Link>
-                <Link to={`${chambresPath}/ajouter`} className="sub"><Icon id="plus" />Ajouter une chambre</Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp"><Icon id="cal" />Réservations{chrome.reservationsCount > 0 && <span className="badge">{chrome.reservationsCount}</span>}</div>
-              <div className="pl-3">
-                <Link to={demandesPath} className="sub"><Icon id="user" />Demandes</Link>
-                <Link to={`${gerantPath}/reservations/calendrier`} className="sub"><Icon id="cal" />Calendrier</Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp"><Icon id="chat" />Messages{chrome.messagesUnread > 0 && <span className="badge">{chrome.messagesUnread}</span>}</div>
-              <div className="pl-3">
-                <Link to={`${gerantPath}/messages/boite-reception`} className="sub"><Icon id="mail" />Boîte de réception</Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp justify-between">
-                <span className="flex items-center gap-3"><Icon id="shield" />Vérification</span>
-                <Icon id="down" className="i !h-4 !w-4" />
-              </div>
-              <div className="pl-3">
-                <Link to={`${gerantPath}/verification`} className="sub"><Icon id="doc" />Mes documents</Link>
-                <Link to={`${gerantPath}/verification`} className="sub"><Icon id="doc" />Suivi de vérification</Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp justify-between">
-                <span className="flex items-center gap-3"><Icon id="user" />Profil</span>
-                <Icon id="down" className="i !h-4 !w-4" />
-              </div>
-              <div className="pl-3"><Link to={`${gerantPath}/profil`} className="sub"><Icon id="user" />Mes informations</Link></div>
-            </div>
-
-            <div>
-              <div className="grp"><Icon id="crown" className="i text-dash-brand" />Premium</div>
-              <div className="pl-3"><Link to={`${gerantPath}/premium`} className="sub"><Icon id="cal" />Mon abonnement</Link></div>
-            </div>
-          </nav>
-
-          <div className="mt-auto rounded-2xl border border-orange-100 bg-dash-brand-soft p-4 pt-5">
-            <p className="flex items-center gap-2 text-sm font-bold"><Icon id="crown" className="i h-5 w-5 text-dash-brand" />Passez au Premium</p>
-            <p className="mt-2 text-[11px] text-slate-500">Plus de visibilité, plus de réservations !</p>
-            <Link to={`${gerantPath}/premium`} className="mt-3 block rounded-lg bg-dash-brand py-2 text-center text-xs font-semibold text-white hover:bg-dash-brand-dark">Voir les avantages</Link>
-          </div>
-        </aside>
+        <GerantSidebar />
 
         <main className="min-w-0 flex-1 px-4 py-4 lg:px-7">
           <header className="flex items-center gap-4">
@@ -299,7 +274,7 @@ export default function DashboardPage() {
 
           <div className="mt-6 flex flex-wrap items-start justify-between gap-2">
             <div>
-              <h1 className="text-3xl font-extrabold">Bonjour {firstName} 👋</h1>
+              <h1 className="dash-page-head">Bonjour {firstName} 👋</h1>
               <p className="mt-1 text-sm text-slate-500">Voici un aperçu de votre activité sur HabiCI.</p>
             </div>
             <div className="text-right text-xs text-slate-500">
@@ -330,6 +305,31 @@ export default function DashboardPage() {
                   <div><p className="text-sm text-slate-600">Chambres occupées</p><p className="text-3xl font-bold">{occupied}</p><p className="mt-1 text-xs font-medium text-dash-brand">{occupiedShare}% du parc</p></div>
                 </div>
               </div>
+
+              <Link
+                to={`${gerantPath}/reversements`}
+                className="card flex flex-wrap items-center gap-4 p-5 transition hover:border-orange-200 hover:shadow-md"
+              >
+                <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-600">
+                  <Icon id="check" className="i h-7 w-7 !stroke-[2.5]" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-slate-600">Solde disponible</p>
+                  <p className="text-2xl font-bold text-dash-navy">
+                    {formatPrice(payoutBalance?.available ?? 0)}{' '}
+                    <span className="text-sm font-semibold text-slate-500">
+                      {payoutBalance?.currency ?? 'XOF'}
+                    </span>
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    En cours : {formatPrice(payoutBalance?.pending ?? 0)} · Déjà versé :{' '}
+                    {formatPrice(payoutBalance?.paid ?? 0)}
+                  </p>
+                </div>
+                <span className="link inline-flex items-center gap-1 !font-semibold">
+                  Retirer <Icon id="arrow" className="i h-3.5 w-3.5" />
+                </span>
+              </Link>
 
               <section className="card p-5">
                 <div className="mb-4 flex items-center justify-between">
@@ -428,7 +428,7 @@ export default function DashboardPage() {
               </section>
             </div>
 
-            <aside className="card p-5">
+            <div className="card p-5">
               <h2 className="mb-4 flex items-center gap-3 font-bold"><Icon id="bolt" className="i h-5 w-5 text-dash-brand" />Actions rapides</h2>
               <div className="space-y-3">
                 <Link to={`${chambresPath}/ajouter`} className="flex items-center gap-4 rounded-xl bg-dash-brand p-4 text-white shadow-lg shadow-orange-200 hover:bg-dash-brand-dark">
@@ -448,8 +448,9 @@ export default function DashboardPage() {
                   <span><span className="block text-sm font-semibold">{chrome.gerant?.is_verified ? 'Compte vérifié' : 'Vérifier mon compte'}</span><span className="block text-xs text-slate-500">{chrome.gerant?.is_verified ? 'Statut confirmé' : 'Obtenir le statut vérifié'}</span></span>
                 </Link>
               </div>
-            </aside>
+            </div>
           </div>
+          
         </main>
       </div>
     </div>

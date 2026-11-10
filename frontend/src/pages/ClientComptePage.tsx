@@ -12,40 +12,40 @@ import type { View, ReviewFormState } from './client-compte/types';
 import ClientAccountLayout from '../components/ClientAccountLayout';
 import ClientDashboardMaq from './client-compte/ClientDashboardMaq';
 import ClientReservationsMaq from './client-compte/ClientReservationsMaq';
+import ClientFavoritesPage from './client-compte/ClientFavoritesPage';
 import ProfilePanel, { type ProfileFormState } from './client-compte/ProfilePanel';
-import FavoritesPanel from './client-compte/FavoritesPanel';
 
 export default function ClientComptePage() {
-  const homePath = useHomePath();
-  const unreadMessages = useClientUnread();
-  const { user } = useUser();
-  const { getToken, isLoaded } = useAuth();
+    const homePath = useHomePath();
+    const unreadMessages = useClientUnread();
+    const { user } = useUser();
+    const { getToken, isLoaded } = useAuth();
 
-  const [searchParams] = useSearchParams();
-  const viewParam = searchParams.get('view');
-  const view: View = viewParam === 'stays' || viewParam === 'favorites' || viewParam === 'profile' ? viewParam : 'overview';
+    const [searchParams] = useSearchParams();
+    const viewParam = searchParams.get('view');
+    const view: View = viewParam === 'stays' || viewParam === 'favorites' || viewParam === 'profile' ? viewParam : 'overview';
 
-  const [reservations, setReservations] = useState<ClientMineReservationData[]>([]);
-  const [reviews, setReviews] = useState<ReviewData[]>([]);
-  const [reviewsError, setReviewsError] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [cancellingId, setCancellingId] = useState<string | null>(null);
-  const [payingId, setPayingId] = useState<string | null>(null);
+    const [reservations, setReservations] = useState<ClientMineReservationData[]>([]);
+    const [reviews, setReviews] = useState<ReviewData[]>([]);
+    const [reviewsError, setReviewsError] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [cancellingId, setCancellingId] = useState<string | null>(null);
+    const [payingId, setPayingId] = useState<string | null>(null);
 
-  const [reviewForm, setReviewForm] = useState<ReviewFormState | null>(null);
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewError, setReviewError] = useState('');
-  const [reviewSuccess, setReviewSuccess] = useState('');
-  const { rooms: favorites, loading: favoritesLoading } = useFavorites();
+    const [reviewForm, setReviewForm] = useState<ReviewFormState | null>(null);
+    const [reviewSubmitting, setReviewSubmitting] = useState(false);
+    const [reviewError, setReviewError] = useState('');
+    const [reviewSuccess, setReviewSuccess] = useState('');
+    const { rooms: favorites, loading: favoritesLoading } = useFavorites();
 
-  const [profileSaving, setProfileSaving] = useState(false);
-  const [profileSuccess, setProfileSuccess] = useState('');
-  const [profileError, setProfileError] = useState('');
-  const [profileForm, setProfileForm] = useState({ nom: '', prenom: '', telephone: '' });
+    const [profileSaving, setProfileSaving] = useState(false);
+    const [profileSuccess, setProfileSuccess] = useState('');
+    const [profileError, setProfileError] = useState('');
+    const [profileForm, setProfileForm] = useState({ nom: '', prenom: '', telephone: '' });
 
-  const email = user?.primaryEmailAddress?.emailAddress
-    || user?.emailAddresses?.[0]?.emailAddress
+    const email = user?.primaryEmailAddress?.emailAddress
+      || user?.emailAddresses?.[0]?.emailAddress
     || '';
   const firstName = user?.firstName || '';
   const lastName = user?.lastName || '';
@@ -135,10 +135,10 @@ export default function ClientComptePage() {
   };
 
   const handlePay = async (reservation: ClientMineReservationData) => {
-    setPayingId(reservation.id);
+    setPayingId(reservation.id || '');
     setError('');
     try {
-      const start = await startReservationPayment(reservation.id);
+      const start = await startReservationPayment(reservation.id || '');
       if (start.state === 'paid') {
         setReservations((prev) =>
           prev.map((r) =>
@@ -147,7 +147,10 @@ export default function ClientComptePage() {
         );
         return;
       }
-      // Sortie vers le checkout hébergé : aucun montant ne transite par le front.
+      
+      if (!('checkout_url' in start) || !start.checkout_url) {
+        throw new Error('URL de paiement non trouvée');
+      }
       redirectTo(start.checkout_url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Paiement indisponible pour le moment.');
@@ -156,11 +159,12 @@ export default function ClientComptePage() {
     }
   };
 
-  const openReviewForm = (reservation: ClientMineReservationData) => {    setReviewError('');
+  const openReviewForm = (reservation: ClientMineReservationData) => {
+    setReviewError('');
     setReviewSuccess('');
     setReviewForm({
-      reservationId: reservation.id,
-      roomTitle: reservation.room_title,
+      reservationId: reservation.id || '',
+      roomTitle: reservation.room_title || '',
       noteAppartement: 5,
       noteGerant: 5,
       commentaire: '',
@@ -219,16 +223,16 @@ export default function ClientComptePage() {
       <ClientDashboardMaq
         displayName={firstName || profileForm.prenom || 'Client'}
         email={email}
-        profileFirstName={profileForm.prenom}
-        profileLastName={profileForm.nom}
-        phone={profileForm.telephone}
-        avatarUrl={user?.imageUrl}
-        reservations={reservations}
-        favorites={favorites}
-        reviews={reviews}
+        profileFirstName={profileForm.prenom || ''}
+        profileLastName={profileForm.nom || ''}
+        phone={profileForm.telephone || ''}
+        avatarUrl={user?.imageUrl || undefined}
+        reservations={Array.isArray(reservations) ? reservations : []}
+        favorites={Array.isArray(favorites) ? favorites : []}
+        reviews={Array.isArray(reviews) ? reviews : []}
         unreadMessages={unreadMessages}
         loading={loading}
-        error={error}
+        error={error || ''}
         homePath={homePath}
       />
     );
@@ -240,21 +244,21 @@ export default function ClientComptePage() {
     return (
       <ClientReservationsMaq
         displayName={firstName || profileForm.prenom || 'Client'}
-        profileFirstName={profileForm.prenom}
-        profileLastName={profileForm.nom}
-        avatarUrl={user?.imageUrl}
+        profileFirstName={profileForm.prenom || ''}
+        profileLastName={profileForm.nom || ''}
+        avatarUrl={user?.imageUrl || undefined}
         unreadMessages={unreadMessages}
-        reservations={reservations}
-        reviews={reviews}
+        reservations={Array.isArray(reservations) ? reservations : []}
+        reviews={Array.isArray(reviews) ? reviews : []}
         loading={loading}
-        error={error}
+        error={error || ''}
         homePath={homePath}
         reviewsError={reviewsError}
-        reviewable={reviewable}
+        reviewable={Array.isArray(reviewable) ? reviewable : []}
         reviewedIds={reviewedReservationIds}
-        reviewSuccess={reviewSuccess}
+        reviewSuccess={reviewSuccess || ''}
         reviewForm={reviewForm}
-        reviewError={reviewError}
+        reviewError={reviewError || ''}
         reviewSubmitting={reviewSubmitting}
         cancellingId={cancellingId}
         payingId={payingId}
@@ -268,29 +272,28 @@ export default function ClientComptePage() {
     );
   }
 
-  // Vue « Mes favoris » : la liste des chambres marquées par le cœur du client.
+  // Vue « Mes favoris » : nouvelle interface moderne et élégante
   if (view === 'favorites') {
     return (
-      <ClientAccountLayout active="favorites" staysCount={favorites.length}>
-        <div className="admin-content">
-          <section className="cdash__content">
-            <header className="cdash-top">
-              <div className="cdash-top__lead">
-                <p className="cdash-top__eyebrow">Espace client</p>
-                <h1 className="cdash-top__title">Mes favoris</h1>
-              </div>
-            </header>
-            <FavoritesPanel favorites={favorites} loading={favoritesLoading} />
-          </section>
-        </div>
-      </ClientAccountLayout>
+      <ClientFavoritesPage
+        displayName={firstName || profileForm.prenom || 'Client'}
+        email={email}
+        profileFirstName={profileForm.prenom || ''}
+        profileLastName={profileForm.nom || ''}
+        phone={profileForm.telephone || ''}
+        avatarUrl={user?.imageUrl || undefined}
+        favorites={Array.isArray(favorites) ? favorites : []}
+        loading={favoritesLoading}
+        error={error || ''}
+        homePath={homePath}
+      />
     );
   }
 
   // Vue par défaut du compte client : le profil (les autres vues sont
   // interceptées plus haut — overview, stays, favorites).
   return (
-    <ClientAccountLayout active="profile" staysCount={reservations.length}>
+    <ClientAccountLayout>
       <div className="admin-content">
         <section className="cdash__content">
           <header className="cdash-top">

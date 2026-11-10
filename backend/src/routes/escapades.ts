@@ -44,9 +44,12 @@ router.post('/', requireAdminAuth, requirePermission('escapades'), async (req: R
       return res.status(400).json({ error: "Données d'escapade invalides" });
     }
 
+    // CORRECTIF : l'id généré côté serveur gagne TOUJOURS sur un éventuel `id`
+    // fourni par le client. Avant, `{ id: randomUUID(), ...parsedBody.data }`
+    // laissait le client écraser l'id (collision / prise de contrôle de ligne).
     const { data, error } = await supabaseAdmin
       .from('escapades')
-      .insert({ id: randomUUID(), ...parsedBody.data })
+      .insert({ ...parsedBody.data, id: randomUUID() })
       .select(ESCAPADE_COLUMNS)
       .single();
     if (error) throw error;
@@ -64,9 +67,15 @@ router.put('/:id', requireAdminAuth, requirePermission('escapades'), async (req:
       return res.status(400).json({ error: "Données d'escapade invalides" });
     }
 
+    // CORRECTIF : on ne permet pas de changer l'id via update.
+    const { id: _ignoredId, ...patch } = parsedBody.data as Record<string, unknown>;
+    if (Object.keys(patch).length === 0) {
+      return res.status(400).json({ error: "Données d'escapade invalides" });
+    }
+
     const { data, error } = await supabaseAdmin
       .from('escapades')
-      .update(parsedBody.data)
+      .update(patch)
       .eq('id', parsedParams.data.id)
       .select(ESCAPADE_COLUMNS)
       .maybeSingle();

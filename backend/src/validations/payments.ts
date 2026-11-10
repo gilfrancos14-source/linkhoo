@@ -29,8 +29,8 @@ const optionalText = (max: number) =>
  * Coordonnées de reversement déclarées par le gérant.
  *
  * Les champs sont validés par moyen de paiement : un transfert mobile money
- * sans opérateur, ou un virement sans banque, serait refusé par Hub2 après
- * avoir bloqué le payout. Mieux vaut refuser à la saisie.
+ * sans opérateur serait refusé par pawaPay après avoir bloqué le payout.
+ * Mieux vaut refuser à la saisie.
  */
 export const payoutSettingsSchema = z
   .object({
@@ -77,3 +77,16 @@ export const payoutSettingsSchema = z
   });
 
 export const payoutVerificationSchema = z.object({ verified: z.boolean() }).strict();
+
+/**
+ * Demande de retrait du gérant.
+ *
+ * `amount` absent = « tout le solde disponible ». Le montant est en unités
+ * entières de la devise du marché ; le service revérifie qu'il ne dépasse pas
+ * le solde calculé côté serveur (aucune confiance dans le front).
+ */
+export const payoutWithdrawalSchema = z
+  .object({
+    amount: z.number().int().positive().max(100_000_000).optional(),
+  })
+  .strict();

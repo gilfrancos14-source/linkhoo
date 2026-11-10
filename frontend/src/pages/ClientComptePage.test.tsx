@@ -310,7 +310,7 @@ describe('ClientComptePage — navigation du compte', () => {
     mocks.unreadMessages.mockResolvedValue({ count: 4 });
     await renderLoaded();
 
-    const link = screen.getByRole('link', { name: /Mes messages/ });
+    const link = screen.getByRole('link', { name: /Messages/ });
     expect(link).toHaveAttribute('href', '/ci/messages');
     expect(within(link).getByText('4')).toBeInTheDocument();
   });
@@ -318,7 +318,7 @@ describe('ClientComptePage — navigation du compte', () => {
   it("n'affiche pas de pastille Messages quand tout est lu", async () => {
     await renderLoaded();
 
-    const link = screen.getByRole('link', { name: /Mes messages/ });
+    const link = screen.getByRole('link', { name: /Messages/ });
     expect(link.querySelector('.bd')).toBeNull();
   });
 });
@@ -331,21 +331,20 @@ describe('ClientComptePage — vues', () => {
       await screen.findByRole('heading', { level: 1, name: /Votre prochain séjour/ }),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Accueil' })).toHaveAttribute('aria-current', 'page');
-    expect(screen.getByRole('link', { name: /Mes réservations/ })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: /Mes séjours/ })).not.toHaveAttribute('aria-current');
   });
 
   it('affiche la vue « Mes réservations »', async () => {
     await renderLoaded();
 
     expect(screen.getByRole('heading', { level: 1, name: 'Mes réservations' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Mes réservations/ })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: /Mes séjours/ })).toHaveAttribute('aria-current', 'page');
   });
 
-  it('affiche le nombre de réservations en pastille', async () => {
+  it('liste les séjours dans la vue « Mes réservations »', async () => {
     await renderLoaded();
 
-    const link = screen.getByRole('link', { name: /Mes réservations/ });
-    expect(within(link).getByText('4')).toBeInTheDocument();
+    expect(cards()).toHaveLength(4);
   });
 
   it("bascule sur la vue profil et change le titre", async () => {
@@ -354,7 +353,7 @@ describe('ClientComptePage — vues', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Mon profil' }));
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Mon profil' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Mon profil' })).toHaveClass('sidebar__link--active');
+    expect(screen.getByRole('link', { name: 'Mon profil' })).toHaveAttribute('aria-current', 'page');
     expect(document.querySelector('.rs')).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
+import { MarketProvider } from '../../contexts/MarketContext';
 import type { Conversation, Message } from '../../lib/api';
 import ClientMessagesMaq from './ClientMessagesMaq';
 
@@ -12,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   markRead: vi.fn<(id: string) => Promise<unknown>>(),
   getRoom: vi.fn<(id: string) => Promise<unknown>>(),
   listByRoom: vi.fn<(id: string) => Promise<unknown>>(),
+  unread: vi.fn<() => Promise<{ count: number }>>(),
   signOut: vi.fn<() => Promise<void>>(),
 }));
 
@@ -26,6 +28,7 @@ vi.mock('../../lib/api', async (importOriginal) => {
       listMessages: mocks.listMessages,
       sendMessage: mocks.sendMessage,
       markRead: mocks.markRead,
+      unread: mocks.unread,
     },
     apiRooms: { ...actual.apiRooms, get: mocks.getRoom },
     apiReviews: { ...actual.apiReviews, listByRoom: mocks.listByRoom },
@@ -34,6 +37,11 @@ vi.mock('../../lib/api', async (importOriginal) => {
 
 vi.mock('@clerk/clerk-react', () => ({
   useClerk: () => ({ signOut: mocks.signOut }),
+  useAuth: () => ({
+    isLoaded: true,
+    isSignedIn: true,
+    getToken: async () => 'token-test',
+  }),
 }));
 
 const CONVERSATION_ONE: Conversation = {
@@ -116,10 +124,12 @@ function MessagesRoute() {
 function renderMessages(entry = '/ci/messages') {
   return render(
     <MemoryRouter initialEntries={[entry]}>
-      <Routes>
-        <Route path="/ci/messages" element={<MessagesRoute />} />
-        <Route path="/ci/messages/:conversationId" element={<MessagesRoute />} />
-      </Routes>
+      <MarketProvider>
+        <Routes>
+          <Route path="/ci/messages" element={<MessagesRoute />} />
+          <Route path="/ci/messages/:conversationId" element={<MessagesRoute />} />
+        </Routes>
+      </MarketProvider>
     </MemoryRouter>,
   );
 }
@@ -127,6 +137,7 @@ function renderMessages(entry = '/ci/messages') {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.signOut.mockResolvedValue(undefined);
+  mocks.unread.mockResolvedValue({ count: 0 });
   mocks.inbox.mockResolvedValue({
     items: [CONVERSATION_ONE, CONVERSATION_TWO],
     total: 2,
@@ -344,15 +355,16 @@ describe('ClientMessagesMaq — fil de discussion', () => {
 
 describe('ClientMessagesMaq — chrome de la page', () => {
   it('affiche le compte connecté et le badge de non-lus', async () => {
+    mocks.unread.mockResolvedValue({ count: 2 });
     renderMessages();
     await screen.findByText('Suite vue mer');
 
     expect(document.querySelector('.avatar')).toHaveTextContent('AK');
     expect(screen.getAllByText('Aya Kouassi').length).toBeGreaterThan(0);
 
-    const messagesLink = screen.getByRole('link', { name: /^Mes messages/ });
+    const messagesLink = screen.getByRole('link', { name: /^Messages/ });
     expect(messagesLink).toHaveAttribute('aria-current', 'page');
-    expect(within(messagesLink).getByText('2')).toBeInTheDocument();
+    expect(await within(messagesLink).findByText('2')).toBeInTheDocument();
   });
 
   it('déconnecte et revient vers le marché', async () => {

@@ -90,7 +90,15 @@ describe('GET /api/reviews', () => {
       data: [{ note_gerant: 4 }, { note_gerant: 2 }],
       error: null,
     });
-    stubTables({ reviews: [roomReviews, gerantReviews] });
+    // `fetchRoomReviewStats` relit `reviews` pour l'histogramme.
+    const statsReviews = fakeChain({
+      data: [
+        { room_id: 'room-1', note_appartement: 5 },
+        { room_id: 'room-1', note_appartement: 3 },
+      ],
+      error: null,
+    });
+    stubTables({ reviews: [roomReviews, statsReviews, gerantReviews] });
 
     const res = await request(app).get('/api/reviews?room_id=room-1');
 
@@ -99,6 +107,13 @@ describe('GET /api/reviews', () => {
     expect(res.body.room_count).toBe(2);
     expect(res.body.gerant_avg).toBe(3);
     expect(res.body.gerant_count).toBe(2);
+    expect(res.body.room_distribution).toEqual([
+      { note: 5, count: 1, percent: 50 },
+      { note: 4, count: 0, percent: 0 },
+      { note: 3, count: 1, percent: 50 },
+      { note: 2, count: 0, percent: 0 },
+      { note: 1, count: 0, percent: 0 },
+    ]);
   });
 
   it('200 : chambre sans gérant na pas d’agrégat gérant', async () => {
@@ -113,10 +128,11 @@ describe('GET /api/reviews', () => {
       reviews: [],
       room_avg: null,
       room_count: 0,
+      room_distribution: [],
       gerant_avg: null,
       gerant_count: 0,
     });
-    expect(reviews.select).toHaveBeenCalledTimes(1);
+    expect(reviews.select).toHaveBeenCalledTimes(2);
   });
 });
 

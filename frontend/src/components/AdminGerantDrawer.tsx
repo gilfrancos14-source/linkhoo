@@ -358,8 +358,7 @@ export default function AdminGerantDrawer({ gerant, onClose, onUpdated }: AdminG
                       </button>
                       {showDocRejectInput === doc.id ? (
                         <div style={{ display: 'flex', gap: '6px', flex: 1, minWidth: '200px' }}>
-                          <input type="text" className="admin-field__input" placeholder="Raison du rejet..." value={docRejectReason} onChange={(e) => setDocRejectReason(e.target.value)}
-                            style={{ flex: 1, fontSize: '13px', padding: '6px 10px', border: '1px solid var(--admin-line)', borderRadius: '6px' }} />
+                          <input type="text" className="admin-input" placeholder="Raison du rejet..." value={docRejectReason} onChange={(e) => setDocRejectReason(e.target.value)} />
                           <button className="admin-btn admin-btn--danger admin-btn--sm" onClick={() => { if (docRejectReason.trim()) handleReviewDocument(doc.id, 'rejected', docRejectReason); }}
                             disabled={!docRejectReason.trim() || actionLoading === doc.id} style={{ fontSize: '12px' }}>Confirmer</button>
                           <button className="admin-btn admin-btn--sm" onClick={() => { setShowDocRejectInput(null); setDocRejectReason(''); }} style={{ fontSize: '12px' }}>Annuler</button>
@@ -381,8 +380,7 @@ export default function AdminGerantDrawer({ gerant, onClose, onUpdated }: AdminG
               <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>Raison du rejet</label>
-                  <input type="text" className="admin-field__input" placeholder="Expliquez pourquoi la demande est rejetée..." value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}
-                    style={{ width: '100%', fontSize: '13px', padding: '8px 12px', border: '1px solid var(--admin-line)', borderRadius: '6px' }} />
+                  <input type="text" className="admin-input" placeholder="Expliquez pourquoi la demande est rejetée..." value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
                 </div>
                 <div style={{ display: 'flex', gap: '6px', marginTop: '20px' }}>
                   <button className="admin-btn admin-btn--danger" onClick={handleReject} disabled={!rejectReason.trim() || actionLoading === 'reject'}>

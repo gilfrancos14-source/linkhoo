@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
+import GerantSidebar from '../../components/gerant/GerantSidebar';
 import { fetchMyRooms, type Room } from '../../data/rooms';
 import { getReservations, statutLabels, type Reservation } from '../../lib/reservations';
 import '../../styles/37-gerant-maq5.css';
@@ -94,10 +95,8 @@ export default function CalendrierMaq5() {
   const homePath = useHomePath();
   const chrome = useGerantChrome();
   const gerantPath = `${homePath}/gerant`;
-  const chambresPath = `${gerantPath}/chambres`;
   const reservationsPath = `${gerantPath}/reservations`;
   const demandesPath = `${reservationsPath}/demandes`;
-  const calendrierPath = `${reservationsPath}/calendrier`;
 
   const today = new Date();
   const todayIso = isoOf(today);
@@ -338,62 +337,7 @@ export default function CalendrierMaq5() {
       </svg>
 
       <div className="flex min-h-screen">
-        <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white px-4 py-5 lg:flex">
-        <Link to={gerantPath} className="mb-6 flex items-center gap-2.5 px-2" aria-label="Linkhoo - retour à l'accueil">
-          <img className="sidebar-logo" src="/logo.jpg" alt="Logo Linkhoo" />
-        </Link>
-
-          <nav className="space-y-3">
-            <Link to={gerantPath} className="grp"><Icon id="home" />Aperçu</Link>
-
-            <div>
-              <div className="grp justify-between"><span className="flex items-center gap-3"><Icon id="bed" />Chambres</span><Icon id="up" className="i !h-4 !w-4" /></div>
-              <div className="pl-2">
-                <Link to={chambresPath} className="sub"><Icon id="list" />Toutes les chambres</Link>
-                <Link to={`${chambresPath}/ajouter`} className="sub"><Icon id="plus" />Ajouter une chambre</Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp"><Icon id="cal" className="i text-navy" />Réservations{chrome.reservationsCount > 0 && <span className="badge">{chrome.reservationsCount}</span>}</div>
-              <div className="pl-2">
-                <Link to={demandesPath} className="sub"><Icon id="user" />Demandes</Link>
-                <Link to={calendrierPath} className="sub on" aria-current="page"><Icon id="cal" />Calendrier</Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp"><Icon id="chat" />Messages{chrome.messagesUnread > 0 && <span className="badge">{chrome.messagesUnread}</span>}</div>
-              <div className="pl-2">
-                <Link to={`${gerantPath}/messages/boite-reception`} className="sub"><Icon id="mail" />Boîte de réception</Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp justify-between"><span className="flex items-center gap-3"><Icon id="shield" />Vérification</span><Icon id="down" className="i !h-4 !w-4" /></div>
-              <div className="pl-2">
-                <Link to={`${gerantPath}/verification`} className="sub"><Icon id="doc" />Mes documents</Link>
-                <Link to={`${gerantPath}/verification`} className="sub"><Icon id="okdoc" />Suivi de vérification</Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp justify-between"><span className="flex items-center gap-3"><Icon id="user" />Profil</span><Icon id="down" className="i !h-4 !w-4" /></div>
-              <div className="pl-2"><Link to={`${gerantPath}/profil`} className="sub"><Icon id="user" />Mes informations</Link></div>
-            </div>
-
-            <div>
-              <div className="grp"><Icon id="crown" className="i text-brand" />Premium</div>
-              <div className="pl-2"><Link to={`${gerantPath}/premium`} className="sub"><Icon id="cal" />Mon abonnement</Link></div>
-            </div>
-          </nav>
-
-          <div className="mt-auto rounded-2xl border border-orange-100 bg-brand-soft p-4 pt-5">
-            <p className="flex items-center gap-2 text-sm font-bold"><Icon id="crown" className="i h-5 w-5 text-brand" />Passez au Premium</p>
-            <p className="mt-2 text-[11px] text-slate-500">Plus de visibilité, plus de réservations !</p>
-            <Link to={`${gerantPath}/premium`} className="mt-3 block rounded-lg bg-brand py-2 text-center text-xs font-semibold text-white hover:bg-brand-dark">Voir les avantages</Link>
-          </div>
-        </aside>
+        <GerantSidebar />
 
         <main className="min-w-0 flex-1 px-4 py-4 lg:px-7">
           <header className="flex items-center gap-4">
@@ -415,7 +359,7 @@ export default function CalendrierMaq5() {
           <nav aria-label="Fil d’Ariane" className="mt-6 flex items-center gap-2 text-xs text-slate-500">
             <Link to={homePath} className="hover:text-navy">Accueil</Link><Icon id="right" className="i h-3 w-3" /><Link to={reservationsPath} className="hover:text-navy">Réservations</Link><Icon id="right" className="i h-3 w-3" /><span className="text-navy">Calendrier</span>
           </nav>
-          <h1 className="mt-3 text-3xl font-extrabold">Calendrier des réservations</h1>
+          <h1 className="dash-page-head mt-3">Calendrier des réservations</h1>
           <p className="mt-1 text-sm text-slate-500">Visualisez la disponibilité de vos chambres et gérez vos réservations en un coup d’œil.</p>
 
           {(error || loading) && (

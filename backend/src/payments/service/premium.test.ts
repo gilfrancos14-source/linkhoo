@@ -1,9 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { supabaseAdmin } from '../../config/supabase';
-import {
-  fakeChain,
-  useSupabaseTables,
-} from '../../testHelpers/supertestApp';
+import { fakeChain, useSupabaseTables } from '../../testHelpers/supertestApp';
+import { createCheckout } from './checkout';
+import { lookupProviderPayment } from './providerStatus';
 import { confirmPremiumPayment, createPremiumCheckout } from './premium';
 
 vi.mock('../../config/supabase', async () => {
@@ -11,33 +10,13 @@ vi.mock('../../config/supabase', async () => {
   return helper.createSupabaseMock();
 });
 
-const HUB2_ENV: Record<string, string> = {
-  HUB2_API_KEY: 'sk_test_123',
-  HUB2_MERCHANT_ID: 'merchant_123',
-  HUB2_ENV: 'sandbox',
-  APP_PUBLIC_URL: 'https://app.linkhoo.test',
-};
+vi.mock('./checkout', () => ({
+  createCheckout: vi.fn(),
+}));
 
-function setEnv(overrides: Record<string, string | undefined> = {}): void {
-  for (const [key, value] of Object.entries({ ...HUB2_ENV, ...overrides })) {
-    if (value === undefined) delete process.env[key];
-    else process.env[key] = value;
-  }
-}
-
-function stubFetch(body: unknown, init: { ok?: boolean; status?: number } = {}): ReturnType<typeof vi.fn> {
-  const mock = vi.fn(async () => response(body, init));
-  vi.stubGlobal('fetch', mock);
-  return mock;
-}
-
-function response(body: unknown, init: { ok?: boolean; status?: number } = {}) {
-  return {
-    ok: init.ok ?? true,
-    status: init.status ?? 200,
-    text: async () => JSON.stringify(body),
-  };
-}
+vi.mock('./providerStatus', () => ({
+  lookupProviderPayment: vi.fn(),
+}));
 
 const PAYMENT = {
   id: 'pay-1',
@@ -49,7 +28,9 @@ const PAYMENT = {
   amount_xof: 5_000,
   gerant_clerk_user_id: 'user_1',
   provider_payment_link_id: null,
+  pawapay_checkout_id: 'checkout-1',
   fulfilled_at: null,
+  metadata: { premium_days: 30 },
 };
 
 const GERANT = {
@@ -60,7 +41,10 @@ const GERANT = {
   premium_expires_at: '2099-01-01T00:00:00.000Z',
 };
 
-function stubPaymentTables(payment: Record<string, unknown> | null, gerant: Record<string, unknown> | null = GERANT): void {
+function stubPaymentTables(
+  payment: Record<string, unknown> | null,
+  gerant: Record<string, unknown> | null = GERANT,
+): void {
   useSupabaseTables((supabaseAdmin as unknown as { from: unknown }).from, {
     payments: fakeChain({ data: payment, error: null }),
     gerants: fakeChain({ data: gerant, error: null }),
@@ -69,26 +53,20 @@ function stubPaymentTables(payment: Record<string, unknown> | null, gerant: Reco
 
 beforeEach(() => {
   vi.clearAllMocks();
-  setEnv();
-});
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-  for (const key of Object.keys(HUB2_ENV)) delete process.env[key];
 });
 
 describe('createPremiumCheckout', () => {
   it('ouvre un checkout premium avec le bon chemin de retour', async () => {
-    const insert = fakeChain({ data: { id: 'pay-1' }, error: null });
-    const update = fakeChain({ data: null, error: null });
-    useSupabaseTables((supabaseAdmin as unknown as { from: unknown }).from, {
-      payments: [fakeChain({ data: null, error: null }), insert, update],
-    });
-    const fetchMock = stubFetch({
-      id: 'link_1',
-      url: 'https://pay.hub2.io/link_1',
-      status: 'active',
-      expirationDate: '2026-10-27T11:00:00.000Z',
+    vi.mocked(createCheckout).mockResolvedValue({
+      reference: 'PAY-2026-ABC123',
+      checkoutUrl: 'https://checkout.pawapay.io/pay-1',
+      redirectUrl: 'https://checkout.pawapay.io/pay-1',
+      checkoutId: 'checkout-1',
+      amount: 15_000,
+      currency: 'XOF',
+      amountXof: 15_000,
+      fxRate: 1,
+      expiresAt: '2026-10-27T11:00:00.000Z',
     });
 
     const session = await createPremiumCheckout({
@@ -97,23 +75,24 @@ describe('createPremiumCheckout', () => {
       email: 'gerant@example.ci',
     });
 
-    expect(session.amountXof).toBe(5_000);
-    expect(insert.insert).toHaveBeenCalledWith(
+    expect(session.amountXof).toBe(15_000);
+    expect(createCheckout).toHaveBeenCalledWith(
       expect.objectContaining({
         purpose: 'premium',
-        gerant_clerk_user_id: 'user_1',
-        payer_clerk_user_id: 'user_1',
+        market: 'CI',
+        amountXof: 15_000,
+        payerType: 'gerant',
+        payerClerkUserId: 'user_1',
+        gerantClerkUserId: 'user_1',
+        returnPath: '/ci/gerant/premium/success',
+        failurePath: '/ci/gerant/premium',
+        reusePendingPayment: true,
         metadata: expect.objectContaining({
           email: 'gerant@example.ci',
-          return_path: '/ci/gerant/premium/success',
-          failure_path: '/ci/gerant/premium',
+          premium_plan: 'monthly',
+          premium_days: 30,
         }),
       }),
-    );
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    const body = JSON.parse(String(init.body));
-    expect(body.successUrl).toBe(
-      `https://app.linkhoo.test/ci/gerant/premium/success?reference=${session.reference}`,
     );
   });
 });
@@ -143,9 +122,8 @@ describe('confirmPremiumPayment', () => {
     });
   });
 
-  it('ne rappelle pas Hub2 quand le webhook a déjà livré l’abonnement', async () => {
+  it('ne rappelle pas pawaPay quand le webhook a déjà livré l’abonnement', async () => {
     stubPaymentTables({ ...PAYMENT, status: 'succeeded', fulfilled_at: '2026-10-27T10:00:00.000Z' });
-    const fetchMock = stubFetch([]);
 
     const result = await confirmPremiumPayment('PAY-2026-ABC123', 'user_1');
 
@@ -154,13 +132,26 @@ describe('confirmPremiumPayment', () => {
       expiresAt: GERANT.premium_expires_at,
       gerant: expect.objectContaining({ id: 'g1' }),
     });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(lookupProviderPayment).not.toHaveBeenCalled();
     expect(supabaseAdmin.rpc).not.toHaveBeenCalled();
   });
 
-  it('refuse tant que Hub2 n’a pas confirmé', async () => {
+  it('refuse un paiement sans checkout pawaPay', async () => {
+    stubPaymentTables({ ...PAYMENT, pawapay_checkout_id: null });
+
+    await expect(confirmPremiumPayment(PAYMENT.reference, 'user_1')).rejects.toMatchObject({
+      code: 'PAYMENT_NOT_SUCCEEDED',
+      status: 400,
+    });
+    expect(lookupProviderPayment).not.toHaveBeenCalled();
+  });
+
+  it('refuse tant que pawaPay n’a pas confirmé', async () => {
     stubPaymentTables(PAYMENT);
-    stubFetch([{ id: 'pi_1', status: 'processing', purchaseReference: PAYMENT.reference }]);
+    vi.mocked(lookupProviderPayment).mockResolvedValue({
+      payment: null,
+      latestStatus: 'pending',
+    });
 
     await expect(confirmPremiumPayment(PAYMENT.reference, 'user_1')).rejects.toMatchObject({
       code: 'PAYMENT_NOT_SUCCEEDED',
@@ -169,20 +160,12 @@ describe('confirmPremiumPayment', () => {
     });
   });
 
-  it('active l’abonnement quand Hub2 renvoie un paiement réussi', async () => {
+  it('active l’abonnement quand pawaPay renvoie un dépôt complété', async () => {
     stubPaymentTables(PAYMENT);
-    stubFetch([
-      { id: 'pi_old', status: 'failed', purchaseReference: PAYMENT.reference, updatedAt: '2026-10-27T09:00:00Z' },
-      {
-        id: 'pi_new',
-        status: 'successful',
-        purchaseReference: PAYMENT.reference,
-        updatedAt: '2026-10-27T10:00:00Z',
-        amount: 5_000,
-        currency: 'XOF',
-        payments: [{ id: 'pay_new', status: 'successful' }],
-      },
-    ]);
+    vi.mocked(lookupProviderPayment).mockResolvedValue({
+      payment: { id: 'dep_1', amount: 5_000, currency: 'XOF' },
+      latestStatus: 'succeeded',
+    });
     vi.mocked(supabaseAdmin.rpc).mockResolvedValue({
       data: [
         {
@@ -198,9 +181,10 @@ describe('confirmPremiumPayment', () => {
 
     const result = await confirmPremiumPayment(PAYMENT.reference, 'user_1');
 
+    expect(lookupProviderPayment).toHaveBeenCalledWith(PAYMENT.reference);
     expect(supabaseAdmin.rpc).toHaveBeenCalledWith('payment_claim_premium', {
       p_reference: PAYMENT.reference,
-      p_provider_payment_id: 'pay_new',
+      p_provider_payment_id: 'dep_1',
       p_amount: 5_000,
       p_currency: 'XOF',
       p_days: 30,
@@ -211,76 +195,12 @@ describe('confirmPremiumPayment', () => {
     });
   });
 
-  it('retombe sur le Payment Link quand l’intent est introuvable', async () => {
-    stubPaymentTables({ ...PAYMENT, provider_payment_link_id: 'pl_1' });
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(response([]))
-      .mockResolvedValueOnce(
-        response({
-          id: 'pl_1',
-          status: 'completed',
-          amount: 5_000,
-          currency: 'XOF',
-          currentSuccessCount: 1,
-          paymentAttempts: [
-            {
-              id: 'pay_1',
-              status: 'successful',
-              amount: 5_000,
-              currency: 'XOF',
-              updatedAt: '2026-10-27T10:00:00.000Z',
-            },
-          ],
-        }),
-      );
-    vi.stubGlobal('fetch', fetchMock);
-    vi.mocked(supabaseAdmin.rpc).mockResolvedValue({
-      data: [{ already_claimed: false, new_expires_at: '2099-02-01T00:00:00.000Z' }],
-      error: null,
-    } as never);
-
-    const result = await confirmPremiumPayment(PAYMENT.reference, 'user_1');
-
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock.mock.calls[1][0]).toContain('/payment-links/pl_1');
-    expect(supabaseAdmin.rpc).toHaveBeenCalledWith('payment_claim_premium', {
-      p_reference: PAYMENT.reference,
-      p_provider_payment_id: 'pay_1',
-      p_amount: 5_000,
-      p_currency: 'XOF',
-      p_days: 30,
-    });
-    expect(result.alreadyActive).toBe(false);
-  });
-
-  it('refuse quand le Payment Link n’est pas encore payé', async () => {
-    stubPaymentTables({ ...PAYMENT, provider_payment_link_id: 'pl_1' });
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(response([]))
-      .mockResolvedValueOnce(
-        response({
-          id: 'pl_1',
-          status: 'active',
-          amount: 5_000,
-          currency: 'XOF',
-          currentSuccessCount: 0,
-          paymentAttempts: [],
-        }),
-      );
-    vi.stubGlobal('fetch', fetchMock);
-
-    await expect(confirmPremiumPayment(PAYMENT.reference, 'user_1')).rejects.toMatchObject({
-      code: 'PAYMENT_NOT_SUCCEEDED',
-      status: 400,
-    });
-    expect(supabaseAdmin.rpc).not.toHaveBeenCalled();
-  });
-
   it('traduit un écart de montant en 409', async () => {
     stubPaymentTables(PAYMENT);
-    stubFetch([{ id: 'pi_1', status: 'successful', purchaseReference: PAYMENT.reference }]);
+    vi.mocked(lookupProviderPayment).mockResolvedValue({
+      payment: { id: 'dep_1', amount: 5_000, currency: 'XOF' },
+      latestStatus: 'succeeded',
+    });
     vi.mocked(supabaseAdmin.rpc).mockResolvedValue({
       data: null,
       error: { message: 'PAYMENT_AMOUNT_MISMATCH' },

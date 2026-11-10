@@ -10,7 +10,9 @@ import {
   type AdminPermissionKey,
 } from '../../lib/adminApi';
 import { marketSlugFromPath } from '../../contexts/MarketContext';
+import '../../styles/20-auth.css';
 import '../../styles/18-admin.css';
+import '../../styles/21-admin-override.css';
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -88,7 +90,7 @@ export default function SuperAdminLayout() {
   useEffect(() => {
     setMobileOpen(false);
     setNotifOpen(false);
-  }, [marketSlug]);
+  }, [marketSlug, pathname]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

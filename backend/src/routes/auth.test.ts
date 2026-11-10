@@ -138,9 +138,19 @@ describe('POST /api/auth/bootstrap', () => {
     const res = await request(app)
       .post('/api/auth/bootstrap')
       .set('Authorization', clerkBearer('user_1'))
+      .send({ role: 'client', market: 'CI' });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('400 : market manquant pour un compte client', async () => {
+    const res = await request(app)
+      .post('/api/auth/bootstrap')
+      .set('Authorization', clerkBearer('user_1'))
       .send({ role: 'client' });
 
     expect(res.status).toBe(400);
+    expect(res.body.error).toBe('market est requis pour un compte client');
   });
 
   it('201 : crée le profil client et pose le rôle Clerk', async () => {
@@ -152,36 +162,64 @@ describe('POST /api/auth/bootstrap', () => {
     const res = await request(app)
       .post('/api/auth/bootstrap')
       .set('Authorization', clerkBearer('user_1'))
-      .send({ role: 'client' });
+      .send({ role: 'client', market: 'CI' });
 
     expect(res.status).toBe(201);
-    expect(res.body).toEqual({ role: 'client', profile_role: 'client', clerk_role: 'client' });
+    expect(res.body).toEqual({
+      role: 'client',
+      profile_role: 'client',
+      clerk_role: 'client',
+      market: 'CI',
+    });
     expect(inserted.insert).toHaveBeenCalledWith({
       clerk_user_id: 'user_1',
       email: 'jean@example.ci',
       nom: 'Kouassi',
       prenom: 'Jean',
+      market: 'CI',
     });
     expect(clerkUsers.updateUser).toHaveBeenCalledWith('user_1', {
       publicMetadata: { role: 'client' },
     });
   });
 
-  it('200 : le profil client existe déjà', async () => {
+  it('200 : le profil client existe déjà sur le même marché', async () => {
     const roleCheck = fakeChain({ data: { id: 'c1' }, error: null });
-    const existing = fakeChain({ data: { id: 'c1' }, error: null });
+    const existing = fakeChain({ data: { id: 'c1', market: 'CI' }, error: null });
     stubTables({ clients: [roleCheck, existing] });
 
     const res = await request(app)
       .post('/api/auth/bootstrap')
       .set('Authorization', clerkBearer('user_1'))
-      .send({ role: 'client' });
+      .send({ role: 'client', market: 'CI' });
 
     expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      role: 'client',
+      profile_role: 'client',
+      clerk_role: 'client',
+      market: 'CI',
+    });
     expect(existing.insert).not.toHaveBeenCalled();
     expect(clerkUsers.updateUser).toHaveBeenCalledWith('user_1', {
       publicMetadata: { role: 'client' },
     });
+  });
+
+  it('409 : client existant sur un autre marché → renvoie le marché réel', async () => {
+    const roleCheck = fakeChain({ data: { id: 'c1' }, error: null });
+    const existing = fakeChain({ data: { id: 'c1', market: 'CI' }, error: null });
+    stubTables({ clients: [roleCheck, existing] });
+
+    const res = await request(app)
+      .post('/api/auth/bootstrap')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ role: 'client', market: 'BJ' });
+
+    expect(res.status).toBe(409);
+    expect(res.body.role).toBe('client');
+    expect(res.body.market).toBe('CI');
+    expect(existing.insert).not.toHaveBeenCalled();
   });
 
   it('400 : market manquant pour un compte gérant', async () => {

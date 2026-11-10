@@ -5,6 +5,7 @@ import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
+import GerantSidebar from '../../components/gerant/GerantSidebar';
 import { apiPremium, type PremiumPlanId } from '../../lib/api';
 import { isPremiumActive } from '../../lib/premium';
 import '../../styles/26-premium.css';
@@ -258,8 +259,6 @@ export default function PremiumPage() {
   const chrome = useGerantChrome();
 
   const gerantPath = `${homePath}/gerant`;
-  const chambresPath = `${gerantPath}/chambres`;
-  const messagesPath = `${gerantPath}/messages/boite-reception`;
 
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
@@ -271,12 +270,9 @@ export default function PremiumPage() {
     setProcessing(true);
     setError('');
     try {
-      const { payment_url, checkout_url } = await apiPremium.initiate(market, plan);
-      // Hub2 fournit `checkout_url` ; FedaPay `payment_url`. Le fallback garde
-      // le rollback fonctionnel sans changement de front.
-      const redirectUrl = checkout_url ?? payment_url;
-      if (!redirectUrl) throw new Error('URL de paiement indisponible');
-      window.location.href = redirectUrl;
+      const { checkout_url } = await apiPremium.initiate(market, plan);
+      if (!checkout_url) throw new Error('URL de paiement indisponible');
+      window.location.href = checkout_url;
     } catch (err: any) {
       setError(err?.message || "Erreur lors de l'initiation du paiement");
       setProcessing(false);
@@ -287,127 +283,7 @@ export default function PremiumPage() {
     <div className="gerant-maq1 premium-maq min-h-screen bg-[#f5f8fc] text-[#0b1b3f] antialiased">
       <div className="flex min-h-screen">
         {/* ============ SIDEBAR ============ */}
-        <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white px-4 py-5 lg:flex">
-          <Link
-            to={gerantPath}
-            className="mb-6 flex items-center gap-2.5 px-2"
-            aria-label="Linkhoo - retour à l'accueil"
-          >
-            <img className="sidebar-logo" src="/logo.jpg" alt="Logo Linkhoo" />
-          </Link>
-
-          <nav className="space-y-3">
-            <Link to={gerantPath} className="grp">
-              <Icon name="home" />Aperçu
-            </Link>
-
-            <div>
-              <Link to={chambresPath} className="grp">
-                <Icon name="bed-double" />Chambres
-              </Link>
-              <div className="pl-3">
-                <Link to={chambresPath} className="sub">
-                  <Icon name="tag" />Toutes les chambres
-                </Link>
-                <Link to={`${chambresPath}/ajouter`} className="sub">
-                  <Icon name="plus" />Ajouter une chambre
-                </Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp">
-                <Icon name="calendar" />Réservations
-                {chrome.reservationsCount > 0 && (
-                  <span className="badge">{chrome.reservationsCount}</span>
-                )}
-              </div>
-              <div className="pl-3">
-                <Link to={`${gerantPath}/reservations/demandes`} className="sub">
-                  <Icon name="clipboard-list" />Demandes
-                </Link>
-                <Link to={`${gerantPath}/reservations/calendrier`} className="sub">
-                  <Icon name="calendar" />Calendrier
-                </Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp">
-                <Icon name="message-circle" />Messages
-                {chrome.messagesUnread > 0 && (
-                  <span className="badge">{chrome.messagesUnread}</span>
-                )}
-              </div>
-              <div className="pl-3">
-                <Link to={messagesPath} className="sub">
-                  <Icon name="inbox" />Boîte de réception
-                </Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp justify-between">
-                <span className="flex items-center gap-3">
-                  <Icon name="shield-check" />Vérification
-                </span>
-                <Icon name="chevron-down" className="!h-4 !w-4" />
-              </div>
-              <div className="pl-3">
-                <Link to={`${gerantPath}/verification`} className="sub">
-                  <Icon name="file-text" />Mes documents
-                </Link>
-                <Link to={`${gerantPath}/verification`} className="sub">
-                  <Icon name="file-check" />Suivi de vérification
-                </Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp justify-between">
-                <span className="flex items-center gap-3">
-                  <Icon name="user" />Profil
-                </span>
-                <Icon name="chevron-down" className="!h-4 !w-4" />
-              </div>
-              <div className="pl-3">
-                <Link to={`${gerantPath}/profil`} className="sub">
-                  <Icon name="user" />Mes informations
-                </Link>
-              </div>
-            </div>
-
-            <div>
-              <Link
-                to={`${gerantPath}/premium`}
-                className="grp rounded-xl bg-dash-brand-soft text-dash-brand-dark"
-              >
-                <Icon name="crown" className="text-dash-brand" />Premium
-              </Link>
-              <div className="pl-3">
-                <Link to={`${gerantPath}/premium`} className="sub on">
-                  <Icon name="calendar-check" />Mon abonnement
-                  <span className="ml-auto h-1.5 w-1.5 rounded-full bg-dash-brand" />
-                </Link>
-              </div>
-            </div>
-          </nav>
-
-          <div className="mt-auto rounded-2xl border border-orange-100 bg-dash-brand-soft p-4 pt-5">
-            <p className="flex items-center gap-2 text-sm font-bold">
-              <Icon name="crown" className="h-5 w-5 text-dash-brand" />Passez au Premium
-            </p>
-            <p className="mt-2 text-[11px] text-slate-500">
-              Plus de visibilité, plus de réservations !
-            </p>
-            <a
-              href="#offres"
-              className="mt-3 block rounded-lg bg-dash-brand py-2 text-center text-xs font-semibold text-white hover:bg-dash-brand-dark"
-            >
-              Voir les avantages
-            </a>
-          </div>
-        </aside>
+        <GerantSidebar />
 
         {/* ============ MAIN ============ */}
         <main className="min-w-0 flex-1 px-4 py-4 lg:px-7">
@@ -453,7 +329,7 @@ export default function PremiumPage() {
               <Icon name="arrow-left" className="h-4 w-4" />
               Retour à mon profil
             </Link>
-            <h1 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight">
+            <h1 className="dash-page-head mt-3 leading-tight tracking-tight">
               Abonnez-vous au <span className="text-[#ff5a14]">Premium</span>
             </h1>
             <p className="mt-1 text-sm text-slate-500">
@@ -489,7 +365,7 @@ export default function PremiumPage() {
                     OFFRE PREMIUM
                   </span>
                 </div>
-                <h2 className="mt-3 text-[25px] font-extrabold leading-tight">
+                <h2 className="dash-page-head mt-3 leading-tight text-white">
                   Votre hébergement mérite d’être vu !
                 </h2>
                 <p className="mt-2 text-[14.5px] font-semibold">

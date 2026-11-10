@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runPaymentJobs, startPaymentJobs } from './index';
+import { cleanupOrphanPayments } from './cleanupOrphanPayments';
 import { reconcilePendingPayments } from './reconcile';
 import { expireUnpaidBookings } from './expireUnpaid';
 import { expirePaidPendingBookings } from './expirePaidPending';
 import { runPayoutDue } from './payoutDue';
 
+vi.mock('./cleanupOrphanPayments', () => ({ cleanupOrphanPayments: vi.fn() }));
 vi.mock('./reconcile', () => ({ reconcilePendingPayments: vi.fn() }));
 vi.mock('./expireUnpaid', () => ({ expireUnpaidBookings: vi.fn() }));
 vi.mock('./expirePaidPending', () => ({ expirePaidPendingBookings: vi.fn() }));
@@ -13,6 +15,10 @@ vi.mock('./payoutDue', () => ({ runPayoutDue: vi.fn() }));
 beforeEach(() => {
   vi.clearAllMocks();
   vi.useFakeTimers();
+  vi.mocked(cleanupOrphanPayments).mockResolvedValue({
+    checked: 0,
+    cleaned: 0,
+  });
   vi.mocked(reconcilePendingPayments).mockResolvedValue({
     checked: 0,
     claimed: 0,
@@ -30,6 +36,7 @@ beforeEach(() => {
     checked: 0,
     cancelled: 0,
     blocked: 0,
+    reconciled: 0,
   });
   vi.mocked(runPayoutDue).mockResolvedValue({
     schedule: { skipped: false, checked: 0, created: 0, blocked: 0 },
@@ -49,17 +56,19 @@ describe('runPaymentJobs', () => {
     expect(reconcilePendingPayments).toHaveBeenCalledTimes(1);
     expect(expireUnpaidBookings).toHaveBeenCalledTimes(1);
     expect(expirePaidPendingBookings).toHaveBeenCalledTimes(1);
+    expect(cleanupOrphanPayments).toHaveBeenCalledTimes(1);
     expect(runPayoutDue).toHaveBeenCalledTimes(1);
   });
 
   it('poursuit les autres jobs quand l’un échoue', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.mocked(reconcilePendingPayments).mockRejectedValue(new Error('Hub2 indisponible'));
+    vi.mocked(reconcilePendingPayments).mockRejectedValue(new Error('pawaPay indisponible'));
 
     await runPaymentJobs();
 
     expect(expireUnpaidBookings).toHaveBeenCalledTimes(1);
     expect(expirePaidPendingBookings).toHaveBeenCalledTimes(1);
+    expect(cleanupOrphanPayments).toHaveBeenCalledTimes(1);
     expect(runPayoutDue).toHaveBeenCalledTimes(1);
     expect(spy).toHaveBeenCalled();
     spy.mockRestore();

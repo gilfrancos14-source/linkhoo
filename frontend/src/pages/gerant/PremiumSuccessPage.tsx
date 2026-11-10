@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
 import { useHomePath } from '../../hooks/useHomePath';
 import { apiPremium } from '../../lib/api';
+import GerantSidebar from '../../components/gerant/GerantSidebar';
 
 export default function PremiumSuccessPage() {
   const homePath = useHomePath();
@@ -14,25 +15,17 @@ export default function PremiumSuccessPage() {
   const verify = useCallback(async () => {
     if (!userId) return;
     const params = new URLSearchParams(window.location.search);
-    // Hub2 renvoie `?reference=PAY-…` ; FedaPay conservait `?id=<transaction>`.
-    // On accepte les deux pour que le rollback ne casse pas les liens déjà
-    // envoyés par e-mail.
-    const reference = params.get('reference');
-    const idParam = params.get('id');
-    const transactionId = idParam ? parseInt(idParam, 10) : NaN;
+    // pawaPay renvoie `?reference=PAY-…`.
+    const reference = params.get('reference')?.split(/[?&]/)[0] ?? null;
 
-    if (!reference && (!idParam || !Number.isFinite(transactionId))) {
+    if (!reference) {
       setStatus('error');
       setMessage('Paramètres de paiement invalides.');
       return;
     }
 
     try {
-      if (reference) {
-        await apiPremium.confirmReference(reference);
-      } else {
-        await apiPremium.confirm(transactionId);
-      }
+      await apiPremium.confirm(reference);
       setStatus('success');
       setMessage('Votre abonnement premium est maintenant actif !');
     } catch (err: any) {
@@ -67,9 +60,12 @@ export default function PremiumSuccessPage() {
   };
 
   return (
+    <div className="flex min-h-screen">
+      <GerantSidebar />
+      <div className="min-w-0 flex-1">
     <div className="dash">
       <div className="dash-page-head">
-        <h1>Premium</h1>
+        <h1 className="dash-page-head">Premium</h1>
       </div>
 
       <section className="verify-cta" style={{
@@ -161,6 +157,8 @@ export default function PremiumSuccessPage() {
           Retour au tableau de bord
         </Link>
       )}
+    </div>
+      </div>
     </div>
   );
 }

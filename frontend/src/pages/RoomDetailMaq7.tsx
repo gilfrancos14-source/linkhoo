@@ -555,8 +555,8 @@ export default function RoomDetailMaq7() {
     try {
       const created = await addReservation(reservationPayloadData(room, form, dureeNombre, unite));
       // Paiement en ligne disponible : on emmène le client sur le checkout
-      // hébergé Hub2. La réservation est déjà enregistrée et reste consultable
-      // depuis son compte si le paiement est abandonné.
+      // hébergé pawaPay. La réservation est déjà enregistrée et reste
+      // consultable depuis son compte si le paiement est abandonné.
       const checkoutUrl = created?.payment?.checkout_url;
       if (checkoutUrl) {
         redirectTo(checkoutUrl);

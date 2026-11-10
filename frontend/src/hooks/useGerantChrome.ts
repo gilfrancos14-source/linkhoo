@@ -8,6 +8,8 @@ export interface GerantChrome {
   initials: string;
   reservationsCount: number;
   messagesUnread: number;
+  isLoading: boolean;
+  error: string | null;
 }
 
 function initialsFrom(first: string, last: string): string {
@@ -36,30 +38,58 @@ export function useGerantChrome(): GerantChrome {
   const [gerant, setGerant] = useState<GerantData | null>(null);
   const [reservationsCount, setReservationsCount] = useState(0);
   const [messagesUnread, setMessagesUnread] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
+    setIsLoading(true);
+    setError(null);
 
-    apiGerants
-      .getMe()
-      .then((data) => {
-        if (alive) setGerant(data);
-      })
-      .catch(() => {});
+    // Fonction pour exécuter toutes les requêtes en parallèle
+    const fetchAllData = async () => {
+      try {
+        const [gerantData, reservationsData, messagesData] = await Promise.allSettled([
+          apiGerants.getMe(),
+          getReservations(),
+          apiMessages.gerantUnread(),
+        ]);
 
-    getReservations()
-      .then((items) => {
         if (!alive) return;
-        setReservationsCount(items.filter((item) => item.statut === 'en_attente').length);
-      })
-      .catch(() => {});
 
-    apiMessages
-      .gerantUnread()
-      .then((data) => {
-        if (alive) setMessagesUnread(data.count);
-      })
-      .catch(() => {});
+        // Gérer les données du gérant
+        if (gerantData.status === 'fulfilled') {
+          setGerant(gerantData.value);
+        } else {
+          console.error('Erreur lors du chargement des données du gérant:', gerantData.reason);
+        }
+
+        // Gérer les réservations
+        if (reservationsData.status === 'fulfilled') {
+          setReservationsCount(
+            reservationsData.value.filter((item: any) => item.statut === 'en_attente').length
+          );
+        } else {
+          console.error('Erreur lors du chargement des réservations:', reservationsData.reason);
+        }
+
+        // Gérer les messages
+        if (messagesData.status === 'fulfilled') {
+          setMessagesUnread((messagesData.value as any).count);
+        } else {
+          console.error('Erreur lors du chargement des messages:', messagesData.reason);
+        }
+      } catch (err) {
+        console.error('Erreur lors du chargement des données:', err);
+        setError('Une erreur est survenue lors du chargement des données');
+      } finally {
+        if (alive) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchAllData();
 
     return () => {
       alive = false;
@@ -72,5 +102,7 @@ export function useGerantChrome(): GerantChrome {
     initials: initialsOf(gerant),
     reservationsCount,
     messagesUnread,
+    isLoading,
+    error,
   };
 }

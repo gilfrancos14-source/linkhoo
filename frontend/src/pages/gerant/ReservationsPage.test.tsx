@@ -50,6 +50,20 @@ vi.mock('../../lib/api', () => ({
   apiGerants: { getMe: mocks.getMe },
 }));
 
+// La sidebar gérant partagée (GerantSidebar) rappelle useGerantChrome :
+// on la neutralise pour ne pas fausser les comptages d'appels de la page.
+vi.mock('../../hooks/useGerantChrome', () => ({
+  useGerantChrome: () => ({
+    gerant: null,
+    displayName: 'Gérant',
+    initials: 'G',
+    reservationsCount: 0,
+    messagesUnread: 0,
+    isLoading: false,
+    error: null,
+  }),
+}));
+
 function makeReservation(overrides: Partial<Reservation> = {}): Reservation {
   return {
     id: 'res-1',

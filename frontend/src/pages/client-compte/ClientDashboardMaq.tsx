@@ -7,6 +7,7 @@ import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import { apiMessages, type ClientMineReservationData, type Conversation, type FavoriteRoomData, type ReviewData } from '../../lib/api';
 import { statutLabels } from '../../lib/reservations';
 import { formatPrice, priceWithCurrency } from '../../lib/roomDisplay';
+import ClientSidebar from '../../components/client/ClientSidebar';
 
 /**
  * Tableau de bord client — conversion de docs/maquettes/index.html.
@@ -155,7 +156,6 @@ export default function ClientDashboardMaq({
   const { market } = useMarket();
   const navigate = useNavigate();
   const { signOut } = useClerk();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [query, setQuery] = useState('');
 
@@ -309,7 +309,7 @@ export default function ClientDashboardMaq({
   };
 
   return (
-    <div className="cdash-maq font-inter flex min-h-screen bg-slate-50 text-slate-800 antialiased leading-normal">
+    <div className="cdash-maq font-sans flex min-h-screen bg-slate-50 text-slate-800 antialiased leading-normal">
       <svg className="hidden" aria-hidden="true">
         <symbol id="cd-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /></symbol>
         <symbol id="cd-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></symbol>
@@ -336,107 +336,14 @@ export default function ClientDashboardMaq({
         <symbol id="cd-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" /></symbol>
       </svg>
 
-      <div className="flex min-h-screen w-full">
-        {mobileOpen && (
-          <div
-            className="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"
-            onClick={() => setMobileOpen(false)}
-            aria-hidden="true"
-          />
-        )}
+      {/* Utiliser la nouvelle sidebar unifiée */}
+      <ClientSidebar />
 
-        {/* ============ SIDEBAR ============ */}
-        <aside
-          className={`${mobileOpen ? 'flex' : 'hidden'} fixed inset-y-0 left-0 z-40 w-[237px] shrink-0 flex-col border-r border-slate-200 bg-white px-4 py-5 lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:flex`}
-        >
-          <button
-            type="button"
-            className="absolute right-3 top-4 grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 lg:hidden"
-            onClick={() => setMobileOpen(false)}
-            aria-label="Fermer le menu"
-          >
-            <Icon id="close" className="h-5 w-5" />
-          </button>
-
-          <Link to={homePath} className="mb-6 flex items-center gap-2 px-2" aria-label="Linkhoo - retour à l'accueil">
-            <img className="sidebar-logo" src="/logo.jpg" alt="Logo Linkhoo" />
-          </Link>
-
-          <nav className="space-y-1">
-            <Link to={`${homePath}/compte`} className="nav is-active" aria-current="page">
-              <Icon id="home" className="f" />Accueil
-            </Link>
-            <Link to={staysPath} className="nav">
-              <Icon id="cal" />Mes réservations
-            </Link>
-            <Link to={messagesPath} className="nav">
-              <Icon id="msg" />Mes messages
-              {unreadMessages > 0 && (
-                <span className="ml-auto grid h-5 w-5 place-items-center rounded-full bg-habi text-[10px] font-semibold text-white">
-                  {unreadMessages > 9 ? '9+' : unreadMessages}
-                </span>
-              )}
-            </Link>
-            <Link to={favoritesPath} className="nav">
-              <Icon id="heart" />Mes favoris
-            </Link>
-            <Link to={profilePath} className="nav">
-              <Icon id="user" />Mon profil
-            </Link>
-            <Link to={profilePath} className="nav">
-              <Icon id="cog" />Paramètres
-            </Link>
-          </nav>
-
-          <div className="mt-auto">
-            <div className="border-t border-slate-200 pt-5 pb-4">
-              <div className="mb-3 flex gap-3 px-1">
-                <Icon id="help" className="h-7 w-7 text-navy" />
-                <div>
-                  <p className="text-[13px] font-semibold text-navy">Besoin d’aide ?</p>
-                  <p className="text-[11px] leading-snug text-blue-700">
-                    Notre équipe est disponible pour vous accompagner.
-                  </p>
-                </div>
-              </div>
-              <Link to="/contact" className="btn-o !py-2.5 !border-blue-300">
-                Contacter le support
-              </Link>
-            </div>
-
-            <div className="rounded-xl bg-navy p-4 text-white">
-              <p className="flex items-center gap-2 text-sm font-semibold">
-                <Icon id="crown" className="f h-6 w-6 text-amber-400" />
-                Sécurisez votre réservation
-              </p>
-              <p className="mt-3 text-xs leading-snug text-slate-200">
-                Accédez à plus de choix, plus d’avantages.
-              </p>
-              <div className="mt-3 rounded-lg bg-white/10 p-3 text-[11px] leading-snug text-slate-100">
-                En réservant via la plateforme et en payant les frais de séjour, vous
-                bénéficiez d’une protection : en cas d’annulation, le remboursement est
-                pris en charge.
-              </div>
-            </div>
-          </div>
-        </aside>
-
+      <div className="client-main flex min-h-screen">
         {/* ============ CONTENU ============ */}
         <div className="min-w-0 flex-1">
           {/* Topbar */}
           <header className="flex h-[60px] items-center gap-4 border-b border-slate-100 bg-white/70 px-4 sm:px-6">
-            <button
-              type="button"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-blue-700 hover:bg-slate-100 lg:hidden"
-              onClick={() => setMobileOpen(true)}
-              aria-label="Ouvrir le menu"
-            >
-              <Icon id="search" className="hidden" />
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-              </svg>
-            </button>
-
             <form
               onSubmit={handleSearch}
               className="flex h-9 w-full max-w-[520px] items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 text-slate-400"
@@ -526,7 +433,7 @@ export default function ClientDashboardMaq({
                   <h1 className="text-3xl font-extrabold leading-tight">
                     Votre prochain séjour<br />commence ici
                   </h1>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-white">
                     Découvrez des chambres confortables, sécurisées et au meilleur prix partout en Afrique.
                   </p>
                 </div>
@@ -743,11 +650,11 @@ export default function ClientDashboardMaq({
                           </span>
                         </div>
                         <h3 className="mt-3 text-sm font-semibold text-navy">{reservation.room_title}</h3>
-                        <p className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500">
+                        <p className="mt-1 flex items-center gap-1.5 text-[11px] text-white">
                           <Icon id="pin" className="!h-3.5 !w-3.5 text-blue-700" />
                           {locationOf(reservation, cityLabel)}
                         </p>
-                        <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-slate-500">
+                        <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-white">
                           <Icon id="cal" className="!h-3.5 !w-3.5 text-blue-700" />
                           {stayDates(reservation)}
                         </p>
@@ -757,7 +664,7 @@ export default function ClientDashboardMaq({
                               {formatPrice(reservation.montant)} FCFA <span className="text-xs">/ nuit</span>
                             </>
                           ) : (
-                            <span className="text-xs font-medium text-slate-500">Prix communiqué par le gérant</span>
+                            <span className="text-xs font-medium text-white">Prix communiqué par le gérant</span>
                           )}
                         </p>
                         <Link to={staysPath} className="btn-o">Voir le détail</Link>
@@ -770,7 +677,7 @@ export default function ClientDashboardMaq({
                     <p className="mt-2 text-sm font-semibold text-navy">
                       {loading ? 'Chargement de vos réservations…' : 'Aucune réservation à venir'}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-white">
                       Explorez les chambres disponibles et préparez votre prochain séjour.
                     </p>
                     <Link
@@ -815,8 +722,8 @@ export default function ClientDashboardMaq({
                             </span>
                           </div>
                           <h3 className="mt-2 text-[11px] font-semibold text-navy">{titleOf(reservation)}</h3>
-                          <p className="text-[10px] text-slate-500">{locationOf(reservation, cityLabel)}</p>
-                          <p className="mt-1 flex items-center gap-1 text-[10px] text-slate-500">
+                          <p className="text-[10px] text-white">{locationOf(reservation, cityLabel)}</p>
+                          <p className="mt-1 flex items-center gap-1 text-[10px] text-white">
                             <Icon id="star" className="f !h-3 !w-3 text-orange-400" />
                             <b className="font-semibold text-orange-500">
                               {rating ? rating.average.toFixed(1) : '—'}
@@ -833,7 +740,7 @@ export default function ClientDashboardMaq({
                     })}
                   </div>
                 ) : (
-                  <p className="py-6 text-center text-xs text-slate-500">
+                  <p className="py-6 text-center text-xs text-white">
                     Les chambres que vous consultez apparaîtront ici.
                   </p>
                 )}
@@ -871,17 +778,17 @@ export default function ClientDashboardMaq({
                   <dl className="mt-4 space-y-3 text-[11px]">
                     <div className="flex items-center gap-3">
                       <Icon id="mail" className="!h-4 !w-4 text-blue-700" />
-                      <dt className="w-24 text-slate-500">Email</dt>
+                      <dt className="w-24 text-white">Email</dt>
                       <dd className="min-w-0 truncate text-slate-700">{email || '—'}</dd>
                     </div>
                     <div className="flex items-center gap-3">
                       <Icon id="phone" className="!h-4 !w-4 text-blue-700" />
-                      <dt className="w-24 text-slate-500">Téléphone</dt>
+                      <dt className="w-24 text-white">Téléphone</dt>
                       <dd className="text-slate-700">{phone || '—'}</dd>
                     </div>
                     <div className="flex items-center gap-3">
                       <Icon id="pin" className="!h-4 !w-4 text-blue-700" />
-                      <dt className="w-24 text-slate-500">Ville</dt>
+                      <dt className="w-24 text-white">Ville</dt>
                       <dd className="text-slate-700">{cityLabel}</dd>
                     </div>
                   </dl>
@@ -1004,7 +911,7 @@ export default function ClientDashboardMaq({
                     ))}
                   </div>
                 ) : (
-                  <p className="py-4 text-center text-[11px] text-slate-500">
+                  <p className="py-4 text-center text-[11px] text-white">
                     Ajoutez des chambres à vos favoris pour les retrouver ici.
                   </p>
                 )}
@@ -1017,7 +924,7 @@ export default function ClientDashboardMaq({
                 </span>
                 <div>
                   <p className="text-xs font-semibold text-navy">Votre satisfaction est notre priorité</p>
-                  <p className="mt-2 text-[11px] leading-snug text-slate-500">
+                  <p className="mt-2 text-[11px] leading-snug text-white">
                     Une question, une suggestion ? Notre équipe est là pour vous aider.
                   </p>
                   <Link

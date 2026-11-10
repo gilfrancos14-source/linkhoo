@@ -24,33 +24,23 @@ describe('premiumInitiateSchema', () => {
 });
 
 describe('premiumConfirmSchema', () => {
-  it('accepte un identifiant positif', () => {
-    const parsed = premiumConfirmSchema.safeParse({ transaction_id: 42 });
+  it('accepte une référence de paiement valide', () => {
+    const parsed = premiumConfirmSchema.safeParse({ reference: 'PAY-2026-ABC123' });
     expect(parsed.success).toBe(true);
     if (!parsed.success) return;
-    expect(parsed.data.transaction_id).toBe(42);
+    expect(parsed.data.reference).toBe('PAY-2026-ABC123');
   });
 
-  it('coerce une chaîne numérique en nombre', () => {
-    const parsed = premiumConfirmSchema.safeParse({ transaction_id: '99' });
-    expect(parsed.success).toBe(true);
-    if (!parsed.success) return;
-    expect(parsed.data.transaction_id).toBe(99);
-  });
-
-  it('refuse un identifiant nul, négatif ou non entier', () => {
-    expect(premiumConfirmSchema.safeParse({ transaction_id: 0 }).success).toBe(false);
-    expect(premiumConfirmSchema.safeParse({ transaction_id: -5 }).success).toBe(false);
-    expect(premiumConfirmSchema.safeParse({ transaction_id: 1.5 }).success).toBe(false);
-  });
-
-  it('refuse une valeur non convertible', () => {
-    expect(premiumConfirmSchema.safeParse({ transaction_id: 'abc' }).success).toBe(false);
+  it('refuse une référence absente ou mal formée', () => {
     expect(premiumConfirmSchema.safeParse({}).success).toBe(false);
+    expect(premiumConfirmSchema.safeParse({ reference: 'abc' }).success).toBe(false);
   });
 
   it('refuse un champ inconnu (strict)', () => {
-    const parsed = premiumConfirmSchema.safeParse({ transaction_id: 1, status: 'approved' });
+    const parsed = premiumConfirmSchema.safeParse({
+      reference: 'PAY-2026-ABC123',
+      status: 'approved',
+    });
     expect(parsed.success).toBe(false);
   });
 });

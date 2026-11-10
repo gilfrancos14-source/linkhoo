@@ -2,6 +2,7 @@ import { MARKETS, type MarketCode } from '../../config/markets';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { apiAdmin, type AdminBanner } from '../../lib/adminApi';
+import '../../styles/20-auth.css';
 
 type SectionFilter = 'all' | AdminBanner['section'];
 
@@ -43,6 +44,8 @@ export default function AdminBannersPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -110,11 +113,18 @@ export default function AdminBannersPage() {
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    setIsDragging(false);
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
+      setUploading(true);
       setImageFile(file);
       if (imagePreview && imagePreview.startsWith('blob:')) URL.revokeObjectURL(imagePreview);
       setImagePreview(URL.createObjectURL(file));
+      
+      // Simuler un court délai pour l'upload
+      setTimeout(() => {
+        setUploading(false);
+      }, 800);
     }
   };
 
@@ -333,8 +343,7 @@ export default function AdminBannersPage() {
       )}
 
       <div className={`banner-slide-panel ${panelOpen ? 'banner-slide-panel--open' : ''}`}>
-        {panelOpen && <div className="banner-slide-panel__overlay" onClick={closePanel} />}
-        <div className="banner-slide-panel__content">
+        <div className="banner-slide-panel__content" style={{ position: 'relative', zIndex: 101 }}>
           <div className="banner-slide-panel__header">
             <h2>{editingBanner ? 'Modifier la bannière' : 'Ajouter une bannière'}</h2>
             <button className="banner-slide-panel__close" onClick={closePanel}>
@@ -343,13 +352,53 @@ export default function AdminBannersPage() {
           </div>
 
           <div className="banner-slide-panel__body">
-            <div className="banner-upload-zone" onClick={() => fileInputRef.current?.click()} onDrop={handleDrop} onDragOver={(e) => e.preventDefault()}>
+            <div 
+              className={`banner-upload-zone ${isDragging ? 'drag-over' : ''} ${uploading ? 'loading' : ''}`}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-end',
+                justifyContent: 'flex-start',
+                textAlign: 'right',
+                gap: '12px',
+                padding: '32px',
+                border: '2px dashed var(--admin-border)',
+                borderRadius: '16px',
+                cursor: 'pointer',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                minHeight: '180px',
+                background: 'linear-gradient(135deg, var(--admin-surface) 0%, var(--admin-surface-alt) 100%)',
+                position: 'relative',
+                overflow: 'hidden',
+                zIndex: '200',
+                pointerEvents: 'auto'
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }} 
+              onDrop={handleDrop} 
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+            >
               {imagePreview ? (
                 <img src={imagePreview} alt="Aperçu" className="banner-upload-zone__preview" />
               ) : (
                 <>
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--admin-ink-soft)" strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                  <p>Cliquez ou glissez une image</p>
+                  <div className="icon-container">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <path d="M21 15l-5-5L5 21"/>
+                    </svg>
+                  </div>
+                  <p>
+                    <span className="upload-particles"></span>
+                    {isDragging ? 'Déposez l\'image ici' : 'Cliquez ou glissez une image'}
+                  </p>
                   <span>JPEG, PNG, WebP, GIF — 2 Mo max</span>
                 </>
               )}

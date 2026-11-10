@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, useState, type ReactNode } from 'reac
 import { Link } from 'react-router-dom';
 import { useOnlineStatus } from '../../../hooks/useOnlineStatus';
 import GerantLogoutButton from '../../../components/GerantLogoutButton';
+import GerantSidebar from '../../../components/gerant/GerantSidebar';
 import {
   apiGerants,
   apiUpload,
@@ -331,9 +332,6 @@ const DOC_CONFIGS = [
 ];
 
 export default function VerificationStaticSection({ gerantPath }: VerificationStaticSectionProps) {
-  const chambresPath = `${gerantPath}/chambres`;
-  const reservationsPath = `${gerantPath}/reservations`;
-  const messagesPath = `${gerantPath}/messages/boite-reception`;
   const online = useOnlineStatus();
 
   const [gerant, setGerant] = useState<GerantData | null>(null);
@@ -697,91 +695,7 @@ export default function VerificationStaticSection({ gerantPath }: VerificationSt
         <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
       </svg>
 
-      <aside className="sticky top-0 hidden h-screen w-[252px] shrink-0 overflow-y-auto border-r border-[#EEF2F8] bg-[#FBFCFE] pb-8 lg:block">
-        <Link to={gerantPath} className="ml-[42px] mt-[15px] flex h-[35px] items-center">
-          <img src="/logo.jpg" alt="Linkhoo" width="759" height="373" className="h-[35px] w-auto" />
-        </Link>
-
-        <nav className="mt-[26px] text-[#0F2150]">
-          <Link to={gerantPath} className="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
-            <svg className="ic h-[19px] w-[19px] shrink-0"><use href="#i-home" /></svg>Aperçu
-          </Link>
-
-          <div className="mt-[11px]">
-            <Link to={chambresPath} className="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
-              <svg className="ic h-[19px] w-[19px] shrink-0"><use href="#i-bed" /></svg>Chambres
-              <svg className="ic ml-auto h-[13px] w-[13px] stroke-[2.2]"><use href="#i-chev-up" /></svg>
-            </Link>
-            <div className="mt-[5px]">
-              <Link to={chambresPath} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-list" /></svg>Toutes les chambres</Link>
-              <Link to={`${chambresPath}/ajouter`} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-plus" /></svg>Ajouter une chambre</Link>
-              <a href="#" className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-tag" /></svg>Catégories</a>
-            </div>
-          </div>
-
-          <div className="mt-[18px]">
-            <Link to={reservationsPath} className="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
-              <svg className="ic h-[19px] w-[19px] shrink-0"><use href="#i-calendar" /></svg>Réservations
-              <span className="-mr-2.5 ml-auto grid h-4 w-4 place-items-center rounded-full bg-[#FFE4D2] text-[10px] font-bold text-[#F26B1D]">3</span>
-            </Link>
-            <div className="mt-[5px]">
-              <Link to={`${reservationsPath}/demandes`} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-lock-user" /></svg>Demandes</Link>
-              <Link to={`${reservationsPath}/calendrier`} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-calendar" /></svg>Calendrier</Link>
-            </div>
-          </div>
-
-          <div className="mt-[18px]">
-            <Link to={messagesPath} className="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
-              <svg className="ic h-[19px] w-[19px] shrink-0"><use href="#i-chat" /></svg>Messages
-              <span className="-mr-2.5 ml-auto grid h-4 w-4 place-items-center rounded-full bg-[#FFE4D2] text-[10px] font-bold text-[#F26B1D]">2</span>
-            </Link>
-            <div className="mt-[5px]">
-              <Link to={messagesPath} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-inbox" /></svg>Boîte de réception</Link>
-              <Link to={messagesPath} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-chat-plus" /></svg>Nouveau message</Link>
-            </div>
-          </div>
-
-          <div className="mt-[18px]">
-            <Link to={`${gerantPath}/verification`} aria-current="page" className="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg bg-[#FDEDE2] px-[11px] text-[12.5px] font-bold text-[#F26B1D]">
-              <svg viewBox="0 0 24 24" className="h-[19px] w-[19px] shrink-0" aria-hidden="true">
-                <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" fill="#F26B1D" stroke="#F26B1D" strokeWidth="2" strokeLinejoin="round" />
-                <path d="m9 12 2 2 4-4" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>Vérification
-            </Link>
-            <div className="mt-[5px]">
-              <Link to={`${gerantPath}/verification`} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-file-text" /></svg>Mes documents</Link>
-              <Link to={`${gerantPath}/verification/suivi`} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-user-check" /></svg>Suivi de vérification</Link>
-            </div>
-          </div>
-
-          <div className="mt-[18px]">
-            <Link to={`${gerantPath}/profil`} className="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
-              <svg className="ic h-[19px] w-[19px] shrink-0"><use href="#i-user" /></svg>Profil
-            </Link>
-            <div className="mt-[5px]">
-              <Link to={`${gerantPath}/profil`} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-user" /></svg>Mes informations</Link>
-            </div>
-          </div>
-
-          <div className="mt-[18px]">
-            <Link to={`${gerantPath}/premium`} className="mx-[19px] flex h-[28px] items-center gap-[13px] rounded-lg px-[11px] text-[12.5px] font-bold">
-              <svg className="ic h-[19px] w-[19px] shrink-0 fill-[#F26B1D] text-[#F26B1D]"><use href="#i-crown" /></svg>Premium
-            </Link>
-            <div className="mt-[5px]">
-              <Link to={`${gerantPath}/premium`} className="mx-[19px] flex h-6 items-center gap-[13px] pl-[25px] text-[11.5px] font-medium text-[#5F7396]"><svg className="ic h-[14px] w-[14px] shrink-0 text-[#6F82A6]"><use href="#i-calendar" /></svg>Mon abonnement</Link>
-            </div>
-          </div>
-        </nav>
-
-        <div className="ml-[19px] mr-[16px] mt-[41px] h-[118px] rounded-xl border border-[#FEE3D1] bg-[#FFF2EA] px-[17px] pt-[14px]">
-          <div className="flex items-center gap-[11px]">
-            <svg className="ic h-[20px] w-[20px] fill-[#F26B1D] text-[#F26B1D]"><use href="#i-crown" /></svg>
-            <p className="text-[11.5px] font-bold">Passez au Premium</p>
-          </div>
-          <p className="mt-[9px] text-[10px] leading-4 text-[#5F7396]">Plus de visibilité, plus de réservations !</p>
-          <Link to={`${gerantPath}/premium`} className="mt-[11px] flex h-[28px] items-center justify-center rounded-lg bg-[#F26B1D] text-[11px] font-bold text-white shadow-sm transition hover:bg-[#E05A0C]">Voir les avantages</Link>
-        </div>
-      </aside>
+      <GerantSidebar />
 
       <div className="min-w-0 flex-1">
         <header className="flex h-[64px] items-center justify-between pl-[17px] pr-[26px]">
@@ -818,7 +732,7 @@ export default function VerificationStaticSection({ gerantPath }: VerificationSt
             Retour
           </Link>
 
-          <h1 className="mt-px text-3xl font-extrabold leading-[36px] tracking-[-0.01em] text-[#0D2150]">Vérification</h1>
+          <h1 className="dash-page-head mt-px leading-[36px] tracking-[-0.01em] text-[#0D2150]">Vérification</h1>
           <p className="mt-px text-[15px] leading-5 text-[#5F7396]">
             Vérifiez votre identité pour publier vos annonces et gagner la confiance des voyageurs.
           </p>

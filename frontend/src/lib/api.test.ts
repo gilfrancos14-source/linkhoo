@@ -688,16 +688,8 @@ describe('apiPremium', () => {
     expect(lastBody()).toEqual({ market: 'BJ' });
   });
 
-  it('confirm POST /premium/confirm avec transaction_id', async () => {
-    await api.apiPremium.confirm(1234);
-
-    expect(lastCall().url).toBe('/api/premium/confirm');
-    expect(lastCall().init.method).toBe('POST');
-    expect(lastBody()).toEqual({ transaction_id: 1234 });
-  });
-
-  it('confirmReference POST /premium/confirm avec reference (Hub2)', async () => {
-    await api.apiPremium.confirmReference('PAY-2026-ABC123');
+  it('confirm POST /premium/confirm avec la référence pawaPay', async () => {
+    await api.apiPremium.confirm('PAY-2026-ABC123');
 
     expect(lastCall().url).toBe('/api/premium/confirm');
     expect(lastCall().init.method).toBe('POST');
@@ -736,7 +728,7 @@ describe('apiClients', () => {
   });
 
   it('create POST /clients avec le corps', async () => {
-    const payload = { clerk_user_id: 'ck_1', email: 'aya@example.com', nom: 'Koffi' };
+    const payload = { clerk_user_id: 'ck_1', email: 'aya@example.com', nom: 'Koffi', market: 'CI' as const };
 
     await api.apiClients.create(payload);
 

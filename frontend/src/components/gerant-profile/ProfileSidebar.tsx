@@ -16,7 +16,7 @@ export function ProfileSidebar({ active }: { active: string }) {
   const suiviPath = `${gerantPath}/verification/suivi`;
 
   return (
-    <aside className="sticky top-0 hidden h-screen w-[250px] shrink-0 overflow-y-auto border-r border-[#EEF2F8] bg-[#FBFCFE] pb-8 lg:block">
+    <aside className="sticky top-0 hidden h-screen w-[250px] shrink-0 border-r border-[#EEF2F8] bg-[#FBFCFE] pb-8 lg:block">
       <div className="ml-[42px] mt-[15px] flex h-[35px] items-center">
         <Link to={gerantPath} className="flex h-[35px] items-center">
           <img src="/logo.jpg" alt="Linkhoo" width="759" height="373" className="h-[35px] w-auto" />

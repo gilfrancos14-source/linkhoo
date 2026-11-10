@@ -21,11 +21,6 @@ const router = Router();
 
 type RoomListFilters = z.infer<typeof roomListQuerySchema>;
 
-/**
- * Applique les filtres de `roomListQuerySchema` à une builder PostgREST :
- * utilisé à la fois par la requête de données et par le compte `count: exact`,
- * pour que total et page portent exactement sur le même périmètre.
- */
 function applyRoomFilters(query: any, filters: RoomListFilters): any {
   let q = query;
   if (filters.market) q = q.eq('market', filters.market);
@@ -35,38 +30,17 @@ function applyRoomFilters(query: any, filters: RoomListFilters): any {
   if (filters.prix_min !== undefined) q = q.gte('price_num', filters.prix_min);
   if (filters.prix_max !== undefined) q = q.lte('price_num', filters.prix_max);
   if (filters.chambres !== undefined) {
-    // « 3 chambres » vaut « 3 et plus » (identique au filtre client).
     q = filters.chambres >= 3 ? q.gte('chambres', 3) : q.eq('chambres', filters.chambres);
   }
   if (filters.disponible !== undefined) q = q.eq('disponible', filters.disponible === 'true');
   if (filters.promo_group) q = q.eq('promo_group', filters.promo_group);
   if (filters.q) {
-    // Recherche texte sur les champs visibles de la carte — description
-    // exclue (colonne jusqu'à 10 k caractères, trop coûteuse à ILIKE).
-    // Échappement PostgREST : `"` et `\` cassent la syntaxe `or(...)` ;
-    // `%`, `_`, `,`, `(`, `)` sont des jokers/séparateurs du filtre.
     const pattern = `%${filters.q.replace(/[%_,()"\\]/g, ' ')}%`;
     q = q.or(`title.ilike.${pattern},subtitle.ilike.${pattern},ville.ilike.${pattern},quartier.ilike.${pattern},category.ilike.${pattern}`);
   }
   return q;
 }
 
-/**
- * Signaux gérant nécessaires au classement et aux badges :
- * - `premiumIds` : gérants premium ACTIFS (expiration tranchée par
- *   `isPremiumActive`, source unique de vérité) ;
- * - `verifiedIds` : gérants vérifiés (colonne `is_verified`).
- *
- * Client admin : la table `gerants` est protégée par RLS (le client anon en
- * lit 0 ligne), exactement comme pour la fiche détaillée d'une chambre.
- *
- * Cette lecture sert uniquement au classement : si elle échoue, on journalise
- * et on classe sans signal plutôt que de casser le catalogue.
- *
- * Cache en mémoire 90 s : la donnée ne bouge qu'à l'expiration premium ou à
- * une validation de vérification, et chaque appel liste/popular/available en
- * avait fait 1 aller-retour Supabase.
- */
 interface GerantSignals {
   premiumIds: ReadonlySet<string>;
   verifiedIds: ReadonlySet<string>;
@@ -80,7 +54,6 @@ const EMPTY_GERANT_SIGNALS: GerantSignals = {
 let gerantSignalsCache: { signals: GerantSignals; at: number } | null = null;
 let gerantSignalsInflight: Promise<GerantSignals> | null = null;
 
-/** Reset du cache gérant — réservé aux tests (état module partagé). */
 export function resetPremiumCacheForTests(): void {
   gerantSignalsCache = null;
   gerantSignalsInflight = null;
@@ -93,13 +66,10 @@ async function loadGerantSignals(): Promise<GerantSignals> {
   ) {
     return gerantSignalsCache.signals;
   }
-  // Déduplication des appels concurrents : une seule requête en vol.
   if (gerantSignalsInflight) return gerantSignalsInflight;
 
   gerantSignalsInflight = (async () => {
     try {
-      // Une seule requête pour les deux signaux : les gérants ni premium ni
-      // vérifiés n'ont aucune influence sur le classement.
       const { data, error } = await supabaseAdmin
         .from('gerants')
         .select('clerk_user_id, is_premium, premium_expires_at, is_verified')
@@ -108,8 +78,6 @@ async function loadGerantSignals(): Promise<GerantSignals> {
 
       const premiumIds = new Set<string>();
       const verifiedIds = new Set<string>();
-      // `select()` sans `.single()` renvoie une liste ; un résultat unique
-      // inattendu ne doit pas faire échouer le classement.
       for (const gerant of Array.isArray(data) ? data : []) {
         if (!gerant.clerk_user_id) continue;
         if (isPremiumActive(gerant)) premiumIds.add(gerant.clerk_user_id);
@@ -121,7 +89,6 @@ async function loadGerantSignals(): Promise<GerantSignals> {
       return signals;
     } catch (err) {
       console.error('loadGerantSignals : classement sans signal', err);
-      // Échec : on ne met pas en cache pour retenter au prochain appel.
       return EMPTY_GERANT_SIGNALS;
     } finally {
       gerantSignalsInflight = null;
@@ -131,7 +98,6 @@ async function loadGerantSignals(): Promise<GerantSignals> {
   return gerantSignalsInflight;
 }
 
-/** Drapeaux `gerant_premium` / `gerant_verified` sur chaque ligne. */
 function stampGerantFlags(rows: any[], signals: GerantSignals): any[] {
   return rows.map((room) => ({
     ...room,
@@ -140,23 +106,16 @@ function stampGerantFlags(rows: any[], signals: GerantSignals): any[] {
   }));
 }
 
-/** Classement quota premium (ordre organique intercalé) + drapeaux par ligne. */
 function rankRows(rows: any[], signals: GerantSignals): any[] {
   return stampGerantFlags(interleaveRooms(rows, signals.premiumIds), signals);
 }
 
-/** Palier de visibilité : premium (0), vérifié (1), non vérifié (2). */
 function gerantTier(room: any): number {
   if (room.gerant_premium) return 0;
   if (room.gerant_verified) return 1;
   return 2;
 }
 
-/**
- * Classement de la recherche : tous les premiums actifs d'abord, puis les
- * gérants vérifiés, puis les non vérifiés. À l'intérieur d'un palier, l'ordre
- * organique reçu de PostgREST (`created_at` desc, `id` asc) est conservé.
- */
 function rankAvailableRows(rows: any[], signals: GerantSignals): any[] {
   return stampGerantFlags(rows, signals)
     .map((room, index) => ({ room, index }))
@@ -173,12 +132,6 @@ router.get('/popular', async (req: Request, res: Response, next: NextFunction) =
 
     const market = parsedQuery.data.market;
 
-    // Les deux lectures partent en parallèle : la latence totale devient le
-    // max des deux au lieu de la somme des deux aller-retours Supabase.
-    // Réservations bornées aux 2000 plus récentes : le classement « top
-    // réservées » se base sur l'essentiel de l'activité, et la requête reste
-    // rapide quel que soit le volume futur (PostgREST tronque silencieusement
-    // à db-max-rows = 1000 sans ORDER/LIMIT explicite).
     const [{ data: allRooms, error: roomsError }, { data: reservations, error: resError }] =
       await Promise.all([
         supabasePublic
@@ -225,8 +178,6 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     }
     const filters = parsedQuery.data;
 
-    // Sans page/limit : comportement historique (tableau complet, parcouru par
-    // tranches de 1000 pour contourner db-max-rows).
     if (filters.page === undefined && filters.limit === undefined) {
       const rowsPromise = fetchAllRows<any>((from, to) => {
         const query = applyRoomFilters(
@@ -244,8 +195,6 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       return res.json(rankRows(data, signals));
     }
 
-    // Mode paginé : une page de lignes + un compte exact, en SQL — jamais
-    // l'intégralité de la table en mémoire.
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 24;
     const offset = (page - 1) * limit;
@@ -255,10 +204,6 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       filters,
     );
 
-    // Fenêtre bornée : on lit `ratio × la page` lignes depuis le début de la
-    // liste (au plus RANK_MAX_WINDOW) pour pouvoir intercaler le quota
-    // premium, puis on découpe la page demandée — le `count` reste le vrai
-    // total. Page plus profonde que la borne : repli sur l'ordre organique.
     const windowRows = rankWindowRows(offset, limit);
     const rowsQuery = applyRoomFilters(
       supabasePublic
@@ -331,9 +276,6 @@ router.get('/available', async (req: Request, res: Response, next: NextFunction)
 
     const available = rooms.filter((room) => !blockedIds.has(room.id));
 
-    // Repli progressif : match exact normalisé, puis match partiel (« Abid »
-    // → « Abidjan », « Lomé » → « Lomé-Centre ») si l'exact ne renvoie rien.
-    // Le tri par paliers gérant est appliqué après le filtre ville.
     if (!normalizedVille) {
       res.json(rankAvailableRows(available, signals));
       return;
@@ -359,8 +301,6 @@ router.get('/available', async (req: Request, res: Response, next: NextFunction)
   }
 });
 
-// Liste distincte des villes déjà utilisées — alimente les suggestions
-// (datalist) des formulaires admin (événements) et gérant (biens).
 router.get('/villes', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedQuery = marketQuerySchema.safeParse(req.query);
@@ -380,7 +320,6 @@ router.get('/villes', async (req: Request, res: Response, next: NextFunction) =>
       return query.range(from, to);
     });
 
-    // Dédup sur la forme normalisée, en gardant la casse d'origine (« Bouaké »).
     const seen = new Map<string, string>();
     for (const row of rows) {
       const raw = (row.ville || '').trim();
@@ -394,8 +333,6 @@ router.get('/villes', async (req: Request, res: Response, next: NextFunction) =>
   }
 });
 
-// Liste distincte des quartiers — alimente les filtres des pages catégorie
-// sans télécharger le catalogue complet côté client.
 router.get('/quartiers', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedQuery = marketQuerySchema.safeParse(req.query);
@@ -415,7 +352,6 @@ router.get('/quartiers', async (req: Request, res: Response, next: NextFunction)
       return query.range(from, to);
     });
 
-    // Dédup insensible à la casse en gardant la forme d'origine.
     const seen = new Map<string, string>();
     for (const row of rows) {
       const raw = (row.quartier || '').trim();
@@ -470,9 +406,6 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
         .eq('clerk_user_id', data.gerant_id)
         .maybeSingle();
       if (gerantData) {
-        // Identité publique de l'hôte : elle est nécessaire à la fiche chambre
-        // (nom, ancienneté, badges). En revanche, les coordonnées (téléphone)
-        // ne sont jamais exposées tant que le gérant n'est pas vérifié.
         gerant = {
           nom: gerantData.nom ?? '',
           prenom: gerantData.prenom ?? '',
@@ -488,9 +421,6 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     res.json({
       ...data,
       gerant,
-      // Drapeaux de classement/badges : identiques à ceux des listes (préfixe
-      // premium vérifié en cours via `isPremiumActive`) pour que la fiche
-      // reflète bien l'état réel de la base.
       gerant_premium: !!data.gerant_id && signals.premiumIds.has(data.gerant_id),
       gerant_verified: !!data.gerant_id && signals.verifiedIds.has(data.gerant_id),
     });
@@ -513,9 +443,19 @@ router.post('/', requireClerkAuth, async (req: Request, res: Response, next: Nex
       return res.status(403).json({ error: 'Vous ne pouvez créer des chambres que dans votre marché' });
     }
 
+    // CORRECTIF : on strip explicitement `id` et `gerant_id` du body client.
+    // Avant, `{ id: randomUUID(), ...parsedBody.data, gerant_id: gerantInfo.userId }`
+    // laissait le client écraser `id` (collision) — et si le schéma autorisait
+    // `gerant_id`, la propriété de la chambre pouvait être usurpée.
+    const {
+      id: _ignoredId,
+      gerant_id: _ignoredGerantId,
+      ...payload
+    } = parsedBody.data as Record<string, unknown>;
+
     const { data, error } = await supabaseAdmin
       .from('rooms')
-      .insert({ id: randomUUID(), ...parsedBody.data, gerant_id: gerantInfo.userId })
+      .insert({ ...payload, id: randomUUID(), gerant_id: gerantInfo.userId })
       .select(ROOM_COLUMNS)
       .single();
     if (error) throw error;
@@ -547,9 +487,22 @@ router.put('/:id', requireClerkAuth, async (req: Request, res: Response, next: N
       return res.status(403).json({ error: 'Cette chambre ne vous appartient pas' });
     }
 
+    // CORRECTIF : on interdit la modification de `id`, `gerant_id` et `market`
+    // via PUT. Transférer la propriété ou le marché d'une chambre existante
+    // doit passer par un flux dédié (pas un PUT générique).
+    const {
+      id: _ignoredId,
+      gerant_id: _ignoredGerantId,
+      market: _ignoredMarket,
+      ...patch
+    } = parsedBody.data as Record<string, unknown>;
+    if (Object.keys(patch).length === 0) {
+      return res.status(400).json({ error: 'Données de chambre invalides' });
+    }
+
     const { data, error } = await supabaseAdmin
       .from('rooms')
-      .update(parsedBody.data)
+      .update(patch)
       .eq('id', parsedParams.data.id)
       .select(ROOM_COLUMNS)
       .maybeSingle();

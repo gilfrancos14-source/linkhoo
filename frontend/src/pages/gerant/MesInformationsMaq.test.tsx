@@ -16,6 +16,8 @@ vi.mock('../../lib/api', () => ({
     getMe: mocks.getMe,
     getVerificationStatus: mocks.getVerificationStatus,
   },
+  apiReservations: { list: vi.fn().mockResolvedValue([]) },
+  apiMessages: { gerantUnread: vi.fn().mockResolvedValue({ count: 0 }) },
 }));
 
 function makeGerant(overrides: Partial<GerantData> = {}): GerantData {

@@ -24,9 +24,9 @@ const envGuard = vi.hoisted(() => {
     'APP_PUBLIC_URL',
     'CLERK_SECRET_KEY',
     'ADMIN_JWT_SECRET',
-    'FEDAPAY_PUBLIC_KEY',
-    'FEDAPAY_SECRET_KEY',
-    'FEDAPAY_WEBHOOK_SECRET',
+    'PAWAPAY_API_KEY',
+    'PAWAPAY_MERCHANT_ID',
+    'PAWAPAY_ENV',
     'SUPABASE_URL',
     'SUPABASE_ANON_KEY',
     'SUPABASE_SERVICE_KEY',
@@ -40,9 +40,9 @@ const envGuard = vi.hoisted(() => {
   process.env.NODE_ENV = 'test';
   process.env.CLERK_SECRET_KEY ??= 'sk_clerk_index_test';
   process.env.ADMIN_JWT_SECRET ??= 'secret-admin-index-test';
-  process.env.FEDAPAY_PUBLIC_KEY ??= 'pk_index_test';
-  process.env.FEDAPAY_SECRET_KEY ??= 'sk_index_test';
-  process.env.FEDAPAY_WEBHOOK_SECRET = 'whsec_index_test';
+  process.env.PAWAPAY_API_KEY ??= 'pawapay_api_key_index_test';
+  process.env.PAWAPAY_MERCHANT_ID ??= 'pawapay_merchant_index_test';
+  process.env.PAWAPAY_ENV ??= 'sandbox';
   process.env.SUPABASE_URL ??= 'https://ilehya-index-test.supabase.co';
   process.env.SUPABASE_ANON_KEY ??= 'anon-index-test';
   process.env.SUPABASE_SERVICE_KEY ??= 'service-index-test';
@@ -274,14 +274,12 @@ describe('montage de src/index.ts', () => {
     expect(res.body.error.length).toBeGreaterThan(0);
   });
 
-  it('rejette le webhook FedaPay dont la signature est invalide', async () => {
+  it("n'expose plus l'ancien webhook premium", async () => {
     const res = await request(app)
       .post('/api/premium/webhook')
-      .set('x-fedapay-signature', 'signature-fausse')
       .send({ name: 'transaction.approved' });
 
-    expect(res.status).toBe(400);
-    expect(res.text).toContain('Webhook signature invalide');
+    expect(res.status).toBe(404);
   });
 
   it('accepte 10 inscriptions newsletter puis renvoie 429 à la 11e', async () => {

@@ -124,6 +124,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
         nom: parsedBody.data.nom,
         prenom: parsedBody.data.prenom,
         telephone: parsedBody.data.telephone,
+        market: parsedBody.data.market,
       })
       .select(CLIENT_COLUMNS)
       .single();

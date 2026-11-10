@@ -22,6 +22,16 @@ if (!('IntersectionObserver' in globalThis)) {
     IntersectionObserverStub as unknown as typeof IntersectionObserver;
 }
 
+// Recharts (ResponsiveContainer) mesure son conteneur via ResizeObserver.
+if (!('ResizeObserver' in globalThis)) {
+  class ResizeObserverStub {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+  globalThis.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
+}
+
 if (!window.scrollTo) {
   window.scrollTo = (() => {}) as typeof window.scrollTo;
 }

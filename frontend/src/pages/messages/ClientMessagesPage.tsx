@@ -6,8 +6,9 @@ import ClientMessagesMaq from './ClientMessagesMaq';
 
 /**
  * Espace messages du client — conversion de la maquette
- * habici-mes-messages.html : liste des conversations + fil sélectionné,
- * la page porte sa propre sidebar et son propre topbar.
+ * habici-mes-messages.html : liste des conversations + fil sélectionné.
+ * ClientMessagesMaq embarque déjà la sidebar et son contenu principal, on se
+ * contente donc de lui transmettre les données.
  */
 export default function ClientMessagesPage() {
   const { conversationId } = useParams<{ conversationId: string }>();

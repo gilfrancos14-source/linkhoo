@@ -1,0 +1,164 @@
+/* ==========================================================================
+   Sidebar unifiée de l'espace client.
+   Source de vérité : la sidebar de la page « Mes messages »
+   (docs/maquettes/habici-mes-messages.html), reprise à l'identique pour que
+   toutes les pages du dashboard client aient exactement la même sidebar.
+
+   Le composant porte la classe `client-sidebar` : les règles ci-dessous
+   s'appliquent donc indépendamment du wrapper de la page (.msg-maq,
+   .cdash-maq, .res-maq, .admin.client-account…).
+   ========================================================================== */
+
+:root {
+  --client-sidebar-w: 247px;
+}
+
+/* Base de la sidebar */
+aside.client-sidebar {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  display: flex;
+  width: var(--client-sidebar-w);
+  flex-direction: column;
+  overflow-y: auto;
+  border-right: 1px solid #e6ebf5;
+  background-color: #fff;
+}
+
+/* Logo de l'en-tête */
+aside.client-sidebar .sidebar-logo {
+  width: 100px;
+  height: auto;
+}
+
+/* Zone principale de l'espace client : elle démarre exactement au bord de la
+   sidebar (aucun chevauchement, aucun espace mort). Classe partagée par
+   toutes les pages client (compte, favoris, séjours, messages). */
+.client-main {
+  flex: 1;
+  min-width: 0;
+  min-height: 100vh;
+  margin-left: var(--client-sidebar-w);
+}
+
+/* L'espace client n'utilise pas la grille à deux colonnes de l'admin : la
+   sidebar est en position fixe, le contenu est simplement décalé d'autant. */
+.admin.client-account {
+  display: block;
+  min-height: 100vh;
+}
+
+.admin.client-account > .admin-main {
+  margin-left: var(--client-sidebar-w);
+}
+
+/* Liens de navigation — mêmes valeurs que .msg-maq .nv */
+aside.client-sidebar .nv {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: #1d3f8f;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+aside.client-sidebar .nv:hover {
+  background-color: #f5f8ff;
+}
+
+aside.client-sidebar .nv.on {
+  background-color: #fff1e8;
+  color: #ff5a14;
+}
+
+aside.client-sidebar .nv > svg {
+  width: 24px;
+  height: 24px;
+  flex: none;
+}
+
+/* Icônes */
+aside.client-sidebar .ic {
+  display: block;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+aside.client-sidebar .ic.f {
+  fill: currentColor;
+}
+
+/* Badge de notification — même valeur que .msg-maq .bd */
+aside.client-sidebar .bd {
+  display: grid;
+  place-items: center;
+  margin-left: auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background-color: #ff4d1a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Bouton « Contacter le support » — même valeur que .msg-maq .btn */
+aside.client-sidebar .btn {
+  display: grid;
+  place-items: center;
+  height: 30px;
+  border: 1px solid #2f5bbf;
+  border-radius: 6px;
+  background-color: #fff;
+  color: #2f5bbf;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+aside.client-sidebar .btn:hover {
+  background-color: #f5f8ff;
+}
+
+/* Pied de page */
+aside.client-sidebar .text-blue-400 {
+  color: #60a5fa;
+}
+
+/* Sous 1024px, la sidebar passe au-dessus du contenu au lieu de le recouvrir. */
+@media (max-width: 1024px) {
+  aside.client-sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid #e6ebf5;
+  }
+
+  .client-main,
+  .admin.client-account > .admin-main {
+    margin-left: 0;
+  }
+
+  /* Les racines en flex (dashboard, favoris) empilent sidebar puis contenu. */
+  .cdash-maq:has(> aside.client-sidebar),
+  .res-maq:has(> aside.client-sidebar) {
+    flex-direction: column;
+  }
+}

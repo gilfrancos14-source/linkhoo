@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
+import { MarketProvider } from '../../contexts/MarketContext';
 import ReversementsPage from './ReversementsPage';
 import type { PayoutData, PayoutSettingsData } from '../../lib/api';
 
@@ -8,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   getSettings: vi.fn<() => Promise<PayoutSettingsData>>(),
   saveSettings: vi.fn<(data: unknown) => Promise<PayoutSettingsData>>(),
   listMine: vi.fn<() => Promise<PayoutData[]>>(),
+  getBalance: vi.fn<() => Promise<unknown>>(),
 }));
 
 vi.mock('../../lib/api', () => ({
@@ -15,7 +18,28 @@ vi.mock('../../lib/api', () => ({
     getSettings: mocks.getSettings,
     saveSettings: mocks.saveSettings,
     listMine: mocks.listMine,
+    getBalance: mocks.getBalance,
   },
+  apiReservations: {
+    list: vi.fn().mockResolvedValue([]),
+  },
+  apiMessages: {
+    list: vi.fn().mockResolvedValue([]),
+  },
+}));
+
+// La sidebar gérant partagée (GerantSidebar) rappelle useGerantChrome :
+// on la neutralise pour éviter des appels réseau parasite dans les tests.
+vi.mock('../../hooks/useGerantChrome', () => ({
+  useGerantChrome: () => ({
+    gerant: null,
+    displayName: 'Gérant',
+    initials: 'G',
+    reservationsCount: 0,
+    messagesUnread: 0,
+    isLoading: false,
+    error: null,
+  }),
 }));
 
 function makeSettings(overrides: Partial<PayoutSettingsData> = {}): PayoutSettingsData {
@@ -30,6 +54,7 @@ function makeSettings(overrides: Partial<PayoutSettingsData> = {}): PayoutSettin
     verified: true,
     verified_at: '2026-10-05T10:00:00.000Z',
     missing_fields: [],
+    providers: [],
     ...overrides,
   };
 }
@@ -39,6 +64,7 @@ function makePayout(overrides: Partial<PayoutData> = {}): PayoutData {
     id: 'payout-1',
     reference: 'OUT-ABC123',
     reservation_id: 'res-1',
+    kind: 'reservation',
     gross_amount: 150000,
     commission_amount: 0,
     refunded_amount: 0,
@@ -48,6 +74,7 @@ function makePayout(overrides: Partial<PayoutData> = {}): PayoutData {
     scheduled_for: '2026-10-06T10:00:00.000Z',
     paid_at: '2026-10-06T11:00:00.000Z',
     failure_code: null,
+    requested_at: null,
     created_at: '2026-10-05T10:00:00.000Z',
     ...overrides,
   };
@@ -72,12 +99,28 @@ afterEach(() => {
   cleanup();
 });
 
+/** La sidebar gérant partagée a besoin du contexte marché et du routeur. */
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <MarketProvider>
+        <ReversementsPage />
+      </MarketProvider>
+    </MemoryRouter>,
+  );
+}
+
 describe('ReversementsPage', () => {
   it('affiche les coordonnées vérifiées et l’historique des versements', async () => {
-    render(<ReversementsPage />);
+    renderPage();
 
-    expect(await screen.findByText(/Coordonnées vérifiées le 05\/10\/2026/)).toBeInTheDocument();
-    expect(screen.getAllByText('150 000 XOF')).toHaveLength(2);
+    expect(
+      await screen.findByText(/Coordonnées mobile money prêtes à recevoir vos retraits/),
+    ).toBeInTheDocument();
+    // Le solde du portefeuille et l'historique affichent tous deux le net.
+    expect(
+      screen.getAllByText('150 000 XOF').length,
+    ).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('Réf. OUT-ABC123')).toBeInTheDocument();
     expect(screen.getByText('Versé')).toBeInTheDocument();
   });
@@ -94,7 +137,7 @@ describe('ReversementsPage', () => {
       }),
     ]);
 
-    render(<ReversementsPage />);
+    renderPage();
 
     expect(await screen.findByText(/Coordonnées incomplètes/)).toBeInTheDocument();
     expect(screen.getByText('Coordonnées à compléter')).toBeInTheDocument();
@@ -102,7 +145,7 @@ describe('ReversementsPage', () => {
 
   it('enregistre les coordonnées mobile money et demande une nouvelle vérification', async () => {
     const user = userEvent.setup();
-    render(<ReversementsPage />);
+    renderPage();
 
     const holder = await screen.findByLabelText('Titulaire du compte');
     fireEvent.change(holder, { target: { value: 'Awa Koné' } });
@@ -113,7 +156,7 @@ describe('ReversementsPage', () => {
         method: 'mobile_money',
         holder_name: 'Awa Koné',
         phone: '+2250700000000',
-        provider: 'orange',
+        provider: 'ORANGE',
         bank_code: null,
         bank_name: null,
         account_number: null,
@@ -124,23 +167,18 @@ describe('ReversementsPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('bascule en virement bancaire et valide les champs requis', async () => {
+  it('valide le numéro mobile money requis avant l’enregistrement', async () => {
     const user = userEvent.setup();
-    render(<ReversementsPage />);
+    renderPage();
 
-    await screen.findByLabelText('Titulaire du compte');
-    await user.click(screen.getByRole('button', { name: 'Virement bancaire' }));
-
-    expect(screen.getByLabelText('Banque')).toBeInTheDocument();
-    expect(screen.getByLabelText('Code banque')).toBeInTheDocument();
-    expect(screen.getByLabelText('Numéro de compte')).toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText('Banque'), { target: { value: 'Ecobank' } });
-    fireEvent.change(screen.getByLabelText('Code banque'), { target: { value: 'CI001' } });
+    const holder = await screen.findByLabelText('Titulaire du compte');
+    const phone = screen.getByLabelText('Numéro mobile money');
+    fireEvent.change(holder, { target: { value: 'Awa Koné' } });
+    fireEvent.change(phone, { target: { value: '' } });
     await user.click(screen.getByRole('button', { name: 'Enregistrer mes coordonnées' }));
 
     expect(
-      screen.getByText('Renseignez le numéro de compte.'),
+      screen.getByText('Renseignez le numéro mobile money.'),
     ).toBeInTheDocument();
     expect(mocks.saveSettings).not.toHaveBeenCalled();
   });

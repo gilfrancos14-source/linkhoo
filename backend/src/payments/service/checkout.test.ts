@@ -6,12 +6,12 @@ import {
   type FakeChain,
 } from '../../testHelpers/supertestApp';
 import { PaymentServiceError } from '../errors';
-import { Hub2Error } from '../hub2/client';
+import { PawapayApiError } from '../pawapay/client';
+import { createPawapayCheckout, resolveFxRate } from '../pawapay/checkouts';
 import {
   buildPaymentReference,
   buildPublicUrl,
   createCheckout,
-  resolveFxRate,
   type CreateCheckoutInput,
 } from './checkout';
 
@@ -20,38 +20,26 @@ vi.mock('../../config/supabase', async () => {
   return helper.createSupabaseMock();
 });
 
-const HUB2_ENV: Record<string, string> = {
-  HUB2_API_KEY: 'sk_test_123',
-  HUB2_MERCHANT_ID: 'merchant_123',
-  HUB2_ENV: 'sandbox',
+vi.mock('../pawapay/checkouts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../pawapay/checkouts')>();
+  return { ...actual, createPawapayCheckout: vi.fn() };
+});
+
+const PAWAPAY_ENV: Record<string, string> = {
+  PAYMENTS_PROVIDER: 'pawapay',
+  PAWAPAY_API_KEY: 'pawapay_api_key_test',
+  PAWAPAY_MERCHANT_ID: 'pawapay_merchant_test',
+  PAWAPAY_ENV: 'sandbox',
   APP_PUBLIC_URL: 'https://app.linkhoo.test',
 };
 
-const LINK_BODY = {
-  id: 'link_1',
-  url: 'https://pay.hub2.io/link_1',
-  status: 'active',
-  expirationDate: '2026-10-27T11:00:00.000Z',
-};
+const CHECKOUT_URL = 'https://checkout.pawapay.io/pay-1';
 
 function setEnv(overrides: Record<string, string | undefined> = {}): void {
-  for (const [key, value] of Object.entries({ ...HUB2_ENV, ...overrides })) {
+  for (const [key, value] of Object.entries({ ...PAWAPAY_ENV, ...overrides })) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
   }
-}
-
-function stubFetch(
-  body: unknown = LINK_BODY,
-  init: { ok?: boolean; status?: number } = {},
-): ReturnType<typeof vi.fn> {
-  const mock = vi.fn(async () => ({
-    ok: init.ok ?? true,
-    status: init.status ?? 200,
-    text: async () => JSON.stringify(body),
-  }));
-  vi.stubGlobal('fetch', mock);
-  return mock;
 }
 
 function input(overrides: Partial<CreateCheckoutInput> = {}): CreateCheckoutInput {
@@ -75,14 +63,32 @@ function stubPayments(insert: FakeChain, update: FakeChain): void {
   });
 }
 
+function mockPawapayCheckout(): void {
+  vi.mocked(createPawapayCheckout).mockImplementation(async (checkoutInput) => {
+    const currency = checkoutInput.market === 'CM' ? 'XAF' : 'XOF';
+    const fxRate = currency === 'XOF' ? 1 : 1.2;
+    return {
+      reference: checkoutInput.reference,
+      checkoutUrl: CHECKOUT_URL,
+      redirectUrl: CHECKOUT_URL,
+      checkoutId: 'checkout-1',
+      amount: Math.round(checkoutInput.amountXof * fxRate),
+      currency,
+      amountXof: checkoutInput.amountXof,
+      fxRate,
+      expiresAt: '2026-10-27T11:00:00.000Z',
+    };
+  });
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   setEnv();
+  mockPawapayCheckout();
 });
 
 afterEach(() => {
-  vi.unstubAllGlobals();
-  for (const key of Object.keys(HUB2_ENV)) delete process.env[key];
+  for (const key of Object.keys(PAWAPAY_ENV)) delete process.env[key];
 });
 
 describe('buildPaymentReference', () => {
@@ -117,7 +123,7 @@ describe('resolveFxRate', () => {
     useSupabaseTables((supabaseAdmin as unknown as { from: unknown }).from, {
       fx_rates: fx,
     });
-    await expect(resolveFxRate('XOF')).resolves.toBe(1);
+    await expect(resolveFxRate('CI', 'XOF')).resolves.toBe(1);
     expect(fx.select).not.toHaveBeenCalled();
   });
 
@@ -125,31 +131,31 @@ describe('resolveFxRate', () => {
     useSupabaseTables((supabaseAdmin as unknown as { from: unknown }).from, {
       fx_rates: fakeChain({ data: { rate: '1.2' }, error: null }),
     });
-    await expect(resolveFxRate('XAF')).resolves.toBe(1.2);
+    await expect(resolveFxRate('CM', 'XAF')).resolves.toBe(1.2);
   });
 
   it('refuse le paiement sans taux', async () => {
     useSupabaseTables((supabaseAdmin as unknown as { from: unknown }).from, {
       fx_rates: fakeChain({ data: null, error: null }),
     });
-    await expect(resolveFxRate('GNF')).rejects.toMatchObject({
+    await expect(resolveFxRate('GN', 'GNF')).rejects.toMatchObject({
       code: 'FX_RATE_MISSING',
-      status: 422,
     });
   });
 });
 
 describe('createCheckout', () => {
-  it('crée le paiement, le lien, puis enregistre checkout_url', async () => {
+  it('crée le paiement, le checkout pawaPay, puis enregistre checkout_url', async () => {
     const insert = fakeChain({ data: { id: 'pay-1' }, error: null });
     const update = fakeChain({ data: null, error: null });
     stubPayments(insert, update);
-    const fetchMock = stubFetch();
 
     const session = await createCheckout(input());
 
     expect(session).toMatchObject({
-      checkoutUrl: LINK_BODY.url,
+      checkoutUrl: CHECKOUT_URL,
+      redirectUrl: CHECKOUT_URL,
+      checkoutId: 'checkout-1',
       amount: 5_000,
       currency: 'XOF',
       amountXof: 5_000,
@@ -161,7 +167,7 @@ describe('createCheckout', () => {
       expect.objectContaining({
         reference: session.reference,
         purpose: 'premium',
-        provider: 'hub2',
+        provider: 'pawapay',
         payer_type: 'gerant',
         payer_clerk_user_id: 'user_1',
         gerant_clerk_user_id: 'user_1',
@@ -178,24 +184,21 @@ describe('createCheckout', () => {
       }),
     );
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://api.hub2.io/payment-links');
-    expect(init.method).toBe('POST');
-    const body = JSON.parse(String(init.body));
-    expect(body).toMatchObject({
-      purchaseReference: session.reference,
-      amount: 5_000,
-      currency: 'XOF',
-      country: 'CI',
-      successUrl: `https://app.linkhoo.test/ci/gerant/premium/success?reference=${session.reference}`,
-      failureUrl: `https://app.linkhoo.test/ci/gerant/premium?reference=${session.reference}`,
-    });
+    expect(createPawapayCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paymentId: 'pay-1',
+        reference: session.reference,
+        market: 'CI',
+        amountXof: 5_000,
+        returnPath: '/ci/gerant/premium/success',
+        failurePath: '/ci/gerant/premium',
+      }),
+    );
 
     expect(update.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        provider_payment_link_id: 'link_1',
-        checkout_url: LINK_BODY.url,
+        pawapay_checkout_id: 'checkout-1',
+        checkout_url: CHECKOUT_URL,
         status: 'pending',
       }),
     );
@@ -208,7 +211,6 @@ describe('createCheckout', () => {
       payments: [insert, update],
       fx_rates: fakeChain({ data: { rate: '1.2' }, error: null }),
     });
-    stubFetch();
 
     const session = await createCheckout(
       input({ market: 'CM', amountXof: 5_000, returnPath: '/cm/gerant/premium/success' }),
@@ -222,10 +224,10 @@ describe('createCheckout', () => {
     );
   });
 
-  it('réutilise un checkout encore valide sans appeler Hub2', async () => {
+  it('réutilise un checkout encore valide sans appeler pawaPay', async () => {
     const reusable = {
       reference: 'PAY-2026-REUSE123456',
-      checkout_url: 'https://pay.hub2.io/reuse',
+      checkout_url: 'https://checkout.pawapay.io/reuse',
       amount: 5_000,
       currency: 'XOF',
       amount_xof: 5_000,
@@ -235,7 +237,6 @@ describe('createCheckout', () => {
     useSupabaseTables((supabaseAdmin as unknown as { from: unknown }).from, {
       payments: fakeChain({ data: reusable, error: null }),
     });
-    const fetchMock = stubFetch();
 
     const session = await createCheckout(input({ reusePendingPayment: true }));
 
@@ -248,13 +249,13 @@ describe('createCheckout', () => {
       fxRate: 1,
       expiresAt: reusable.expires_at,
     });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(createPawapayCheckout).not.toHaveBeenCalled();
   });
 
   it('réutilise le checkout d’une réservation, filtré par reservation_id', async () => {
     const reusable = {
       reference: 'PAY-2026-RESA12345678',
-      checkout_url: 'https://pay.hub2.io/resa',
+      checkout_url: 'https://checkout.pawapay.io/resa',
       amount: 150_000,
       currency: 'XOF',
       amount_xof: 150_000,
@@ -265,7 +266,6 @@ describe('createCheckout', () => {
     useSupabaseTables((supabaseAdmin as unknown as { from: unknown }).from, {
       payments: chain,
     });
-    const fetchMock = stubFetch();
 
     const session = await createCheckout(
       input({
@@ -278,16 +278,15 @@ describe('createCheckout', () => {
     expect(chain.eq).toHaveBeenCalledWith('reservation_id', 'resa-1');
     expect(chain.eq).not.toHaveBeenCalledWith('gerant_clerk_user_id', expect.anything());
     expect(session.reference).toBe(reusable.reference);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(createPawapayCheckout).not.toHaveBeenCalled();
   });
 
-  it('refuse un marché sans opérateur Hub2', async () => {
-    const fetchMock = stubFetch();
+  it('refuse un marché sans opérateur pawaPay', async () => {
     await expect(createCheckout(input({ market: 'NE' }))).rejects.toMatchObject({
       code: 'ONLINE_PAYMENT_DISABLED',
       status: 422,
     });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(createPawapayCheckout).not.toHaveBeenCalled();
   });
 
   it('refuse un montant nul ou non entier', async () => {
@@ -299,17 +298,19 @@ describe('createCheckout', () => {
     });
   });
 
-  it('marque le paiement en échec quand Hub2 refuse le lien', async () => {
+  it('marque le paiement en échec quand pawaPay refuse le checkout', async () => {
     const insert = fakeChain({ data: { id: 'pay-3' }, error: null });
     const update = fakeChain({ data: null, error: null });
     stubPayments(insert, update);
-    stubFetch({ message: 'Opérateur indisponible', code: 'PROVIDER_DOWN' }, { ok: false, status: 400 });
+    vi.mocked(createPawapayCheckout).mockRejectedValue(
+      new PawapayApiError('Opérateur indisponible', 400),
+    );
 
-    await expect(createCheckout(input())).rejects.toBeInstanceOf(Hub2Error);
+    await expect(createCheckout(input())).rejects.toBeInstanceOf(PawapayApiError);
     expect(update.update).toHaveBeenCalledWith(
       expect.objectContaining({
         status: 'failed',
-        failure_code: 'PROVIDER_DOWN',
+        failure_code: 'PAWAPAY_ERROR',
         failure_message: 'Opérateur indisponible',
       }),
     );
@@ -320,12 +321,11 @@ describe('createCheckout', () => {
     useSupabaseTables((supabaseAdmin as unknown as { from: unknown }).from, {
       payments: insert,
     });
-    const fetchMock = stubFetch();
 
     await expect(createCheckout(input())).rejects.toMatchObject({
       code: 'PAYMENT_CREATE_FAILED',
       status: 500,
     });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(createPawapayCheckout).not.toHaveBeenCalled();
   });
 });

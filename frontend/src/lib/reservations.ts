@@ -63,7 +63,7 @@ export const paymentLabels: Record<ReservationPaymentStatus, string> = {
 
 /** Un bouton « Payer » n'a de sens que tant que rien n'est encaissé. */
 export function canPayReservation(status: ReservationPaymentStatus | undefined): boolean {
-  return status === 'unpaid' || status === 'failed';
+  return status === 'unpaid' || status === 'failed' || status === 'deposit_paid' || status === 'pending';
 }
 
 export const paymentColors: Record<ReservationPaymentStatus, string> = {
@@ -138,7 +138,7 @@ export async function cancelMyReservation(id: string) {
   return apiReservations.cancelMine(id);
 }
 
-/** (Ré)ouvre le checkout d'une réservation ; renvoie l'URL hébergée Hub2. */
+/** (Ré)ouvre le checkout d'une réservation ; renvoie l'URL hébergée pawaPay. */
 export async function startReservationPayment(id: string) {
   return apiReservations.startPayment(id);
 }

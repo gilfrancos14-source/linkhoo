@@ -1,30 +1,27 @@
 /**
- * Remboursements Hub2 (phase 3).
+ * Remboursements pawaPay (phase 3).
  *
  * Règle produit : tout remboursement est TOTAL (100 % de la somme encaissée).
- * Le montant reste paramétrable côté RPC pour les gestes commerciaux et les
- * litiges, mais aucun appelant automatique ne demande autre chose que le solde
- * restant.
  *
  * Séquence :
- *   1. `payment_request_refund` réserve le montant SOUS VERROU et met à jour la
- *      réservation (le plafond cumulé est vérifié en SQL) ;
- *   2. `POST /payments-refund/{paymentId}/refund` demande l'exécution Hub2 ;
- *   3. si Hub2 refuse DÉFINITIVEMENT (4xx), `payment_cancel_refund` rend le
- *      montant à la réservation — sinon elle resterait « remboursée » sans
- *      l'être ;
+ *   1. `payment_request_refund` réserve le montant SOUS VERROU et met à jour
+ *      la réservation (le plafond cumulé est vérifié en SQL) ;
+ *   2. appel provider (`POST /v2/refunds`) ;
+ *   3. si le provider refuse DÉFINITIVEMENT (4xx), `payment_cancel_refund`
+ *      rend le montant à la réservation ;
  *   4. si l'issue est incertaine (timeout, 5xx), la ligne reste `processing` :
- *      le webhook ou la réconciliation tranche, jamais une compensation
- *      aveugle (l'argent peut être parti).
+ *      le webhook ou la réconciliation tranche.
  */
 
 import { supabaseAdmin } from '../../config/supabase';
-import { Hub2ConfigError, getHub2Config } from '../config';
+import { PawapayConfigError, getPawapayConfig } from '../pawapay/config';
 import { PaymentServiceError } from '../errors';
-import { Hub2Error, hub2Request } from '../hub2/client';
-import type { Hub2Event } from '../hub2/webhooks';
-import type { EventKind } from '../hub2/mapping';
+import { PawapayApiError, PawapayClient } from '../pawapay/client';
+import { createRefundId } from '../pawapay/utils';
+import type { PawapayWebhookEvent } from '../pawapay/webhooks';
+import type { PawapayCurrency } from '../pawapay/types';
 import type { RefundStatus } from '../types';
+import { reconcileReservationRefundState } from './refundReconcile';
 
 export type RefundReason =
   | 'client_cancellation'
@@ -64,22 +61,6 @@ interface RefundablePayment {
   provider_payment_id: string | null;
 }
 
-/**
- * Codes envoyés à Hub2. La documentation ne publie pas d'énumération : on
- * reste sur des valeurs génériques et on met le motif interne dans
- * `reasonDetails`, lisible dans le dashboard.
- */
-const HUB2_REASON_CODES: Record<RefundReason, string> = {
-  client_cancellation: 'customer_request',
-  gerant_refusal: 'service_not_provided',
-  gerant_cancellation: 'service_not_provided',
-  auto_expiry: 'other',
-  platform_cancellation: 'service_not_provided',
-  dispute: 'other',
-  goodwill: 'customer_request',
-  other: 'other',
-};
-
 const REASON_DETAILS: Record<RefundReason, string> = {
   client_cancellation: 'Annulation par le client',
   gerant_refusal: 'Réservation refusée par le gérant',
@@ -92,6 +73,10 @@ const REASON_DETAILS: Record<RefundReason, string> = {
 };
 
 const ALIVE_REFUND_STATUSES = ['requested', 'processing', 'succeeded', 'manual_required'] as const;
+
+// NOTE : pas de table de codes motif : l'API pawaPay de remboursement
+// N'ACCEPTE PAS le champ `reason` (voir payments/pawapay/types.ts). Le motif
+// reste stocké côté base via `p_reason_details`.
 
 async function fetchReservation(reservationId: string): Promise<ReservationRefundRow | null> {
   const { data, error } = await supabaseAdmin
@@ -164,11 +149,58 @@ function rpcMiss(error: { message?: string }): RefundMissReason | null {
 }
 
 /**
- * Demande le remboursement total du solde restant d'une réservation.
+ * À appeler après un refund `succeeded` pour aligner `reservations`
+ * (statut + payment_status) sur l'état réel des refunds. Idempotent.
  *
- * Ne lève pas quand il n'y a rien à rembourser : l'annulation d'une
- * réservation non payée est un cas normal, pas une erreur.
+ * On fait DEUX requêtes explicites plutôt qu'un joint Supabase
+ * `payments:payment_id(...)` : le joint ne fonctionne que si la FK est
+ * exposée par PostgREST, et il casse silencieusement sinon.
  */
+async function reconcileReservationFromRefundId(refundId: string): Promise<void> {
+  const { data: refundRow, error: refundError } = await supabaseAdmin
+    .from('payment_refunds')
+    .select('payment_id')
+    .eq('id', refundId)
+    .maybeSingle();
+  if (refundError) {
+    console.warn('[refund] reconcile lookup refund échoué', {
+      refundId,
+      error: refundError.message,
+    });
+    return;
+  }
+
+  const paymentId = (refundRow as { payment_id?: string | null } | null)?.payment_id;
+  if (!paymentId) return;
+
+  const { data: paymentRow, error: paymentError } = await supabaseAdmin
+    .from('payments')
+    .select('reservation_id')
+    .eq('id', paymentId)
+    .maybeSingle();
+  if (paymentError) {
+    console.warn('[refund] reconcile lookup payment échoué', {
+      refundId,
+      paymentId,
+      error: paymentError.message,
+    });
+    return;
+  }
+
+  const reservationId = (paymentRow as { reservation_id?: string | null } | null)?.reservation_id;
+  if (!reservationId) return;
+
+  try {
+    await reconcileReservationRefundState(reservationId);
+  } catch (err) {
+    console.warn('[refund] reconcile réservation échoué', {
+      refundId,
+      reservationId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
 export async function requestReservationRefund(input: {
   reservationId: string;
   reason: RefundReason;
@@ -193,12 +225,17 @@ export async function requestReservationRefund(input: {
     return { requested: false, status: 'succeeded', refundId: null, reason: 'already_refunded' };
   }
 
+  // Motif normalisé : texte libre fourni, sinon le libellé par défaut de la
+  // raison (pawaPay ne peut pas recevoir le motif — champ `reason` rejeté par
+  // son API — donc on le garde exploitable en base).
+  const details = input.reasonDetails?.trim() || REASON_DETAILS[input.reason];
+
   const { data, error } = await supabaseAdmin.rpc('payment_request_refund', {
     p_payment_id: payment.id,
     p_amount: remaining,
     p_reason: input.reason,
     p_requested_by: input.requestedBy,
-    p_reason_details: input.reasonDetails ?? null,
+    p_reason_details: details.slice(0, 500),
     p_policy_snapshot: {
       source: 'payment_policies',
       commission_percent: 0,
@@ -228,9 +265,6 @@ export async function requestReservationRefund(input: {
     );
   }
 
-  // Sans identifiant de paiement Hub2, l'API de remboursement est
-  // inutilisable : on laisse la ligne à traiter manuellement plutôt que de
-  // faire croire au client que l'argent est reparti.
   if (!payment.provider_payment_id) {
     await updateRefund(refundId, {
       status: 'manual_required',
@@ -244,43 +278,55 @@ export async function requestReservationRefund(input: {
     };
   }
 
-  const details = input.reasonDetails?.trim() || REASON_DETAILS[input.reason];
-
   try {
-    const response = await hub2Request<{ id?: unknown }>(
-      getHub2Config(),
-      `/payments-refund/${encodeURIComponent(payment.provider_payment_id)}/refund`,
-      {
-        method: 'POST',
-        body: {
-          amount: remaining,
-          reasonCode: HUB2_REASON_CODES[input.reason],
-          reasonDetails: details.slice(0, 500),
-        },
-      },
-    );
+    const client = new PawapayClient(getPawapayConfig());
+    const refundUuid = createRefundId();
 
-    const providerRefundId =
-      response?.id === undefined || response?.id === null ? null : String(response.id);
+    // Persisté AVANT l'appel : un callback peut arriver avant la réponse HTTP.
+    // Sans cela, `applyRefundCallback` ne trouvait aucune ligne et l'événement
+    // était perdu silencieusement.
+    const { error: persistError } = await supabaseAdmin
+      .from('payment_refunds')
+      .update({
+        provider_refund_id: refundUuid,
+        status: 'processing',
+        provider_status: 'INITIATED',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', refundId);
+    if (persistError) {
+      throw new PaymentServiceError(
+        'PAYMENT_REFUND_FAILED',
+        `Impossible de réserver le remboursement pawaPay : ${persistError.message}`,
+        500,
+        { refundId },
+      );
+    }
+
+    const response = await client.createRefund({
+      refundId: refundUuid,
+      depositId: payment.provider_payment_id,
+      amount: remaining.toFixed(0),
+      // pawaPay exige `currency` dès qu'un `amount` est fourni.
+      currency: payment.currency as PawapayCurrency,
+    });
 
     await updateRefund(refundId, {
       status: 'processing',
-      provider_refund_id: providerRefundId,
-      provider_status: 'created',
+      provider_refund_id: refundUuid,
+      provider_status: response.status ?? 'ACCEPTED',
     });
 
     return { requested: true, status: 'processing', refundId };
   } catch (error) {
     const definitive =
-      error instanceof Hub2ConfigError ||
-      (error instanceof Hub2Error &&
-        error.status !== null &&
-        error.status >= 400 &&
-        error.status < 500);
+      error instanceof PawapayConfigError ||
+      (error instanceof PawapayApiError &&
+        error.statusCode !== null &&
+        error.statusCode >= 400 &&
+        error.statusCode < 500);
 
     if (!definitive) {
-      // Issue incertaine : le remboursement est peut-être parti. La ligne
-      // reste `processing`, le webhook ou la réconciliation la clôturera.
       await updateRefund(refundId, {
         status: 'processing',
         provider_status: 'unconfirmed',
@@ -324,61 +370,65 @@ async function findRefundByProviderId(
 }
 
 /**
- * Applique un webhook de remboursement.
- *
- * `refund_failed` sur une ligne déjà `succeeded` est ignoré : un événement
- * tardif ne doit pas « dé-rembourser » un client réellement remboursé.
+ * Applique un webhook de remboursement pawaPay.
  */
-export async function applyRefundEvent(
-  event: Hub2Event,
-  kind: EventKind,
-  refundId: string | null,
+export async function applyPawapayRefundEvent(
+  event: PawapayWebhookEvent,
 ): Promise<{ handled: boolean; reason?: string }> {
-  if (!refundId) return { handled: false, reason: 'missing_reference' };
+  if (event.kind !== 'refund') {
+    return { handled: false, reason: 'not_a_refund_event' };
+  }
+
+  const refundId = event.data.refundId;
+  if (!refundId) return { handled: false, reason: 'missing_refund_id' };
 
   const refund = await findRefundByProviderId(refundId);
   if (!refund) return { handled: false, reason: 'refund_not_found' };
 
-  const providerStatus =
-    typeof event.data.status === 'string' ? event.data.status : null;
+  const providerStatus = event.data.status;
 
   if (refund.status === 'succeeded') return { handled: true };
 
-  switch (kind) {
-    case 'refund_succeeded':
+  switch (providerStatus) {
+    case 'COMPLETED': {
       await updateRefund(refund.id, {
         status: 'succeeded',
-        provider_status: providerStatus ?? 'successful',
+        provider_status: providerStatus,
         completed_at: new Date().toISOString(),
       });
+      await reconcileReservationFromRefundId(refund.id);
       return { handled: true };
+    }
 
-    case 'refund_manual':
-      await updateRefund(refund.id, {
-        status: 'manual_required',
-        provider_status: providerStatus ?? 'pending_manual',
-      });
-      return { handled: true };
-
-    case 'refund_failed': {
-      // Compensation : rend le montant à la réservation et recalcule son
-      // statut de paiement sous verrou.
+    case 'REJECTED': {
       const { error } = await supabaseAdmin.rpc('payment_cancel_refund', {
         p_refund_id: refund.id,
       });
       if (error) throw error;
       await updateRefund(refund.id, {
-        provider_status: providerStatus ?? 'failed',
+        status: 'failed',
+        provider_status: providerStatus,
       });
+      await reconcileReservationFromRefundId(refund.id);
       return { handled: true };
     }
 
-    case 'refund_processing':
-    default:
+    case 'FAILED': {
+      await updateRefund(refund.id, {
+        status: 'failed',
+        provider_status: providerStatus,
+      });
+      await reconcileReservationFromRefundId(refund.id);
+      return { handled: true };
+    }
+
+    case 'ACCEPTED':
+    default: {
       await updateRefund(refund.id, {
         status: 'processing',
-        provider_status: providerStatus ?? 'pending',
+        provider_status: providerStatus,
       });
       return { handled: true };
+    }
   }
 }

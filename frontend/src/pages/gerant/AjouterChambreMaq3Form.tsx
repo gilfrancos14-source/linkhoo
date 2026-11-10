@@ -261,7 +261,7 @@ export default function AjouterChambreMaq3Form({
             <polyline points="22 4 12 14.01 9 11.01" />
           </svg>
         </div>
-        <h2 className="mt-4 text-2xl font-extrabold">Chambre enregistrée !</h2>
+        <h2 className="dash-page-head mt-4">Chambre enregistrée !</h2>
         <p className="mt-2 text-sm text-slate-500">
           {form.title} a été ajoutée avec succès.
         </p>

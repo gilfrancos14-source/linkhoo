@@ -1,22 +1,10 @@
 /**
- * Lecture de l'état réel d'un paiement chez Hub2.
- *
- * Le webhook est le chemin nominal, mais le retour navigateur peut arriver
- * avant lui. Les deux flux (premium, réservation) ont donc besoin de la même
- * logique de secours :
- *
- *   1. `GET /payment-intents?purchaseReference=…` (source documentée) ;
- *   2. si l'intent est introuvable ou n'a pas réussi, `GET /payment-links/{id}`
- *      (hypothèse non documentée : un Payment Link peut ne pas propager
- *      `purchaseReference` à son intent — le lien, lui, est certain).
- *
- * L'identifiant retenu est celui du PAIEMENT (`pay_…`), pas celui de l'intent :
- * c'est ce que Hub2 attend pour un remboursement.
+ * Lecture de l'état réel d'un paiement chez pawaPay.
  */
 
-import type { Hub2Config } from '../types';
-import { hub2Request } from '../hub2/client';
-import { mapPaymentStatus } from '../hub2/mapping';
+import { getPawapayConfig } from '../pawapay/config';
+import { PawapayClient } from '../pawapay/client';
+import { mapPawapayStatus } from '../pawapay/mapping';
 
 export interface ProviderPayment {
   readonly id: string | null;
@@ -26,22 +14,7 @@ export interface ProviderPayment {
 
 export interface ProviderPaymentLookup {
   readonly payment: ProviderPayment | null;
-  /** Dernier statut connu de l'intent, pour informer le payeur. */
   readonly latestStatus: string;
-}
-
-interface ProviderIntent {
-  id?: unknown;
-  status?: unknown;
-  purchaseReference?: unknown;
-  updatedAt?: unknown;
-  amount?: unknown;
-  currency?: unknown;
-  payments?: unknown;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object';
 }
 
 export function providerNumber(value: unknown): number | null {
@@ -54,116 +27,63 @@ export function providerCurrency(value: unknown): string | null {
   return typeof value === 'string' && /^[A-Z]{3}$/.test(value) ? value : null;
 }
 
-function matchingIntents(payload: unknown, reference: string): ProviderIntent[] {
-  const list = Array.isArray(payload)
-    ? payload
-    : Array.isArray((payload as { data?: unknown } | null)?.data)
-      ? (payload as { data: unknown[] }).data
-      : [];
-
-  return list
-    .filter((item): item is ProviderIntent => isRecord(item))
-    .filter((item) => item.purchaseReference === reference)
-    .sort((a, b) => String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? '')));
-}
-
-function pickSuccessfulIntent(payload: unknown, reference: string): ProviderIntent | null {
-  return (
-    matchingIntents(payload, reference).find(
-      (item) => mapPaymentStatus(item.status) === 'succeeded',
-    ) ?? null
-  );
-}
-
-export function latestIntentStatus(payload: unknown, reference: string): string {
-  const latest = matchingIntents(payload, reference)[0];
-  return mapPaymentStatus(latest?.status) ?? 'pending';
-}
-
-/** Identifiant du paiement (et non de l'intent), avec repli sur l'intent. */
-function intentPaymentId(intent: ProviderIntent): string | null {
-  const attempts = Array.isArray(intent.payments) ? intent.payments : [];
-  const records = attempts.filter(isRecord);
-  const successful = records.find((item) => mapPaymentStatus(item.status) === 'succeeded');
-  const chosen = successful ?? records[0];
-  if (chosen && typeof chosen.id === 'string' && chosen.id.trim()) return chosen.id.trim();
-  return typeof intent.id === 'string' ? intent.id : null;
-}
-
-function successfulAttempt(payload: Record<string, unknown>): Record<string, unknown> | null {
-  const attempts = Array.isArray(payload.paymentAttempts) ? payload.paymentAttempts : [];
-  return (
-    attempts
-      .filter(isRecord)
-      .filter((item) => mapPaymentStatus(item.status) === 'succeeded')
-      .sort((a, b) => String(b.updatedAt ?? '').localeCompare(String(a.updatedAt ?? '')))[0] ?? null
-  );
-}
-
-async function findLinkSuccess(
-  config: Hub2Config,
-  linkId: string,
-): Promise<ProviderPayment | null> {
-  const link = await hub2Request<Record<string, unknown>>(
-    config,
-    `/payment-links/${encodeURIComponent(linkId)}`,
-    { retryOnTransient: true },
-  );
-
-  const attempt = successfulAttempt(link);
-  if (attempt) {
-    return {
-      id: typeof attempt.id === 'string' ? attempt.id : null,
-      amount: providerNumber(attempt.amount),
-      currency: providerCurrency(attempt.currency),
-    };
-  }
-
-  if (link.status === 'completed') {
-    return {
-      id: null,
-      amount: providerNumber(link.amount),
-      currency: providerCurrency(link.currency),
-    };
-  }
-
-  return null;
-}
-
 /**
- * Cherche un encaissement réussi chez Hub2.
+ * Relit un checkout pawaPay et retourne le dépôt COMPLETED s'il existe.
  *
- * Ne lève pas pour « pas encore payé » : renvoie `payment: null` et le dernier
- * statut, l'appelant décide du code HTTP (400 côté confirmation).
+ * Les erreurs TECHNIQUES (DB down, config absente, réseau) remontent au
+ * caller : les convertir en `failed` afficherait « paiement échoué » alors que
+ * le paiement est peut-être en cours, poussant l'utilisateur à recommencer
+ * (double débit potentiel).
  */
 export async function lookupProviderPayment(
-  config: Hub2Config,
   reference: string,
-  linkId: string | null,
 ): Promise<ProviderPaymentLookup> {
-  const payload = await hub2Request<unknown>(
-    config,
-    `/payment-intents?purchaseReference=${encodeURIComponent(reference)}&perPage=5`,
-    { retryOnTransient: true },
-  );
+  const { supabaseAdmin } = await import('../../config/supabase');
 
-  const intent = pickSuccessfulIntent(payload, reference);
-  if (intent) {
+  const { data: row, error: dbError } = await supabaseAdmin
+    .from('payments')
+    .select('pawapay_checkout_id')
+    .eq('reference', reference)
+    .maybeSingle();
+  if (dbError) throw dbError;
+
+  const checkoutId = row?.pawapay_checkout_id as string | undefined;
+  if (!checkoutId) return { payment: null, latestStatus: 'pending' };
+
+  const client = new PawapayClient(getPawapayConfig());
+  const lookup = await client.getCheckoutStatus(checkoutId);
+
+  if (lookup.status !== 'FOUND') {
+    return { payment: null, latestStatus: 'pending' };
+  }
+
+  const checkout = lookup.data;
+  const mapped = mapPawapayStatus(checkout.status);
+
+  if (checkout.status === 'COMPLETED') {
+    // Comme dans `webhooks.ts` : chercher le dépôt COMPLETED dans l'historique
+    // (le dernier `checkout.deposit` peut être une tentative FAILED).
+    const deposit =
+      checkout.depositsHistory?.find((entry) => entry.status === 'COMPLETED') ??
+      (checkout.deposit?.status === 'COMPLETED' ? checkout.deposit : undefined);
+
+    if (!deposit?.depositId) {
+      // Pas de depositId exploitable : ne pas fabriquer un faux identifiant
+      // (sinon remboursement impossible). La réconciliation repassera.
+      return { payment: null, latestStatus: 'succeeded' };
+    }
+
     return {
       payment: {
-        id: intentPaymentId(intent),
-        amount: providerNumber(intent.amount),
-        currency: providerCurrency(intent.currency),
+        id: deposit.depositId,
+        amount: deposit.amount
+          ? providerNumber(Number(deposit.amount))
+          : providerNumber(Number(checkout.amounts?.[0]?.amount)),
+        currency: deposit.currency ?? checkout.amounts?.[0]?.currency ?? null,
       },
       latestStatus: 'succeeded',
     };
   }
 
-  const latestStatus = latestIntentStatus(payload, reference);
-  if (linkId) {
-    const fromLink = await findLinkSuccess(config, linkId);
-    if (fromLink) return { payment: fromLink, latestStatus: 'succeeded' };
-  }
-
-  return { payment: null, latestStatus };
+  return { payment: null, latestStatus: mapped };
 }

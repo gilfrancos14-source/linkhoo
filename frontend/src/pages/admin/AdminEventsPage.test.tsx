@@ -96,10 +96,6 @@ function panelRoot() {
   return el as HTMLElement;
 }
 
-function overlay() {
-  return document.querySelector('.banner-slide-panel__overlay');
-}
-
 function closeBtn() {
   const el = document.querySelector('.banner-slide-panel__close');
   if (!el) throw new Error('bouton de fermeture absent');
@@ -441,7 +437,6 @@ describe('AdminEventsPage — création', () => {
     await u.click(screen.getByRole('button', { name: 'Ajouter' }));
 
     expect(panelRoot()).toHaveClass('banner-slide-panel--open');
-    expect(overlay()).not.toBeNull();
     expect(screen.getByRole('heading', { level: 2, name: 'Ajouter un événement' })).toBeInTheDocument();
     expect(cityInput().value).toBe('');
     expect(titleInput().value).toBe('');
@@ -643,15 +638,15 @@ describe('AdminEventsPage — création', () => {
     expect(mocks.createEvent).not.toHaveBeenCalled();
   });
 
-  it("referme le panneau en cliquant sur le fond noir", async () => {
+  it("ne referme pas le panneau quand on clique à l'intérieur", async () => {
     const u = user();
     render(<AdminEventsPage />);
     await tableReady();
 
     await u.click(screen.getByRole('button', { name: 'Ajouter' }));
-    fireEvent.click(overlay() as Element);
+    fireEvent.click(document.querySelector('.banner-slide-panel__content') as Element);
 
-    expect(panelRoot()).not.toHaveClass('banner-slide-panel--open');
+    expect(panelRoot()).toHaveClass('banner-slide-panel--open');
     expect(mocks.createEvent).not.toHaveBeenCalled();
   });
 

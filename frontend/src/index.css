@@ -19,6 +19,7 @@
    pour le rappel de bordures, @layer components pour ses règles locales), donc
    il reste dans la feuille globale — 3 Ko — plutôt que dans un chunk séparé. */
 @import "./styles/41-client-dashboard.css";
+@import "./styles/23-client-compte.css";
 
 /* Mes réservations / Mes messages : conversions des maquettes dédiées, avec
    le même moteur de couches (elles doivent être présentes avant les utilitaires
@@ -27,6 +28,8 @@
 @import "./styles/43-client-messages.css";
 @import "./styles/44-laisser-avis.css";
 
+/* Modern loading animations */
+@import "./styles/modern-loading.css";
 
 /* Utilitaires Tailwind (accueil marché, fiche chambre, dashboard client). */
 @import "./maquette/maquette.css";

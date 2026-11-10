@@ -39,21 +39,23 @@ export interface MarketDefinition {
   readonly currency: 'XOF';
   /** Centre de la carte (capitale) pour le repérage gérant. */
   readonly center: { readonly lat: number; readonly lng: number };
+  /** Indique si le marché est activé pour pawaPay. */
+  readonly pawapayEnabled: boolean;
 }
 
 export const MARKETS = [
-  { code: 'CI', slug: 'ci', label: "Côte d'Ivoire", pays: "Côte d'Ivoire", currency: 'XOF', center: { lat: 5.36, lng: -4.008 } },
-  { code: 'BJ', slug: 'bj', label: 'Bénin', pays: 'Bénin', currency: 'XOF', center: { lat: 6.3703, lng: 2.3912 } },
-  { code: 'SN', slug: 'sn', label: 'Sénégal', pays: 'Sénégal', currency: 'XOF', center: { lat: 14.7167, lng: -17.4677 } },
-  { code: 'TG', slug: 'tg', label: 'Togo', pays: 'Togo', currency: 'XOF', center: { lat: 6.1319, lng: 1.2228 } },
-  { code: 'CM', slug: 'cm', label: 'Cameroun', pays: 'Cameroun', currency: 'XOF', center: { lat: 3.848, lng: 11.5021 } },
-  { code: 'BF', slug: 'bf', label: 'Burkina Faso', pays: 'Burkina Faso', currency: 'XOF', center: { lat: 12.3714, lng: -1.5197 } },
-  { code: 'CG', slug: 'cg', label: 'Congo', pays: 'Congo', currency: 'XOF', center: { lat: -4.2634, lng: 15.2429 } },
-  { code: 'GA', slug: 'ga', label: 'Gabon', pays: 'Gabon', currency: 'XOF', center: { lat: 0.4162, lng: 9.4673 } },
-  { code: 'GN', slug: 'gn', label: 'Guinée', pays: 'Guinée', currency: 'XOF', center: { lat: 9.5375, lng: -13.6772 } },
-  { code: 'ML', slug: 'ml', label: 'Mali', pays: 'Mali', currency: 'XOF', center: { lat: 12.6392, lng: -8.0029 } },
-  { code: 'NE', slug: 'ne', label: 'Niger', pays: 'Niger', currency: 'XOF', center: { lat: 13.5127, lng: 2.1128 } },
-  { code: 'CD', slug: 'cd', label: 'RDC', pays: 'RDC', currency: 'XOF', center: { lat: -4.3276, lng: 15.3132 } },
+  { code: 'CI', slug: 'ci', label: "Côte d'Ivoire", pays: "Côte d'Ivoire", currency: 'XOF', center: { lat: 5.36, lng: -4.008 }, pawapayEnabled: true },
+  { code: 'BJ', slug: 'bj', label: 'Bénin', pays: 'Bénin', currency: 'XOF', center: { lat: 6.3703, lng: 2.3912 }, pawapayEnabled: true },
+  { code: 'SN', slug: 'sn', label: 'Sénégal', pays: 'Sénégal', currency: 'XOF', center: { lat: 14.7167, lng: -17.4677 }, pawapayEnabled: true },
+  { code: 'TG', slug: 'tg', label: 'Togo', pays: 'Togo', currency: 'XOF', center: { lat: 6.1319, lng: 1.2228 }, pawapayEnabled: false },
+  { code: 'CM', slug: 'cm', label: 'Cameroun', pays: 'Cameroun', currency: 'XOF', center: { lat: 3.848, lng: 11.5021 }, pawapayEnabled: true },
+  { code: 'BF', slug: 'bf', label: 'Burkina Faso', pays: 'Burkina Faso', currency: 'XOF', center: { lat: 12.3714, lng: -1.5197 }, pawapayEnabled: true },
+  { code: 'CG', slug: 'cg', label: 'Congo', pays: 'Congo', currency: 'XOF', center: { lat: -4.2634, lng: 15.2429 }, pawapayEnabled: true },
+  { code: 'GA', slug: 'ga', label: 'Gabon', pays: 'Gabon', currency: 'XOF', center: { lat: 0.4162, lng: 9.4673 }, pawapayEnabled: true },
+  { code: 'GN', slug: 'gn', label: 'Guinée', pays: 'Guinée', currency: 'XOF', center: { lat: 9.5375, lng: -13.6772 }, pawapayEnabled: false },
+  { code: 'ML', slug: 'ml', label: 'Mali', pays: 'Mali', currency: 'XOF', center: { lat: 12.6392, lng: -8.0029 }, pawapayEnabled: false },
+  { code: 'NE', slug: 'ne', label: 'Niger', pays: 'Niger', currency: 'XOF', center: { lat: 13.5127, lng: 2.1128 }, pawapayEnabled: false },
+  { code: 'CD', slug: 'cd', label: 'RDC', pays: 'RDC', currency: 'XOF', center: { lat: -4.3276, lng: 15.3132 }, pawapayEnabled: false },
 ] as const satisfies readonly MarketDefinition[];
 
 /** Segment d'URL : /ci, /bj, /sn, … */

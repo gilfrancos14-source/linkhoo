@@ -29,7 +29,7 @@ body:has(.verif-maq) {
   min-height: 100%;
   background: #f5f7fb;
   color: #0f2150;
-  font-family: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  font-family: "Poppins", ui-sans-serif, system-ui, sans-serif;
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;

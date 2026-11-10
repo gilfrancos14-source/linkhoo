@@ -25,13 +25,31 @@
   margin: 0;
 }
 
+/* Pages gérant au style « admin-page » (réservations, reversements,
+   confirmation premium) : on remplace UNIQUEMENT la sidebar admin par la
+   sidebar gérant partagée (GerantSidebar). La topbar (notifications,
+   profil) reste affichée. */
+.admin.admin--maq-sidebar {
+  grid-template-columns: 1fr;
+}
+
+.admin.admin--maq-sidebar > .sidebar {
+  display: none;
+}
+
+.admin.admin--maq-sidebar .admin-content {
+  padding: 0;
+  max-width: none;
+  margin: 0;
+}
+
 /* La maquette maq1.html charge Tailwind avec son preflight. Le projet l'a
    dÃ©sactivÃ© globalement : on rÃ©tablit donc un reset scopÃ© pour obtenir
    exactement le mÃªme rendu (bordures, boutons, tableaux, SVG, interlignes). */
 .gerant-maq1 {
   background: #f5f8fc;
   color: #0f2a5c;
-  font-family: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  font-family: "Poppins", ui-sans-serif, system-ui, sans-serif;
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;

@@ -20,8 +20,8 @@
   --line-light: rgba(248, 250, 252, 0.16);
 
   /* Typographie */
-  --font-serif: "Lato", sans-serif;
-  --font-sans: "Lato", sans-serif;
+  --font-serif: "Poppins", sans-serif;
+  --font-sans: "Poppins", sans-serif;
 
   /* Espacement */
   --container: 1180px;

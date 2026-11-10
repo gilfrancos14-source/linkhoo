@@ -122,29 +122,71 @@
   font-size: 0.82rem;
 }
 
-/* ── Loading ── */
+/* ── Modern Loading ── */
 .auth-loading {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: 1.5rem;
   color: var(--ink-soft);
   font-size: 0.9rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-loading::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+  animation: background-move 20s linear infinite;
+  z-index: -1;
+}
+
+@keyframes background-move {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(20px, 20px); }
 }
 
 .auth-loading__spinner {
-  width: 36px;
-  height: 36px;
-  border: 3px solid var(--line);
-  border-top-color: var(--sky);
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(59, 130, 246, 0.1);
+  border-top-color: rgb(59, 130, 246);
   border-radius: 50%;
-  animation: auth-spin 0.8s linear infinite;
+  animation: auth-spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  position: relative;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.auth-loading__spinner::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  background: rgb(59, 130, 246);
+  border-radius: 50%;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @keyframes auth-spin {
-  to { transform: rotate(360deg); }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.1); }
 }
 
 /* Fallback du <Suspense> : pendant le chargement d'un chunk de route */
@@ -154,56 +196,100 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: 1.5rem;
   color: var(--ink-soft);
   font-size: 0.9rem;
+  padding: 2rem;
 }
 
-/* ── Skeletons des sections de la home ── */
+/* ── Modern Skeletons ── */
 .card-skeleton {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
   background: var(--mist);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.card-skeleton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .card-skeleton__media {
   aspect-ratio: 4 / 3;
-  background: var(--mist-2);
+  background: linear-gradient(90deg, var(--mist-2) 25%, var(--mist-3) 50%, var(--mist-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-skeleton__media::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shine 2s infinite;
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .card-skeleton__body {
-  padding: 1rem 1.1rem 1.2rem;
+  padding: 1.2rem 1.3rem 1.4rem;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.8rem;
 }
 
 .card-skeleton__line {
   display: block;
-  height: 12px;
-  border-radius: 6px;
-  background: var(--mist-2);
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(90deg, var(--mist-2) 25%, var(--mist-3) 50%, var(--mist-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-skeleton__line::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shine 2s infinite;
 }
 
 .card-skeleton__line--sm {
-  height: 10px;
+  height: 12px;
 }
 
-.card-skeleton__media,
-.card-skeleton__line {
-  animation: skeleton-pulse 1.2s ease-in-out infinite;
-}
-
-@keyframes skeleton-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .auth-loading__spinner,
   .card-skeleton__media,
   .card-skeleton__line {
     animation: none;
+  }
+  
+  .auth-loading::before {
+    animation: none;
+    background: transparent;
   }
 }
 
@@ -539,44 +625,55 @@
 
 .banner-slide-panel {
   position: fixed;
-  inset: 0;
-  z-index: 200;
-  pointer-events: none;
+  top: 0;
+  right: -100%;
+  width: 100%;
+  max-width: 500px;
+  height: 100vh;
+  background: var(--admin-surface);
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+  transition: right 0.3s ease;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
 }
 
 .banner-slide-panel--open {
-  pointer-events: auto;
+  right: 0 !important;
 }
 
 .banner-slide-panel__overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
   opacity: 0;
+  visibility: hidden;
   transition: opacity 0.3s ease;
+  will-change: opacity;
+  pointer-events: none;
 }
 
 .banner-slide-panel--open .banner-slide-panel__overlay {
-  opacity: 1;
+  pointer-events: auto;
+}
+
+.banner-slide-panel--open .banner-slide-panel__overlay {
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .banner-slide-panel__content {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 440px;
-  max-width: 100%;
-  background: var(--white);
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
-  transform: translateX(100%);
-  transition: transform 0.3s ease;
-}
-
-.banner-slide-panel--open .banner-slide-panel__content {
-  transform: translateX(0);
+  height: 100%;
+  position: relative;
+  z-index: 10;
+  background: var(--admin-surface);
+  pointer-events: auto;
 }
 
 .banner-slide-panel__header {
@@ -585,6 +682,9 @@
   justify-content: space-between;
   padding: 20px 24px;
   border-bottom: 1px solid var(--admin-border);
+  position: relative;
+  z-index: 15;
+  pointer-events: auto;
 }
 
 .banner-slide-panel__header h2 {
@@ -592,6 +692,8 @@
   font-weight: 700;
   color: var(--admin-ink);
   margin: 0;
+  position: relative;
+  z-index: 15;
 }
 
 .banner-slide-panel__close {
@@ -606,11 +708,15 @@
   color: var(--admin-ink-soft);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
+  position: relative;
+  z-index: 20;
+  pointer-events: auto;
 }
 
 .banner-slide-panel__close:hover {
   background: var(--admin-surface-alt);
   color: var(--admin-ink);
+  z-index: 20;
 }
 
 .banner-slide-panel__body {
@@ -620,6 +726,10 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  position: relative;
+  z-index: 5;
+  background: var(--admin-surface);
+  pointer-events: auto;
 }
 
 .banner-slide-panel__footer {
@@ -628,46 +738,284 @@
   justify-content: flex-end;
   padding: 16px 24px;
   border-top: 1px solid var(--admin-border);
+  position: relative;
+  z-index: 15;
+  background: var(--admin-surface);
+  pointer-events: auto;
 }
 
 /* ── Upload Zone ── */
 .banner-upload-zone {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 24px;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 32px;
   border: 2px dashed var(--admin-border);
-  border-radius: 12px;
+  border-radius: 16px;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  text-align: center;
-  min-height: 140px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: right;
+  min-height: 180px;
+  background: linear-gradient(135deg, var(--admin-surface) 0%, var(--admin-surface-alt) 100%);
+  position: relative;
+  overflow: hidden;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.banner-upload-zone::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, transparent 0%, rgba(14, 165, 233, 0.05) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .banner-upload-zone:hover {
   border-color: var(--sky-500);
-  background: var(--admin-surface-alt);
+  background: linear-gradient(135deg, var(--admin-surface) 0%, rgba(14, 165, 233, 0.05) 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.banner-upload-zone:hover::before {
+  opacity: 1;
+}
+
+.banner-upload-zone.drag-over {
+  border-color: var(--sky-500);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.05) 0%, rgba(14, 165, 233, 0.1) 100%);
+  transform: scale(1.02);
 }
 
 .banner-upload-zone__preview {
   width: 100%;
-  max-height: 80px;
-  object-fit: contain;
-  border-radius: 8px;
+  max-height: 120px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.banner-upload-zone:hover .banner-upload-zone__preview {
+  transform: scale(1.05);
 }
 
 .banner-upload-zone p {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--admin-ink);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: -0.01em;
 }
 
 .banner-upload-zone span {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--admin-ink-soft);
+  display: block;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* Style pour l'état drag-over */
+.banner-upload-zone.drag-over {
+  border-color: var(--sky-500);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.05) 0%, rgba(14, 165, 233, 0.1) 100%);
+  transform: scale(1.02);
+  box-shadow: 0 8px 32px rgba(14, 165, 233, 0.2);
+}
+
+.banner-upload-zone.drag-over p {
+  color: var(--sky-600);
+  font-weight: 700;
+}
+
+/* Style pour l'état loading */
+.banner-upload-zone.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.banner-upload-zone.loading p {
+  color: var(--admin-ink-soft);
+}
+
+/* Style pour l'aperçu d'image */
+.banner-upload-zone__preview {
+  width: 100%;
+  max-height: 120px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.banner-upload-zone:hover .banner-upload-zone__preview {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Style pour le conteneur de l'icône */
+.banner-upload-zone .icon-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%);
+  transition: all 0.3s ease;
+}
+
+.banner-upload-zone:hover .icon-container {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(14, 165, 233, 0.1) 100%);
+  transform: translateY(-2px);
+}
+
+.banner-upload-zone .icon-container svg {
+  width: 24px;
+  height: 24px;
+  stroke: var(--admin-ink);
+  transition: all 0.3s ease;
+}
+
+.banner-upload-zone:hover .icon-container svg {
+  stroke: var(--sky-600);
+  transform: scale(1.1);
+}
+
+/* Animation pour l'icône */
+.banner-upload-zone svg {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.banner-upload-zone:hover svg {
+  transform: scale(1.1) rotate(5deg);
+  filter: drop-shadow(0 4px 8px rgba(14, 165, 233, 0.3));
+}
+
+/* Style pour le bouton d'upload caché */
+.banner-upload-zone input[type="file"] {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+/* État de chargement */
+.banner-upload-zone.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  margin: -12px 0 0 -12px;
+  border: 2px solid var(--admin-border);
+  border-top-color: var(--sky-500);
+  border-radius: 50%;
+  animation: upload-spin 0.8s linear infinite;
+}
+
+@keyframes upload-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Icône d'upload améliorée */
+.banner-upload-zone .upload-icon {
+  position: relative;
+  display: inline-block;
+}
+
+.banner-upload-zone .upload-icon::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.1) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.banner-upload-zone:hover .upload-icon::before {
+  opacity: 1;
+}
+
+/* Icône d'upload stylisée */
+.banner-upload-zone .upload-icon svg {
+  position: relative;
+  z-index: 1;
+}
+
+/* Effet de particules pour le hover */
+.banner-upload-zone .upload-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.banner-upload-zone .upload-particles::before,
+.banner-upload-zone .upload-particles::after {
+  content: '';
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: var(--sky-500);
+  border-radius: 50%;
+  opacity: 0;
+  animation: particle-float 2s ease-out infinite;
+}
+
+.banner-upload-zone .upload-particles::before {
+  top: 20%;
+  left: 20%;
+  animation-delay: 0s;
+}
+
+.banner-upload-zone .upload-particles::after {
+  top: 60%;
+  right: 30%;
+  animation-delay: 0.5s;
+}
+
+@keyframes particle-float {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-20px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) scale(0);
+  }
 }
 
 /* ── Mobile cards ── */
@@ -677,35 +1025,39 @@
 
 /* ── Form Fields ── */
 .banner-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  margin-bottom: 1.5rem;
 }
 
 .banner-field span {
-  font-size: 12px;
+  display: block;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--admin-ink);
+  margin-bottom: 0.5rem;
 }
 
 .banner-field input,
 .banner-field select,
 .banner-field textarea {
   width: 100%;
-  padding: 10px 12px;
+  padding: 0.75rem 1rem;
   border: 1px solid var(--admin-border);
-  border-radius: 8px;
-  font-size: 13px;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--admin-ink);
-  background: var(--admin-surface-alt);
+  background: var(--admin-surface);
   font-family: inherit;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: all 0.2s ease;
   box-sizing: border-box;
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
 }
 
 .banner-field textarea {
   resize: vertical;
+  min-height: 100px;
   line-height: 1.5;
 }
 
@@ -714,7 +1066,7 @@
 .banner-field textarea:focus {
   outline: none;
   border-color: var(--sky-500);
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
   background: var(--admin-surface);
 }
 
@@ -816,6 +1168,10 @@
 }
 
 @media (max-width: 768px) {
+  .banner-slide-panel {
+    max-width: 100%;
+  }
+
   .banner-slide-panel__content {
     width: 100%;
   }
@@ -823,5 +1179,142 @@
   .banners-mobile-cards {
     display: block;
   }
+}
+
+/* Alignement à droite pour la zone d'upload */
+.banner-slide-panel__body .banner-upload-zone {
+  align-self: flex-end;
+  width: 100%;
+  max-width: 300px;
+  margin-left: auto;
+}
+
+/* Boutons dans le pied de page */
+.banner-slide-panel__footer button {
+  position: relative;
+  z-index: 5;
+}
+
+/* Boutons spécifiques */
+.banner-slide-panel__footer button[type="submit"],
+.banner-slide-panel__footer button[type="button"] {
+  position: relative;
+  z-index: 5;
+}
+
+/* Boutons d'action */
+.banner-slide-panel__footer .btn {
+  position: relative;
+  z-index: 5;
+}
+
+/* Boutons principaux */
+.banner-slide-panel__footer .btn-primary,
+.banner-slide-panel__footer .btn-secondary {
+  position: relative;
+  z-index: 5;
+}
+
+/* Boutons de formulaire */
+.banner-slide-panel__footer input[type="submit"],
+.banner-slide-panel__footer input[type="button"] {
+  position: relative;
+  z-index: 5;
+}
+
+/* Tous les éléments interactifs dans le panneau */
+.banner-slide-panel__content * {
+  pointer-events: auto;
+}
+
+/* Assurer que le contenu du panneau est cliquable */
+.banner-slide-panel__content {
+  pointer-events: auto;
+}
+
+/* Assurer que le corps du panneau est cliquable */
+.banner-slide-panel__body {
+  pointer-events: auto;
+}
+
+/* Assurer que le pied de page du panneau est cliquable */
+.banner-slide-panel__footer {
+  pointer-events: auto;
+}
+
+/* Assurer que l'en-tête du panneau est cliquable */
+.banner-slide-panel__header {
+  pointer-events: auto;
+}
+
+/* Assurer que tous les éléments du formulaire sont cliquables */
+.banner-slide-panel__content input,
+.banner-slide-panel__content select,
+.banner-slide-panel__content textarea,
+.banner-slide-panel__content button {
+  pointer-events: auto;
+}
+
+/* Assurer que la zone d'upload est cliquable */
+.banner-upload-zone {
+  pointer-events: auto;
+}
+
+/* Assurer que l'input file est cliquable */
+.banner-upload-zone input[type="file"] {
+  pointer-events: auto;
+}
+
+/* Assurer que tous les éléments du panneau sont cliquables */
+.banner-slide-panel--open * {
+  pointer-events: auto;
+}
+
+/* Assurer que le contenu du panneau est cliquable même quand l'overlay est actif */
+.banner-slide-panel--open .banner-slide-panel__content {
+  pointer-events: auto;
+}
+
+/* Assurer que le corps du panneau est cliquable même quand l'overlay est actif */
+.banner-slide-panel--open .banner-slide-panel__body {
+  pointer-events: auto;
+}
+
+/* Assurer que le pied de page du panneau est cliquable même quand l'overlay est actif */
+.banner-slide-panel--open .banner-slide-panel__footer {
+  pointer-events: auto;
+}
+
+/* Assurer que l'en-tête du panneau est cliquable même quand l'overlay est actif */
+.banner-slide-panel--open .banner-slide-panel__header {
+  pointer-events: auto;
+}
+
+/* Assurer que tous les éléments du formulaire sont cliquables même quand l'overlay est actif */
+.banner-slide-panel--open .banner-slide-panel__content input,
+.banner-slide-panel--open .banner-slide-panel__content select,
+.banner-slide-panel--open .banner-slide-panel__content textarea,
+.banner-slide-panel--open .banner-slide-panel__content button {
+  pointer-events: auto;
+}
+
+/* Assurer que la zone d'upload est cliquable même quand l'overlay est actif */
+.banner-slide-panel--open .banner-upload-zone {
+  pointer-events: auto;
+}
+
+/* Assurer que l'input file est cliquable même quand l'overlay est actif */
+.banner-slide-panel--open .banner-upload-zone input[type="file"] {
+  pointer-events: auto;
+}
+
+/* Assurer que tous les éléments du panneau sont cliquables même quand l'overlay est actif */
+.banner-slide-panel--open .banner-slide-panel--open * {
+  pointer-events: auto;
+}
+
+/* Assurer que le contenu du panneau est cliquable même quand l'overlay est actif */
+.banner-slide-panel--open .banner-slide-panel__content {
+  pointer-events: auto;
 }
 

@@ -23,7 +23,7 @@
   padding-bottom: 1rem;
   background: var(--sp-surface);
   color: var(--sp-on-surface);
-  font-family: 'Plus Jakarta Sans Variable', var(--font-sans);
+  font-family: 'Poppins', var(--font-sans);
 }
 
 .search-page *,
@@ -191,7 +191,7 @@
 .search-page__title {
   margin-bottom: 0.75rem;
   color: var(--sp-ink);
-  font-family: 'Plus Jakarta Sans Variable', var(--font-sans);
+  font-family: 'Poppins', var(--font-sans);
   font-size: 56px;
   line-height: 64px;
   font-weight: 700;
@@ -975,7 +975,7 @@
 
 .search-page__featured-title {
   color: var(--sp-ink);
-  font-family: 'Plus Jakarta Sans Variable', var(--font-sans);
+  font-family: 'Poppins', var(--font-sans);
   font-size: 28px;
   line-height: 34px;
   font-weight: 800;
@@ -1379,7 +1379,7 @@
 
 .search-page .stay-card__title {
   color: var(--sp-ink);
-  font-family: 'Plus Jakarta Sans Variable', var(--font-sans);
+  font-family: 'Poppins', var(--font-sans);
   font-size: 17px;
   line-height: 23px;
   font-weight: 700;

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
+import GerantSidebar from '../../components/gerant/GerantSidebar';
 import { fetchMyRooms, toggleRoom, updateRoom, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import { priceWithCurrency } from '../../lib/roomDisplay';
@@ -58,8 +59,6 @@ export default function ChambresPage() {
   const chrome = useGerantChrome();
   const gerantPath = `${homePath}/gerant`;
   const chambresPath = `${gerantPath}/chambres`;
-  const demandesPath = `${gerantPath}/reservations/demandes`;
-  const calendrierPath = `${gerantPath}/reservations/calendrier`;
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -210,68 +209,7 @@ export default function ChambresPage() {
       </svg>
 
       <div className="flex min-h-screen">
-        <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white px-4 py-5 lg:flex">
-        <Link to={gerantPath} className="mb-6 flex items-center gap-2.5 px-2" aria-label="Linkhoo - retour à l'accueil">
-          <img className="sidebar-logo" src="/logo.jpg" alt="Logo Linkhoo" />
-        </Link>
-
-          <nav className="space-y-3">
-            <Link to={gerantPath} className="grp">
-              <Icon id="home" />Aperçu
-            </Link>
-
-            <div>
-              <Link to={chambresPath} className="grp rounded-xl bg-dash-brand-soft text-dash-brand-dark">
-                <Icon id="bed" />Chambres
-              </Link>
-              <div className="pl-3">
-                <Link to={chambresPath} className="sub on">
-                  <Icon id="list" />Toutes les chambres<span className="ml-auto h-1.5 w-1.5 rounded-full bg-dash-brand" />
-                </Link>
-                <Link to={`${chambresPath}/ajouter`} className="sub"><Icon id="plus" />Ajouter une chambre</Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp"><Icon id="cal" />Réservations{chrome.reservationsCount > 0 && <span className="badge">{chrome.reservationsCount}</span>}</div>
-              <div className="pl-3">
-                <Link to={demandesPath} className="sub"><Icon id="user" />Demandes</Link>
-                <Link to={calendrierPath} className="sub"><Icon id="cal" />Calendrier</Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp"><Icon id="chat" />Messages{chrome.messagesUnread > 0 && <span className="badge">{chrome.messagesUnread}</span>}</div>
-              <div className="pl-3">
-                <Link to={`${gerantPath}/messages/boite-reception`} className="sub"><Icon id="mail" />Boîte de réception</Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp justify-between"><span className="flex items-center gap-3"><Icon id="shield" />Vérification</span><Icon id="down" className="i !h-4 !w-4" /></div>
-              <div className="pl-3">
-                <Link to={`${gerantPath}/verification`} className="sub"><Icon id="doc" />Mes documents</Link>
-                <Link to={`${gerantPath}/verification`} className="sub"><Icon id="doc" />Suivi de vérification</Link>
-              </div>
-            </div>
-
-            <div>
-              <div className="grp"><Icon id="user" />Profil</div>
-              <div className="pl-3"><Link to={`${gerantPath}/profil`} className="sub"><Icon id="user" />Mes informations</Link></div>
-            </div>
-
-            <div>
-              <div className="grp"><Icon id="crown" className="i text-dash-brand" />Premium</div>
-              <div className="pl-3"><Link to={`${gerantPath}/premium`} className="sub"><Icon id="cal" />Mon abonnement</Link></div>
-            </div>
-          </nav>
-
-          <div className="mt-auto rounded-2xl border border-orange-100 bg-dash-brand-soft p-4 pt-5">
-            <p className="flex items-center gap-2 text-sm font-bold"><Icon id="crown" className="i h-5 w-5 text-dash-brand" />Passez au Premium</p>
-            <p className="mt-2 text-[11px] text-slate-500">Plus de visibilité, plus de réservations !</p>
-            <Link to={`${gerantPath}/premium`} className="mt-3 block rounded-lg bg-dash-brand py-2 text-center text-xs font-semibold text-white hover:bg-dash-brand-dark">Voir les avantages</Link>
-          </div>
-        </aside>
+        <GerantSidebar />
 
         <main className="min-w-0 flex-1 px-4 py-4 lg:px-7">
           <header className="flex items-center gap-4">
@@ -292,7 +230,7 @@ export default function ChambresPage() {
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-extrabold">Mes chambres</h1>
+              <h1 className="dash-page-head">Mes chambres</h1>
               <p className="mt-1 text-sm text-slate-500">Gérez toutes vos chambres et suivez leur disponibilité.</p>
             </div>
             <Link to={`${chambresPath}/ajouter`} className="inline-flex items-center gap-3 rounded-lg bg-dash-brand px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 hover:bg-dash-brand-dark"><Icon id="pc" className="i h-5 w-5" />Ajouter une chambre</Link>
@@ -382,7 +320,7 @@ export default function ChambresPage() {
 
             <aside className="space-y-5">
               <section className="card p-5">
-                <h2 className="mb-4 font-bold">Aperçu de vos chambres</h2>
+                <h2 className="dash-page-head mb-4">Aperçu de vos chambres</h2>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="tile"><Icon id="bed" className="i h-6 w-6 text-slate-500" /><div className="text-center"><p className="text-2xl font-bold">{rooms.length}</p><p className="text-xs text-slate-500">Total</p></div></div>
                   <div className="tile"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /><div className="text-center"><p className="text-2xl font-bold">{available}</p><p className="text-xs text-slate-500">Disponibles</p></div></div>
@@ -392,7 +330,7 @@ export default function ChambresPage() {
               </section>
 
               <section className="card p-5">
-                <h2 className="mb-2 font-bold">Catégories</h2>
+                <h2 className="dash-page-head mb-2">Catégories</h2>
                 {categoryEntries.length === 0 ? (
                   <p className="py-3 text-xs text-slate-500">Aucune catégorie pour le moment.</p>
                 ) : (

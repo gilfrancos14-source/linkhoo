@@ -8,6 +8,7 @@ import { canPayReservation, paymentLabels } from '../../lib/reservations';
 import { formatPrice } from '../../lib/roomDisplay';
 import ReviewForm from './ReviewForm';
 import type { ReviewFormState } from './types';
+import ClientSidebar from '../../components/client/ClientSidebar';
 
 /**
  * Espace client — « Mes réservations ».
@@ -175,7 +176,7 @@ export default function ClientReservationsMaq({
   const staysPath = `${homePath}/compte?view=stays`;
   const messagesPath = `${homePath}/messages`;
   const searchPath = `${homePath}/recherche`;
-  const favoritesPath = `${homePath}/compte?view=favorites`;
+  
   const marketLabel = marketByCode(market).label;
   const cityLabel = `${MARKET_CAPITALS[market]}, ${marketLabel}`;
 
@@ -253,7 +254,7 @@ export default function ClientReservationsMaq({
   ];
 
   return (
-    <div className="res-maq font-inter min-h-screen bg-[#f8faff] text-[#0b1b3f] antialiased">
+    <div className="res-maq font-sans min-h-screen bg-[#f8faff] text-[#0b1b3f] antialiased">
       <svg className="hidden" aria-hidden="true">
         <symbol id="cr-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /></symbol>
         <symbol id="cr-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18M9 16l2 2 4-4" /></symbol>
@@ -286,69 +287,11 @@ export default function ClientReservationsMaq({
         <symbol id="cr-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" /></symbol>
       </svg>
 
-      {/* ============ SIDEBAR ============ */}
-      <aside className="fixed inset-y-0 left-0 z-20 flex w-[244px] flex-col border-r border-[#e6ebf5] bg-white">
-        <div className="flex h-[70px] flex-none items-center gap-2.5 px-[36px]">
-          <img className="sidebar-logo" src="/logo.jpg" alt="Logo Linkhoo" />
-        </div>
-
-        <nav className="mt-3 space-y-[6px] px-[17px]">
-          <Link to={`${homePath}/compte`} className="nv">
-            <Icon id="home" />Accueil
-          </Link>
-          <Link to={staysPath} className="nv on" aria-current="page">
-            <Icon id="cal" />Mes réservations
-            {reservations.length > 0 && (
-              <span className="bd">{reservations.length > 9 ? '9+' : reservations.length}</span>
-            )}
-          </Link>
-          <Link to={messagesPath} className="nv">
-            <Icon id="msg" />Mes messages
-            {unreadMessages > 0 && (
-              <span className="bd">{unreadMessages > 9 ? '9+' : unreadMessages}</span>
-            )}
-          </Link>
-          <Link to={favoritesPath} className="nv">
-            <Icon id="heart" />Mes favoris
-          </Link>
-          <Link to={profilePath} className="nv">
-            <Icon id="user" />Mon profil
-          </Link>
-          <Link to={profilePath} className="nv">
-            <Icon id="cog" />Paramètres
-          </Link>
-        </nav>
-
-        <div className="mx-5 mt-[70px] rounded-xl border border-[#e6ebf5] bg-[#f5f8ff] p-3">
-          <div className="flex gap-3">
-            <Icon id="help" className="mt-1 h-8 w-8 flex-none text-[#1d3f8f]" />
-            <div>
-              <div className="text-[12.5px] font-bold">Besoin d’aide ?</div>
-              <p className="mt-1 text-[11px] leading-[1.45] text-[#5f86d1]">
-                Notre équipe est disponible pour vous accompagner.
-              </p>
-            </div>
-          </div>
-          <Link to="/contact" className="btn mt-3 !h-[34px] !text-[12px]">
-            Contacter le support
-          </Link>
-        </div>
-
-        <div className="mt-auto pb-12 text-center">
-          <div className="flex items-end justify-center gap-0.5 text-blue-400">
-            <Icon id="building" className="!h-10 !w-10 stroke-[1.2]" />
-            <Icon id="building2" className="!h-16 !w-16 stroke-[1.2]" />
-            <Icon id="building" className="!h-9 !w-9 stroke-[1.2]" />
-          </div>
-          <div className="text-[18px] font-extrabold tracking-tight text-[#1d3f8f]">
-            Link<span className="text-[#ff5a14]">hoo</span>
-          </div>
-          <p className="mt-1 text-[13px] text-[#5f86d1]">Votre séjour, notre priorité !</p>
-        </div>
-      </aside>
+      {/* Utiliser la nouvelle sidebar unifiée */}
+      <ClientSidebar />
 
       {/* ============ MAIN ============ */}
-      <div className="ml-[244px]">
+      <div className="client-main">
         <header className="flex h-[70px] items-center justify-between pl-[23px] pr-6">
           <form
             onSubmit={handleSearch}
@@ -660,12 +603,15 @@ export default function ClientReservationsMaq({
                             <button type="button" className="btn flex-1" onClick={() => onOpenReviewForm(reservation)}>
                               Laisser un avis
                             </button>
-                          ) : reviewedIds.has(reservation.id) ? (
+                          ) : null}
+                        </div>
+                        {reviewedIds.has(reservation.id) && (
+                          <div className="mt-2 flex justify-end">
                             <button type="button" className="btn o flex-1" onClick={() => navigate(`${homePath}/avis/${reservation.id}`)}>
                               Voir les avis
                             </button>
-                          ) : null}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     </article>
                   );

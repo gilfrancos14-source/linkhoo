@@ -1,0 +1,89 @@
+/* ==========================================================================
+   Sidebar de l'espace gérant — reproduction fidèle de la sidebar du
+   tableau de bord (maquette maq1), utilisée par TOUTES les pages gérant.
+
+   Problème résolu : ces utilitaires étaient scopés par maquette
+   (`.gerant-maq1` … `.gerant-maq5`) et donc absents de maq6, du profil,
+   de la vérification et des pages au style `admin-page`. On les
+   redéfinit ici derrière `aside.gerb` : la spécificité (0,2,1) l'emporte
+   sur `.gerant-maqX .grp` (0,2,0), ce qui garantit le même rendu partout
+   sans dépendre de la feuille de style de la page hôte.
+   Les valeurs sont celles de `33-gerant-blank.css` (maq1).
+   ========================================================================== */
+
+aside.gerb {
+  font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+}
+
+aside.gerb .i {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+aside.gerb .grp {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+  color: #0f2a5c;
+}
+
+aside.gerb .grp svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+/* Groupe courant (« Aperçu » sur le tableau de bord). Écrit après .grp :
+   même spécificité, la dernière règle l'emporte. */
+aside.gerb .grp--active {
+  background: #fff1e6;
+  color: #ea580c;
+}
+
+aside.gerb .sub {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #64748b;
+}
+
+aside.gerb .sub:hover {
+  color: #0f2a5c;
+}
+
+aside.gerb .sub svg {
+  width: 1rem;
+  height: 1rem;
+  color: #94a3b8;
+}
+
+/* Sous-page courante. */
+aside.gerb .sub.on {
+  color: #ea580c;
+}
+
+aside.gerb .sub.on svg {
+  color: #f97316;
+}
+
+aside.gerb .badge {
+  margin-left: auto;
+  display: grid;
+  height: 1.25rem;
+  width: 1.25rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: #f97316;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}

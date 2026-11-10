@@ -1,32 +1,19 @@
 /**
- * Expiration des checkouts de réservation restés ouverts.
+ * Expiration des checkouts restés ouverts.
  *
- * Un lien Hub2 vit 30 minutes. Sans ce job, une demande jamais payée
- * bloquerait les dates indéfiniment : deux clients ne peuvent pas payer la
- * même chambre, et la réservation resterait `en_attente`.
- *
- * Avant d'expirer, on REDEMANDE son état à Hub2. Un paiement peut aboutir
- * quelques secondes après l'expiration théorique du lien ; l'annuler à
- * l'aveugle ferait perdre un encaissement réel. Si Hub2 est injoignable, la
- * ligne reste ouverte : le prochain tour retentera.
- *
- * Si un autre lien de la même réservation est encore valide (nouvelle
- * tentative du client), la réservation n'est pas annulée.
+ * Reste prudent : issue incertaine → ne pas libérer les dates.
  */
 
 import { supabaseAdmin } from '../../config/supabase';
-import { getHub2Config, Hub2ConfigError } from '../config';
-import { isHub2Provider } from '../provider';
-import type { Hub2Currency } from '../types';
+import { getPawapayConfig, PawapayConfigError } from '../pawapay/config';
+import type { PawapayCurrency } from '../pawapay/types';
 import {
   claimSucceededPayment,
   OPEN_PAYMENT_STATUSES,
 } from '../service/applyEvent';
 import { lookupProviderPayment } from '../service/providerStatus';
 
-/** Marge après l'expiration du lien : laisse arriver un webhook tardif. */
 export const EXPIRE_GRACE_MS = 5 * 60 * 1000;
-
 export const EXPIRE_BATCH_SIZE = 50;
 
 interface StalePaymentRow {
@@ -34,8 +21,7 @@ interface StalePaymentRow {
   reference: string;
   purpose: string;
   amount: number;
-  currency: Hub2Currency;
-  provider_payment_link_id: string | null;
+  currency: PawapayCurrency;
   reservation_id: string | null;
 }
 
@@ -53,23 +39,14 @@ export interface ExpireUnpaidResult {
   readonly skipped: boolean;
 }
 
-/**
- * Expire les liens dépassés, puis annule la réservation correspondante
- * lorsqu'aucun autre lien vivant ne peut encore la payer.
- */
 export async function expireUnpaidBookings(
   now: Date = new Date(),
 ): Promise<ExpireUnpaidResult> {
-  if (!isHub2Provider()) {
-    return { checked: 0, expired: 0, claimed: 0, cancelledReservations: 0, skipped: true };
-  }
-
-  let config;
   try {
-    config = getHub2Config();
+    getPawapayConfig();
   } catch (error) {
-    if (error instanceof Hub2ConfigError) {
-      console.warn(`[payments:expire] Hub2 non configuré : ${error.code}`);
+    if (error instanceof PawapayConfigError) {
+      console.warn(`[payments:expire] pawaPay non configuré : ${error.code}`);
       return { checked: 0, expired: 0, claimed: 0, cancelledReservations: 0, skipped: true };
     }
     throw error;
@@ -80,9 +57,7 @@ export async function expireUnpaidBookings(
 
   const { data, error } = await supabaseAdmin
     .from('payments')
-    .select(
-      'id, reference, purpose, amount, currency, provider_payment_link_id, reservation_id',
-    )
+    .select('id, reference, purpose, amount, currency, reservation_id')
     .eq('purpose', 'booking')
     .in('status', [...OPEN_PAYMENT_STATUSES])
     .not('reservation_id', 'is', null)
@@ -100,11 +75,7 @@ export async function expireUnpaidBookings(
   for (const payment of rows) {
     let providerSucceeded = false;
     try {
-      const { payment: providerPayment } = await lookupProviderPayment(
-        config,
-        payment.reference,
-        payment.provider_payment_link_id,
-      );
+      const { payment: providerPayment } = await lookupProviderPayment(payment.reference);
       providerSucceeded = providerPayment !== null;
 
       if (providerPayment) {
@@ -118,8 +89,8 @@ export async function expireUnpaidBookings(
         claimed += 1;
       }
     } catch (err) {
-      // Issue incertaine : ne jamais libérer les dates d'un paiement qui a
-      // peut-être abouti. Le tour suivant réessaiera.
+      // Issue incertaine : ne jamais libérer des dates pour un paiement
+      // qui a peut-être abouti. Le tour suivant réessaiera.
       console.error(
         `[payments:expire] ${payment.reference} :`,
         err instanceof Error ? err.message : err,

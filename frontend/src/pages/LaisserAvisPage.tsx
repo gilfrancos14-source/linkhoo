@@ -162,7 +162,7 @@ export default function LaisserAvisPage() {
   const fullName =
     [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.fullName || 'Mon compte';
 
-  // La police « Plus Jakarta Sans » est auto-hébergée (src/fonts.css) :
+  // La police « Poppins » est auto-hébergée (@fontsource/poppins) :
   // aucune requête vers Google Fonts, contrairement à la maquette statique.
 
   useEffect(() => {
@@ -415,7 +415,7 @@ export default function LaisserAvisPage() {
 
   if (loading) {
     return (
-      <div className="linkhoo-avis min-h-screen bg-[#FAFAFA] antialiased" style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
+      <div className="linkhoo-avis min-h-screen bg-[#FAFAFA] antialiased" style={{ fontFamily: 'Poppins' }}>
         <main className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
           <p className="text-sm text-slate-500">Chargement…</p>
         </main>
@@ -424,7 +424,7 @@ export default function LaisserAvisPage() {
   }
   if (error && !reservation) {
     return (
-      <div className="linkhoo-avis min-h-screen bg-[#FAFAFA] antialiased" style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
+      <div className="linkhoo-avis min-h-screen bg-[#FAFAFA] antialiased" style={{ fontFamily: 'Poppins' }}>
         <main className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
           <p className="text-sm text-red-600" role="alert">{error}</p>
           <button type="button" onClick={() => navigate(staysPath)} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#FF6A13] px-4 py-2.5 text-sm font-semibold text-white">
@@ -436,7 +436,7 @@ export default function LaisserAvisPage() {
   }
 
   return (
-    <div className="linkhoo-avis min-h-screen bg-[#FAFAFA] text-[#1B2A4A] antialiased" style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}>
+    <div className="linkhoo-avis min-h-screen bg-[#FAFAFA] text-[#1B2A4A] antialiased" style={{ fontFamily: 'Poppins' }}>
       {/* HEADER */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 h-14 lg:h-[72px] flex items-center justify-between">
@@ -445,13 +445,7 @@ export default function LaisserAvisPage() {
               <Ic d="m15 18-6-6 6-6" className="w-6 h-6" />
             </button>
             <Link to={homePath} className="flex items-center gap-2">
-              <span className="grid place-items-center w-9 h-9 rounded-lg bg-[#FF6A13] text-white">
-                <Ic d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" className="w-5 h-5" />
-              </span>
-              <span className="leading-none">
-                <span className="block text-2xl font-extrabold tracking-tight">Link<span className="text-[#FF6A13]">hoo</span></span>
-                <span className="hidden lg:block text-[11px] text-slate-500 mt-0.5">Des logements, des histoires</span>
-              </span>
+              <img src="/logo.jpg" alt="Logo" className="h-10" />
             </Link>
           </div>
           <nav className="hidden lg:flex items-center gap-9 text-sm font-medium">

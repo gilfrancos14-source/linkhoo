@@ -30,6 +30,25 @@ export function escapeHtml(value: string): string {
     .replaceAll("'", '&#39;');
 }
 
+/**
+ * CORRECTIF SÉCURITÉ : neutralise toute injection de header SMTP via CR/LF.
+ *
+ * Un `\r\n` dans le subject permettrait à un attaquant de fermer la ligne
+ * `Subject:` et d'injecter des headers arbitraires (`Bcc:`, `Reply-To:`)
+ * si le provider n'assainit pas lui-même. On refuse aussi les autres
+ * caractères de contrôle ASCII.
+ *
+ * Tronque à 200 caractères : un subject de contact n'a pas besoin d'être
+ * plus long, et Resend tronque de toute façon au-delà.
+ */
+function sanitizeHeaderValue(value: string): string {
+  return value
+    .replace(/[\r\n]+/g, ' ')
+    // eslint-disable-next-line no-control-regex -- volontaire : refus explicite des caractères de contrôle pour bloquer l'injection d'en-têtes documentée ci-dessus
+    .replace(/[\x00-\x1F\x7F]/g, '')
+    .slice(0, 200);
+}
+
 function row(label: string, value: string): string {
   if (!value) return '';
   return `<tr><td style="padding:6px 12px 6px 0;color:#5b6b7a;white-space:nowrap;">${escapeHtml(label)}</td><td style="padding:6px 0;color:#12263a;">${escapeHtml(value)}</td></tr>`;
@@ -44,7 +63,11 @@ export interface ContactEmail {
 export function buildContactEmail(input: ContactMessageInput): ContactEmail {
   const nomComplet = [input.nom, input.prenom].filter(Boolean).join(' ');
   const sujetLibelle = SUJET_LIBELLES[input.sujet] ?? SUJET_LIBELLES.autre;
-  const subject = `[Contact Linkhoo] ${input.pays} — ${sujetLibelle} — ${nomComplet}`;
+
+  // CORRECTIF : sanitize chaque champ user avant concaténation dans le subject.
+  const subject = sanitizeHeaderValue(
+    `[Contact Linkhoo] ${input.pays} — ${sujetLibelle} — ${nomComplet}`,
+  );
 
   const rows = [
     row('Nom', input.nom),

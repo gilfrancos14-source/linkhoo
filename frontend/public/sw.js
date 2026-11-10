@@ -54,6 +54,27 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
+  // --- Sécurité (cache-donnees-sensibles) : ne JAMAIS mettre en cache ---
+  // Ces réponses contiennent des données personnelles (profil, messages,
+  // paiements, PII). Le cache du SW survit à la déconnexion : ni écriture
+  // (cache.put) ni lecture (caches.match) sur ces chemins.
+  const SENSITIVE_PREFIXES = [
+    '/api/auth',
+    '/api/admin',
+    '/api/payments',
+    '/api/payouts',
+    '/api/pii',
+    '/api/promotion',
+    '/messages/',
+    '/rooms/',
+  ];
+  const isSensitive = SENSITIVE_PREFIXES.some((prefix) => url.pathname.startsWith(prefix));
+  if (isSensitive) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+
   // Stratégie : réseau d'abord, fallback cache
   // Pour les routes API et données, essayer le réseau en premier
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/messages/') || url.pathname.startsWith('/rooms/')) {
@@ -64,7 +85,7 @@ self.addEventListener('fetch', (event) => {
         caches.open(CACHE_NAME).then((cache) => {
           try {
             cache.put(event.request, cloned);
-          } catch (e) {
+          } catch {
             // Cache plein ou erreur — non bloquant
           }
         });
@@ -85,7 +106,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Pour les ressources statiques (CSS, JS, images, fonts) : cache-first
-  if (url.pathname.startsWith('/css/') || url.pathname.startsWith('/icons/') || url.pathname.startsWith('/images/') || url.pathname.match(\\.(png|jpg|jpeg|svg|webp|ico|ttf|woff|woff2)$)) {
+  if (url.pathname.startsWith('/css/') || url.pathname.startsWith('/icons/') || url.pathname.startsWith('/images/') || url.pathname.match(/\.(png|jpg|jpeg|svg|webp|ico|ttf|woff|woff2)$/)) {
     event.respondWith(
       caches.match(event.request).then((cached) => {
         if (cached) return cached;
@@ -94,7 +115,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => {
             try {
               cache.put(event.request, cloned);
-            } catch (e) {}
+            } catch {}
           });
           return response;
         }).catch(() => cached || offlineFallback(event.request));
@@ -110,7 +131,7 @@ self.addEventListener('fetch', (event) => {
       caches.open(CACHE_NAME).then((cache) => {
         try {
           cache.put(event.request, cloned);
-        } catch (e) {}
+        } catch {}
       });
       return response;
     }).catch(() => {
@@ -129,7 +150,7 @@ self.addEventListener('fetch', (event) => {
 /**
  * Retourne une page de fallback hors-ligne pour une ressource donnée.
  */
-function offlineFallback(request) {
+function offlineFallback(_request) {
   return new Response(
     '<!DOCTYPE html>\n<html lang="fr">\n<head>\n<meta charset="UTF-8">\n<title>Linkhoo — Hors-ligne</title>\n<link rel="manifest" href="/manifest.json">\n<style>\n  body {font-family: system-ui, sans-serif; padding: 40px; background: #f8faff; color: #0b1b3f;}\n  .container {max-width: 600px; margin: 0 auto;}\n  .offline {color: #ff5a14;}\n  a {color: #2f5bbf;}\n</style>\n</head>\n<body>\n<div class="container">\n<h1 class="offline">Hors-ligne</h1>\n<p>Vous êtes connecté en mode hors-ligne.<br/> Certaines fonctionnalités peuvent être limitées.</p>\n<p>Rechargez la page lorsque vous aurez de nouveau accès à Internet.</p>\n<div>\n<a href="/">Retour à l’accueil</a>\n</div>\n</div>\n</body>\n</html>',
     { headers: { 'Content-Type': 'text/html; charset=utf-8' } }

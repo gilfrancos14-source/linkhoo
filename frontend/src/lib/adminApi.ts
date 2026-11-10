@@ -161,6 +161,12 @@ export interface AdminStats {
     total: number;
     available: number;
     unavailable: number;
+    /** Répartition par marché. Absent tant que la migration 0037 n'est pas appliquée. */
+    byMarket?: Partial<Record<MarketCode, {
+      total: number;
+      available: number;
+      unavailable: number;
+    }>>;
   };
   reservations: {
     total: number;

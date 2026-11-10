@@ -7,7 +7,7 @@
 .premium-maq {
   background: #fafbfe;
   color: #0b1b3f;
-  font-family: "Inter Variable", system-ui, sans-serif;
+  font-family: "Poppins", system-ui, sans-serif;
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
@@ -15,10 +15,10 @@
 }
 
 /* Le shell gÃ©rant (.gerant-maq1) impose sa police et sa couleur : sur cette
-   page on conserve la typographie Inter de la maquette Premium. */
+   page on conserve la typographie Poppins de la maquette Premium. */
 .gerant-maq1.premium-maq {
   color: #0b1b3f;
-  font-family: "Inter Variable", system-ui, sans-serif;
+  font-family: "Poppins", system-ui, sans-serif;
 }
 
 /* Preflight Tailwind est dÃ©sactivÃ© globalement : reset scopÃ© pour retrouver

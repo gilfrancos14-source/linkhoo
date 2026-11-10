@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { apiFavorites, setAuthTokenGetter, type FavoriteRoomData } from '../lib/api';
+import { apiFavorites, type FavoriteRoomData } from '../lib/api';
 
 interface FavoritesContextValue {
   /** Identifiants des chambres favorites (test rapide du cœur). */
@@ -73,7 +73,6 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
     setLoading(true);
     try {
-      setAuthTokenGetter(() => getTokenRef.current());
       const loaded = await apiFavorites.list();
       setRooms(loaded);
       setIds(new Set(loaded.map((room) => room.id)));

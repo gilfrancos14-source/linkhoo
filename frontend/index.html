@@ -13,15 +13,8 @@
   <meta name="theme-color" content="#2563eb" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 
-  <!-- Polices Lato auto-hébergées (src/fonts.css) : aucune requête externe,
-       la typographie survit hors-ligne. -->
-
-  <!-- Polices auto-hébergées (src/fonts.css) : plus aucune requête tierce
-       bloquante vers Google Fonts ou un CDN. Les fichiers critiques sont
-       préchargés pour éviter le passage par la police de repli. -->
-  <link rel="preload" href="/fonts/lato-9.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="/fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="preload" href="/fonts/caveat-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <!-- Polices auto-hébergées via @fontsource/poppins (bundlé par Vite) :
+       aucune requête externe vers Google Fonts ou un CDN. -->
   <link rel="preload" href="/fonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin />
 
   <!-- LCP de l'accueil : le fond du hero (CSS) et l'<img> du hero de marché

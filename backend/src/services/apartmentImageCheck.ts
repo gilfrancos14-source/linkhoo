@@ -46,6 +46,17 @@ const WORKER_PATH = path.resolve(__dirname, '../../scripts/clipWorker.mjs');
 const CACHE_MAX = 100;
 const ALL_LABELS = [...clipLabels.positifs.map((p) => p.label), ...clipLabels.negatifs];
 
+/**
+ * CORRECTIF : validateurs de catégorie. Empêche un cast TS silencieux de
+ * laisser sortir une catégorie invalide (ex: faute de frappe dans
+ * `clipLabels.json` → `categorie: 'interior'` au lieu de `'interieur'`).
+ */
+const VALID_CATEGORIES: readonly ImageCategorie[] = ['interieur', 'facade', 'autre'];
+
+function isImageCategorie(value: unknown): value is ImageCategorie {
+  return typeof value === 'string' && (VALID_CATEGORIES as readonly string[]).includes(value);
+}
+
 let worker: ChildProcess | null = null;
 let pending = new Map<number, Pending>();
 let nextId = 1;
@@ -85,7 +96,12 @@ export function decideVerdict(scores: Score[]): ImageCheckVerdict {
     if (positif) {
       if (!meilleurPositif || s.score > meilleurPositif.score) {
         meilleurPositif = s;
-        categorie = positif.categorie as ImageCategorie;
+        // CORRECTIF : valide la catégorie avant assignation. Un `categorie`
+        // mal orthographié dans `clipLabels.positifs` ne peut plus sortir
+        // du type `ImageCategorie` par un cast invisible.
+        if (isImageCategorie(positif.categorie)) {
+          categorie = positif.categorie;
+        }
       }
     }
     if (clipLabels.negatifs.includes(s.label)) {
@@ -159,7 +175,11 @@ function spawnWorker(): ChildProcess {
   return child;
 }
 
-function sendToWorker(child: ChildProcess, payload: Record<string, unknown>, timeoutMs: number): Promise<Score[] | null> {
+function sendToWorker(
+  child: ChildProcess,
+  payload: Record<string, unknown>,
+  timeoutMs: number,
+): Promise<Score[] | null> {
   return new Promise((resolve, reject) => {
     const id = nextId++;
     const timer = setTimeout(() => {
@@ -171,13 +191,28 @@ function sendToWorker(child: ChildProcess, payload: Record<string, unknown>, tim
       reject(new ImageCheckUnavailableError('délai dépassé pendant la analyse'));
     }, timeoutMs);
     pending.set(id, { resolve, reject, timer });
-    child.send({ ...payload, id }, (err) => {
-      if (err && pending.has(id)) {
-        pending.delete(id);
-        clearTimeout(timer);
-        reject(new ImageCheckUnavailableError("envoi au worker CLIP impossible"));
-      }
-    });
+
+    // CORRECTIF : `child.send` peut throw de façon synchrone si le canal IPC
+    // est déjà fermé (race avec l'exit du worker). Sans ce try/catch, l'id
+    // reste dans `pending` jusqu'au timeout — leak mineur, et le Promise
+    // est rejeté par le throw du executor sans cleanup cohérent.
+    try {
+      child.send({ ...payload, id }, (err) => {
+        if (err && pending.has(id)) {
+          pending.delete(id);
+          clearTimeout(timer);
+          reject(new ImageCheckUnavailableError('envoi au worker CLIP impossible'));
+        }
+      });
+    } catch (err) {
+      pending.delete(id);
+      clearTimeout(timer);
+      reject(
+        new ImageCheckUnavailableError(
+          `envoi au worker CLIP impossible : ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      );
+    }
   });
 }
 

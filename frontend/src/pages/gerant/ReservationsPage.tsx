@@ -6,6 +6,7 @@ import { addClientNotification } from '../../lib/notifications';
 import { apiGerants, type GerantData } from '../../lib/api';
 import { priceWithCurrency } from '../../lib/roomDisplay';
 import { formatDate } from '../../lib/formatDate';
+import GerantSidebar from '../../components/gerant/GerantSidebar';
 
 interface VerifyState {
   reservation: Reservation;
@@ -145,19 +146,27 @@ export default function ReservationsPage() {
 
   if (loading) {
     return (
-      <div className="admin-page">
-        <div className="admin-page__header">
-          <h2>Gestion des réservations</h2>
+      <div className="flex min-h-screen">
+        <GerantSidebar />
+        <div className="min-w-0 flex-1">
+          <div className="admin-page">
+            <div className="admin-page__header">
+              <h2 className="dash-page-head">Gestion des réservations</h2>
+            </div>
+            <p>Chargement...</p>
+          </div>
         </div>
-        <p>Chargement...</p>
       </div>
     );
   }
 
   return (
-    <div className="admin-page">
+    <div className="flex min-h-screen">
+      <GerantSidebar />
+      <div className="min-w-0 flex-1">
+        <div className="admin-page">
       <div className="admin-page__header">
-        <h2>Gestion des réservations</h2>
+        <h2 className="dash-page-head">Gestion des réservations</h2>
         <span className="admin-page__subtitle">
           Montant cumulé (confirmées) : <strong>{priceWithCurrency(totalRevenu)}</strong>
         </span>
@@ -357,6 +366,8 @@ export default function ReservationsPage() {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 }
