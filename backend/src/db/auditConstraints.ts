@@ -22,10 +22,10 @@ interface NotValidConstraint {
 
 async function main(): Promise<void> {
   const fix = process.argv.slice(2).includes('--fix');
-  const connectionString = process.env.SUPABASE_DB_URL;
+  const connectionString = process.env.DATABASE_URL ?? process.env.SUPABASE_DB_URL;
 
   if (!connectionString) {
-    console.error('SUPABASE_DB_URL manquant : renseignez-le dans backend/.env');
+    console.error('DATABASE_URL manquant : renseignez-le dans backend/.env');
     process.exitCode = 1;
     return;
   }

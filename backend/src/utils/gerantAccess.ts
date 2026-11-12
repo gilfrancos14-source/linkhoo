@@ -21,5 +21,7 @@ export async function isQualifiedGerantUser(authUserId: string): Promise<boolean
     .select('is_verified')
     .eq('clerk_user_id', authUserId)
     .maybeSingle();
-  return isQualifiedGerant(gerant);
+  return isQualifiedGerant(
+    gerant as unknown as Parameters<typeof isQualifiedGerant>[0],
+  );
 }

@@ -9,7 +9,7 @@ import {
   destinationCreateSchema,
   destinationUpdateSchema,
 } from '../validations/tourism';
-import { partitionDestinations, upcomingEventCities, upcomingWindow } from '../utils/tourism';
+import { partitionDestinations, upcomingEventCities, upcomingWindow, type DestinationRecord } from '../utils/tourism';
 import { TOURISM_COLUMNS } from '../utils/selects';
 
 const router = Router();
@@ -48,8 +48,14 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     if (eventsResult.error) throw eventsResult.error;
     if (destinationsResult.error) throw destinationsResult.error;
 
-    const upcoming = upcomingEventCities(eventsResult.data ?? [], today);
-    const { big, small } = partitionDestinations(destinationsResult.data ?? [], upcoming);
+    const upcoming = upcomingEventCities(
+      (eventsResult.data ?? []) as unknown as { city: string; event_date: string }[],
+      today,
+    );
+    const { big, small } = partitionDestinations(
+      (destinationsResult.data ?? []) as unknown as DestinationRecord[],
+      upcoming,
+    );
     res.json({ big, small });
   } catch (err) {
     next(err);

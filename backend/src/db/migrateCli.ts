@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import path from 'node:path';
 import { Client } from 'pg';
+import { applyBootstrap } from './bootstrap';
 import { loadMigrations, migrationStatus, pendingGateLines, runMigrations } from './migrationRunner';
 import { dbIssues, snapshotFromRows, staticIssues, type MigrationIssue } from './migrationRules';
 
@@ -17,8 +18,9 @@ import { dbIssues, snapshotFromRows, staticIssues, type MigrationIssue } from '.
  *   --yes        exécution explicite : sans lui, une migration en attente
  *                n'est pas appliquée (rappel du snapshot à prendre d'abord).
  *
- * Connexion via SUPABASE_DB_URL (.env) : chaîne de connexion PostgreSQL du
- * pooler Supabase (port 6543, mode transaction), rôle `postgres`.
+ * Connexion via DATABASE_URL (.env) — ou SUPABASE_DB_URL en repli, pour ne pas
+ * casser les environnements Supabase existants. En local :
+ * postgresql://ilehya:ilehya_dev_password@localhost:5434/ilehya
  */
 
 const migrationsDir = path.resolve(__dirname, '../../supabase/migrations');
@@ -49,12 +51,12 @@ function report(issues: MigrationIssue[], label: string): boolean {
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  const connectionString = process.env.SUPABASE_DB_URL;
+  const connectionString = process.env.DATABASE_URL ?? process.env.SUPABASE_DB_URL;
 
   if (!connectionString) {
     console.error(
-      'SUPABASE_DB_URL manquant : renseignez la chaîne de connexion PostgreSQL ' +
-        'du pooler Supabase dans backend/.env',
+      'DATABASE_URL manquant : renseignez la chaîne de connexion PostgreSQL ' +
+        'dans backend/.env (SUPABASE_DB_URL reste accepté en repli)',
     );
     process.exitCode = 1;
     return;
@@ -102,6 +104,7 @@ async function main(): Promise<void> {
       }
     }
 
+    await applyBootstrap(client);
     const result = await runMigrations(client, migrationsDir, { baseline });
 
     for (const filename of result.skipped) {

@@ -49,7 +49,7 @@ async function loadRooms(): Promise<Room[]> {
     .select('id, title, price_num')
     .in('id', ROOM_IDS);
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as unknown as Room[];
 }
 
 async function pickClient(): Promise<{ id: string; email: string; name: string } | null> {

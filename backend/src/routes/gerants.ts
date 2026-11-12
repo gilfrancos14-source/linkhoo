@@ -222,7 +222,7 @@ router.post('/:id/documents', async (req: Request, res: Response, next: NextFunc
         .eq('id', existingDoc.id)
         .select(VERIFICATION_DOCUMENT_COLUMNS)
         .single();
-      data = result.data;
+      data = result.data as { file_path: string } | null;
       error = result.error;
     } else {
       const result = await supabaseAdmin
@@ -230,7 +230,7 @@ router.post('/:id/documents', async (req: Request, res: Response, next: NextFunc
         .insert(documentPayload)
         .select(VERIFICATION_DOCUMENT_COLUMNS)
         .single();
-      data = result.data;
+      data = result.data as { file_path: string } | null;
       error = result.error;
     }
     if (error) throw error;

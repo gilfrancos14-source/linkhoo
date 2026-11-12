@@ -22,12 +22,54 @@ async function importSupabaseConfig() {
   return import('./supabase');
 }
 
-describe('config/supabase', () => {
+describe('config/supabase — pilote PostgreSQL (défaut)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv('SUPABASE_URL', SUPABASE_URL);
     vi.stubEnv('SUPABASE_ANON_KEY', ANON_KEY);
     vi.stubEnv('SUPABASE_SERVICE_KEY', SERVICE_KEY);
+    vi.stubEnv('DATABASE_URL', 'postgresql://ilehya:secret@localhost:5432/ilehya');
+    vi.stubEnv('DB_DRIVER', 'postgres');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('n’instancie pas le client supabase-js', async () => {
+    const module = await importSupabaseConfig();
+
+    expect(createClientMock).not.toHaveBeenCalled();
+    expect(module.supabaseAdmin).toBeDefined();
+    expect(module.supabasePublic).toBeDefined();
+  });
+
+  it('expose la même surface que supabase-js : from, rpc et storage', async () => {
+    const module = await importSupabaseConfig();
+
+    expect(typeof module.supabaseAdmin.from).toBe('function');
+    expect(typeof module.supabaseAdmin.rpc).toBe('function');
+    expect(typeof module.supabaseAdmin.storage.from).toBe('function');
+    // Sans Supabase, les deux exports pointent sur le même adaptateur.
+    expect(module.supabasePublic).toBe(module.supabaseAdmin);
+  });
+
+  it('expose les buckets de stockage attendus', async () => {
+    const module = await importSupabaseConfig();
+
+    expect(() => module.supabaseAdmin.storage.from('images')).not.toThrow();
+    expect(() => module.supabaseAdmin.storage.from('verification-docs')).not.toThrow();
+    expect(() => module.supabaseAdmin.storage.from('inconnu')).toThrow();
+  });
+});
+
+describe('config/supabase — pilote Supabase (DB_DRIVER=supabase)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubEnv('SUPABASE_URL', SUPABASE_URL);
+    vi.stubEnv('SUPABASE_ANON_KEY', ANON_KEY);
+    vi.stubEnv('SUPABASE_SERVICE_KEY', SERVICE_KEY);
+    vi.stubEnv('DB_DRIVER', 'supabase');
   });
 
   afterEach(() => {

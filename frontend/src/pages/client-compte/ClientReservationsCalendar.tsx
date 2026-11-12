@@ -1,22 +1,11 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import type { ClientMineReservationData } from '../../lib/api';
-import { formatPrice } from '../../lib/roomDisplay';
-import { canPayReservation, paymentLabels } from '../../lib/reservations';
 
 // Icône inline (lucide) fidèle à la maquette.
 function Ic({ d, className = '' }: { d: string; className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={d} />
-    </svg>
-  );
-}
-
-function Icon({ id, className = '' }: { id: string; className?: string }) {
-  return (
-    <svg className={`ic ${className}`.trim()} aria-hidden="true">
-      <use href={`#cr-${id}`} />
     </svg>
   );
 }
@@ -36,24 +25,6 @@ function utcToIso(ts: number): string {
   return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
 }
 
-function isoToTs(iso: string): number {
-  const [year, month, day] = iso.split('-').map(Number);
-  return Date.UTC(year, month - 1, day);
-}
-
-function diffDays(fromIso: string, toIso: string): number {
-  return Math.round((isoToTs(toIso) - isoToTs(fromIso)) / DAY);
-}
-
-function formatShortDate(value: string): string {
-  if (!value) return '';
-  const [year, month, day] = value.split('-').map(Number);
-  if (!year || !month || !day) return value;
-  const date = new Date(year, month - 1, day);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
 const STATUT_COLORS: Record<string, string> = {
   confirmee: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   en_cours: 'bg-orange-100 text-orange-700 border-orange-200',
@@ -71,7 +42,7 @@ const STATUT_LABELS: Record<string, string> = {
 };
 
 function statutOf(r: ClientMineReservationData): string {
-  const s = (r.status || '').toLowerCase();
+  const s = (r.statut || '').toLowerCase();
   if (s.includes('annul')) return 'annulee';
   if (s.includes('confirm') || s.includes('paid')) return 'confirmee';
   if (s.includes('cours') || s.includes('progress')) return 'en_cours';
@@ -82,34 +53,13 @@ function statutOf(r: ClientMineReservationData): string {
 interface Props {
   reservations: ClientMineReservationData[];
   todayIso: string;
-  homePath: string;
-  cityLabel: string;
-  cancellingId: string | null;
-  payingId: string | null;
-  reviewedIds: Set<string | undefined>;
-  reviewable: ClientMineReservationData[];
-  reviewsError: boolean;
-  onCancel: (id: string) => void;
-  onOpenReviewForm: (reservation: ClientMineReservationData) => void;
-  onPay?: (reservation: ClientMineReservationData) => void;
 }
 
 
 export default function ClientReservationsCalendar({
   reservations,
   todayIso,
-  homePath,
-  cityLabel,
-  cancellingId,
-  payingId,
-  reviewedIds,
-  reviewable,
-  reviewsError,
-  onCancel,
-  onOpenReviewForm,
-  onPay,
 }: Props) {
-  const navigate = useNavigate();
   const today = new Date();
   const todayIsoLocal = isoOf(today);
   const effectiveTodayIso = todayIso || todayIsoLocal;
@@ -154,13 +104,6 @@ export default function ClientReservationsCalendar({
       return { startIso, endIso, days };
     });
   }, [gridStartTs, monthStartIso, monthEndIso, effectiveTodayIso, reservations]);
-
-  const monthReservations = useMemo(() => {
-    return reservations.filter((r) => {
-      if (!r.date_debut || !r.date_fin) return false;
-      return r.date_debut <= monthEndIso && r.date_fin >= monthStartIso && statutOf(r) !== 'annulee';
-    });
-  }, [reservations, monthStartIso, monthEndIso]);
 
   function changeMonth(offset: number) {
     setViewDate(new Date(Date.UTC(year, month + offset, 1)));

@@ -1,4 +1,3 @@
-import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabaseAdmin } from '../config/supabase';
 
 /**
@@ -11,23 +10,40 @@ import { supabaseAdmin } from '../config/supabase';
  * SELECT publique) ni les données sensibles (emails) — seule la survenue
  * d'un changement quitte le serveur, jamais son contenu.
  *
- * Deux publics de lecteurs, alignés sur les trois écrans qui consomment
- * les listes : admin (`/api/admin/notifications`), gérant
- * (`/api/notifications`) et client (`/api/notifications/client`).
+ * Depuis la migration PostgreSQL, Supabase Realtime n'existe plus : la
+ * publication devient un no-op. Le frontend interroge déjà les listes toutes
+ * les 30 s, aucun client n'écoute ces canaux. Les appels sont conservés pour
+ * ne pas modifier une dizaine de routes, et le pilote `DB_DRIVER=supabase`
+ * réactive l'ancien comportement (rollback).
  */
 export type NotificationAudience = 'admin' | 'gerant' | 'client';
 
-/** Canal par public, créé une seule fois puis réutilisé (abonnement partagé). */
-const channels = new Map<NotificationAudience, RealtimeChannel>();
+/** Sous-ensemble du canal Realtime réellement utilisé. */
+interface BroadcastChannel {
+  subscribe(): unknown;
+  send(payload: unknown): Promise<{ error?: unknown }> | unknown;
+}
 
-function channelFor(audience: NotificationAudience): RealtimeChannel | null {
+/** Canal par public, créé une seule fois puis réutilisé (abonnement partagé). */
+const channels = new Map<NotificationAudience, BroadcastChannel>();
+
+function realtimeEnabled(): boolean {
+  const client = supabaseAdmin as unknown as { channel?: unknown };
+  return typeof client.channel === 'function';
+}
+
+function channelFor(audience: NotificationAudience): BroadcastChannel | null {
+  if (!realtimeEnabled()) return null;
   try {
-    // Les doubles de test (createSupabaseMock) n'ont pas `channel` : pas de
-    // Realtime à publier, mais surtout jamais d'erreur dans les routes.
-    if (typeof supabaseAdmin.channel !== 'function') return null;
+    const client = supabaseAdmin as unknown as {
+      channel?: (name: string) => BroadcastChannel;
+    };
+    // Les doubles de test n'ont pas `channel` : pas de Realtime à publier,
+    // mais surtout jamais d'erreur dans les routes.
+    if (typeof client.channel !== 'function') return null;
     let channel = channels.get(audience);
     if (!channel) {
-      channel = supabaseAdmin.channel(`ilehya:notifications:${audience}`);
+      channel = client.channel(`ilehya:notifications:${audience}`);
       // L'abonnement est asynchrone : le premier envoi peut échouer tant que
       // la socket n'est pas jointe (les clients retombent alors sur le
       // polling 30 s en attendant l'événement suivant).

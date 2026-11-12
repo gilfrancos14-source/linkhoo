@@ -46,7 +46,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const favoriteRows = favorites ?? [];
     if (favoriteRows.length === 0) return res.json([]);
 
-    const roomIds = favoriteRows.map((row: { room_id: string }) => row.room_id);
+    const roomIds = favoriteRows.map((row) => row.room_id);
     const { data: rooms, error: roomsError } = await supabaseAdmin
       .from('rooms')
       .select(ROOM_COLUMNS)
@@ -56,9 +56,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     // L'ordre doit rester celui des favoris (created_at desc), pas celui de
     // la requête `rooms` qui n'a pas de ORDER BY.
     const roomsById = new Map(
-      (rooms ?? []).map((room: { id: string }) => [room.id, room]),
+      (rooms ?? []).map((room) => [room.id, room]),
     );
-    const items = favoriteRows.flatMap((favorite: { room_id: string; created_at: string }) => {
+    const items = favoriteRows.flatMap((favorite) => {
       const room = roomsById.get(favorite.room_id);
       return room ? [{ ...room, favorited_at: favorite.created_at }] : [];
     });

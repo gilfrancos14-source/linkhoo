@@ -14,7 +14,7 @@
  * `RANK_MAX_WINDOW`), interpalle, puis découpe la page demandée : le `count`
  * SQL (le vrai total) reste inchangé.
  *
- * V2 — QUAND : `SUPABASE_DB_URL` disponible ET (> 5 000 chambres par marché OU
+ * V2 — QUAND : `DATABASE_URL` disponible ET (> 5 000 chambres par marché OU
  * rotation quotidienne des positions exigée) → remplacer cet intercalage par la
  * RPC SQL `rooms_ranked(...)`, qui classe toute la page en base avec rotation
  * journalière (le paramètre `seed` n'existe volontairement pas ici).

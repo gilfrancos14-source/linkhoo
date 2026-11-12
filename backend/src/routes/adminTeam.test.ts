@@ -15,6 +15,11 @@ vi.hoisted(() => {
   process.env.ADMIN_JWT_SECRET = 'secret-de-test';
 });
 
+// bcrypt (12 tours) est CPU-bound : sur une machine chargée, la suite
+// complète en parallèle peut dépasser le délai par défaut de 5 s et faire
+// échouer des tests au simple titre de la contention CPU.
+vi.setConfig({ testTimeout: 20_000 });
+
 vi.mock('../config/supabase', async () => {
   const helper = await import('../testHelpers/supertestApp');
   return helper.createSupabaseMock();

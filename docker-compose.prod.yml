@@ -1,0 +1,94 @@
+# Production Ilehya — VPS LWS (4 vCPU / 8 Go, Ubuntu 24.04).
+#
+# Nginx et Certbot sont installés sur l'hôte (apt) : le renouvellement des
+# certificats et le montage de /var/www sont plus simples hors conteneur.
+# Ici : PostgreSQL 16 + l'API.
+#
+#   docker compose -f docker-compose.prod.yml up -d
+#   docker compose -f docker-compose.prod.yml run --rm api \
+#     node dist/db/migrateCli.js --yes
+#
+# Fichier d'environnement : backend/.env.prod (hors dépôt).
+
+name: ilehya
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ilehya-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ilehya}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?mot de passe PostgreSQL requis}
+      POSTGRES_DB: ${POSTGRES_DB:-ilehya}
+    # Aucun port exposé : PostgreSQL n'est joignable que depuis le réseau
+    # Docker. L'accès humain passe par `docker compose exec postgres psql`.
+    volumes:
+      - ilehya_pgdata:/var/lib/postgresql/data
+      - ./deploy/backup:/backup
+    command:
+      - postgres
+      - -c
+      - max_connections=100
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - effective_cache_size=2GB
+      - -c
+      - work_mem=8MB
+      - -c
+      - maintenance_work_mem=128MB
+      - -c
+      - wal_compression=on
+      - -c
+      - log_min_duration_statement=500
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ilehya} -d ${POSTGRES_DB:-ilehya}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    stop_grace_period: 30s
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: ilehya-backend:${IMAGE_TAG:-latest}
+    container_name: ilehya-api
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.prod
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      # La base est dans le réseau Docker : on parle au nom du service.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ilehya}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ilehya}
+      STORAGE_DIR: /app/storage
+    volumes:
+      - ilehya_storage:/app/storage
+      # Cache du modèle d'analyse d'images (CLIP) : évite de le retélécharger
+      # à chaque redéploiement.
+      - ilehya_clip_cache:/app/.cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Nginx (hôte) relaie /api vers le port publié sur 127.0.0.1.
+    ports:
+      - "127.0.0.1:3001:3001"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3001/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+volumes:
+  ilehya_pgdata:
+  ilehya_storage:
+  ilehya_clip_cache:

@@ -21,6 +21,7 @@ import newsletterRouter from './routes/newsletter';
 import contactRouter from './routes/contact';
 import notificationsRouter from './routes/notifications';
 import uploadRouter from './routes/upload';
+import mediaRouter from './routes/media';
 import gerantsRouter from './routes/gerants';
 import clientsRouter from './routes/clients';
 import favoritesRouter from './routes/favorites';
@@ -34,6 +35,7 @@ import authRouter from './routes/auth';
 import promotionRouter from './routes/promotionRoutes';
 import piiRouter from './routes/piiRoutes';
 import { startNotificationPurge } from './utils/notificationPurge';
+import { shutdownPool } from './db/pool';
 import { warmUpImageCheck } from './services/apartmentImageCheck';
 import { startPaymentJobs } from './payments/jobs';
 import pawapayWebhookRouter from './routes/pawapayWebhook';
@@ -57,6 +59,16 @@ for (const envVar of requiredEnvVars) {
     console.error(`[FATAL] Missing required environment variable: ${envVar}`);
     process.exit(1);
   }
+}
+
+// PostgreSQL est la base applicative : sans DATABASE_URL, toutes les routes
+// échoueraient une par une en 500. On arrête le process tout de suite.
+if ((process.env.DB_DRIVER ?? 'postgres') === 'postgres' && !process.env.DATABASE_URL) {
+  console.error(
+    '[FATAL] DATABASE_URL manquant : renseignez la chaîne de connexion PostgreSQL ' +
+      '(voir backend/.env.example).',
+  );
+  process.exit(1);
 }
 
 const app = express();
@@ -270,6 +282,7 @@ app.use('/api/newsletter', newsletterRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api/media', mediaRouter);
 app.use('/api/auth', requireClerkAuth, authLimiter, authRouter);
 app.use('/api/gerants', requireClerkAuth, gerantsRouter);
 app.use('/api/clients', requireClerkAuth, clientsRouter);
@@ -326,7 +339,11 @@ process.on('uncaughtException', (err) => {
 
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully...');
-  server.close(() => process.exit(0));
+  // On ferme le pool après l'arrêt du serveur HTTP : les écritures en cours
+  // (notification, paiement) sont écrites avant l'arrêt du process.
+  server.close(() => {
+    void shutdownPool().finally(() => process.exit(0));
+  });
 });
 
 process.on('SIGINT', () => {

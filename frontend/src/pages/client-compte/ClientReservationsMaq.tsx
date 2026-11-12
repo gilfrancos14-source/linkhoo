@@ -646,16 +646,6 @@ export default function ClientReservationsMaq({
                 <ClientReservationsCalendar
                   reservations={reservations}
                   todayIso={todayIso}
-                  homePath={homePath}
-                  cityLabel={cityLabel}
-                  cancellingId={cancellingId}
-                  payingId={payingId ?? null}
-                  reviewedIds={reviewedIds}
-                  reviewable={reviewable}
-                  reviewsError={reviewsError}
-                  onCancel={onCancel}
-                  onOpenReviewForm={onOpenReviewForm}
-                  onPay={onPay}
                 />
               </div>
             )}

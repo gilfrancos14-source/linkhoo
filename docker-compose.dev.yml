@@ -1,0 +1,36 @@
+# Environnement de développement : PostgreSQL 16.
+#
+# Volontairement séparé de `docker-compose.prod.yml` : en dev, le port est
+# exposé sur la machine hôte et les identifiants sont triviaux.
+#
+#   docker compose -f docker-compose.dev.yml up -d
+#   cd backend && npm run migrate -- --yes && npm run seed
+#
+# Port : 5434 (Postgres) car 5432/5433 sont souvent déjà occupés par un
+# PostgreSQL local.
+
+name: ilehya-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ilehya-dev-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ilehya
+      POSTGRES_PASSWORD: ilehya_dev_password
+      POSTGRES_DB: ilehya
+      # Collation stable : évite les surprises de tri entre machines.
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
+    ports:
+      - "5434:5432"
+    volumes:
+      - ilehya_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ilehya -d ilehya"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  ilehya_pgdata:

@@ -468,6 +468,12 @@ async function seedAdmin() {
     password_hash: await bcrypt.hash(password, 12),
     nom: (process.env.ADMIN_SEED_NOM || 'Linkhoo').trim(),
     prenom: (process.env.ADMIN_SEED_PRENOM || 'Admin').trim(),
+    // Le compte fondateur ouvre le back-office : la migration 0016 promeut
+    // les admins EXISTANTS en superadmin, mais elle est appliquée AVANT le
+    // seed. Sans ce drapeau, le compte créé par le seed n'aurait aucune
+    // permission (et personne pour les lui accorder).
+    is_superadmin: true,
+    permissions: [],
   });
   if (insertError) throw insertError;
   console.log(`  admin ${email} créé`);
