@@ -97,6 +97,37 @@ remboursement bloqué).
 au code (variables d'environnement uniquement). À garder pendant les premières
 semaines de production.
 
+## 5 bis. Règles de reversement aux gérants
+
+Deux règles décidées le 12/11/2026, appliquées par
+`backend/src/payments/commissions.ts` et `backend/src/payments/service/payout.ts`.
+
+**Commission** — elle dépend du statut du gérant, pas du marché :
+
+| Statut | Commission | Versé |
+|---|---|---|
+| Premium **et** vérifié | 5 % | 95 % |
+| Vérifié seulement | 10 % | 90 % |
+| Premium seul | 10 % | 90 % |
+| Ni premium ni vérifié | 15 % | 85 % |
+
+Le premium ne compte que s'il est actif (`premium_expires_at` non dépassée).
+
+Formule : `commission = brut × pourcentage`, puis
+`net = brut − commission − remboursement`. La plateforme prélève donc toujours
+sa part sur le montant **brut** payé par le client ; le reste revient au
+gérant, déduction faite des remboursements éventuels.
+
+**Versement** — l'argent n'est versé **qu'après la fin du séjour**, avec un
+délai de sécurité de 24 h (`payment_payouts.payout_delay_hours`, 24 par
+défaut dans `payment_policies`). Les deux chemins respectent la même règle :
+le reversement automatique de fin de séjour, et le retrait manuel demandé par
+le gérant (dont le montant provient du même calcul de solde).
+
+Le délai de 24 h existe pour couvrir la fenêtre d'annulation qui suit la fin
+d'un séjour : verser à l'instant exact de la fin obligerait à reprendre de
+l'argent au gérant.
+
 ## 6. Ce qui reste hors périmètre
 
 - Suppression de la couche de compatibilité (nettoyage progressif).
