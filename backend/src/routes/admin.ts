@@ -37,6 +37,7 @@ import { PaymentServiceError } from '../payments/errors';
 import { PawapayConfigError } from '../payments/pawapay/config';
 import { PawapayApiError } from '../payments/pawapay/client';
 import { payoutVerificationSchema } from '../validations/payments';
+import { listAdminPayouts, retryAdminPayout } from '../payments/service/payoutAdmin';
 import { z } from 'zod';
 
 const promoGroupSchema = z.object({
@@ -926,6 +927,55 @@ router.post(
         if (!sendRefundError(res, err)) throw err;
       }
     } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// ── Reversements aux gérants ──
+
+const adminPayoutsQuerySchema = z
+  .object({
+    scope: z
+      .enum(['all', 'attention', 'failed', 'scheduled', 'processing', 'paid'])
+      .optional(),
+    market: z.string().trim().min(2).max(8).optional(),
+    limit: z.coerce.number().int().min(1).max(200).optional(),
+  })
+  .strict();
+
+router.get(
+  '/payouts',
+  requireAdminAuth,
+  requirePermission('gerants'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const parsed = adminPayoutsQuerySchema.safeParse(req.query);
+      if (!parsed.success) return res.status(400).json({ error: 'Paramètres invalides' });
+
+      const result = await listAdminPayouts(parsed.data);
+      res.json({ items: result.items, counts: result.counts });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+router.post(
+  '/payouts/:id/retry',
+  requireAdminAuth,
+  requirePermission('gerants'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const parsedParams = idParamsSchema.safeParse(req.params);
+      if (!parsedParams.success) return res.status(400).json({ error: 'Identifiant invalide' });
+
+      const payout = await retryAdminPayout(parsedParams.data.id);
+      res.json({ payout });
+    } catch (err) {
+      if (err instanceof PaymentServiceError) {
+        return res.status(err.status).json({ error: err.message, code: err.code });
+      }
       next(err);
     }
   },

@@ -8,8 +8,8 @@ export default defineConfig({
     // d'analyse d'images) et touche bcrypt : sur une machine chargée, les
     // délais par défaut (5 s / 10 s) provoquent des timeouts qui n'ont rien
     // à voir avec un défaut du code.
-    testTimeout: 20_000,
-    hookTimeout: 60_000,
+    testTimeout: 30_000,
+    hookTimeout: 90_000,
     // 90 fichiers de test lancés en parallèle saturent le CPU et la mémoire :
     // les timeouts apparaissent par pure contention. 8 workers sur une
     // machine 4 cœurs est un meilleur compromis durée/stabilité.

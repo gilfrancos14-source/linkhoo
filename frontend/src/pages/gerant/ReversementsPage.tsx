@@ -338,6 +338,13 @@ export default function ReversementsPage() {
                   Crédité automatiquement par vos séjours terminés et payés en ligne.
                   Un séjour annulé ou remboursé ne crédite rien.
                 </p>
+                <p className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-[#F4F7FC] px-2.5 py-1 text-[11.5px] font-semibold text-[#5F7396]">
+                  Commission prélevée : {balance?.commission_percent ?? 0} %
+                  <span className="font-normal text-[#8A99B5]">
+                    (5 % si vous êtes premium et vérifié, 10 % si vous êtes
+                    vérifié, 15 % sinon)
+                  </span>
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

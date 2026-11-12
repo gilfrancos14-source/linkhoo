@@ -1,4 +1,4 @@
-import type { MarketCode } from './config/markets';
+﻿import type { MarketCode } from './config/markets';
 
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -6,8 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import App from './App';
 
-// Tous les stubs jsdom et l'état des mocks sont posés AVANT l'évaluation des
-// vi.mock : les factories de mock sont hoistées au-dessus des imports.
+// Tous les stubs jsdom et l'Ã©tat des mocks sont posÃ©s AVANT l'Ã©valuation des
+// vi.mock : les factories de mock sont hoistÃ©es au-dessus des imports.
 const mocks = vi.hoisted(() => {
   class IntersectionObserverStub {
     observe() {}
@@ -39,12 +39,12 @@ const mocks = vi.hoisted(() => {
   if (!Element.prototype.scrollTo) {
     Element.prototype.scrollTo = (() => {}) as typeof Element.prototype.scrollTo;
   }
-  // ScrollToTop de App.tsx appelle window.scrollTo : jsdom ne l'implémente
+  // ScrollToTop de App.tsx appelle window.scrollTo : jsdom ne l'implÃ©mente
   // pas proprement, on le remplace par un spy consultable.
   const scrollTo = vi.fn<(x?: number, y?: number) => void>();
   window.scrollTo = scrollTo as unknown as typeof window.scrollTo;
 
-  // Fabrique d'objets d'API auto-mochés : toute méthode appelée renvoie [] .
+  // Fabrique d'objets d'API auto-mochÃ©s : toute mÃ©thode appelÃ©e renvoie [] .
   const autoApi = () =>
     new Proxy<Record<string, unknown>>({}, {
       get(target, prop) {
@@ -171,8 +171,8 @@ vi.mock('./lib/notifications', () => ({
   addClientNotification: mocks.autoFn,
 }));
 
-// Les modules data/* sont mockés partiellement : les helpers purs
-// (formatEventDate, groupEventsByCity…) restent réels, seule l'API part.
+// Les modules data/* sont mockÃ©s partiellement : les helpers purs
+// (formatEventDate, groupEventsByCityâ€¦) restent rÃ©els, seule l'API part.
 vi.mock('./data/rooms', async (importOriginal) => {
   const original = await importOriginal<typeof import('./data/rooms')>();
   return {
@@ -187,7 +187,7 @@ vi.mock('./data/categories', async (importOriginal) => {
   return { ...original, fetchCategoriesByMarket: mocks.fetchCategoriesByMarket };
 });
 
-// --- Pages lazy remplacées par de légers doubles de test -------------------
+// --- Pages lazy remplacÃ©es par de lÃ©gers doubles de test -------------------
 vi.mock('./pages/ClientComptePage', () => ({
   default: () => <div data-testid="page-compte">Espace client (stub)</div>,
 }));
@@ -197,7 +197,7 @@ vi.mock('./pages/gerant/AdminLayout', async () => {
   return {
     default: () => (
       <div data-testid="gerant-layout">
-        <p>Espace gérant (stub)</p>
+        <p>Espace gÃ©rant (stub)</p>
         <Outlet />
       </div>
     ),
@@ -205,7 +205,7 @@ vi.mock('./pages/gerant/AdminLayout', async () => {
 });
 
 vi.mock('./pages/gerant/DashboardPage', () => ({
-  default: () => <div data-testid="gerant-dashboard">Tableau de bord gérant (stub)</div>,
+  default: () => <div data-testid="gerant-dashboard">Tableau de bord gÃ©rant (stub)</div>,
 }));
 
 vi.mock('./pages/admin/SuperAdminLayout', async () => {
@@ -236,7 +236,7 @@ vi.mock(
     }),
 );
 
-// Page qui plante au rendu : vérifie que l'ErrorBoundary de App.tsx absorbe.
+// Page qui plante au rendu : vÃ©rifie que l'ErrorBoundary de App.tsx absorbe.
 vi.mock('./pages/SearchResultsPage', () => ({
   default: () => {
     if (mocks.throwOnSearch) {
@@ -286,8 +286,8 @@ afterEach(() => {
   document.documentElement.removeAttribute('data-market');
 });
 
-describe('App — racine et marché', () => {
-  it("rend la landing accueil à la racine, avec header et footer", async () => {
+describe('App â€” racine et marchÃ©', () => {
+  it("rend la landing accueil Ã  la racine, avec header et footer", async () => {
     renderApp('/');
 
     expect(
@@ -302,7 +302,7 @@ describe('App — racine et marché', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent('/');
   });
 
-  it("redirige un segment de marché invalide vers la racine", async () => {
+  it("redirige un segment de marchÃ© invalide vers la racine", async () => {
     renderApp('/ch');
 
     await waitFor(() => expect(screen.getByTestId('pathname')).toHaveTextContent('/'));
@@ -314,7 +314,7 @@ describe('App — racine et marché', () => {
     ).toBeInTheDocument();
   });
 
-  it("redirige une URL inconnue hors marché vers la racine", async () => {
+  it("redirige une URL inconnue hors marchÃ© vers la racine", async () => {
     renderApp('/togo/quelque-part');
 
     await waitFor(() => expect(screen.getByTestId('pathname')).toHaveTextContent('/'));
@@ -326,22 +326,22 @@ describe('App — racine et marché', () => {
     ).toBeInTheDocument();
   });
 
-  it("rend la maquette React du marché sur l'accueil /ci", async () => {
+  it("rend la maquette React du marchÃ© sur l'accueil /ci", async () => {
     renderApp('/ci');
 
     expect(
       await screen.findByRole('heading', {
         level: 1,
-        name: /Trouvez le lieu idéal pour votre prochain séjour/,
+        name: /Trouvez le lieu idÃ©al pour votre prochain sÃ©jour/,
       }),
     ).toBeInTheDocument();
     expect(document.querySelector('.maquette-home')).toBeInTheDocument();
 
-    // La barre de navigation reste celle de la landing page, avec le menu du marché.
+    // La barre de navigation reste celle de la landing page, avec le menu du marchÃ©.
     expect(screen.getByRole('banner')).toBeInTheDocument();
     const nav = screen.getByRole('navigation', { name: 'Navigation principale' });
     expect(within(nav).getByRole('button', { name: 'Appartements' })).toBeInTheDocument();
-    expect(within(nav).getByRole('button', { name: 'Événements' })).toBeInTheDocument();
+    expect(within(nav).getByRole('button', { name: 'Ã‰vÃ©nements' })).toBeInTheDocument();
     expect(within(nav).getByRole('button', { name: 'Tourisme' })).toBeInTheDocument();
     expect(within(nav).getByRole('button', { name: 'Avis' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Mon espace' })).toHaveAttribute(
@@ -353,60 +353,60 @@ describe('App — racine et marché', () => {
     expect(document.documentElement.getAttribute('data-market')).toBe('CI');
   });
 
-  it("applique le thème BJ sur l'accueil /bj", async () => {
+  it("applique le thÃ¨me BJ sur l'accueil /bj", async () => {
     renderApp('/bj');
 
     expect(
       await screen.findByRole('heading', {
         level: 1,
-        name: 'Trouvez le lieu idéal pour votre prochain séjour',
+        name: 'Trouvez le lieu idÃ©al pour votre prochain sÃ©jour',
       }),
     ).toBeInTheDocument();
     expect(document.querySelector('.maquette-home')).toBeInTheDocument();
     expect(document.documentElement.getAttribute('data-market')).toBe('BJ');
   });
 
-  it("affiche la page 404 interne pour une route inconnue du marché", async () => {
+  it("affiche la page 404 interne pour une route inconnue du marchÃ©", async () => {
     renderApp('/ci/page-inconnue');
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Page introuvable' })).toBeInTheDocument();
     expect(screen.getByText('404')).toBeInTheDocument();
     expect(screen.getByRole('banner')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: "Retour à l'accueil" })).toHaveAttribute('href', '/ci');
+    expect(screen.getByRole('link', { name: "Retour Ã  l'accueil" })).toHaveAttribute('href', '/ci');
   });
 });
 
-describe('App — pages de contenu (intégration)', () => {
-  it("rend les mentions légales depuis /ci/mentions-legales", async () => {
+describe('App â€” pages de contenu (intÃ©gration)', () => {
+  it("rend les mentions lÃ©gales depuis /ci/mentions-legales", async () => {
     renderApp('/ci/mentions-legales');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Mentions légales' }),
+      await screen.findByRole('heading', { level: 1, name: 'Mentions lÃ©gales' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(8);
   });
 
-  it("rend la politique de confidentialité depuis /bj/politique-de-confidentialite", async () => {
+  it("rend la politique de confidentialitÃ© depuis /bj/politique-de-confidentialite", async () => {
     renderApp('/bj/politique-de-confidentialite');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Politique de confidentialité' }),
+      await screen.findByRole('heading', { level: 1, name: 'Politique de confidentialitÃ©' }),
     ).toBeInTheDocument();
     expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(11);
-    expect(screen.getByRole('link', { name: "← Retour à l'accueil" })).toHaveAttribute('href', '/bj');
+    expect(screen.getByRole('link', { name: "â† Retour Ã  l'accueil" })).toHaveAttribute('href', '/bj');
   });
 
-  it("rend la page À propos depuis /a-propos", async () => {
+  it("rend la page Ã€ propos depuis /a-propos", async () => {
     renderApp('/a-propos');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: /Notre mission/ }, { timeout: 5000 }),
+      await screen.findByRole('heading', { level: 1, name: /Notre mission/ }, { timeout: 20_000 }),
     ).toBeInTheDocument();
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
     expect(screen.getAllByRole('heading', { level: 2 })).toHaveLength(7);
-    expect(screen.getByRole('link', { name: 'Découvrir nos marchés' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'DÃ©couvrir nos marchÃ©s' })).toHaveAttribute(
       'href',
       '/#ou-louer',
     );
@@ -416,20 +416,20 @@ describe('App — pages de contenu (intégration)', () => {
     renderApp('/contact');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: /Une question/ }, { timeout: 5000 }),
+      await screen.findByRole('heading', { level: 1, name: /Une question/ }, { timeout: 20_000 }),
     ).toBeInTheDocument();
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Envoyer le message' })).toBeInTheDocument();
     expect(screen.getByLabelText(/Nom complet/)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2, name: 'Questions fréquentes' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Questions frÃ©quentes' })).toBeInTheDocument();
   });
 
   it("redirige /ci/contact vers /contact", async () => {
     renderApp('/ci/contact');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: /Une question/ }, { timeout: 5000 }),
+      await screen.findByRole('heading', { level: 1, name: /Une question/ }, { timeout: 20_000 }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('pathname')).toHaveTextContent('/contact');
   });
@@ -438,12 +438,12 @@ describe('App — pages de contenu (intégration)', () => {
     renderApp('/bj/a-propos');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: /Notre mission/ }, { timeout: 5000 }),
+      await screen.findByRole('heading', { level: 1, name: /Notre mission/ }, { timeout: 20_000 }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('pathname')).toHaveTextContent('/a-propos');
   });
 
-  it("rend la connexion client sur /ci/login sans chrome de marché", async () => {
+  it("rend la connexion client sur /ci/login sans chrome de marchÃ©", async () => {
     renderApp('/ci/login');
 
     expect(
@@ -454,7 +454,7 @@ describe('App — pages de contenu (intégration)', () => {
     expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
   });
 
-  it("propage le marché aux <Routes> imbriqués : /bj/login configure Clerk en bj", async () => {
+  it("propage le marchÃ© aux <Routes> imbriquÃ©s : /bj/login configure Clerk en bj", async () => {
     renderApp('/bj/login');
 
     await screen.findByRole('heading', { level: 1, name: 'Heureux de vous revoir' });
@@ -464,30 +464,30 @@ describe('App — pages de contenu (intégration)', () => {
     expect(signIn).toHaveAttribute('data-redirect', '/bj/compte');
   });
 
-  it("rend le suivi de réservation sur /ci/suivi-reservation avec le chrome", async () => {
+  it("rend le suivi de rÃ©servation sur /ci/suivi-reservation avec le chrome", async () => {
     renderApp('/ci/suivi-reservation');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Suivi de réservation' }),
+      await screen.findByRole('heading', { level: 1, name: 'Suivi de rÃ©servation' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('banner')).toBeInTheDocument();
-    // Le pied de page propose aussi un lien « Se connecter » : on se scope
-    // sur le conteneur de la page pour vérifier la cible marché.
+    // Le pied de page propose aussi un lien Â« Se connecter Â» : on se scope
+    // sur le conteneur de la page pour vÃ©rifier la cible marchÃ©.
     const page = within(screen.getByRole('main'));
     expect(page.getByRole('link', { name: 'Se connecter' })).toHaveAttribute('href', '/ci/login');
   });
 
-  it("rend la connexion gérant sur /ci/login/gerant", async () => {
+  it("rend la connexion gÃ©rant sur /ci/login/gerant", async () => {
     renderApp('/ci/login/gerant');
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Espace gérants' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Espace gÃ©rants' })).toBeInTheDocument();
     expect(screen.getByTestId('clerk-signin')).toHaveAttribute('data-path', '/ci/login/gerant');
     expect(screen.queryByRole('banner')).not.toBeInTheDocument();
   });
 });
 
-describe('App — guards client / gérant', () => {
-  it("redirige /ci/compte non connecté vers /ci/login", async () => {
+describe('App â€” guards client / gÃ©rant', () => {
+  it("redirige /ci/compte non connectÃ© vers /ci/login", async () => {
     renderApp('/ci/compte');
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Heureux de vous revoir' })).toBeInTheDocument();
@@ -495,14 +495,14 @@ describe('App — guards client / gérant', () => {
     expect(mocks.bootstrap).not.toHaveBeenCalled();
   });
 
-  it("redirige /bj/compte non connecté vers /bj/login", async () => {
+  it("redirige /bj/compte non connectÃ© vers /bj/login", async () => {
     renderApp('/bj/compte');
 
     await waitFor(() => expect(screen.getByTestId('pathname')).toHaveTextContent('/bj/login'));
     expect(screen.getByTestId('clerk-signin')).toHaveAttribute('data-path', '/bj/login');
   });
 
-  it("ouvre l'espace client pour un client connecté et bootstrape en bj", async () => {
+  it("ouvre l'espace client pour un client connectÃ© et bootstrape en bj", async () => {
     mocks.clerkSignedIn = true;
 
     renderApp('/bj/compte');
@@ -512,7 +512,7 @@ describe('App — guards client / gérant', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent('/bj/compte');
   });
 
-  it("bascule vers l'espace gérant quand le bootstrap renvoie un autre rôle", async () => {
+  it("bascule vers l'espace gÃ©rant quand le bootstrap renvoie un autre rÃ´le", async () => {
     mocks.clerkSignedIn = true;
     mocks.bootstrap.mockResolvedValue({ role: 'gerant', profile_role: 'gerant', clerk_role: 'gerant' });
 
@@ -524,15 +524,15 @@ describe('App — guards client / gérant', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent('/ci/gerant');
   });
 
-  it("redirige /ci/gerant non connecté vers /ci/login/gerant", async () => {
+  it("redirige /ci/gerant non connectÃ© vers /ci/login/gerant", async () => {
     renderApp('/ci/gerant');
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Espace gérants' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Espace gÃ©rants' })).toBeInTheDocument();
     expect(screen.getByTestId('pathname')).toHaveTextContent('/ci/login/gerant');
     expect(mocks.bootstrap).not.toHaveBeenCalled();
   });
 
-  it("ouvre l'espace gérant pour un gérant connecté", async () => {
+  it("ouvre l'espace gÃ©rant pour un gÃ©rant connectÃ©", async () => {
     mocks.clerkSignedIn = true;
     mocks.bootstrap.mockResolvedValue({ role: 'gerant', profile_role: 'gerant', clerk_role: 'gerant' });
 
@@ -544,7 +544,7 @@ describe('App — guards client / gérant', () => {
   });
 });
 
-describe('App — back-office admin', () => {
+describe('App â€” back-office admin', () => {
   it("rend la connexion admin racine sur /admin/login", async () => {
     renderApp('/admin/login');
 
@@ -555,8 +555,8 @@ describe('App — back-office admin', () => {
 
   it("redirige /admin sans session vers /admin/login", async () => {
     // Le cookie HttpOnly n'est pas lisible : le guard interroge /me et un 401
-    // déclenche la redirection.
-    mocks.adminGetMe.mockRejectedValue(new mocks.AdminUnauthorizedError('Session expirée'));
+    // dÃ©clenche la redirection.
+    mocks.adminGetMe.mockRejectedValue(new mocks.AdminUnauthorizedError('Session expirÃ©e'));
 
     renderApp('/admin');
 
@@ -565,7 +565,7 @@ describe('App — back-office admin', () => {
     expect(mocks.adminGetMe).toHaveBeenCalled();
   });
 
-  it("ouvre la console admin authentifiée sur /admin", async () => {
+  it("ouvre la console admin authentifiÃ©e sur /admin", async () => {
     mocks.getAdminToken.mockReturnValue('jwt-admin');
     mocks.adminGetMe.mockResolvedValue({ id: 'admin-1', email: 'admin@ilehya.ci' });
 
@@ -576,8 +576,8 @@ describe('App — back-office admin', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent('/admin');
   });
 
-  it("détecte le marché sur /bj/admin et redirige vers /bj/admin/login", async () => {
-    mocks.adminGetMe.mockRejectedValue(new mocks.AdminUnauthorizedError('Session expirée'));
+  it("dÃ©tecte le marchÃ© sur /bj/admin et redirige vers /bj/admin/login", async () => {
+    mocks.adminGetMe.mockRejectedValue(new mocks.AdminUnauthorizedError('Session expirÃ©e'));
 
     renderApp('/bj/admin');
 
@@ -587,8 +587,8 @@ describe('App — back-office admin', () => {
   });
 });
 
-describe('App — lazy, chrome et résilience', () => {
-  it("affiche le fallback Suspense puis la page lazy chargée", async () => {
+describe('App â€” lazy, chrome et rÃ©silience', () => {
+  it("affiche le fallback Suspense puis la page lazy chargÃ©e", async () => {
     renderApp('/ci/chambre/42');
 
     const fallbacks = await screen.findAllByText('Chargement...');
@@ -603,30 +603,30 @@ describe('App — lazy, chrome et résilience', () => {
     expect(screen.queryByText('Chargement...')).not.toBeInTheDocument();
   });
 
-  it("capture l'erreur d'une page qui plante et propose de réessayer", async () => {
+  it("capture l'erreur d'une page qui plante et propose de rÃ©essayer", async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     mocks.throwOnSearch = true;
 
     renderApp('/ci/recherche');
 
     expect(await screen.findByRole('heading', { name: 'Une erreur est survenue' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'RÃ©essayer' })).toBeInTheDocument();
     expect(screen.queryByRole('banner')).not.toBeInTheDocument();
 
     consoleError.mockRestore();
   });
 
-  it("ramène en haut de la page à chaque changement de route", async () => {
+  it("ramÃ¨ne en haut de la page Ã  chaque changement de route", async () => {
     renderApp('/ci/mentions-legales');
-    await screen.findByRole('heading', { level: 1, name: 'Mentions légales' });
+    await screen.findByRole('heading', { level: 1, name: 'Mentions lÃ©gales' });
 
     expect(mocks.scrollTo).toHaveBeenCalledWith(0, 0);
     const callsAfterMount = mocks.scrollTo.mock.calls.length;
 
-    await userEvent.click(screen.getByRole('link', { name: "← Retour à l'accueil" }));
+    await userEvent.click(screen.getByRole('link', { name: "â† Retour Ã  l'accueil" }));
     await screen.findByRole('heading', {
       level: 1,
-      name: /Trouvez le lieu idéal pour votre prochain séjour/,
+      name: /Trouvez le lieu idÃ©al pour votre prochain sÃ©jour/,
     });
 
     expect(mocks.scrollTo.mock.calls.length).toBeGreaterThan(callsAfterMount);
@@ -649,14 +649,14 @@ describe('App — lazy, chrome et résilience', () => {
 
     renderApp('/ci/messages/conv-1');
 
-    await screen.findByRole('main', undefined, { timeout: 5000 });
+    await screen.findByRole('main', undefined, { timeout: 20_000 });
     expect(screen.getByTestId('pathname')).toHaveTextContent('/ci/messages/conv-1');
-    // Seul le pied de page part : l'en-tête de navigation reste.
+    // Seul le pied de page part : l'en-tÃªte de navigation reste.
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
   });
 
-  it("masque le pied de page sur la boîte de réception des messages", async () => {
+  it("masque le pied de page sur la boÃ®te de rÃ©ception des messages", async () => {
     mocks.clerkSignedIn = true;
 
     renderApp('/ci/messages');
@@ -665,7 +665,7 @@ describe('App — lazy, chrome et résilience', () => {
       await screen.findByRole('heading', { level: 1, name: 'Mes messages' }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('pathname')).toHaveTextContent('/ci/messages');
-    // La page ne défile pas : seul le pied de page part, l'en-tête reste.
+    // La page ne dÃ©file pas : seul le pied de page part, l'en-tÃªte reste.
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.queryByRole('contentinfo')).not.toBeInTheDocument();
   });

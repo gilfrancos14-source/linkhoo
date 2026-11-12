@@ -796,6 +796,10 @@ export interface PayoutBalanceData {
   /** Déjà versé sur le compte du gérant. */
   paid: number;
   last_payout_at: string | null;
+  /** Commission prélevée sur les séjours, selon le statut du gérant. */
+  commission_percent: number;
+  /** Case de la grille : premium_verified | verified | premium | none. */
+  commission_tier: string;
 }
 
 export interface PayoutWithdrawalData {

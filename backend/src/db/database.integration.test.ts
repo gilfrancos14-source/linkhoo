@@ -1,33 +1,33 @@
-import { Client } from 'pg';
+﻿import { Client } from 'pg';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { supabaseAdmin } from '../config/supabase';
 import { closePool, query } from './pool';
 
 /**
- * Tests d'intégration du backend sur une VRAIE base PostgreSQL.
+ * Tests d'intÃ©gration du backend sur une VRAIE base PostgreSQL.
  *
- * Tout est regroupé dans un seul fichier : les tests d'intégration se
- * chevauchent (verrous, données partagées) et ne doivent pas tourner en
- * parallèle les uns des autres.
+ * Tout est regroupÃ© dans un seul fichier : les tests d'intÃ©gration se
+ * chevauchent (verrous, donnÃ©es partagÃ©es) et ne doivent pas tourner en
+ * parallÃ¨le les uns des autres.
  *
  * Contenu :
- *  1. adaptateur de compatibilité (CRUD, filtres, count, ressources
- *     imbriquées, formats de types) ;
- *  2. parcours de paiement (premium, réservation, remboursement) ;
- *  3. balayage des RPC utilisées par le backend ;
- *  4. intégrité des corps de fonctions SQL.
+ *  1. adaptateur de compatibilitÃ© (CRUD, filtres, count, ressources
+ *     imbriquÃ©es, formats de types) ;
+ *  2. parcours de paiement (premium, rÃ©servation, remboursement) ;
+ *  3. balayage des RPC utilisÃ©es par le backend ;
+ *  4. intÃ©gritÃ© des corps de fonctions SQL.
  *
- * Ils sont ignorés si DATABASE_URL n'est pas défini.
+ * Ils sont ignorÃ©s si DATABASE_URL n'est pas dÃ©fini.
  */
 
 const connectionString = process.env.DATABASE_URL;
 const describeIntegration = connectionString ? describe : describe.skip;
 
-// Chaque pool de test est limité : plusieurs fichiers ouverts en parallèle
-// satureraient les connexions du PostgreSQL de développement.
+// Chaque pool de test est limitÃ© : plusieurs fichiers ouverts en parallÃ¨le
+// satureraient les connexions du PostgreSQL de dÃ©veloppement.
 process.env.DATABASE_POOL_MAX ??= '4';
 
-vi.setConfig({ testTimeout: 30_000, hookTimeout: 60_000 });
+vi.setConfig({ testTimeout: 30_000, hookTimeout: 90_000 });
 
 const CLERK_ID = 'it_gerant_paiement';
 const GERANT_EMAIL = 'it-gerant-paiement@test.ci';
@@ -49,7 +49,7 @@ async function cleanUpPayments(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Adaptateur de compatibilité
+// 1. Adaptateur de compatibilitÃ©
 // ---------------------------------------------------------------------------
 
 describeIntegration('adaptateur PostgreSQL', () => {
@@ -60,7 +60,7 @@ describeIntegration('adaptateur PostgreSQL', () => {
     await query(
       `INSERT INTO reservations (id, client_name, client_email, room_id, room_title,
                                  date_debut, date_fin, montant, duree_nombre, duree_unite, statut)
-       VALUES ($1, 'Intégration', 'it@example.test', $2, 'Chambre test',
+       VALUES ($1, 'IntÃ©gration', 'it@example.test', $2, 'Chambre test',
                '2031-01-01', '2031-02-01', 12345, 1, 'mois', 'en_attente')`,
       [RESERVATION_ID, roomId],
     );
@@ -115,7 +115,7 @@ describeIntegration('adaptateur PostgreSQL', () => {
     expect(withOr?.length).toBeGreaterThan(0);
   });
 
-  it('insère, met à jour puis supprime avec RETURNING', async () => {
+  it('insÃ¨re, met Ã  jour puis supprime avec RETURNING', async () => {
     const inserted = await supabaseAdmin
       .from('reservations')
       .insert({
@@ -150,7 +150,7 @@ describeIntegration('adaptateur PostgreSQL', () => {
   it('applique upsert avec onConflict', async () => {
     const payload = {
       id: 'it-postgrest-room',
-      title: 'Chambre intégration',
+      title: 'Chambre intÃ©gration',
       market: 'CI',
       price_num: 100,
       price_unit: '/ mois',
@@ -181,7 +181,7 @@ describeIntegration('adaptateur PostgreSQL', () => {
     expect(maybe.data).toBeNull();
   });
 
-  it('rattache une ressource imbriquée (alias)', async () => {
+  it('rattache une ressource imbriquÃ©e (alias)', async () => {
     const { data, error } = await supabaseAdmin
       .from('reservations')
       .select('id, room_id, room:rooms(img, alt, description)')
@@ -193,7 +193,7 @@ describeIntegration('adaptateur PostgreSQL', () => {
     expect(Object.keys(row.room)).not.toContain('id');
   });
 
-  it('rattache une ressource imbriquée avec !inner', async () => {
+  it('rattache une ressource imbriquÃ©e avec !inner', async () => {
     const { data, error } = await supabaseAdmin
       .from('reservations')
       .select('*, rooms!inner(gerant_id, disponible)')
@@ -222,7 +222,7 @@ describeIntegration('adaptateur PostgreSQL', () => {
 
     const base = {
       p_id: id,
-      p_client_name: 'Intégration',
+      p_client_name: 'IntÃ©gration',
       p_client_email: 'it@example.test',
       p_client_phone: null,
       p_room_title: 'Chambre test',
@@ -265,7 +265,7 @@ describeIntegration('parcours de paiement', () => {
 
     await query(
       `INSERT INTO gerants (id, clerk_user_id, email, nom, prenom, market, is_premium)
-       VALUES (gen_random_uuid(), $1, $2, 'Intégration', 'Paiement', 'BJ', false)`,
+       VALUES (gen_random_uuid(), $1, $2, 'IntÃ©gration', 'Paiement', 'BJ', false)`,
       [CLERK_ID, GERANT_EMAIL],
     );
 
@@ -273,7 +273,7 @@ describeIntegration('parcours de paiement', () => {
       `INSERT INTO reservations (id, client_name, client_email, room_id, room_title,
                                  date_debut, date_fin, montant, duree_nombre, duree_unite,
                                  statut, payment_status)
-       VALUES ($1, 'Intégration', 'it@test.ci', $2, 'Chambre test',
+       VALUES ($1, 'IntÃ©gration', 'it@test.ci', $2, 'Chambre test',
                '2033-01-01', '2033-02-01', 5000, 1, 'mois', 'confirmee', 'pending')`,
       [RESERVATION_ID, roomId],
     );
@@ -283,7 +283,7 @@ describeIntegration('parcours de paiement', () => {
     await cleanUpPayments();
   });
 
-  it('active un abonnement premium et renvoie le marché', async () => {
+  it('active un abonnement premium et renvoie le marchÃ©', async () => {
     await query(
       `INSERT INTO payments (id, reference, purpose, provider, provider_payment_id, payer_type,
                              gerant_clerk_user_id, market, amount, currency, amount_xof, status, metadata)
@@ -303,7 +303,7 @@ describeIntegration('parcours de paiement', () => {
     expect(result.error).toBeNull();
     const row = (result.data as any[])[0];
     expect(row.already_claimed).toBe(false);
-    // La colonne qui manquait : sans elle, toute activation premium échouait.
+    // La colonne qui manquait : sans elle, toute activation premium Ã©chouait.
     expect(row.market).toBe('BJ');
     expect(row.gerant_clerk_user_id).toBe(CLERK_ID);
     expect(new Date(row.new_expires_at).getTime()).toBeGreaterThan(Date.now());
@@ -323,7 +323,7 @@ describeIntegration('parcours de paiement', () => {
     expect(payment.rows[0].fulfilled_at).toBeTruthy();
   });
 
-  it('ne prolonge pas l’abonnement quand le paiement est rejoué', async () => {
+  it('ne prolonge pas lâ€™abonnement quand le paiement est rejouÃ©', async () => {
     const before = await query<{ premium_expires_at: string }>(
       'SELECT premium_expires_at FROM gerants WHERE clerk_user_id = $1',
       [CLERK_ID],
@@ -347,7 +347,7 @@ describeIntegration('parcours de paiement', () => {
     expect(after.rows[0].premium_expires_at).toBe(before.rows[0].premium_expires_at);
   });
 
-  it('refuse un montant incohérent sur un paiement neuf', async () => {
+  it('refuse un montant incohÃ©rent sur un paiement neuf', async () => {
     const reference = 'PAY-ITMISMATCH0001';
     await query(
       `INSERT INTO payments (id, reference, purpose, provider, provider_payment_id, payer_type,
@@ -371,7 +371,7 @@ describeIntegration('parcours de paiement', () => {
     await query('DELETE FROM payments WHERE reference = $1', [reference]);
   });
 
-  it('marque la réservation payée quand le paiement est réclamé', async () => {
+  it('marque la rÃ©servation payÃ©e quand le paiement est rÃ©clamÃ©', async () => {
     await query(
       `INSERT INTO payments (id, reference, purpose, provider, provider_payment_id, payer_type,
                              reservation_id, gerant_clerk_user_id, market, amount, currency,
@@ -576,12 +576,12 @@ const PLUMBING_ERROR =
 
 describeIntegration('RPC du backend', () => {
   for (const testCase of RPC_CASES) {
-    it(`${testCase.name} s’exécute correctement`, async () => {
+    it(`${testCase.name} sâ€™exÃ©cute correctement`, async () => {
       const result = await supabaseAdmin.rpc(testCase.fn, testCase.args);
 
       if (result.error) {
-        // Une erreur de règle métier prouve que la fonction a été appelée :
-        // c'est un succès pour ce test. Seule une erreur de plomberie échoue.
+        // Une erreur de rÃ¨gle mÃ©tier prouve que la fonction a Ã©tÃ© appelÃ©e :
+        // c'est un succÃ¨s pour ce test. Seule une erreur de plomberie Ã©choue.
         expect(
           result.error.message,
           `erreur de plomberie sur ${testCase.fn} : ${result.error.message}`,
@@ -604,7 +604,7 @@ describeIntegration('RPC du backend', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 4. Intégrité des corps de fonctions SQL
+// 4. IntÃ©gritÃ© des corps de fonctions SQL
 // ---------------------------------------------------------------------------
 
 interface FunctionInfo {
@@ -623,7 +623,7 @@ function dummyValue(type: string): unknown {
   return 'x';
 }
 
-describeIntegration('intégrité des fonctions SQL', () => {
+describeIntegration('intÃ©gritÃ© des fonctions SQL', () => {
   let client: Client;
   let functions: FunctionInfo[] = [];
 
@@ -633,7 +633,7 @@ describeIntegration('intégrité des fonctions SQL', () => {
 
     // `information_schema.parameters` ignore les fonctions dont le type de
     // retour est une table : on passe par pg_proc (pronargs = nombre
-    // d'arguments ENTRANTS, proargnames aligné dessus).
+    // d'arguments ENTRANTS, proargnames alignÃ© dessus).
     const { rows } = await client.query<{
       name: string;
       pronargs: number;
@@ -679,7 +679,7 @@ describeIntegration('intégrité des fonctions SQL', () => {
     await closePool();
   });
 
-  it('exécute toutes les fonctions sans erreur de compilation', async () => {
+  it('exÃ©cute toutes les fonctions sans erreur de compilation', async () => {
     expect(functions.length).toBeGreaterThan(10);
 
     const broken: string[] = [];
@@ -704,10 +704,10 @@ describeIntegration('intégrité des fonctions SQL', () => {
         }
       }
     } finally {
-      // Tout ce qui a pu être écrit pendant le balayage est annulé.
+      // Tout ce qui a pu Ãªtre Ã©crit pendant le balayage est annulÃ©.
       await client.query('ROLLBACK').catch(() => undefined);
     }
 
-    expect(broken, `fonctions au corps cassé :\n${broken.join('\n')}`).toEqual([]);
+    expect(broken, `fonctions au corps cassÃ© :\n${broken.join('\n')}`).toEqual([]);
   });
 });

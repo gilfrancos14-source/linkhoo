@@ -58,6 +58,7 @@ const AdminEventsPage = lazy(() => import('./pages/admin/AdminEventsPage'));
 const AdminDestinationsPage = lazy(() => import('./pages/admin/AdminDestinationsPage'));
 const AdminEscapadesPage = lazy(() => import('./pages/admin/AdminEscapadesPage'));
 const AdminReservationsPage = lazy(() => import('./pages/admin/AdminReservationsPage'));
+const AdminPayoutsPage = lazy(() => import('./pages/admin/AdminPayoutsPage'));
 const AdminPromotionsPage = lazy(() => import('./pages/admin/AdminPromotionsPage'));
 const AdminEquipePage = lazy(() => import('./pages/admin/AdminEquipePage'));
 
@@ -91,6 +92,7 @@ const adminSectionRoutes = (
     }>
       <Route index element={<AdminDashboardPage />} />
       <Route path="reservations" element={<AdminReservationsPage />} />
+      <Route path="reversements" element={<AdminPayoutsPage />} />
       <Route path="mot-de-passe" element={<AdminChangePasswordPage />} />
       <Route path="gerants" element={<AdminGerantsPage />} />
       <Route path="banners" element={<AdminBannersPage />} />

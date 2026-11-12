@@ -4,8 +4,8 @@ import { configure } from '@testing-library/react';
 // Les routes lazy mettent parfois plus d'une seconde à se résoudre quand toute
 // la suite tourne en parallèle (transformation Vite + jsdom). Le défaut de
 // Testing Library (1 s) provoque des échecs intermittents sur les pages
-// chargées à la demande.
-configure({ asyncUtilTimeout: 5000 });
+// chargées à la demande : on laisse 15 s, le délai par test restant à 30 s.
+configure({ asyncUtilTimeout: 15_000 });
 
 // JSDOM n'implémente ni IntersectionObserver ni scrollTo : sans ces stubs,
 // tout render de page ou section lève.

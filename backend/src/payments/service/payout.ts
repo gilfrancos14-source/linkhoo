@@ -35,6 +35,7 @@ import {
 import { PaymentServiceError } from '../errors';
 import { fetchAllRows } from '../../utils/fetchAll';
 import { getPaymentPolicy } from '../policies';
+import { commissionPercentFor, commissionTierFor, COMMISSION_PERCENT_BY_TIER, type CommissionTier } from '../commissions';
 import { isPawapayProvider } from '../provider';
 import type { PayoutMethod, TransferStatus } from '../types';
 import type { PawapayCurrency } from '../pawapay/types';
@@ -48,7 +49,7 @@ export const PAYOUT_RECONCILE_MIN_AGE_MS = 10 * 60 * 1000;
 export const PAYOUT_UNCONFIRMED_RETRY_MS = 60 * 60 * 1000;
 
 export const PAYOUT_SETTINGS_COLUMNS =
-  'clerk_user_id, market, payout_method, payout_phone, payout_provider, payout_bank_code, payout_bank_name, payout_account_number, payout_holder_name, payout_verified_at';
+  'clerk_user_id, market, payout_method, payout_phone, payout_provider, payout_bank_code, payout_bank_name, payout_account_number, payout_holder_name, payout_verified_at, is_verified, is_premium, premium_expires_at';
 
 export interface PayoutSettings {
   clerk_user_id: string;
@@ -61,6 +62,10 @@ export interface PayoutSettings {
   payout_account_number: string | null;
   payout_holder_name: string | null;
   payout_verified_at: string | null;
+  /** Statuts qui déterminent la commission prélevée (cf. `payments/commissions`). */
+  is_verified: boolean | null;
+  is_premium: boolean | null;
+  premium_expires_at: string | null;
 }
 
 export interface PayoutSettingsInput {
@@ -401,14 +406,18 @@ export async function scheduleDuePayoutsPawapay(now: Date = new Date()): Promise
     );
     if (!dueAt || dueAt.getTime() > now.getTime()) continue;
 
+    const settings = settingsByGerant.get(gerantId);
+    // La commission dépend du statut du gérant (premium / vérifié), pas du
+    // marché : cf. `payments/commissions`.
+    const commissionPercent = commissionPercentFor(settings, now);
+
     const amounts = computePayoutAmounts({
       gross: Number(payment.amount),
-      commissionPercent: policy.commissionPercent,
+      commissionPercent,
       refunded: Number(reservation.refunded_amount ?? 0),
     });
     if (!amounts) continue;
 
-    const settings = settingsByGerant.get(gerantId);
     const destination = settings ? buildPawapayDestination(settings) : null;
     const verified = settings ? hasValidPawapayDestination(settings) : false;
     const destinationType: PayoutMethod = settings?.payout_method ?? 'mobile_money';
@@ -679,6 +688,10 @@ export interface GerantBalance {
   /** Montant déjà versé sur le compte du gérant. */
   readonly paid: number;
   readonly last_payout_at: string | null;
+  /** Commission prélevée sur ses séjours (selon son statut). */
+  readonly commission_percent: number;
+  /** Case de la grille de commission appliquée. */
+  readonly commission_tier: CommissionTier;
 }
 
 function toAmount(value: unknown): number {
@@ -720,7 +733,10 @@ interface BalancePayout {
  * jamais annulés. Les versements déjà créés (en cours ou payés) sont déduits :
  * le solde disponible ne peut donc pas être retiré deux fois.
  */
-export async function computeGerantBalance(clerkUserId: string): Promise<GerantBalance> {
+export async function computeGerantBalance(
+  clerkUserId: string,
+  now: Date = new Date(),
+): Promise<GerantBalance> {
   const settings = await getPayoutSettings(clerkUserId);
   const defaultCurrency = settings
     ? PAWAPAY_MARKETS[settings.market]?.currency ?? 'XOF'
@@ -740,6 +756,11 @@ export async function computeGerantBalance(clerkUserId: string): Promise<GerantB
   let earned = 0;
   let currency: string = defaultCurrency;
 
+  // La commission dépend du statut du gérant (premium / vérifié), pas du
+  // marché : elle est identique pour tous ses séjours.
+  const commissionTier = commissionTierFor(settings, now);
+  const commissionPercent = COMMISSION_PERCENT_BY_TIER[commissionTier];
+
   if (roomIds.length > 0) {
     const completions = await fetchAllRows<BalanceReservation>((from, to) =>
       supabaseAdmin
@@ -750,7 +771,7 @@ export async function computeGerantBalance(clerkUserId: string): Promise<GerantB
         .in('payment_status', ['paid', 'partially_refunded'])
         .not('payment_id', 'is', null)
         .not('date_fin', 'is', null)
-        .lt('date_fin', new Date().toISOString().slice(0, 10))
+        .lt('date_fin', now.toISOString().slice(0, 10))
         .order('id', { ascending: true })
         .range(from, to),
     );
@@ -770,7 +791,7 @@ export async function computeGerantBalance(clerkUserId: string): Promise<GerantB
         )
       : [];
     const paymentsById = new Map(payments.map((payment) => [payment.id, payment]));
-    const commissionByMarket = new Map<MarketCode, number>();
+    const policyByMarket = new Map<MarketCode, Awaited<ReturnType<typeof getPaymentPolicy>>>();
 
     for (const reservation of completions) {
       const payment = reservation.payment_id
@@ -780,15 +801,20 @@ export async function computeGerantBalance(clerkUserId: string): Promise<GerantB
 
       const room = reservation.room_id ? roomsById.get(reservation.room_id) : undefined;
       const market: MarketCode = room?.market ?? settings?.market ?? 'CI';
-      let percent = commissionByMarket.get(market);
-      if (percent === undefined) {
-        const policy = await getPaymentPolicy(market);
-        percent = policy.commissionPercent;
-        commissionByMarket.set(market, percent);
+
+      // Même règle que le reversement automatique : le séjour doit être
+      // terminé ET le délai de sécurité écoulé. Sans cela, le solde
+      // afficherait un montant retirable que le reversement ne créerait pas.
+      let policy = policyByMarket.get(market);
+      if (!policy) {
+        policy = await getPaymentPolicy(market);
+        policyByMarket.set(market, policy);
       }
+      const dueAt = payoutDueAt(reservation.date_fin, policy.payoutDelayHours);
+      if (!dueAt || dueAt.getTime() > now.getTime()) continue;
 
       const gross = toAmount(payment.amount);
-      const commission = Math.min(gross, Math.max(0, Math.round((gross * percent) / 100)));
+      const commission = Math.min(gross, Math.max(0, Math.round((gross * commissionPercent) / 100)));
       const refunded = Math.min(
         gross - commission,
         Math.max(0, toAmount(reservation.refunded_amount)),
@@ -832,6 +858,8 @@ export async function computeGerantBalance(clerkUserId: string): Promise<GerantB
     pending,
     paid,
     last_payout_at: lastPayoutAt,
+    commission_percent: commissionPercent,
+    commission_tier: commissionTier,
   };
 }
 

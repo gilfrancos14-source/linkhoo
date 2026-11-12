@@ -41,6 +41,14 @@ export default defineConfig({
     pool: 'vmThreads',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    // Les 84 fichiers lancés en parallèle saturent la machine : certains tests
+    // à minuterie (suggestions, debounce) dépassent alors le délai par défaut
+    // et échouent sans raison. 4 workers : plus lent mais stable (chaque
+    // worker jsdom consomme beaucoup de mémoire).
+    testTimeout: 30_000,
+    hookTimeout: 90_000,
+    maxWorkers: 4,
+    minWorkers: 1,
     coverage: {
       provider: 'v8',
       reporter: ['text-summary', 'text'],

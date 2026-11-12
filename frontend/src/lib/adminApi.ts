@@ -303,6 +303,63 @@ export interface AdminReservationsResponse {
   counts: AdminReservationCounts;
 }
 
+export type AdminPayoutStatus =
+  | 'scheduled'
+  | 'processing'
+  | 'paid'
+  | 'failed'
+  | 'canceled';
+
+export type AdminPayoutScope =
+  | 'all'
+  | 'attention'
+  | 'failed'
+  | 'scheduled'
+  | 'processing'
+  | 'paid';
+
+/** Ligne du panneau « Reversements aux gérants » (GET /api/admin/payouts). */
+export interface AdminPayout {
+  id: string;
+  reference: string;
+  reservation_id: string | null;
+  /** 'reservation' (fin de séjour) ou 'withdrawal' (demande du gérant). */
+  kind: string;
+  gerant_clerk_user_id: string;
+  gerant_email: string | null;
+  gerant_name: string | null;
+  market: string;
+  gross_amount: number;
+  commission_amount: number;
+  refunded_amount: number;
+  net_amount: number;
+  currency: string;
+  destination_type: string;
+  destination_phone: string | null;
+  destination_provider: string | null;
+  destination_holder_name: string | null;
+  status: AdminPayoutStatus;
+  scheduled_for: string;
+  paid_at: string | null;
+  failure_code: string | null;
+  failure_message: string | null;
+  requested_at: string | null;
+  created_at: string;
+}
+
+export interface AdminPayoutCounts {
+  total: number;
+  failed: number;
+  scheduled: number;
+  processing: number;
+  paid: number;
+}
+
+export interface AdminPayoutsResponse {
+  items: AdminPayout[];
+  counts: AdminPayoutCounts;
+}
+
 export type AdminRefundStatus =
   | 'requested'
   | 'processing'
@@ -498,6 +555,22 @@ export const apiAdmin = {
 
   syncRefund: (refundId: string) =>
     adminRequest<{ refund: AdminRefundSyncResult }>(`/admin/refunds/${refundId}/sync`, {
+      method: 'POST',
+    }),
+
+  /** Reversements aux gérants : ce qui est parti, en cours ou en échec. */
+  getPayouts: (params?: { scope?: AdminPayoutScope; market?: string; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.scope) searchParams.set('scope', params.scope);
+    if (params?.market) searchParams.set('market', params.market);
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    const qs = searchParams.toString();
+    return adminRequest<AdminPayoutsResponse>(`/admin/payouts${qs ? `?${qs}` : ''}`);
+  },
+
+  /** Remet un reversement en échec dans la file d'attente pawaPay. */
+  retryPayout: (payoutId: string) =>
+    adminRequest<{ payout: AdminPayout }>(`/admin/payouts/${payoutId}/retry`, {
       method: 'POST',
     }),
 

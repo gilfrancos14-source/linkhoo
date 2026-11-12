@@ -52,6 +52,10 @@ const SETTINGS: PayoutSettings = {
   payout_account_number: null,
   payout_holder_name: 'Awa Koné',
   payout_verified_at: '2026-10-01T00:00:00.000Z',
+  // Statuts de commission : vérifié seul → 10 %.
+  is_verified: true,
+  is_premium: false,
+  premium_expires_at: null,
 };
 
 function payoutRow(overrides: Partial<PayoutRow> = {}): PayoutRow {
@@ -227,7 +231,9 @@ describe('scheduleDuePayoutsPawapay', () => {
       expect.objectContaining({
         reservation_id: 'resa-1',
         gerant_clerk_user_id: 'user_gerant_1',
-        net_amount: 150_000,
+        // Gérant vérifié → 10 % de commission (15 000 sur 150 000).
+        commission_amount: 15_000,
+        net_amount: 135_000,
         currency: 'XOF',
         status: 'scheduled',
         failure_code: null,
@@ -511,6 +517,9 @@ describe('computeGerantBalance', () => {
       pending: 10_000,
       paid: 50_000,
       last_payout_at: '2026-10-10T00:00:00.000Z',
+      // Gérant vérifié seul → 10 %.
+      commission_percent: 10,
+      commission_tier: 'verified',
     });
   });
 
@@ -662,6 +671,6 @@ describe('requestWithdrawal', () => {
     );
     expect(result.payout).toBe(inserted);
     // 90 000 crédités, dont 40 000 en cours de retrait.
-    expect(result.balance).toMatchObject({ earned: 90_000, pending: 40_000, available: 50_000 });
+    expect(result.balance).toMatchObject({ earned: 81_000, pending: 40_000, available: 41_000 });
   });
 });
