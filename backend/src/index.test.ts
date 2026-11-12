@@ -104,7 +104,10 @@ beforeAll(async () => {
   const indexModule = await importIndex();
   app = indexModule.default;
   resetSupabaseMocks();
-}, 20000);
+  // Ce hook importe toute l'application Express : sous charge (suite complète,
+  // workers parallèles) l'import dépasse facilement 20 s. Le test reste isolé
+  // et rapide ; on laisse une marge confortable sans masquer un vrai blocage.
+}, 60000);
 
 afterAll(() => {
   vi.restoreAllMocks();
