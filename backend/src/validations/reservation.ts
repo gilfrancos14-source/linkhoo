@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { dateStringSchema, emailSchema, idSchema } from './common';
+import { dateStringSchema, emailSchema, idSchema, withoutPhoneNumber } from './common';
 import { paymentReferenceSchema } from './payments';
 import { computeDateFin, DUREE_MAX_MOIS, DUREE_MAX_NUIT, type DureeUnite } from '../utils/duration';
 
@@ -13,7 +13,8 @@ const phoneSchema = z
 
 export const reservationCreateSchema = z
   .object({
-    client_name: z.string().trim().min(1).max(200),
+    // Affiché dans les avis publics et aux gérants : pas de coordonnées.
+    client_name: withoutPhoneNumber(z.string().trim().min(1).max(200)),
     client_email: emailSchema,
     client_phone: phoneSchema,
     room_id: idSchema,

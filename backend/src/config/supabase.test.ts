@@ -34,10 +34,10 @@ describe('config/supabase', () => {
     vi.unstubAllEnvs();
   });
 
-  it('crée le client public avec la clé anon et sans persistance de session', async () => {
+  it('crée le client public avec la clé de service et sans persistance de session', async () => {
     await importSupabaseConfig();
 
-    expect(createClientMock).toHaveBeenCalledWith(SUPABASE_URL, ANON_KEY, {
+    expect(createClientMock).toHaveBeenCalledWith(SUPABASE_URL, SERVICE_KEY, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
   });
@@ -63,25 +63,28 @@ describe('config/supabase', () => {
     vi.stubEnv('SUPABASE_URL', '');
 
     await expect(importSupabaseConfig()).rejects.toThrow(
-      'SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_KEY are required',
+      'SUPABASE_URL and SUPABASE_SERVICE_KEY are required',
     );
     expect(createClientMock).not.toHaveBeenCalled();
   });
 
-  it('refuse de se monter sans SUPABASE_ANON_KEY', async () => {
+  it('se monte sans SUPABASE_ANON_KEY : la clé anon n’est plus utilisée', async () => {
     vi.stubEnv('SUPABASE_ANON_KEY', '');
 
-    await expect(importSupabaseConfig()).rejects.toThrow(
-      'SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_KEY are required',
-    );
-    expect(createClientMock).not.toHaveBeenCalled();
+    const module = await importSupabaseConfig();
+
+    expect(createClientMock).toHaveBeenCalledTimes(2);
+    expect(createClientMock).toHaveBeenNthCalledWith(1, SUPABASE_URL, SERVICE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    expect(module.supabasePublic).toBeDefined();
   });
 
   it('refuse de se monter sans SUPABASE_SERVICE_KEY', async () => {
     vi.stubEnv('SUPABASE_SERVICE_KEY', '');
 
     await expect(importSupabaseConfig()).rejects.toThrow(
-      'SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_KEY are required',
+      'SUPABASE_URL and SUPABASE_SERVICE_KEY are required',
     );
     expect(createClientMock).not.toHaveBeenCalled();
   });

@@ -51,10 +51,28 @@ describe('containsPhoneNumber', () => {
     expect(containsPhoneNumber('Téléphone : sur demande')).toBe(true);
   });
 
+  it('détecte un numéro écrit en toutes lettres', () => {
+    expect(containsPhoneNumber('zero sept zero sept zero sept zero sept zero sept')).toBe(true);
+    expect(
+      containsPhoneNumber('zéro six zéro sept douze trente-quatre cinquante-six'),
+    ).toBe(true);
+    expect(
+      containsPhoneNumber('zéro six, zéro sept, vingt-trois, quarante-cinq, soixante-sept, quatre-vingt-neuf'),
+    ).toBe(true);
+  });
+
+  it('détecte les lettres utilisées comme chiffres', () => {
+    expect(containsPhoneNumber('O7O7O7O7O7')).toBe(true);
+  });
+
   it('accepte les descriptions sans coordonnée', () => {
     expect(containsPhoneNumber('Un studio confortable au cœur de Cocody.')).toBe(false);
     expect(containsPhoneNumber('Loyer 150 000 FCFA, caution 1 mois.')).toBe(false);
     expect(containsPhoneNumber('Disponible à partir du 12-03-2026.')).toBe(false);
     expect(containsPhoneNumber('Rénové en 2024, 32 m².')).toBe(false);
+    expect(containsPhoneNumber('Il y a vingt chambres et trente lits.')).toBe(false);
+    expect(containsPhoneNumber('Un studio de deux pièces avec quatre-vingts mètres carrés.')).toBe(
+      false,
+    );
   });
 });

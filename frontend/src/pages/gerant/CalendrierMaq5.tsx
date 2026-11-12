@@ -359,7 +359,7 @@ export default function CalendrierMaq5() {
           <nav aria-label="Fil d’Ariane" className="mt-6 flex items-center gap-2 text-xs text-slate-500">
             <Link to={homePath} className="hover:text-navy">Accueil</Link><Icon id="right" className="i h-3 w-3" /><Link to={reservationsPath} className="hover:text-navy">Réservations</Link><Icon id="right" className="i h-3 w-3" /><span className="text-navy">Calendrier</span>
           </nav>
-          <h1 className="dash-page-head mt-3">Calendrier des réservations</h1>
+          <h1 className="dash-page-head dash-page-head--xl mt-3">Calendrier des réservations</h1>
           <p className="mt-1 text-sm text-slate-500">Visualisez la disponibilité de vos chambres et gérez vos réservations en un coup d’œil.</p>
 
           {(error || loading) && (

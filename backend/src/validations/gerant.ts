@@ -1,12 +1,13 @@
 import { z } from 'zod';
-import { marketSchema, emailSchema } from './common';
+import { marketSchema, emailSchema, optionalTextSafe, withoutPhoneNumber } from './common';
 
 export const gerantCreateSchema = z
   .object({
     clerk_user_id: z.string().trim().min(1).max(200),
     email: emailSchema,
-    nom: z.string().trim().max(100).optional().default(''),
-    prenom: z.string().trim().max(100).optional().default(''),
+    // Le nom du gérant est affiché sur la fiche publique de la chambre.
+    nom: optionalTextSafe(100),
+    prenom: optionalTextSafe(100),
     market: marketSchema,
   })
   .strict();
@@ -28,10 +29,10 @@ const isoDateSchema = z
 
 export const gerantUpdateSchema = z
   .object({
-    nom: z.string().trim().max(100).optional(),
-    prenom: z.string().trim().max(100).optional(),
+    nom: withoutPhoneNumber(z.string().trim().max(100)).optional(),
+    prenom: withoutPhoneNumber(z.string().trim().max(100)).optional(),
     phone: z.string().trim().max(20).optional(),
-    address: z.string().trim().max(300).optional(),
+    address: withoutPhoneNumber(z.string().trim().max(300)).optional(),
     date_of_birth: isoDateSchema.optional(),
     nationality: z.string().trim().min(1).max(100).optional(),
   })

@@ -34,6 +34,14 @@ describe('reservationCreateSchema', () => {
     expect(parsed.data.client_phone).toBe('');
   });
 
+  it('refuse un numéro écrit en lettres dans le nom du client', () => {
+    const parsed = reservationCreateSchema.safeParse({
+      ...validReservation,
+      client_name: 'zéro six zéro sept douze trente-quatre cinquante-six',
+    });
+    expect(parsed.success).toBe(false);
+  });
+
   it('refuse le champ message (retiré du produit : strict rejette l\'inconnu)', () => {
     const parsed = reservationCreateSchema.safeParse({
       ...validReservation,

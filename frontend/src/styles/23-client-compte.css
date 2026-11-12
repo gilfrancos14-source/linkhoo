@@ -1834,3 +1834,37 @@
     padding: 8px 12px;
   }
 }
+
+/* ── Bannière « Mes favoris » ──────────────────────────────────────────────
+   Le dégradé et le texte blanc sont définis ici plutôt qu'avec des
+   utilitaires Tailwind : ils restent ainsi visibles même si le fichier n'est
+   pas couvert par le `content` de la config Tailwind. */
+.cdash-maq .favorites-hero {
+  background-image: linear-gradient(90deg, #9333ea 0%, #ec4899 50%, #f43f5e 100%);
+  color: #fff;
+}
+
+.cdash-maq .favorites-hero__title {
+  color: #fff;
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+}
+
+.cdash-maq .favorites-hero__subtitle {
+  margin-bottom: 1.5rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.125rem;
+  line-height: 1.75rem;
+}
+
+@media (min-width: 768px) {
+  .cdash-maq .favorites-hero__title {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+  }
+
+  .cdash-maq .favorites-hero__subtitle {
+    font-size: 1.25rem;
+  }
+}

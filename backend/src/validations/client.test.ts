@@ -67,6 +67,16 @@ describe('clientCreateSchema', () => {
     expect(clientCreateSchema.safeParse({ ...validClient, prenom: 'x'.repeat(101) }).success).toBe(false);
   });
 
+  it('refuse un numéro écrit en lettres dans nom ou prénom', () => {
+    const numeroEnLettres = 'zéro six zéro sept douze trente-quatre cinquante-six';
+    expect(clientCreateSchema.safeParse({ ...validClient, nom: numeroEnLettres }).success).toBe(
+      false,
+    );
+    expect(clientCreateSchema.safeParse({ ...validClient, prenom: numeroEnLettres }).success).toBe(
+      false,
+    );
+  });
+
   it('contrôle le format du téléphone', () => {
     expect(clientCreateSchema.safeParse({ ...validClient, telephone: '' }).success).toBe(true);
     expect(clientCreateSchema.safeParse({ ...validClient, telephone: '+2250700000000' }).success).toBe(true);
@@ -118,6 +128,12 @@ describe('clientUpdateSchema', () => {
   it('limite nom et prénom à 100 caractères', () => {
     expect(clientUpdateSchema.safeParse({ nom: 'x'.repeat(101) }).success).toBe(false);
     expect(clientUpdateSchema.safeParse({ prenom: 'x'.repeat(101) }).success).toBe(false);
+  });
+
+  it('refuse un numéro écrit en lettres dans nom ou prénom', () => {
+    const numeroEnLettres = 'zéro six zéro sept douze trente-quatre cinquante-six';
+    expect(clientUpdateSchema.safeParse({ nom: numeroEnLettres }).success).toBe(false);
+    expect(clientUpdateSchema.safeParse({ prenom: numeroEnLettres }).success).toBe(false);
   });
 
   it('contrôle uniquement la longueur du téléphone (pas de format)', () => {

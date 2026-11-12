@@ -8,6 +8,7 @@ import { canPayReservation, paymentLabels } from '../../lib/reservations';
 import { formatPrice } from '../../lib/roomDisplay';
 import ReviewForm from './ReviewForm';
 import type { ReviewFormState } from './types';
+import ClientReservationsCalendar from './ClientReservationsCalendar';
 import ClientSidebar from '../../components/client/ClientSidebar';
 
 /**
@@ -171,6 +172,7 @@ export default function ClientReservationsMaq({
   const [periode, setPeriode] = useState('toutes');
   const [ville, setVille] = useState('');
   const [statutFilter, setStatutFilter] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
   const profilePath = `${homePath}/compte?view=profile`;
   const staysPath = `${homePath}/compte?view=stays`;
@@ -465,7 +467,26 @@ export default function ClientReservationsMaq({
               </button>
             </div>
 
+            {/* Toggle liste / calendrier */}
+            <div className="mt-[18px] flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`btn${viewMode === 'list' ? ' o' : ''}`}
+              >
+                <Icon id="list" className="!h-4 !w-4" /> Liste
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('calendar')}
+                className={`btn${viewMode === 'calendar' ? ' o' : ''}`}
+              >
+                <Icon id="cal" className="!h-4 !w-4" /> Calendrier
+              </button>
+            </div>
+
             {/* Liste */}
+            {viewMode === 'list' && (
             <div className="mt-[21px] space-y-[10px]">
               {loading ? (
                 <div className="card px-5 py-10 text-center text-[13px] text-[#5f86d1]">
@@ -618,6 +639,26 @@ export default function ClientReservationsMaq({
                 })
               )}
             </div>
+            )}
+
+            {viewMode === 'calendar' && (
+              <div className="mt-[21px]">
+                <ClientReservationsCalendar
+                  reservations={reservations}
+                  todayIso={todayIso}
+                  homePath={homePath}
+                  cityLabel={cityLabel}
+                  cancellingId={cancellingId}
+                  payingId={payingId ?? null}
+                  reviewedIds={reviewedIds}
+                  reviewable={reviewable}
+                  reviewsError={reviewsError}
+                  onCancel={onCancel}
+                  onOpenReviewForm={onOpenReviewForm}
+                  onPay={onPay}
+                />
+              </div>
+            )}
 
             {!reviewsError && reviewable.length > 0 && !reviewForm && (
               <p className="mt-4 flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-4 py-2.5 text-[12px] text-[#2f5bbf]">

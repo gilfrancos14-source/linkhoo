@@ -817,6 +817,22 @@
   margin-bottom: 2px;
 }
 
+/* Titres de page mis en avant (accueil gérant, « Mes chambres ») : plus
+   grands et plus gras. Spécificité doublée pour primer sur `.dash-page-head`
+   sans toucher aux autres titres de page. */
+.dash-page-head.dash-page-head--xl {
+  font-size: 40px;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 760px) {
+  .dash-page-head.dash-page-head--xl {
+    font-size: 32px;
+  }
+}
+
 .dash-page-head p {
   margin: 4px 0 0;
   color: var(--admin-ink-soft);

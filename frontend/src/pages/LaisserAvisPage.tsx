@@ -427,9 +427,6 @@ export default function LaisserAvisPage() {
       <div className="linkhoo-avis min-h-screen bg-[#FAFAFA] antialiased" style={{ fontFamily: 'Poppins' }}>
         <main className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
           <p className="text-sm text-red-600" role="alert">{error}</p>
-          <button type="button" onClick={() => navigate(staysPath)} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#FF6A13] px-4 py-2.5 text-sm font-semibold text-white">
-            Retour à mes réservations
-          </button>
         </main>
       </div>
     );
@@ -441,9 +438,8 @@ export default function LaisserAvisPage() {
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 h-14 lg:h-[72px] flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => navigate(-1)} className="lg:hidden p-1 -ml-1" aria-label="Retour">
               <Ic d="m15 18-6-6 6-6" className="w-6 h-6" />
-            </button>
+          </div>
             <Link to={homePath} className="flex items-center gap-2">
               <img src="/logo.jpg" alt="Logo" className="h-10" />
             </Link>
@@ -473,7 +469,6 @@ export default function LaisserAvisPage() {
             <Link to={favoritesPath} aria-label="Favoris"><Ic d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" className="w-6 h-6" /></Link>
             <Link to={messagesPath} aria-label="Messages"><Ic d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" className="w-6 h-6" /></Link>
           </div>
-        </div>
       </header>
 
       <main className="max-w-7xl mx-auto lg:px-8 pb-40 lg:pb-0">
@@ -699,9 +694,7 @@ export default function LaisserAvisPage() {
                     <p className="text-sm text-slate-600">{blockedReason}</p>
                   </div>
                 )}
-                <Link to={staysPath} className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-[#2f5bbf]">
-                  ← Retour à mes réservations
-                </Link>
+
               </section>
             )}
 
@@ -739,16 +732,10 @@ export default function LaisserAvisPage() {
                     )}
                     <ReviewPhotos photos={reservationPhotos} />
                   </div>
-                  <Link to={staysPath} className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-[#2f5bbf]">
-                    ← Retour à mes réservations
-                  </Link>
                 </div>
               ) : (
                 <div className="mt-3 rounded-xl border border-slate-100 p-4">
                   <p className="text-sm text-slate-600">{blockedReason}</p>
-                  <Link to={staysPath} className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-[#2f5bbf]">
-                    ← Retour à mes réservations
-                  </Link>
                 </div>
               )}
             </section>
@@ -820,9 +807,6 @@ export default function LaisserAvisPage() {
           </section>
         </div>
 
-        <button type="button" onClick={() => navigate(staysPath)} className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-[#2f5bbf]">
-          ← Retour à mes réservations
-        </button>
       </main>
 
       <div className="linkhoo-avis__footer">

@@ -39,8 +39,14 @@ export const optionalText = (max: number) => z.string().trim().max(max).optional
  * téléphoniques sont refusées, le contact passe par la messagerie de la
  * plateforme (profil gérant pour le téléphone vérifié).
  */
-export const withoutPhoneNumber = <T extends z.ZodString>(schema: T) =>
-  schema.refine((value) => !containsPhoneNumber(value), { message: PHONE_IN_TEXT_ERROR });
+export const withoutPhoneNumber = <T extends z.ZodTypeAny>(schema: T) =>
+  schema.refine((value) => !containsPhoneNumber(String(value ?? '')), {
+    message: PHONE_IN_TEXT_ERROR,
+  });
+
+/** Champ texte optionnel protégé contre les coordonnées hors plateforme. */
+export const optionalTextSafe = (max: number) =>
+  withoutPhoneNumber(z.string().trim().max(max)).optional().default('');
 
 export const marketQuerySchema = z.object({
   market: marketSchema.optional(),

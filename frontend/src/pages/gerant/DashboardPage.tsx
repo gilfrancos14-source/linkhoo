@@ -274,7 +274,7 @@ export default function DashboardPage() {
 
           <div className="mt-6 flex flex-wrap items-start justify-between gap-2">
             <div>
-              <h1 className="dash-page-head">Bonjour {firstName} 👋</h1>
+              <h1 className="dash-page-head dash-page-head--xl">Bonjour {firstName} 👋</h1>
               <p className="mt-1 text-sm text-slate-500">Voici un aperçu de votre activité sur HabiCI.</p>
             </div>
             <div className="text-right text-xs text-slate-500">

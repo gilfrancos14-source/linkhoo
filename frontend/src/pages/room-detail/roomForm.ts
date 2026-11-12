@@ -1,4 +1,4 @@
-import { isValidEmail } from '../../utils/validators';
+import { containsPhoneNumber, isValidEmail, PHONE_IN_TEXT_ERROR } from '../../utils/validators';
 import {
   DUREE_MAX_NUIT,
   isValidDateStr,
@@ -37,6 +37,9 @@ export function validateForm(
 ): FormErrors {
   const errors: FormErrors = {};
   if (!data.name.trim()) errors.name = 'Veuillez renseigner votre nom.';
+  // Le nom est repris dans les avis publics et chez le gérant : il ne doit pas
+  // devenir un canal de contact hors plateforme.
+  else if (containsPhoneNumber(data.name)) errors.name = PHONE_IN_TEXT_ERROR;
   if (!data.email.trim()) {
     errors.email = 'Veuillez renseigner votre email.';
   } else if (!isValidEmail(data.email)) {

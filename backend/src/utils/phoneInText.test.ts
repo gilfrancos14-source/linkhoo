@@ -48,8 +48,38 @@ describe('containsPhoneNumber — heuristiques', () => {
     ).toBe(true);
   });
 
+  it('détecte un numéro dicté avec des dizaines composées', () => {
+    expect(
+      containsPhoneNumber('zéro six zéro sept douze trente-quatre cinquante-six'),
+    ).toBe(true);
+    expect(
+      containsPhoneNumber('zéro six, zéro sept, vingt-trois, quarante-cinq, soixante-sept, quatre-vingt-neuf'),
+    ).toBe(true);
+  });
+
+  it('détecte un numéro dicté chiffre par chiffre', () => {
+    expect(containsPhoneNumber('zero six zero sept un deux trois quatre cinq six')).toBe(true);
+  });
+
+  it('détecte les formes soixante et onze et quatre-vingt-dix-neuf', () => {
+    expect(
+      containsPhoneNumber('zéro six zéro sept douze quatre-vingt-dix-neuf soixante et onze'),
+    ).toBe(true);
+  });
+
+  it('attribue la raison « number_words » aux nombres en lettres', () => {
+    expect(
+      detectOffPlatformContact('zéro six, zéro sept, douze, trente-quatre, cinquante-six').reasons,
+    ).toContain('number_words');
+  });
+
   it("ne transforme pas une courte suite de nombres en numéro", () => {
     expect(containsPhoneNumber('il a dit zero sept')).toBe(false);
+    expect(containsPhoneNumber('Il y a vingt chambres et trente lits.')).toBe(false);
+    expect(containsPhoneNumber('Ouvert sept jours sur sept.')).toBe(false);
+    expect(containsPhoneNumber('Un studio de deux pièces avec quatre-vingts mètres carrés.')).toBe(
+      false,
+    );
   });
 
   it('détecte les lettres utilisées comme chiffres (leet)', () => {

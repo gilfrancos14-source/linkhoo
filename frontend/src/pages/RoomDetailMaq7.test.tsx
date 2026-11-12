@@ -300,6 +300,10 @@ function fillReservationForm(container: HTMLElement) {
 }
 
 describe('RoomDetailMaq7 — réservation', () => {
+  beforeEach(() => {
+    mocks.clerk = { isLoaded: true, isSignedIn: true, user: { firstName: 'Jean', lastName: 'Koffi', primaryEmailAddress: { emailAddress: 'jean@test.com' } } };
+  });
+
   it('envoie les champs du projet à addReservation', async () => {
     const { container } = await renderLoaded();
 

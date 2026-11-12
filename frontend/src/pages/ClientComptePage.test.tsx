@@ -352,7 +352,7 @@ describe('ClientComptePage — vues', () => {
 
     fireEvent.click(screen.getByRole('link', { name: 'Mon profil' }));
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Mon profil' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Mes informations' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Mon profil' })).toHaveAttribute('aria-current', 'page');
     expect(document.querySelector('.rs')).toBeNull();
   });

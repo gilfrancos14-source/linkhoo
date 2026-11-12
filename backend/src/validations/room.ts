@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { dateStringSchema, marketSchema, optionalText, withoutPhoneNumber } from './common';
+import { dateStringSchema, marketSchema, optionalTextSafe, withoutPhoneNumber } from './common';
 
 const SUPABASE_PUBLIC_IMAGE_RE =
   /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/images\/[A-Za-z0-9._~-]+(?:\/[A-Za-z0-9._~-]+)*$/;
@@ -16,22 +16,22 @@ const imageUrlSchema = z
 
 export const roomCreateSchema = z
   .object({
-    title: z.string().trim().min(1).max(200),
-    subtitle: optionalText(300),
-    info: optionalText(300),
+    title: withoutPhoneNumber(z.string().trim().min(1).max(200)),
+    subtitle: optionalTextSafe(300),
+    info: optionalTextSafe(300),
     price: z.string().trim().min(1).max(50),
     price_num: z.number().int().positive().max(1000000000),
     price_unit: z.enum(['/ mois', '/ nuit']),
     img: imageUrlSchema,
-    alt: optionalText(300),
+    alt: optionalTextSafe(300),
     images: z.array(imageUrlSchema).min(1).max(3),
     description: withoutPhoneNumber(z.string().trim().min(1).max(10000)),
-    capacity: optionalText(100),
-    category: z.string().trim().min(1).max(200),
+    capacity: optionalTextSafe(100),
+    category: withoutPhoneNumber(z.string().trim().min(1).max(200)),
     market: marketSchema,
-    pays: z.string().trim().min(1).max(100),
-    ville: z.string().trim().min(1).max(150),
-    quartier: z.string().trim().min(1).max(200),
+    pays: withoutPhoneNumber(z.string().trim().min(1).max(100)),
+    ville: withoutPhoneNumber(z.string().trim().min(1).max(150)),
+    quartier: withoutPhoneNumber(z.string().trim().min(1).max(200)),
     chambres: z.number().int().positive().max(100),
     douches: z.number().int().positive().max(100),
     disponible: z.boolean(),

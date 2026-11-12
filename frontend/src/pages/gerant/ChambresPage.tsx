@@ -230,7 +230,7 @@ export default function ChambresPage() {
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="dash-page-head">Mes chambres</h1>
+              <h1 className="dash-page-head dash-page-head--xl">Mes chambres</h1>
               <p className="mt-1 text-sm text-slate-500">Gérez toutes vos chambres et suivez leur disponibilité.</p>
             </div>
             <Link to={`${chambresPath}/ajouter`} className="inline-flex items-center gap-3 rounded-lg bg-dash-brand px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 hover:bg-dash-brand-dark"><Icon id="pc" className="i h-5 w-5" />Ajouter une chambre</Link>

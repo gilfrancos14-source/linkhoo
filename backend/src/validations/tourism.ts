@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { marketSchema, optionalText } from './common';
+import { marketSchema, optionalTextSafe, withoutPhoneNumber } from './common';
 
 const imageUrlSchema = z.string().trim().min(1).max(2048);
 
@@ -14,12 +14,12 @@ export const destinationQuerySchema = z
 export const destinationCreateSchema = z
   .object({
     market: marketSchema,
-    city: z.string().trim().min(1).max(120),
-    title: z.string().trim().min(1).max(200),
+    city: withoutPhoneNumber(z.string().trim().min(1).max(120)),
+    title: withoutPhoneNumber(z.string().trim().min(1).max(200)),
     // Colonne NOT NULL sans défaut : description est obligatoire à la création.
-    description: z.string().trim().min(1).max(2000),
+    description: withoutPhoneNumber(z.string().trim().min(1).max(2000)),
     img: imageUrlSchema,
-    alt: optionalText(300),
+    alt: optionalTextSafe(300),
     featured: z.boolean().optional().default(false),
   })
   .strict();
@@ -30,11 +30,11 @@ export const destinationCreateSchema = z
 export const destinationUpdateSchema = z
   .object({
     market: marketSchema.optional(),
-    city: z.string().trim().min(1).max(120).optional(),
-    title: z.string().trim().min(1).max(200).optional(),
-    description: z.string().trim().min(1).max(2000).optional(),
+    city: withoutPhoneNumber(z.string().trim().min(1).max(120)).optional(),
+    title: withoutPhoneNumber(z.string().trim().min(1).max(200)).optional(),
+    description: withoutPhoneNumber(z.string().trim().min(1).max(2000)).optional(),
     img: imageUrlSchema.optional(),
-    alt: z.string().trim().max(300).optional(),
+    alt: withoutPhoneNumber(z.string().trim().max(300)).optional(),
     featured: z.boolean().optional(),
   })
   .strict();

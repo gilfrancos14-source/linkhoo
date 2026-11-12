@@ -166,13 +166,21 @@ describe('buildPromos', () => {
     const family = cards.find((card) => card.key === 'promo_10');
     expect(family?.featureTitle).toBe('Escapades en famille');
     expect(family?.rooms.map((room) => room.id)).toEqual(['promo-10']);
+    // Une promo active utilise le visuel de l'annonce.
+    expect(family?.image).toBe('/images/room.jpg');
     expect(cards.find((card) => card.key === 'promo_5')?.rooms).toEqual([]);
   });
 
   it('conserve les trois cartes sans promotion active', () => {
     const cards = buildPromos([makeRoom()]);
     expect(cards).toHaveLength(3);
-    expect(cards.every((card) => card.rooms.length === 0 && card.image === '')).toBe(true);
+    expect(cards.every((card) => card.rooms.length === 0)).toBe(true);
+    // Sans annonce éligible, chaque carte garde son visuel de repli.
+    expect(cards.map((card) => card.image)).toEqual([
+      '/images/pexels-artbovich-7214173.jpg',
+      '/images/pexels-artbovich-6782567.jpg',
+      '/images/pexels-fotoaibe-1571460.jpg',
+    ]);
     expect(buildPromos(null)).toHaveLength(3);
   });
 });

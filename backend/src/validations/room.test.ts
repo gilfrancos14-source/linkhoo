@@ -123,6 +123,17 @@ describe('roomCreateSchema', () => {
     expect(parsed.error.issues[0].message).toMatch(/numéros de téléphone/i);
   });
 
+  it('refuse un numéro de téléphone écrit en lettres dans la description', () => {
+    const parsed = roomCreateSchema.safeParse({
+      ...validRoom,
+      description:
+        'Un studio confortable. Appelez zéro six zéro sept douze trente-quatre cinquante-six.',
+    });
+    expect(parsed.success).toBe(false);
+    if (parsed.success) return;
+    expect(parsed.error.issues[0].message).toMatch(/numéros de téléphone/i);
+  });
+
   it('refuse un numéro de téléphone dans les conditions', () => {
     expect(
       roomCreateSchema.safeParse({ ...validRoom, conditions: 'Caution 1 mois. WhatsApp : +2250707070707' }).success,

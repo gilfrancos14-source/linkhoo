@@ -6,6 +6,7 @@ import { marketByCode, type MarketCode } from '../../config/markets';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import { type FavoriteRoomData } from '../../lib/api';
 import { priceWithCurrency } from '../../lib/roomDisplay';
+import { useFavorites } from '../../contexts/FavoritesContext';
 import ClientSidebar from '../../components/client/ClientSidebar';
 
 /**
@@ -91,13 +92,11 @@ export default function ClientFavoritesPage({
   const { market } = marketContext;
   const navigate = useNavigate();
   const { signOut } = useClerk();
+  const { remove } = useFavorites();
   const [menuOpen, setMenuOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
-  // Filtres
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [sortBy, setSortBy] = useState<'recent' | 'price-low' | 'price-high' | 'rating'>('recent');
   
   // Catégories
@@ -219,7 +218,7 @@ export default function ClientFavoritesPage({
               onSubmit={handleSearch}
               className="flex h-9 w-full max-w-[520px] items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 text-slate-400"
             >
-              <Icon id="cd-search" className="h-4 w-4 text-blue-700" />
+              <Icon id="search" className="h-4 w-4 text-blue-700" />
               <input
                 type="search"
                 value={query}
@@ -246,13 +245,13 @@ export default function ClientFavoritesPage({
                   <span className="block text-xs font-semibold text-navy">{fullName}</span>
                   <span className="block text-[11px] text-slate-400">Client</span>
                 </span>
-                <Icon id="cd-down" className="ml-1 h-4 w-4 sm:ml-6" />
+                <Icon id="down" className="ml-1 h-4 w-4 sm:ml-6" />
               </button>
 
               {menuOpen && (
                 <div className="user-menu" role="menu">
                   <Link to={profilePath} className="user-menu__item" role="menuitem">
-                    <Icon id="cd-user" className="h-4 w-4" />Mon profil
+                    <Icon id="user" className="h-4 w-4" />Mon profil
                   </Link>
                   <button
                     type="button"
@@ -260,7 +259,7 @@ export default function ClientFavoritesPage({
                     role="menuitem"
                     onClick={() => void handleSignOut()}
                   >
-                    <Icon id="cd-logout" className="h-4 w-4" />Déconnexion
+                    <Icon id="logout" className="h-4 w-4" />Déconnexion
                   </button>
                 </div>
               )}
@@ -269,14 +268,14 @@ export default function ClientFavoritesPage({
 
           <main className="p-6">
             {/* Hero section */}
-            <section className="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-r from-purple-600 via-pink-500 to-rose-500 text-white">
+            <section className="favorites-hero relative mb-8 overflow-hidden rounded-2xl">
               <div className="absolute inset-0 bg-black/10" />
               <div className="relative p-8 md:p-12">
                 <div className="flex items-center gap-3 mb-4">
-                  <Icon id="cd-heart" className="f h-8 w-8 text-white" />
-                  <h1 className="text-3xl md:text-4xl font-bold">Mes Chambres Favorites</h1>
+                  <Icon id="heart" className="f h-8 w-8 text-white" />
+                  <h1 className="favorites-hero__title">Mes Chambres Favorites</h1>
                 </div>
-                <p className="text-lg md:text-xl text-white/90 mb-6">
+                <p className="favorites-hero__subtitle">
                   Découvrez à nouveau vos sélections préférées et trouvez votre prochain séjour parfait.
                 </p>
                 
@@ -287,7 +286,7 @@ export default function ClientFavoritesPage({
                   className="relative flex flex-wrap items-center gap-2 rounded-xl bg-white p-2 pl-5 text-slate-800"
                 >
                   <div className="flex min-w-[170px] flex-1 items-center gap-3 py-1">
-                    <Icon id="cd-pin" className="text-purple-600" />
+                    <Icon id="pin" className="text-purple-600" />
                     <div className="min-w-0 flex-1">
                       <label
                         htmlFor="cdash-destination"
@@ -306,7 +305,7 @@ export default function ClientFavoritesPage({
                     </div>
                   </div>
                   <div className="flex min-w-[170px] flex-1 items-center gap-3 border-slate-200 py-1 md:border-l md:pl-4">
-                    <Icon id="cd-cal" className="text-purple-600" />
+                    <Icon id="cal" className="text-purple-600" />
                     <div className="min-w-0 flex-1">
                       <label
                         htmlFor="cdash-arrivee"
@@ -336,7 +335,7 @@ export default function ClientFavoritesPage({
                     </div>
                   </div>
                   <div className="flex min-w-[170px] flex-1 items-center gap-3 border-slate-200 py-1 md:border-l md:pl-4">
-                    <Icon id="cd-cal" className="text-purple-600" />
+                    <Icon id="cal" className="text-purple-600" />
                     <div className="min-w-0 flex-1">
                       <label
                         htmlFor="cdash-depart"
@@ -366,7 +365,7 @@ export default function ClientFavoritesPage({
                     </div>
                   </div>
                   <div className="flex min-w-[170px] flex-1 items-center gap-3 border-slate-200 py-1 md:border-l md:pl-4">
-                    <Icon id="cd-bed" className="text-purple-600" />
+                    <Icon id="bed" className="text-purple-600" />
                     <div className="min-w-0 flex-1">
                       <label
                         htmlFor="cdash-category"
@@ -387,14 +386,14 @@ export default function ClientFavoritesPage({
                           </option>
                         ))}
                       </select>
-                      <Icon id="cd-down" className="mr-2 h-4 w-4" />
+                      <Icon id="down" className="mr-2 h-4 w-4" />
                     </div>
                   </div>
                   <button
                     type="submit"
                     className="flex h-11 items-center justify-center gap-2 rounded-lg bg-purple-600 px-9 text-xs font-semibold text-white hover:bg-purple-700"
                   >
-                    <Icon id="cd-search" className="h-4 w-4" />Rechercher
+                    <Icon id="search" className="h-4 w-4" />Rechercher
                   </button>
                   {heroError && (
                     <p role="alert" className="basis-full pl-1 pt-1 text-[11px] font-medium text-red-600">
@@ -423,14 +422,14 @@ export default function ClientFavoritesPage({
                       className={`px-3 py-2 rounded-l-lg ${viewMode === 'grid' ? 'bg-purple-100 text-purple-700' : 'text-slate-600 hover:bg-slate-50'}`}
                       onClick={() => setViewMode('grid')}
                     >
-                      <Icon id="cd-view-grid" className="h-5 w-5" />
+                      <Icon id="view-grid" className="h-5 w-5" />
                     </button>
                     <button
                       type="button"
                       className={`px-3 py-2 rounded-r-lg ${viewMode === 'list' ? 'bg-purple-100 text-purple-700' : 'text-slate-600 hover:bg-slate-50'}`}
                       onClick={() => setViewMode('list')}
                     >
-                      <Icon id="cd-view-list" className="h-5 w-5" />
+                      <Icon id="view-list" className="h-5 w-5" />
                     </button>
                   </div>
 
@@ -453,73 +452,6 @@ export default function ClientFavoritesPage({
                 </div>
               </div>
 
-              {/* Filtres */}
-              <div className="rounded-xl border border-slate-200 bg-white p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Icon id="cd-filter" className="h-5 w-5 text-purple-600" />
-                  <h3 className="font-semibold text-slate-800">Filtres</h3>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Filtre par prix */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Plage de prix (FCFA/nuit)
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100000"
-                        value={priceRange[0]}
-                        onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
-                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
-                      />
-                      <span className="text-sm font-medium text-slate-700 w-20">
-                        {priceRange[0].toLocaleString()} - {priceRange[1].toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Filtre par catégorie */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Catégorie
-                    </label>
-                    <select
-                      value={selectedCategory}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '' || Array.isArray(categories) && categories.some(cat => typeof cat.id === 'string' && cat.id === value)) {
-                          setSelectedCategory(value);
-                        }
-                      }}
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    >
-                      <option value="">Toutes les catégories</option>
-                      {Array.isArray(categories) && categories.map((category) => (
-                        <option key={typeof category.id === 'string' ? category.id : 'unknown'} value={typeof category.id === 'string' ? category.id : ''}>
-                          {typeof category.title === 'string' ? category.title : 'Titre non disponible'}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Bouton réinitialiser */}
-                  <div className="flex items-end">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPriceRange([0, 100000]);
-                        setSelectedCategory('');
-                      }}
-                      className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      Réinitialiser les filtres
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Liste des favoris */}
@@ -547,15 +479,19 @@ export default function ClientFavoritesPage({
                       <div className="absolute top-3 right-3">
                         <button
                           type="button"
-                          className="grid h-8 w-8 place-items-center rounded-full bg-white/90 backdrop-blur text-white hover:bg-white"
+                          aria-label={
+                            typeof favorite.title === 'string'
+                              ? `Retirer ${favorite.title} des favoris`
+                              : 'Retirer des favoris'
+                          }
+                          className="grid h-8 w-8 place-items-center rounded-full bg-white/90 backdrop-blur hover:bg-white"
                           onClick={() => {
-                            // Logique pour retirer des favoris
                             if (typeof favorite.id === 'string') {
-                              console.log('Retirer des favoris:', favorite.id);
+                              void remove(favorite.id).catch(() => {});
                             }
                           }}
                         >
-                          <Icon id="cd-heart" className="f !h-4 !w-4 text-red-500" />
+                          <Icon id="heart" className="f !h-4 !w-4 text-red-500" />
                         </button>
                       </div>
 
@@ -574,7 +510,7 @@ export default function ClientFavoritesPage({
                       <p className="text-sm text-slate-600 mb-3">{typeof favorite.description === 'string' ? favorite.description : 'Description non disponible'}</p>
                       
                       <div className="flex items-center gap-2 text-sm text-slate-600 mb-4">
-                        <Icon id="cd-pin" className="!h-4 !w-4 text-purple-600" />
+                        <Icon id="pin" className="!h-4 !w-4 text-purple-600" />
                         <span>{typeof favorite.quartier === 'string' ? favorite.quartier : cityLabel}</span>
                       </div>
                       
@@ -605,7 +541,7 @@ export default function ClientFavoritesPage({
             ) : (
               <div className="text-center py-12">
                 <div className="mx-auto w-24 h-24 rounded-full bg-purple-100 flex items-center justify-center mb-4">
-                  <Icon id="cd-heart" className="f !h-12 !w-12 text-purple-400" />
+                  <Icon id="heart" className="f !h-12 !w-12 text-purple-400" />
                 </div>
                 <h3 className="text-xl font-semibold text-slate-800 mb-2">Aucune chambre favorite</h3>
                 <p className="text-slate-600 mb-6">
@@ -615,7 +551,7 @@ export default function ClientFavoritesPage({
                   to={searchPath}
                   className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-6 py-3 text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
                 >
-                  Explorer les chambres<Icon id="cd-arrow" className="!h-4 !w-4" />
+                  Explorer les chambres<Icon id="arrow" className="!h-4 !w-4" />
                 </Link>
               </div>
             )}

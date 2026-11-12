@@ -134,25 +134,173 @@ function qualifiesContact(
   return false;
 }
 
-// Nombres écrits en lettres (chiffres 0-9 uniquement : on exclut « mille »,
-// « cent » pour ne pas fabriquer de faux positifs avec des multiplicateurs).
-const NUMBER_WORDS: Record<string, string> = {
-  zero: '0',
-  un: '1',
-  une: '1',
-  deux: '2',
-  trois: '3',
-  quatre: '4',
-  cinq: '5',
-  six: '6',
-  sept: '7',
-  huit: '8',
-  neuf: '9',
+// Nombres écrits en lettres, en français (0-99) : un numéro peut être dicté
+// « zéro six, zéro sept, douze, trente-quatre, cinquante-six » ou « zéro six
+// zéro sept quatre-vingt-dix-neuf soixante et onze ». On convertit les
+// séquences de mots-nombres en chiffres pour réutiliser la détection de runs.
+//
+// « cent » et « mille » sont volontairement exclus : un numéro de téléphone
+// n'en a pas besoin et les multiplicateurs fabriquent des faux positifs.
+// Des chiffres isolés successifs (« un deux trois ») restent séparés, comme
+// dans un numéro dicté, au lieu d'être additionnés.
+const UNITS: Record<string, number> = {
+  zero: 0,
+  un: 1,
+  une: 1,
+  deux: 2,
+  trois: 3,
+  quatre: 4,
+  cinq: 5,
+  six: 6,
+  sept: 7,
+  huit: 8,
+  neuf: 9,
 };
-const NUMBER_WORD_RE = /\b(zero|un|une|deux|trois|quatre|cinq|six|sept|huit|neuf)\b/g;
+
+const TEENS: Record<string, number> = {
+  dix: 10,
+  onze: 11,
+  douze: 12,
+  treize: 13,
+  quatorze: 14,
+  quinze: 15,
+  seize: 16,
+};
+
+const TENS: Record<string, number> = {
+  vingt: 20,
+  trente: 30,
+  quarante: 40,
+  cinquante: 50,
+  soixante: 60,
+};
+
+interface ParsedNumber {
+  value: number;
+  /** Index du premier mot suivant le nombre consommé. */
+  next: number;
+}
+
+/** Consomme un nombre français de 0 à 99 à partir de `index`, sinon null. */
+function parseFrenchNumber(words: string[], index: number): ParsedNumber | null {
+  const word = words[index];
+  if (word === undefined) return null;
+
+  // quatre-vingt(s) → 80, puis 81-99.
+  if (word === 'quatre' && (words[index + 1] === 'vingt' || words[index + 1] === 'vingts')) {
+    let value = 80;
+    let next = index + 2;
+    if (words[next] === 'et') next += 1;
+    const tail = words[next];
+    if (tail === 'dix') {
+      value += 10;
+      next += 1;
+      const unit = UNITS[words[next]];
+      if (unit !== undefined) {
+        value += unit;
+        next += 1;
+      }
+    } else if (TEENS[tail] !== undefined && TEENS[tail] >= 11) {
+      value += TEENS[tail];
+      next += 1;
+    } else if (UNITS[tail] !== undefined && UNITS[tail] >= 1) {
+      value += UNITS[tail];
+      next += 1;
+    }
+    return { value, next };
+  }
+
+  // soixante → 60, puis 61-79 (soixante-dix-sept, soixante et onze, …).
+  if (word === 'soixante') {
+    let value = 60;
+    let next = index + 1;
+    if (words[next] === 'et') next += 1;
+    const tail = words[next];
+    if (tail === 'dix') {
+      value += 10;
+      next += 1;
+      const unit = UNITS[words[next]];
+      if (unit !== undefined) {
+        value += unit;
+        next += 1;
+      }
+    } else if (TEENS[tail] !== undefined && TEENS[tail] >= 10) {
+      value += TEENS[tail];
+      next += 1;
+    } else if (UNITS[tail] !== undefined && UNITS[tail] >= 1) {
+      value += UNITS[tail];
+      next += 1;
+    }
+    return { value, next };
+  }
+
+  if (TENS[word] !== undefined) {
+    let value = TENS[word];
+    let next = index + 1;
+    if (words[next] === 'et') next += 1;
+    const unit = UNITS[words[next]];
+    if (unit !== undefined && unit >= 1) {
+      value += unit;
+      next += 1;
+    }
+    return { value, next };
+  }
+
+  // dix → 10 seul, ou 17-19 (dix-sept, dix-huit, dix-neuf).
+  if (word === 'dix') {
+    const unit = UNITS[words[index + 1]];
+    if (unit !== undefined && unit >= 7 && unit <= 9) {
+      return { value: 10 + unit, next: index + 2 };
+    }
+    return { value: 10, next: index + 1 };
+  }
+
+  // onze … seize, quand ils ne suivent pas une dizaine.
+  const teen = TEENS[word];
+  if (teen !== undefined) return { value: teen, next: index + 1 };
+
+  const unit = UNITS[word];
+  if (unit !== undefined) return { value: unit, next: index + 1 };
+
+  return null;
+}
+
+const WORD_RE = /[a-z]+/g;
 
 function mapNumberWords(text: string): string {
-  return text.replace(NUMBER_WORD_RE, (word) => NUMBER_WORDS[word] ?? word);
+  const matches = [...text.matchAll(WORD_RE)];
+  if (matches.length === 0) return text;
+  const words = matches.map((match) => match[0]);
+
+  let out = '';
+  let copiedUntil = 0;
+  let index = 0;
+
+  while (index < matches.length) {
+    const parsed = parseFrenchNumber(words, index);
+    if (!parsed) {
+      index += 1;
+      continue;
+    }
+
+    const start = matches[index].index ?? 0;
+    const values = [parsed.value];
+    let next = parsed.next;
+    while (next < matches.length) {
+      const following = parseFrenchNumber(words, next);
+      if (!following) break;
+      values.push(following.value);
+      next = following.next;
+    }
+
+    const lastMatch = matches[next - 1];
+    const end = (lastMatch.index ?? 0) + lastMatch[0].length;
+    out += `${text.slice(copiedUntil, start)}${values.join(' ')}`;
+    copiedUntil = end;
+    index = next;
+  }
+
+  return out + text.slice(copiedUntil);
 }
 
 // Repli leet : lettres utilisées comme chiffres. Appliqué uniquement aux tokens

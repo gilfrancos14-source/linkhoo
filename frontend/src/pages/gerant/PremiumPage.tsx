@@ -329,7 +329,7 @@ export default function PremiumPage() {
               <Icon name="arrow-left" className="h-4 w-4" />
               Retour à mon profil
             </Link>
-            <h1 className="dash-page-head mt-3 leading-tight tracking-tight">
+            <h1 className="dash-page-head dash-page-head--xl mt-3 leading-tight tracking-tight">
               Abonnez-vous au <span className="text-[#ff5a14]">Premium</span>
             </h1>
             <p className="mt-1 text-sm text-slate-500">
@@ -365,7 +365,7 @@ export default function PremiumPage() {
                     OFFRE PREMIUM
                   </span>
                 </div>
-                <h2 className="dash-page-head mt-3 leading-tight text-white">
+                <h2 className="dash-page-head mt-3 leading-tight text-white" style={{ color: '#ffffff' }}>
                   Votre hébergement mérite d’être vu !
                 </h2>
                 <p className="mt-2 text-[14.5px] font-semibold">

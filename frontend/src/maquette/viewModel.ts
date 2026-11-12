@@ -160,6 +160,7 @@ const PROMO_GROUPS = [
     featureTitle: 'Villas et appartements',
     text: 'Des séjours spacieux à prix réduit',
     description: 'Profitez de -15% sur une sélection de villas et d’appartements spacieux.',
+    fallbackImage: '/images/pexels-artbovich-7214173.jpg',
   },
   {
     key: 'promo_10',
@@ -169,6 +170,7 @@ const PROMO_GROUPS = [
     featureTitle: 'Escapades en famille',
     text: 'Des logements confortables pour toute la famille',
     description: 'Profitez de -10% sur des logements confortables à partager en famille.',
+    fallbackImage: '/images/pexels-artbovich-6782567.jpg',
   },
   {
     key: 'promo_5',
@@ -178,6 +180,7 @@ const PROMO_GROUPS = [
     featureTitle: 'Dernière minute',
     text: 'Les dernières disponibilités à saisir',
     description: 'Profitez de -5% sur les dernières disponibilités.',
+    fallbackImage: '/images/pexels-fotoaibe-1571460.jpg',
   },
 ] as const;
 
@@ -279,7 +282,7 @@ export function buildPromos(rooms: RoomData[] | null, now = new Date()): PromoCa
       badgeClassName: group.badgeClassName,
       title: group.title,
       text: group.text,
-      image: first?.img ?? '',
+      image: first?.img ?? group.fallbackImage,
       alt: first?.alt || group.title,
       featureTitle: group.featureTitle,
       description: group.description,

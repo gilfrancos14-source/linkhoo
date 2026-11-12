@@ -2,7 +2,7 @@ import { Bell, Box } from 'lucide-react';
 
 export type PreferenceKey = 'reservations' | 'messages' | 'marketing';
 
-interface PreferenceItem {
+export interface PreferenceItem {
   key: PreferenceKey;
   label: string;
 }
@@ -10,6 +10,8 @@ interface PreferenceItem {
 interface PreferencesSectionProps {
   preferences: Record<PreferenceKey, boolean>;
   onToggle: (key: PreferenceKey) => void;
+  /** Libellés personnalisables (par défaut : espace gérant). */
+  items?: PreferenceItem[];
 }
 
 const PREFERENCE_ITEMS: PreferenceItem[] = [
@@ -21,7 +23,7 @@ const PREFERENCE_ITEMS: PreferenceItem[] = [
 /**
  * Section "Préférences & notifications" avec interrupteurs à bascule.
  */
-export function PreferencesSection({ preferences, onToggle }: PreferencesSectionProps) {
+export function PreferencesSection({ preferences, onToggle, items = PREFERENCE_ITEMS }: PreferencesSectionProps) {
   return (
     <section className="relative mt-[14px] h-[160px] rounded-xl border border-[#EEF2F8] bg-white shadow-[0_2px_10px_rgba(20,40,90,0.04)]">
       <h2 className="absolute left-6 top-5 flex h-5 items-center gap-[15px] text-[13.5px] font-bold tracking-[-0.01em]">
@@ -29,7 +31,7 @@ export function PreferencesSection({ preferences, onToggle }: PreferencesSection
       </h2>
 
       <ul className="absolute left-[22px] right-5 top-[47px] text-[11.5px] text-[#1F3566]">
-        {PREFERENCE_ITEMS.map((item) => {
+        {items.map((item) => {
           const isActive = preferences[item.key] ?? false;
           return (
             <li key={item.key} className="flex h-[29px] items-center">

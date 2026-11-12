@@ -324,7 +324,7 @@ export default function BoiteReceptionMaq6() {
           </header>
 
           <main className="px-6 pb-10 lg:px-8">
-            <h1 className="dash-page-head">Boîte de réception</h1>
+            <h1 className="dash-page-head dash-page-head--xl">Boîte de réception</h1>
             <p className="mt-1 text-sm text-slate-500">Consultez et gérez tous vos messages en un seul endroit.</p>
 
             <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">

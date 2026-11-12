@@ -298,7 +298,7 @@ export default function DemandesReservationMaq4() {
             <Link to={reservationsPath} className="hover:text-dash-navy">Réservations</Link><Icon id="right" className="i h-3 w-3" />
             <span className="text-dash-navy">Demandes</span>
           </nav>
-          <h1 className="dash-page-head mt-3">Demandes de réservation</h1>
+          <h1 className="dash-page-head dash-page-head--xl mt-3">Demandes de réservation</h1>
           <p className="mt-1 text-sm text-slate-500">Gérez les demandes de réservation et confirmez ou refusez selon la disponibilité de vos chambres.</p>
 
           {(error || loading) && (

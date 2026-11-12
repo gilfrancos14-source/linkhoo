@@ -533,6 +533,13 @@ export default function RoomDetailMaq7() {
     event.preventDefault();
     if (!room) return;
 
+    // Vérification de l'authentification : si le client n'est pas connecté,
+    // on le redirige vers la page de connexion avant de tenter la réservation.
+    if (!signedIn) {
+      navigate(`/${room.market.toLowerCase()}/login`);
+      return;
+    }
+
     const validation = validateForm(
       {
         name: form.name,
@@ -1046,7 +1053,11 @@ export default function RoomDetailMaq7() {
                     disabled={submitting}
                     className="mt-4 w-full rounded-lg bg-brand py-3 text-sm font-bold text-white transition hover:bg-brand-dark disabled:opacity-60"
                   >
-                    {submitting ? 'Envoi…' : 'Réserver maintenant'}
+                    {submitting
+                      ? 'Envoi…'
+                      : signedIn
+                        ? 'Réserver maintenant'
+                        : 'Connectez-vous pour réserver'}
                   </button>
 
                   <p className="mt-4 flex items-center gap-2 text-[11px] font-medium text-emerald-600">

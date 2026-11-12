@@ -25,7 +25,7 @@ export const escapadeQuerySchema = z
 export const escapadeCreateSchema = z
   .object({
     market: marketSchema,
-    lieu: z.string().trim().min(1).max(120),
+    lieu: withoutPhoneNumber(z.string().trim().min(1).max(120)),
     description: withoutPhoneNumber(z.string().trim().min(1).max(2000)),
     // 1 à 5 photos : la première sert de couverture sur la carte, toutes
     // apparaissent dans le carrousel du panneau de détails.
@@ -38,7 +38,7 @@ export const escapadeCreateSchema = z
 export const escapadeUpdateSchema = z
   .object({
     market: marketSchema.optional(),
-    lieu: z.string().trim().min(1).max(120).optional(),
+    lieu: withoutPhoneNumber(z.string().trim().min(1).max(120)).optional(),
     description: withoutPhoneNumber(z.string().trim().min(1).max(2000)).optional(),
     images: z.array(imageUrlSchema).min(1).max(5).optional(),
   })

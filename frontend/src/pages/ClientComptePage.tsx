@@ -7,6 +7,8 @@ import { useFavorites } from '../contexts/FavoritesContext';
 import { setAuthTokenGetter, apiClients, apiReviews, type ClientMineReservationData, type ReservationPaymentStatus, type ReviewData } from '../lib/api';
 import { getMyReservations, cancelMyReservation, startReservationPayment } from '../lib/reservations';
 import { redirectTo } from '../lib/navigation';
+import { marketByCode, type MarketCode } from '../config/markets';
+import { formatDateLong } from '../lib/formatDate';
 
 import type { View, ReviewFormState } from './client-compte/types';
 import ClientAccountLayout from '../components/ClientAccountLayout';
@@ -43,6 +45,8 @@ export default function ClientComptePage() {
     const [profileSuccess, setProfileSuccess] = useState('');
     const [profileError, setProfileError] = useState('');
     const [profileForm, setProfileForm] = useState({ nom: '', prenom: '', telephone: '' });
+    const [clientMarket, setClientMarket] = useState<MarketCode | null>(null);
+    const [clientCreatedAt, setClientCreatedAt] = useState('');
 
     const email = user?.primaryEmailAddress?.emailAddress
       || user?.emailAddresses?.[0]?.emailAddress
@@ -86,6 +90,8 @@ export default function ClientComptePage() {
         prenom: profile.prenom ?? '',
         telephone: profile.telephone ?? '',
       });
+      setClientMarket(profile.market ?? null);
+      setClientCreatedAt(profile.created_at ?? '');
     }).catch(() => {
       setProfileForm({ nom: lastName, prenom: firstName, telephone: '' });
     });
@@ -292,33 +298,24 @@ export default function ClientComptePage() {
 
   // Vue par défaut du compte client : le profil (les autres vues sont
   // interceptées plus haut — overview, stays, favorites).
+  const marketLabel = clientMarket ? marketByCode(clientMarket).label : '';
+  const memberSince = formatDateLong(clientCreatedAt);
+
   return (
     <ClientAccountLayout>
       <div className="admin-content">
-        <section className="cdash__content">
-          <header className="cdash-top">
-            <div className="cdash-top__lead">
-              <p className="cdash-top__eyebrow">Espace client</p>
-              <h1 className="cdash-top__title">Mon profil</h1>
-            </div>
-          </header>
-
-          {error && <p className="client-compte__error" role="alert">{error}</p>}
-
-          <div className="cdash__views" id="cdash-panel" role="tabpanel">
-            {view === 'profile' && (
-              <ProfilePanel
-                profileForm={profileForm}
-                email={email}
-                saving={profileSaving}
-                error={profileError}
-                success={profileSuccess}
-                onChange={handleProfileChange}
-                onSubmit={handleProfileSubmit}
-              />
-            )}
-          </div>
-        </section>
+        <ProfilePanel
+          profileForm={profileForm}
+          email={email}
+          marketLabel={marketLabel}
+          memberSince={memberSince}
+          avatarUrl={user?.imageUrl || undefined}
+          saving={profileSaving}
+          error={profileError}
+          success={profileSuccess}
+          onChange={handleProfileChange}
+          onSubmit={handleProfileSubmit}
+        />
       </div>
     </ClientAccountLayout>
   );

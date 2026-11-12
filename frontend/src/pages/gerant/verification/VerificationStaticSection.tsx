@@ -732,7 +732,7 @@ export default function VerificationStaticSection({ gerantPath }: VerificationSt
             Retour
           </Link>
 
-          <h1 className="dash-page-head mt-px leading-[36px] tracking-[-0.01em] text-[#0D2150]">Vérification</h1>
+          <h1 className="dash-page-head dash-page-head--xl mt-px leading-[36px] tracking-[-0.01em] text-[#0D2150]">Vérification</h1>
           <p className="mt-px text-[15px] leading-5 text-[#5F7396]">
             Vérifiez votre identité pour publier vos annonces et gagner la confiance des voyageurs.
           </p>

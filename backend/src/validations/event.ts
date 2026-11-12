@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { marketSchema, optionalText, dateStringSchema } from './common';
+import { marketSchema, optionalTextSafe, dateStringSchema, withoutPhoneNumber } from './common';
 
 const imageUrlSchema = z.string().trim().min(1).max(2048);
 
@@ -23,12 +23,12 @@ export const eventQuerySchema = z
 export const eventCreateSchema = z
   .object({
     market: marketSchema,
-    city: z.string().trim().min(1).max(120),
-    title: z.string().trim().min(1).max(200),
-    description: optionalText(2000),
+    city: withoutPhoneNumber(z.string().trim().min(1).max(120)),
+    title: withoutPhoneNumber(z.string().trim().min(1).max(200)),
+    description: withoutPhoneNumber(optionalTextSafe(2000)),
     event_date: dateStringSchema,
     img: imageUrlSchema,
-    alt: optionalText(300),
+    alt: optionalTextSafe(300),
   })
   .strict();
 
@@ -38,11 +38,11 @@ export const eventCreateSchema = z
 export const eventUpdateSchema = z
   .object({
     market: marketSchema.optional(),
-    city: z.string().trim().min(1).max(120).optional(),
-    title: z.string().trim().min(1).max(200).optional(),
-    description: z.string().trim().max(2000).optional(),
+    city: withoutPhoneNumber(z.string().trim().min(1).max(120)).optional(),
+    title: withoutPhoneNumber(z.string().trim().min(1).max(200)).optional(),
+    description: withoutPhoneNumber(z.string().trim().max(2000)).optional(),
     event_date: dateStringSchema.optional(),
     img: imageUrlSchema.optional(),
-    alt: z.string().trim().max(300).optional(),
+    alt: withoutPhoneNumber(z.string().trim().max(300)).optional(),
   })
   .strict();

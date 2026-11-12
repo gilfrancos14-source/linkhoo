@@ -51,6 +51,16 @@ describe('gerantCreateSchema', () => {
     expect(gerantCreateSchema.safeParse({ ...validGerant, market: 'XX' }).success).toBe(false);
   });
 
+  it('refuse un numéro écrit en lettres dans nom ou prénom', () => {
+    const numeroEnLettres = 'zéro six zéro sept douze trente-quatre cinquante-six';
+    expect(gerantCreateSchema.safeParse({ ...validGerant, nom: numeroEnLettres }).success).toBe(
+      false,
+    );
+    expect(gerantCreateSchema.safeParse({ ...validGerant, prenom: numeroEnLettres }).success).toBe(
+      false,
+    );
+  });
+
   it('refuse un champ inconnu (strict)', () => {
     const parsed = gerantCreateSchema.safeParse({ ...validGerant, is_verified: true });
     expect(parsed.success).toBe(false);
@@ -75,6 +85,13 @@ describe('gerantUpdateSchema', () => {
   it("refuse une adresse de domicile trop longue", () => {
     const parsed = gerantUpdateSchema.safeParse({ address: 'x'.repeat(301) });
     expect(parsed.success).toBe(false);
+  });
+
+  it('refuse un numéro écrit en lettres dans nom, prénom ou adresse', () => {
+    const numeroEnLettres = 'zéro six zéro sept douze trente-quatre cinquante-six';
+    expect(gerantUpdateSchema.safeParse({ nom: numeroEnLettres }).success).toBe(false);
+    expect(gerantUpdateSchema.safeParse({ prenom: numeroEnLettres }).success).toBe(false);
+    expect(gerantUpdateSchema.safeParse({ address: numeroEnLettres }).success).toBe(false);
   });
 
   it('accepte la date de naissance et la nationalité', () => {
