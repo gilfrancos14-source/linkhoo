@@ -14,7 +14,6 @@ export default defineConfig({
     // les timeouts apparaissent par pure contention. 8 workers sur une
     // machine 4 cœurs est un meilleur compromis durée/stabilité.
     maxWorkers: 8,
-    minWorkers: 1,
     coverage: {
       provider: 'v8',
       reporter: ['text-summary', 'text'],

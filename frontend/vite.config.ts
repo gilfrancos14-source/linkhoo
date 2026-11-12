@@ -48,7 +48,6 @@ export default defineConfig({
     testTimeout: 30_000,
     hookTimeout: 90_000,
     maxWorkers: 4,
-    minWorkers: 1,
     coverage: {
       provider: 'v8',
       reporter: ['text-summary', 'text'],

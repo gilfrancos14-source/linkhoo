@@ -261,12 +261,15 @@ describe('RoomDetailMaq7 — galerie', () => {
     expect(screen.getByAltText('Suite vue mer — photo 1 sur 3')).toBeInTheDocument();
     expect(screen.getByText('1/3')).toBeInTheDocument();
 
+    // `findBy` après le clic : le changement de photo est un rendu React
+    // asynchrone, et sous charge l'affirmation synchrone pouvait s'exécuter
+    // avant le rendu.
     fireEvent.click(screen.getByRole('button', { name: 'Photo suivante' }));
-    expect(screen.getByAltText('Suite vue mer — photo 2 sur 3')).toBeInTheDocument();
-    expect(screen.getByText('2/3')).toBeInTheDocument();
+    expect(await screen.findByAltText('Suite vue mer — photo 2 sur 3')).toBeInTheDocument();
+    expect(await screen.findByText('2/3')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Photo précédente' }));
-    expect(screen.getByText('1/3')).toBeInTheDocument();
+    expect(await screen.findByText('1/3')).toBeInTheDocument();
   });
 
   it('sélectionne une photo depuis la vignette latérale', async () => {
@@ -274,8 +277,13 @@ describe('RoomDetailMaq7 — galerie', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Voir la photo 3' }));
 
-    expect(screen.getByAltText('Suite vue mer — photo 3 sur 3')).toBeInTheDocument();
-    expect(screen.getByText('3/3')).toBeInTheDocument();
+    // `findBy` et non `getBy` : le changement de photo reacts asynchronously
+    // (React), et sous charge l'affirmation synchrone pouvait s'exécuter
+    // avant le rendu.
+    expect(
+      await screen.findByAltText('Suite vue mer — photo 3 sur 3'),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('3/3')).toBeInTheDocument();
   });
 });
 
