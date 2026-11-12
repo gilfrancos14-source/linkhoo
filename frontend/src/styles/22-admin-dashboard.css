@@ -1103,3 +1103,139 @@
   }
 }
 
+
+/* -- Panneau « Remboursements à traiter » -- */
+.admin-refunds {
+  background: #ffffff;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #ef4444;
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.admin-refunds__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-refunds__header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.admin-refunds__subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.admin-refunds__feedback {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.admin-refunds__feedback--success {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.admin-refunds__feedback--danger {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.admin-refunds__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-refunds__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.admin-refunds__info {
+  min-width: 0;
+  flex: 1;
+}
+
+.admin-refunds__line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-refunds__amount {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.admin-refunds__client {
+  font-size: 13px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.admin-refunds__meta,
+.admin-refunds__reason {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.admin-refunds__warning {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b45309;
+}
+
+.admin-refunds__actions {
+  flex-shrink: 0;
+}
+
+.admin-refunds__confirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #b91c1c;
+}
+
+@media (max-width: 768px) {
+  .admin-refunds__item {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-refunds__actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+}

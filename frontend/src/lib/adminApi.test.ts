@@ -460,6 +460,22 @@ describe('apiAdmin — endpoints back-office', () => {
     expect(fetchMock.mock.calls[3][1]?.method).toBe('POST');
   });
 
+  it('les routes remboursements ciblent les bonnes URLs et verbes', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(jsonResponse({ items: [] })));
+
+    await apiAdmin.getRefunds({ scope: 'attention', limit: 20 });
+    expect(firstCall().url).toBe('/api/admin/refunds?scope=attention&limit=20');
+    expect(firstCall().init.method).toBeUndefined();
+
+    await apiAdmin.retryRefund('refund-1');
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/admin/refunds/refund-1/retry');
+    expect(fetchMock.mock.calls[1][1]?.method).toBe('POST');
+
+    await apiAdmin.syncRefund('refund-1');
+    expect(fetchMock.mock.calls[2][0]).toBe('/api/admin/refunds/refund-1/sync');
+    expect(fetchMock.mock.calls[2][1]?.method).toBe('POST');
+  });
+
   it('getVerificationDocuments et getNotifications ciblent les bonnes URLs', async () => {
     fetchMock.mockImplementation(() => Promise.resolve(jsonResponse([])));
 

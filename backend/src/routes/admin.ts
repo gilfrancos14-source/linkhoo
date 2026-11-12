@@ -28,7 +28,14 @@ import {
 } from '../utils/adminCookie';
 import { logAdminAction } from '../utils/adminAudit';
 import { setPayoutVerification } from '../payments/service/payout';
+import {
+  listAdminRefunds,
+  retryAdminRefund,
+  syncAdminRefund,
+} from '../payments/service/refundAdmin';
 import { PaymentServiceError } from '../payments/errors';
+import { PawapayConfigError } from '../payments/pawapay/config';
+import { PawapayApiError } from '../payments/pawapay/client';
 import { payoutVerificationSchema } from '../validations/payments';
 import { z } from 'zod';
 
@@ -829,6 +836,100 @@ router.post('/reservations/:id/check-availability', requireAdminAuth, requirePer
     next(err);
   }
 });
+
+// ── Remboursements à traiter ──
+
+const adminRefundsQuerySchema = z
+  .object({
+    scope: z.enum(['attention', 'processing', 'all']).optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+  })
+  .strict();
+
+/**
+ * Répond aux erreurs du domaine paiement avec leur `code` stable : le
+ * back-office distingue « remboursement manuel requis » d'une panne réseau.
+ */
+function sendRefundError(res: Response, err: unknown): boolean {
+  if (err instanceof PaymentServiceError) {
+    res.status(err.status).json({ error: err.message, code: err.code, ...err.details });
+    return true;
+  }
+  if (err instanceof PawapayConfigError) {
+    res.status(503).json({ error: 'Paiement indisponible', code: err.code });
+    return true;
+  }
+  if (err instanceof PawapayApiError) {
+    res.status(502).json({
+      error: 'Le prestataire de paiement est momentanément indisponible.',
+      code: 'PAWAPAY_ERROR',
+    });
+    return true;
+  }
+  return false;
+}
+
+router.get(
+  '/refunds',
+  requireAdminAuth,
+  requirePermission('reservations'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const parsed = adminRefundsQuerySchema.safeParse(req.query);
+      if (!parsed.success) return res.status(400).json({ error: 'Paramètres invalides' });
+
+      const result = await listAdminRefunds(parsed.data);
+      res.json({ ...result, total: result.items.length });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+router.post(
+  '/refunds/:id/retry',
+  requireAdminAuth,
+  requirePermission('reservations'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const parsedParams = idParamsSchema.safeParse(req.params);
+      if (!parsedParams.success) return res.status(400).json({ error: 'Identifiant invalide' });
+
+      try {
+        const outcome = await retryAdminRefund(
+          parsedParams.data.id,
+          req.admin!.adminId,
+        );
+        res.json({ outcome });
+      } catch (err) {
+        if (!sendRefundError(res, err)) throw err;
+      }
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+router.post(
+  '/refunds/:id/sync',
+  requireAdminAuth,
+  requirePermission('reservations'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const parsedParams = idParamsSchema.safeParse(req.params);
+      if (!parsedParams.success) return res.status(400).json({ error: 'Identifiant invalide' });
+
+      try {
+        const refund = await syncAdminRefund(parsedParams.data.id);
+        res.json({ refund });
+      } catch (err) {
+        if (!sendRefundError(res, err)) throw err;
+      }
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 // ── Admin notifications (non-qualified gerants' rooms) ──
 

@@ -6,6 +6,11 @@ import type {
   AdminReservation,
   AdminReservationCounts,
   AdminReservationsResponse,
+  AdminRefund,
+  AdminRefundCounts,
+  AdminRefundOutcome,
+  AdminRefundsResponse,
+  AdminRefundSyncResult,
 } from '../../lib/adminApi';
 import { formatPrice } from '../../lib/roomDisplay';
 
@@ -16,15 +21,26 @@ interface PageParams {
   limit?: number;
 }
 
+interface RefundParams {
+  scope?: 'attention' | 'processing' | 'all';
+  limit?: number;
+}
+
 const mocks = vi.hoisted(() => ({
   getReservations: vi.fn<(params?: PageParams) => Promise<AdminReservationsResponse>>(),
   checkAvailability: vi.fn<(id: string) => Promise<{ statut: string; reason: string | null }>>(),
+  getRefunds: vi.fn<(params?: RefundParams) => Promise<AdminRefundsResponse>>(),
+  retryRefund: vi.fn<(id: string) => Promise<{ outcome: AdminRefundOutcome }>>(),
+  syncRefund: vi.fn<(id: string) => Promise<{ refund: AdminRefundSyncResult }>>(),
 }));
 
 vi.mock('../../lib/adminApi', () => ({
   apiAdmin: {
     getReservations: mocks.getReservations,
     checkAvailability: mocks.checkAvailability,
+    getRefunds: mocks.getRefunds,
+    retryRefund: mocks.retryRefund,
+    syncRefund: mocks.syncRefund,
   },
 }));
 
@@ -87,6 +103,47 @@ function makeResponse(
   };
 }
 
+function makeRefund(overrides: Partial<AdminRefund> = {}): AdminRefund {
+  return {
+    id: 'refund-1',
+    paymentId: 'pay-1',
+    reservationId: 'resa-1',
+    status: 'failed',
+    amount: 120000,
+    currency: 'XOF',
+    reason: 'client_cancellation',
+    reasonDetails: 'Annulation par le client',
+    providerStatus: 'REJECTED',
+    hasProviderRefund: true,
+    hasProviderPayment: true,
+    requestedAt: '2026-01-05T10:00:00.000Z',
+    updatedAt: '2026-01-05T10:05:00.000Z',
+    reservation: {
+      clientName: 'Client Remboursé',
+      clientEmail: 'refund@example.com',
+      roomTitle: 'Suite remboursée',
+      dateDebut: '2026-02-10',
+      dateFin: '2026-02-14',
+      statut: 'annulee',
+      paymentStatus: 'paid',
+    },
+    ...overrides,
+  };
+}
+
+function refundCountsOf(items: AdminRefund[]): AdminRefundCounts {
+  return {
+    failed: items.filter((refund) => refund.status === 'failed').length,
+    manual_required: items.filter((refund) => refund.status === 'manual_required').length,
+    processing: items.filter((refund) => refund.status === 'processing').length,
+    total: items.length,
+  };
+}
+
+function makeRefundsResponse(items: AdminRefund[]): AdminRefundsResponse {
+  return { items, total: items.length, counts: refundCountsOf(items) };
+}
+
 /**
  * Simule le contrat serveur de GET /api/admin/reservations (RPC SQL) :
  * filtre statut + recherche, pagination, compteurs globaux.
@@ -126,6 +183,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.getReservations.mockResolvedValue(makeResponse([makeReservation()]));
   mocks.checkAvailability.mockResolvedValue({ statut: 'confirmee', reason: null });
+  mocks.getRefunds.mockResolvedValue(makeRefundsResponse([]));
+  mocks.retryRefund.mockResolvedValue({
+    outcome: { requested: true, status: 'processing', refundId: 'refund-new' },
+  });
+  mocks.syncRefund.mockResolvedValue({ refund: { status: 'succeeded', synced: true } });
 });
 
 afterEach(() => {
@@ -528,5 +590,133 @@ describe('AdminReservationsPage', () => {
     // 1 ligne d'en-tête + 10 lignes de données
     expect(rows).toHaveLength(11);
     expect(within(rows[1]).getByText('Client 1')).toBeInTheDocument();
+  });
+});
+
+describe('AdminReservationsPage — remboursements', () => {
+  it('masque le panneau quand aucun remboursement ne demande d’action', async () => {
+    render(<AdminReservationsPage />);
+
+    expect(await screen.findByRole('table')).toBeInTheDocument();
+    expect(screen.queryByText('Remboursements à traiter')).not.toBeInTheDocument();
+  });
+
+  it('affiche les remboursements échoués, manuels et en cours', async () => {
+    mocks.getRefunds.mockResolvedValue(
+      makeRefundsResponse([
+        makeRefund(),
+        makeRefund({
+          id: 'refund-2',
+          status: 'manual_required',
+          hasProviderPayment: false,
+          amount: 45000,
+          reservation: {
+            ...makeRefund().reservation!,
+            clientName: 'Client Manuel',
+            roomTitle: 'Studio manuel',
+          },
+        }),
+        makeRefund({ id: 'refund-3', status: 'processing', amount: 90000 }),
+      ]),
+    );
+
+    render(<AdminReservationsPage />);
+
+    expect(await screen.findByText('Remboursements à traiter')).toBeInTheDocument();
+    expect(screen.getByText('2 à relancer · 1 en cours')).toBeInTheDocument();
+    expect(screen.getByText('120 000 XOF')).toBeInTheDocument();
+    expect(screen.getByText('90 000 XOF')).toBeInTheDocument();
+    expect(screen.getByText('Client Manuel')).toBeInTheDocument();
+    expect(screen.getByText('Échec')).toBeInTheDocument();
+    expect(screen.getByText('Manuel requis')).toBeInTheDocument();
+    expect(screen.getByText('En cours')).toBeInTheDocument();
+  });
+
+  it('désactive la relance quand pawaPay n’a pas d’identifiant de paiement', async () => {
+    mocks.getRefunds.mockResolvedValue(
+      makeRefundsResponse([makeRefund({ status: 'manual_required', hasProviderPayment: false })]),
+    );
+
+    render(<AdminReservationsPage />);
+
+    expect(
+      await screen.findByText(/Paiement sans identifiant provider/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Relance impossible' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Relancer' })).not.toBeInTheDocument();
+  });
+
+  it('relance un remboursement après confirmation et rafraîchit le panneau', async () => {
+    const user = userEvent.setup();
+    mocks.getRefunds.mockResolvedValue(makeRefundsResponse([makeRefund()]));
+
+    render(<AdminReservationsPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Relancer' }));
+    expect(screen.getByText('Confirmer ?')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Oui' }));
+
+    await waitFor(() => expect(mocks.retryRefund).toHaveBeenCalledWith('refund-1'));
+    expect(
+      await screen.findByText(/Remboursement relancé : en attente/),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(mocks.getRefunds).toHaveBeenCalledTimes(2));
+  });
+
+  it('n’envoie rien tant que la relance n’est pas confirmée', async () => {
+    const user = userEvent.setup();
+    mocks.getRefunds.mockResolvedValue(makeRefundsResponse([makeRefund()]));
+
+    render(<AdminReservationsPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Relancer' }));
+    await user.click(screen.getByRole('button', { name: 'Annuler' }));
+
+    expect(mocks.retryRefund).not.toHaveBeenCalled();
+    expect(screen.queryByText('Confirmer ?')).not.toBeInTheDocument();
+  });
+
+  it('affiche l’erreur métier quand la relance est refusée', async () => {
+    const user = userEvent.setup();
+    mocks.getRefunds.mockResolvedValue(makeRefundsResponse([makeRefund()]));
+    mocks.retryRefund.mockRejectedValue(
+      new Error('Paiement sans identifiant provider : remboursement manuel requis.'),
+    );
+
+    render(<AdminReservationsPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Relancer' }));
+    await user.click(screen.getByRole('button', { name: 'Oui' }));
+
+    expect(
+      await screen.findByText('Paiement sans identifiant provider : remboursement manuel requis.'),
+    ).toBeInTheDocument();
+  });
+
+  it('vérifie un remboursement en cours auprès du prestataire', async () => {
+    const user = userEvent.setup();
+    mocks.getRefunds.mockResolvedValue(
+      makeRefundsResponse([makeRefund({ id: 'refund-3', status: 'processing' })]),
+    );
+
+    render(<AdminReservationsPage />);
+
+    await user.click(await screen.findByRole('button', { name: 'Vérifier' }));
+
+    await waitFor(() => expect(mocks.syncRefund).toHaveBeenCalledWith('refund-3'));
+    expect(await screen.findByText('Statut synchronisé : Remboursé.')).toBeInTheDocument();
+  });
+
+  it('rafraîchit le panneau à la demande', async () => {
+    const user = userEvent.setup();
+    mocks.getRefunds.mockResolvedValue(makeRefundsResponse([makeRefund()]));
+
+    render(<AdminReservationsPage />);
+    await screen.findByText('Remboursements à traiter');
+
+    await user.click(screen.getByRole('button', { name: 'Rafraîchir' }));
+
+    await waitFor(() => expect(mocks.getRefunds).toHaveBeenCalledTimes(2));
   });
 });

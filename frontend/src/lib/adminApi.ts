@@ -303,6 +303,71 @@ export interface AdminReservationsResponse {
   counts: AdminReservationCounts;
 }
 
+export type AdminRefundStatus =
+  | 'requested'
+  | 'processing'
+  | 'succeeded'
+  | 'failed'
+  | 'manual_required'
+  | 'canceled';
+
+export interface AdminRefundReservation {
+  clientName: string | null;
+  clientEmail: string | null;
+  roomTitle: string | null;
+  dateDebut: string | null;
+  dateFin: string | null;
+  statut: string | null;
+  paymentStatus: string | null;
+}
+
+/** Ligne du panneau « Remboursements à traiter » (GET /api/admin/refunds). */
+export interface AdminRefund {
+  id: string;
+  paymentId: string;
+  reservationId: string | null;
+  status: AdminRefundStatus;
+  amount: number;
+  currency: string;
+  reason: string;
+  reasonDetails: string | null;
+  providerStatus: string | null;
+  /** Un identifiant provider existe : la relance peut aboutir. */
+  hasProviderRefund: boolean;
+  /** Le paiement source a un identifiant provider : pawaPay peut rembourser. */
+  hasProviderPayment: boolean;
+  requestedAt: string;
+  updatedAt: string;
+  reservation: AdminRefundReservation | null;
+}
+
+export interface AdminRefundCounts {
+  failed: number;
+  manual_required: number;
+  processing: number;
+  total: number;
+}
+
+export interface AdminRefundsResponse {
+  items: AdminRefund[];
+  total: number;
+  counts: AdminRefundCounts;
+}
+
+export interface AdminRefundOutcome {
+  requested: boolean;
+  status: AdminRefundStatus | null;
+  refundId: string | null;
+  reason?: string;
+  details?: string;
+}
+
+export interface AdminRefundSyncResult {
+  status: AdminRefundStatus;
+  synced: boolean;
+  reason?: string;
+}
+
 export interface AdminNotification {
   id: string;
   type: string;
@@ -414,6 +479,25 @@ export const apiAdmin = {
 
   checkAvailability: (reservationId: string) =>
     adminRequest<{ statut: string; reason: string | null }>(`/admin/reservations/${reservationId}/check-availability`, {
+      method: 'POST',
+    }),
+
+  /** Remboursements à surveiller : échecs, manuels requis, en vol. */
+  getRefunds: (params?: { scope?: 'attention' | 'processing' | 'all'; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.scope) searchParams.set('scope', params.scope);
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    const qs = searchParams.toString();
+    return adminRequest<AdminRefundsResponse>(`/admin/refunds${qs ? `?${qs}` : ''}`);
+  },
+
+  retryRefund: (refundId: string) =>
+    adminRequest<{ outcome: AdminRefundOutcome }>(`/admin/refunds/${refundId}/retry`, {
+      method: 'POST',
+    }),
+
+  syncRefund: (refundId: string) =>
+    adminRequest<{ refund: AdminRefundSyncResult }>(`/admin/refunds/${refundId}/sync`, {
       method: 'POST',
     }),
 

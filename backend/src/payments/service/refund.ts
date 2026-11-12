@@ -370,6 +370,65 @@ async function findRefundByProviderId(
 }
 
 /**
+ * Statuts provider d'un remboursement pawaPay.
+ *
+ * `ACCEPTED` couvre aussi les valeurs inconnues : un statut non reconnu ne doit
+ * jamais clore un remboursement (on le laisse en vol).
+ */
+export type RefundProviderStatus = 'COMPLETED' | 'REJECTED' | 'FAILED' | 'ACCEPTED';
+
+/**
+ * Applique un statut provider à une ligne `payment_refunds` et aligne la
+ * réservation. Partagé par le webhook pawaPay et par la relance manuelle admin.
+ */
+export async function applyRefundProviderStatus(
+  paymentRefundId: string,
+  providerStatus: RefundProviderStatus,
+): Promise<void> {
+  switch (providerStatus) {
+    case 'COMPLETED': {
+      await updateRefund(paymentRefundId, {
+        status: 'succeeded',
+        provider_status: providerStatus,
+        completed_at: new Date().toISOString(),
+      });
+      await reconcileReservationFromRefundId(paymentRefundId);
+      return;
+    }
+
+    case 'REJECTED': {
+      const { error } = await supabaseAdmin.rpc('payment_cancel_refund', {
+        p_refund_id: paymentRefundId,
+      });
+      if (error) throw error;
+      await updateRefund(paymentRefundId, {
+        status: 'failed',
+        provider_status: providerStatus,
+      });
+      await reconcileReservationFromRefundId(paymentRefundId);
+      return;
+    }
+
+    case 'FAILED': {
+      await updateRefund(paymentRefundId, {
+        status: 'failed',
+        provider_status: providerStatus,
+      });
+      await reconcileReservationFromRefundId(paymentRefundId);
+      return;
+    }
+
+    case 'ACCEPTED':
+    default: {
+      await updateRefund(paymentRefundId, {
+        status: 'processing',
+        provider_status: providerStatus,
+      });
+    }
+  }
+}
+
+/**
  * Applique un webhook de remboursement pawaPay.
  */
 export async function applyPawapayRefundEvent(
@@ -385,50 +444,11 @@ export async function applyPawapayRefundEvent(
   const refund = await findRefundByProviderId(refundId);
   if (!refund) return { handled: false, reason: 'refund_not_found' };
 
-  const providerStatus = event.data.status;
-
   if (refund.status === 'succeeded') return { handled: true };
 
-  switch (providerStatus) {
-    case 'COMPLETED': {
-      await updateRefund(refund.id, {
-        status: 'succeeded',
-        provider_status: providerStatus,
-        completed_at: new Date().toISOString(),
-      });
-      await reconcileReservationFromRefundId(refund.id);
-      return { handled: true };
-    }
-
-    case 'REJECTED': {
-      const { error } = await supabaseAdmin.rpc('payment_cancel_refund', {
-        p_refund_id: refund.id,
-      });
-      if (error) throw error;
-      await updateRefund(refund.id, {
-        status: 'failed',
-        provider_status: providerStatus,
-      });
-      await reconcileReservationFromRefundId(refund.id);
-      return { handled: true };
-    }
-
-    case 'FAILED': {
-      await updateRefund(refund.id, {
-        status: 'failed',
-        provider_status: providerStatus,
-      });
-      await reconcileReservationFromRefundId(refund.id);
-      return { handled: true };
-    }
-
-    case 'ACCEPTED':
-    default: {
-      await updateRefund(refund.id, {
-        status: 'processing',
-        provider_status: providerStatus,
-      });
-      return { handled: true };
-    }
-  }
+  await applyRefundProviderStatus(
+    refund.id,
+    (event.data.status ?? 'ACCEPTED') as RefundProviderStatus,
+  );
+  return { handled: true };
 }

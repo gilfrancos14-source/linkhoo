@@ -9,13 +9,17 @@ import {
   Phone,
   Mail,
   Check,
+  AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import {
   apiAdmin,
   type AdminReservation,
   type AdminReservationCounts,
+  type AdminRefund,
+  type AdminRefundCounts,
 } from '../../lib/adminApi';
-import { priceWithCurrency } from '../../lib/roomDisplay';
+import { formatPrice, priceWithCurrency } from '../../lib/roomDisplay';
 import { formatDate as formatDateFr } from '../../lib/formatDate';
 import '../../styles/22-admin-dashboard.css';
 
@@ -27,6 +31,38 @@ const ZERO_COUNTS: AdminReservationCounts = {
   confirmed: 0,
   cancelled: 0,
 };
+
+const ZERO_REFUND_COUNTS: AdminRefundCounts = {
+  failed: 0,
+  manual_required: 0,
+  processing: 0,
+  total: 0,
+};
+
+const REFUND_STATUS_LABELS: Record<AdminRefund['status'], string> = {
+  requested: 'En cours',
+  processing: 'En cours',
+  succeeded: 'Remboursé',
+  failed: 'Échec',
+  manual_required: 'Manuel requis',
+  canceled: 'Annulé',
+};
+
+const REFUND_REASON_LABELS: Record<string, string> = {
+  client_cancellation: 'Annulation par le client',
+  gerant_refusal: 'Réservation refusée par le gérant',
+  gerant_cancellation: 'Annulation par le gérant',
+  auto_expiry: 'Expiration automatique',
+  platform_cancellation: 'Annulation par la plateforme',
+  dispute: 'Litige',
+  goodwill: 'Geste commercial',
+  other: 'Remboursement',
+};
+
+function formatRefundAmount(amount: number, currency: string): string {
+  return `${formatPrice(amount)} ${currency}`;
+}
+
 
 function countKeyOf(statut: string): keyof AdminReservationCounts | null {
   if (statut === 'en_attente') return 'pending';
@@ -54,6 +90,20 @@ export default function AdminReservationsPage() {
   const [checkingId, setCheckingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
+
+  // Remboursements : état séparé pour qu'une panne de cette route ne bloque pas
+  // le traitement des réservations.
+  const [refunds, setRefunds] = useState<AdminRefund[]>([]);
+  const [refundCounts, setRefundCounts] = useState<AdminRefundCounts>(ZERO_REFUND_COUNTS);
+  const [refundsReady, setRefundsReady] = useState(false);
+  const [refundsError, setRefundsError] = useState('');
+  const [refundsReloadKey, setRefundsReloadKey] = useState(0);
+  const [refundActionId, setRefundActionId] = useState<string | null>(null);
+  const [confirmingRefundId, setConfirmingRefundId] = useState<string | null>(null);
+  const [refundFeedback, setRefundFeedback] = useState<{
+    tone: 'success' | 'danger';
+    message: string;
+  } | null>(null);
 
   // Filtrage (statut, recherche) et pagination sont délégués au serveur
   // (RPC admin_reservations en SQL) : chaque changement reinterroge la page
@@ -96,6 +146,94 @@ export default function AdminReservationsPage() {
       cancelled = true;
     };
   }, [filterStatut, search, currentPage, reloadKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRefundsError('');
+    apiAdmin
+      .getRefunds({ scope: 'all', limit: 50 })
+      .then((data) => {
+        if (cancelled) return;
+        setRefunds(data.items);
+        setRefundCounts(data.counts);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setRefunds([]);
+        setRefundCounts(ZERO_REFUND_COUNTS);
+        setRefundsError(
+          err instanceof Error && err.message
+            ? err.message
+            : 'Impossible de charger les remboursements.',
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setRefundsReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [refundsReloadKey]);
+
+  const attentionRefunds = refunds.filter(
+    (refund) => refund.status === 'failed' || refund.status === 'manual_required',
+  );
+  const processingRefunds = refunds.filter((refund) => refund.status === 'processing');
+  const hasRefundWork = attentionRefunds.length > 0 || processingRefunds.length > 0;
+
+  const handleRefundRetry = async (refund: AdminRefund) => {
+    setRefundActionId(refund.id);
+    setRefundFeedback(null);
+    try {
+      const { outcome } = await apiAdmin.retryRefund(refund.id);
+      setConfirmingRefundId(null);
+      setRefundFeedback({
+        tone: outcome.status === 'failed' ? 'danger' : 'success',
+        message:
+          outcome.reason === 'already_refunded' || outcome.status === 'succeeded'
+            ? 'Ce remboursement était déjà abouti.'
+            : outcome.status === 'failed'
+              ? 'Le prestataire a refusé le remboursement. Vérifiez le motif avant de relancer.'
+              : 'Remboursement relancé : en attente de la confirmation du prestataire.',
+      });
+      setRefundsReloadKey((key) => key + 1);
+      setReloadKey((key) => key + 1);
+    } catch (err: unknown) {
+      setRefundFeedback({
+        tone: 'danger',
+        message:
+          err instanceof Error && err.message
+            ? err.message
+            : 'La relance du remboursement a échoué.',
+      });
+    } finally {
+      setRefundActionId(null);
+    }
+  };
+
+  const handleRefundSync = async (refund: AdminRefund) => {
+    setRefundActionId(refund.id);
+    setRefundFeedback(null);
+    try {
+      const { refund: synced } = await apiAdmin.syncRefund(refund.id);
+      setRefundFeedback({
+        tone: synced.status === 'failed' ? 'danger' : 'success',
+        message: `Statut synchronisé : ${REFUND_STATUS_LABELS[synced.status]}.`,
+      });
+      setRefundsReloadKey((key) => key + 1);
+      setReloadKey((key) => key + 1);
+    } catch (err: unknown) {
+      setRefundFeedback({
+        tone: 'danger',
+        message:
+          err instanceof Error && err.message
+            ? err.message
+            : 'La vérification du remboursement a échoué.',
+      });
+    } finally {
+      setRefundActionId(null);
+    }
+  };
 
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
@@ -287,6 +425,143 @@ export default function AdminReservationsPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Remboursements à traiter ── */}
+      {refundsReady && (hasRefundWork || refundsError || refundFeedback) && (
+        <section className="admin-refunds" aria-labelledby="admin-refunds-title">
+          <div className="admin-refunds__header">
+            <div>
+              <h3 id="admin-refunds-title">Remboursements à traiter</h3>
+              <p className="admin-refunds__subtitle">
+                {refundCounts.failed + refundCounts.manual_required} à relancer ·{' '}
+                {refundCounts.processing} en cours
+              </p>
+            </div>
+            <button
+              type="button"
+              className="admin-btn admin-btn--sm"
+              onClick={() => setRefundsReloadKey((key) => key + 1)}
+            >
+              <RefreshCw size={13} />
+              Rafraîchir
+            </button>
+          </div>
+
+          {refundsError && (
+            <p className="admin-refunds__feedback admin-refunds__feedback--danger" role="alert">
+              {refundsError}
+            </p>
+          )}
+
+          {refundFeedback && (
+            <p
+              className={`admin-refunds__feedback admin-refunds__feedback--${refundFeedback.tone}`}
+              role="status"
+            >
+              {refundFeedback.message}
+            </p>
+          )}
+
+          <ul className="admin-refunds__list">
+            {[...attentionRefunds, ...processingRefunds].map((refund) => {
+              const busy = refundActionId === refund.id;
+              const canRetry = refund.hasProviderPayment;
+              return (
+                <li key={refund.id} className="admin-refunds__item">
+                  <div className="admin-refunds__info">
+                    <div className="admin-refunds__line">
+                      <span
+                        className={`admin-badge admin-badge--${
+                          refund.status === 'processing' ? 'warning' : 'danger'
+                        }`}
+                      >
+                        <span className="badge-dot"></span>
+                        {REFUND_STATUS_LABELS[refund.status]}
+                      </span>
+                      <strong className="admin-refunds__amount">
+                        {formatRefundAmount(refund.amount, refund.currency)}
+                      </strong>
+                      {refund.reservation?.clientName && (
+                        <span className="admin-refunds__client">
+                          {refund.reservation.clientName}
+                        </span>
+                      )}
+                    </div>
+                    <p className="admin-refunds__meta">
+                      {refund.reservation?.roomTitle ?? 'Réservation inconnue'}
+                      {refund.reservation?.dateDebut && refund.reservation?.dateFin
+                        ? ` · ${formatDate(refund.reservation.dateDebut)} → ${formatDate(
+                            refund.reservation.dateFin,
+                          )}`
+                        : ''}
+                    </p>
+                    <p className="admin-refunds__reason">
+                      {refund.reasonDetails ||
+                        REFUND_REASON_LABELS[refund.reason] ||
+                        refund.reason}
+                      {refund.providerStatus ? ` · prestataire : ${refund.providerStatus}` : ''}
+                    </p>
+                    {refund.status === 'manual_required' && !canRetry && (
+                      <p className="admin-refunds__warning">
+                        <AlertTriangle size={13} />
+                        Paiement sans identifiant provider : remboursement manuel requis.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="admin-refunds__actions">
+                    {refund.status === 'processing' ? (
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn--sm"
+                        onClick={() => handleRefundSync(refund)}
+                        disabled={busy}
+                      >
+                        <RefreshCw size={13} />
+                        {busy ? 'Vérification...' : 'Vérifier'}
+                      </button>
+                    ) : !canRetry ? (
+                      <button type="button" className="admin-btn admin-btn--sm" disabled>
+                        Relance impossible
+                      </button>
+                    ) : confirmingRefundId === refund.id ? (
+                      <div className="admin-refunds__confirm">
+                        <span>Confirmer ?</span>
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn--sm admin-btn--primary"
+                          onClick={() => handleRefundRetry(refund)}
+                          disabled={busy}
+                        >
+                          {busy ? '...' : 'Oui'}
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn--sm"
+                          onClick={() => setConfirmingRefundId(null)}
+                          disabled={busy}
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn--sm admin-btn--primary"
+                        onClick={() => setConfirmingRefundId(refund.id)}
+                        disabled={busy}
+                      >
+                        <RefreshCw size={13} />
+                        Relancer
+                      </button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       {/* ── Contrôles de Recherche et Filtres ── */}
       <div className="admin-filters dash-res-controls">
