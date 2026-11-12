@@ -74,6 +74,23 @@ recevoir de nouvelles fonctionnalités.
   binaires `dl.min.io` en 410 Gone). Le disque + Nginx a été retenu :
   moins de RAM, moins de composants, sauvegarde par simple copie.
 
+## 4 bis. Bug métier trouvé pendant la migration
+
+La migration `20261112140000_payment_claim_premium_market.sql` corrige un bug
+**antérieur** à la bascule (donc présent aussi sur Supabase) : la fonction
+`payment_claim_premium` lisait `c.market` depuis `payment_claim_succeeded`,
+qui ne retourne pas de colonne `market`. PostgreSQL validant la référence de
+colonne dès la première exécution, **toute activation d'abonnement premium
+échouait** (« column c.market does not exist »).
+
+Le bug était latent : aucun paiement premium n'avait jamais abouti. Il aurait
+été payé sans jamais activer l'abonnement au premier client premium.
+
+Il est désormais couvert par `backend/src/db/payments.integration.test.ts`,
+qui rejoue le cycle complet (activation, rejeu idempotent, montant incohérent
+refusé, réservation marquée payée, demande de remboursement et double
+remboursement bloqué).
+
 ## 5. Repli
 
 `DB_DRIVER=supabase` rebascule sur l'ancien client `supabase-js` sans toucher

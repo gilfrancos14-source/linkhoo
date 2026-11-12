@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+﻿import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import express from 'express';
@@ -8,8 +8,8 @@ import mediaRouter from '../routes/media';
 import { localStorage, resolveObjectPath, verifyObjectUrl } from './storage';
 
 /**
- * Tests du stockage disque : dépôt de fichier, URL publique, URL signée
- * (signature et expiration), suppression, et protection contre la traversée
+ * Tests du stockage disque : dÃ©pÃ´t de fichier, URL publique, URL signÃ©e
+ * (signature et expiration), suppression, et protection contre la traversÃ©e
  * de chemin.
  */
 
@@ -30,7 +30,7 @@ describe('stockage disque', () => {
     delete process.env.STORAGE_SIGNING_SECRET;
   });
 
-  it('dépose un fichier et renvoie son URL publique', async () => {
+  it('dÃ©pose un fichier et renvoie son URL publique', async () => {
     const bucket = localStorage.from('images');
     const content = Buffer.from('contenu-image');
 
@@ -48,7 +48,7 @@ describe('stockage disque', () => {
     expect(data.publicUrl).toBe('http://localhost:3001/api/media/images/photo-test.webp');
   });
 
-  it('refuse d’écraser un fichier existant sans upsert', async () => {
+  it('refuse dâ€™Ã©craser un fichier existant sans upsert', async () => {
     const bucket = localStorage.from('images');
     const again = await bucket.upload('photo-test.webp', Buffer.from('autre'), { upsert: false });
     expect(again.error).not.toBeNull();
@@ -57,7 +57,7 @@ describe('stockage disque', () => {
     expect(forced.error).toBeNull();
   });
 
-  it('produit une URL signée valide, puis rejette une signature falsifiée', async () => {
+  it('produit une URL signÃ©e valide, puis rejette une signature falsifiÃ©e', async () => {
     const bucket = localStorage.from('verification-docs');
     await bucket.upload('gerant-1/piece.pdf', Buffer.from('pdf'), { upsert: true });
 
@@ -69,9 +69,9 @@ describe('stockage disque', () => {
 
     expect(verifyObjectUrl('verification-docs', 'gerant-1/piece.pdf', expiresAt, signature)).toBe(true);
     expect(verifyObjectUrl('verification-docs', 'gerant-1/piece.pdf', expiresAt, 'faux')).toBe(false);
-    // Un document ne doit pas pouvoir être échangé contre un autre.
+    // Un document ne doit pas pouvoir Ãªtre Ã©changÃ© contre un autre.
     expect(verifyObjectUrl('verification-docs', 'gerant-2/piece.pdf', expiresAt, signature)).toBe(false);
-    // Une URL expirée est refusée.
+    // Une URL expirÃ©e est refusÃ©e.
     expect(verifyObjectUrl('verification-docs', 'gerant-1/piece.pdf', 1, signature)).toBe(false);
   });
 
@@ -80,19 +80,19 @@ describe('stockage disque', () => {
     const removed = await bucket.remove(['photo-test.webp']);
     expect(removed.error).toBeNull();
 
-    // Le fichier a disparu : un nouveau dépôt est possible.
+    // Le fichier a disparu : un nouveau dÃ©pÃ´t est possible.
     const again = await bucket.upload('photo-test.webp', Buffer.from('x'), { upsert: false });
     expect(again.error).toBeNull();
   });
 
-  it('refuse la traversée de chemin', () => {
+  it('refuse la traversÃ©e de chemin', () => {
     expect(() => resolveObjectPath('images', '../../etc/passwd')).toThrow();
     expect(() => resolveObjectPath('images', '/etc/passwd')).toThrow();
     expect(() => resolveObjectPath('images', 'a/../../b')).toThrow();
     expect(() => resolveObjectPath('bucket-inconnu', 'a.png')).toThrow();
   });
 
-  it('sert les images publiques et refuse les documents non signés', async () => {
+  it('sert les images publiques et refuse les documents non signÃ©s', async () => {
     const app = express();
     app.use('/api/media', mediaRouter);
 

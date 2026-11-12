@@ -24,6 +24,10 @@ services:
       POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
     ports:
       - "5434:5432"
+    # Les tests d'intégration ouvrent chacun leur propre pool : on laisse
+    # de la marge sous le nombre de sessions pour ne pas tomber en
+    # « connection timeout » pendant une suite complète.
+    command: ["postgres", "-c", "max_connections=200"]
     volumes:
       - ilehya_pgdata:/var/lib/postgresql/data
     healthcheck:
