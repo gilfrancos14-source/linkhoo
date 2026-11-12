@@ -48,23 +48,36 @@ chown -R deploy:deploy /var/lib/ilehya /var/www/ilehya /opt/ilehya
 cd /opt/ilehya
 git clone <url-du-depot> .
 
-cp backend/.env.example backend/.env.prod
-# Renseigner : DATABASE_URL n'est PAS nécessaire ici (compose le définit),
-# mais STORAGE_PUBLIC_BASE_URL, STORAGE_SIGNED_BASE_URL, STORAGE_SIGNING_SECRET,
-# CLERK_SECRET_KEY, ADMIN_JWT_SECRET, PAWAPAY_*, RESEND_API_KEY,
-# PII_ENCRYPTION_KEY, APP_PUBLIC_URL, ALLOWED_ORIGINS, TRUST_PROXY=1
+# Fichier d'environnement de production (modèle fourni)
+cp backend/.env.prod.example backend/.env.prod
+nano backend/.env.prod      # secrets, clés Clerk/pawaPay, domaine, ALLOWED_ORIGINS…
 
 # Frontend
 cd frontend && npm ci && npm run build && sudo cp -r dist/* /var/www/ilehya/ && cd ..
 
-# Images et base
-docker compose -f docker-compose.prod.yml build api
-docker compose -f docker-compose.prod.yml up -d
+# Images, base, migrations et redémarrage — en une commande
+./deploy/deploy.sh
+```
 
-# Migrations
-docker compose -f docker-compose.prod.yml run --rm api node dist/db/migrateCli.js --yes
+`deploy/deploy.sh` enchaîne : construction de l'image → migrations → redémarrage
+→ vérification de `/api/health`. Il est idempotent : le relancer est sans
+risque, et une migration qui échoue laisse la version précédente en ligne.
+
+Pour vérifier l'état des migrations à tout moment :
+
+```bash
 docker compose -f docker-compose.prod.yml run --rm api node dist/db/migrateCli.js --status
 ```
+
+## 3 bis. Pré-vol (à lancer juste avant)
+
+```bash
+./deploy/preflight.sh le-domaine.fr
+```
+
+Le script vérifie la RAM, le disque, Docker, Nginx, les ports, le pare-feu, le
+DNS, et surtout que `backend/.env.prod` ne contient ni variable vide ni
+`PAWAPAY_ENV=sandbox`. Il sort avec 1 si un point est bloquant.
 
 ## 4. Nginx et TLS
 
@@ -83,6 +96,12 @@ Puis, dans `backend/.env.prod` :
 ```
 STORAGE_PUBLIC_BASE_URL=https://le-domaine.fr/media
 STORAGE_SIGNED_BASE_URL=https://le-domaine.fr/api/media
+```
+
+Et relancer l'API pour qu'elle reprenne les nouvelles URLs :
+
+```bash
+docker compose -f docker-compose.prod.yml up -d --force-recreate api
 ```
 
 ## 5. Sauvegardes (cron)
@@ -107,15 +126,21 @@ sudo deploy/backup/restore.sh /var/backups/ilehya/test-restore
 
 ```bash
 cd /opt/ilehya && git pull
-docker compose -f docker-compose.prod.yml build api
-docker compose -f docker-compose.prod.yml run --rm api node dist/db/migrateCli.js --yes
-docker compose -f docker-compose.prod.yml up -d
-cd frontend && npm ci && npm run build && sudo cp -r dist/* /var/www/ilehya/
+cd frontend && npm ci && npm run build && sudo cp -r dist/* /var/www/ilehya/ && cd ..
+./deploy/deploy.sh
 ```
 
 ## 7. Rollback
 
-- Base : `deploy/backup/restore.sh <sauvegarde>` puis `restart api`.
+```bash
+# Complet : restaure la base ET redémarre l'API
+./deploy/rollback.sh /var/backups/ilehya/20261117-020000
+
+# Repli code seul (après un git checkout de la version précédente)
+./deploy/rollback.sh --code-only
+```
+
+- Base : `deploy/backup/restore.sh <sauvegarde>` puis redémarrage de l'API.
 - Code : `git checkout <tag-précédent>` + rebuild (image précédente conservée en local).
 - Domaine : TTL bas + ancien enregistrement DNS.
 

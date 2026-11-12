@@ -6,6 +6,7 @@ playwright-report/
 .env
 .env.*
 !.env.example
+!.env.prod.example
 *.log
 
 # Stockage local des fichiers (photos, documents de vérification)
