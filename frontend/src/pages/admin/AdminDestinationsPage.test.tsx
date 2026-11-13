@@ -288,7 +288,10 @@ describe('AdminDestinationsPage — filtres et suggestions', () => {
 
     render(<AdminDestinationsPage />);
     await tableReady();
-    await waitFor(() => expect(cityOptions().length).toBeGreaterThan(0));
+    // Les villes arrivent en deux vagues (villes d'abord, puis celles des
+    // événements) : on attend une ville issue des événements, sinon les
+    // assertions peuvent porter sur une liste encore incomplète.
+    await waitFor(() => expect(cityOptions()).toContain('Bouaké'));
 
     const options = cityOptions();
     expect(options).toContain('Abidjan');

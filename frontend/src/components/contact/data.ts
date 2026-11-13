@@ -50,7 +50,7 @@ export const CONTACT_FAQS: readonly ContactFaqItem[] = [
   {
     question: 'Comment se règle le loyer ?',
     answer:
-      'Le séjour se règle en ligne au moment de la demande, par mobile money via notre prestataire pawaPay. Linkhoo encaisse le montant et le reverse au gérant après le séjour. En cas de refus du gérant ou d’annulation, le remboursement est total.',
+      'Le séjour se règle en ligne au moment de la demande, par mobile money via notre prestataire pawaPay. Linkhoo encaisse le montant et le reverse au gérant après le séjour. En cas de refus du gérant ou d’annulation, le remboursement est effectué à 98 % du montant (frais d’annulation de 2 %).',
   },
   {
     question: 'Comment publier mon logement en tant que gérant ?',

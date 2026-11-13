@@ -588,8 +588,8 @@ describe('POST /api/reservations/:id/cancel', () => {
         client_phone: '',
         room_id: 'room-1',
         room_title: 'Studio',
-        date_debut: '2026-05-01',
-        date_fin: '2026-05-04',
+        date_debut: '2027-05-01',
+        date_fin: '2027-05-04',
         statut: 'annulee',
       },
       error: null,
@@ -602,6 +602,32 @@ describe('POST /api/reservations/:id/cancel', () => {
     expect(res.status).toBe(400);
   });
 
+  it('403 si l’annulation arrive trop tard (moins de 24 h avant l’arrivée)', async () => {
+    clients = fakeChain({ data: { email: 'jean@example.ci' }, error: null });
+    reservations = fakeChain({
+      data: {
+        id: 'r1',
+        client_name: 'Jean',
+        client_email: 'jean@example.ci',
+        client_phone: '+2250700000000',
+        room_id: 'room-1',
+        room_title: 'Studio',
+        // Arrivée déjà passée : la fenêtre d'annulation (24 h avant) est fermée.
+        date_debut: '2026-05-01',
+        date_fin: '2026-05-04',
+        statut: 'en_attente',
+      },
+      error: null,
+    });
+    stubTables({});
+
+    const res = await request(app)
+      .post('/api/reservations/r1/cancel')
+      .set('Authorization', clerkBearer('user_1'));
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('CANCELLATION_DEADLINE_PASSED');
+  });
+
   it('200 : annule et notifie le gérant', async () => {
     clients = fakeChain({ data: { email: 'jean@example.ci' }, error: null });
     reservations = fakeChain({
@@ -612,8 +638,8 @@ describe('POST /api/reservations/:id/cancel', () => {
         client_phone: '+2250700000000',
         room_id: 'room-1',
         room_title: 'Studio',
-        date_debut: '2026-05-01',
-        date_fin: '2026-05-04',
+        date_debut: '2027-05-01',
+        date_fin: '2027-05-04',
         statut: 'en_attente',
       },
       error: null,

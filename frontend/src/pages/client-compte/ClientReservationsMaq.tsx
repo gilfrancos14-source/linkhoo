@@ -123,6 +123,8 @@ export interface ClientReservationsMaqProps {
   reviewable: ClientMineReservationData[];
   reviewedIds: Set<string | undefined>;
   reviewSuccess: string;
+  /** Confirmation d'une annulation : montant remboursé et frais retenus. */
+  cancelNotice: string;
   reviewForm: ReviewFormState | null;
   reviewError: string;
   reviewSubmitting: boolean;
@@ -150,6 +152,7 @@ export default function ClientReservationsMaq({
   reviewable,
   reviewedIds,
   reviewSuccess,
+  cancelNotice,
   reviewForm,
   reviewError,
   reviewSubmitting,
@@ -393,6 +396,12 @@ export default function ClientReservationsMaq({
               </p>
             )}
 
+            {cancelNotice && (
+              <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-[12px] text-emerald-700" role="status">
+                {cancelNotice}
+              </p>
+            )}
+
             {/* Onglets */}
             <div className="card mt-[21px] flex justify-around px-2">
               {tabs.map((entry) => (
@@ -531,6 +540,14 @@ export default function ClientReservationsMaq({
                   const canPay = !!onPay && canPayReservation(reservation.payment_status);
                   const showSuivi = statut === 'en_cours';
                   const showPay = !showSuivi && canPay;
+                  // Annulation possible jusqu'à 24 h avant l'arrivée (règle
+                  // métier appliquée par l'API : `cancellation_deadline`).
+                  const deadline = reservation.cancellation_deadline
+                    ? new Date(reservation.cancellation_deadline)
+                    : null;
+                  const cancellable = !deadline || Number.isNaN(deadline.getTime())
+                    ? true
+                    : deadline.getTime() >= Date.now();
                   const showCancel = !showPay && reservation.statut !== 'annulee';
                   const detailPath = reservation.room_id
                     ? `${homePath}/chambre/${reservation.room_id}`
@@ -614,11 +631,17 @@ export default function ClientReservationsMaq({
                             <button
                               type="button"
                               className="btn o flex-1"
-                              disabled={cancellingId === reservation.id}
+                              disabled={cancellingId === reservation.id || !cancellable}
                               onClick={() => onCancel(reservation.id)}
                             >
                               {cancellingId === reservation.id ? 'Annulation…' : 'Annuler la réservation'}
                             </button>
+                          )}
+                          {showCancel && !cancellable && (
+                            <p className="basis-full text-[11.5px] text-[#8A99B5]">
+                              Annulation impossible : elle doit être faite au moins 24 h avant la
+                              date d’arrivée.
+                            </p>
                           )}
                           {canReview ? (
                             <button type="button" className="btn flex-1" onClick={() => onOpenReviewForm(reservation)}>

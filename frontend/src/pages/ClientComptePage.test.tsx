@@ -494,7 +494,11 @@ describe('ClientComptePage — annulation', () => {
 
     fireEvent.click(within(cardByTitle('Suite vue mer')).getByRole('button', { name: 'Annuler la réservation' }));
 
-    expect(window.confirm).toHaveBeenCalledWith('Annuler cette réservation ?');
+    // La confirmation annonce les frais d'annulation (2 %) : le client doit
+    // connaître le montant qu'il va récupérer avant de valider.
+    expect(window.confirm).toHaveBeenCalledWith(
+      "Annuler cette réservation ? Le remboursement vous sera versé à 98 % du montant (frais d'annulation de 2 %).",
+    );
     expect(mocks.cancelMyReservation).toHaveBeenCalledWith('res1');
     expect(await within(cardByTitle('Suite vue mer')).findByText('Annulée')).toBeInTheDocument();
     expect(within(cardByTitle('Suite vue mer')).queryByRole('button', { name: 'Annuler la réservation' })).not.toBeInTheDocument();

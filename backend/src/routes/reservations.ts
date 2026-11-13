@@ -11,6 +11,11 @@ import { fetchAllRows } from '../utils/fetchAll';
 import { calculateMontant, unitFromPriceUnit } from '../utils/duration';
 import { RESERVATION_COLUMNS } from '../utils/selects';
 import {
+  CANCELLATION_TOO_LATE_MESSAGE,
+  canCancelReservation,
+  cancellationDeadlineIso,
+} from '../payments/cancellation';
+import {
   clientReservationQuerySchema,
   reservationCheckQuerySchema,
   reservationCreateSchema,
@@ -204,7 +209,14 @@ router.get('/mine', requireClerkAuth, async (req: Request, res: Response, next: 
         .order('created_at', { ascending: false })
         .order('id', { ascending: true })
         .range(from, to));
-    res.json(data);
+    // La date limite d'annulation est calculée ici (et pas dans le front) :
+    // c'est une règle métier, elle ne doit pas exister en double.
+    res.json(
+      ((data ?? []) as any[]).map((row) => ({
+        ...row,
+        cancellation_deadline: cancellationDeadlineIso(row.date_debut),
+      })),
+    );
   } catch (err) {
     next(err);
   }
@@ -461,6 +473,15 @@ router.post('/:id/cancel', requireClerkAuth, async (req: Request, res: Response,
     }
     if (reservation.statut === 'annulee') {
       return res.status(400).json({ error: 'Cette réservation est déjà annulée' });
+    }
+    // Fenêtre d'annulation : 24 h avant l'arrivée. Au-delà, c'est bloqué —
+    // le séjour est engagé et le gérant a حسابé son chiffre d'affaires.
+    if (!canCancelReservation(reservation.date_debut)) {
+      return res.status(403).json({
+        error: CANCELLATION_TOO_LATE_MESSAGE,
+        code: 'CANCELLATION_DEADLINE_PASSED',
+        cancellation_deadline: cancellationDeadlineIso(reservation.date_debut),
+      });
     }
 
     const { data, error } = await supabaseAdmin

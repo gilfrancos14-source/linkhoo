@@ -171,7 +171,7 @@ const ROOM_TEMPLATES: Record<CategoryKey, CategoryTemplate> = {
     chambres: 1,
     douches: 1,
     unit: '/ nuit',
-    conditions: 'Réservation en ligne, Annulation gratuite 48h avant',
+    conditions: 'Réservation en ligne, Annulation gratuite 24h avant l’arrivée',
     img: '/images/pexels-artbovich-6758771.jpg',
     second: '/images/pexels-artbovich-6315808.jpg',
     description: (ville, quartier) =>

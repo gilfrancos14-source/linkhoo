@@ -82,7 +82,7 @@ const defaultRooms = [
     description: 'Suite prestige en front de mer avec salon séparé.', capacity: '3 personnes',
     category: 'bj-hotels', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Front de mer',
     chambres: 1, douches: 1, disponible: true, date_dispo: '2026-09-10',
-    conditions: 'Réservation en ligne, Annulation gratuite 48h avant',
+    conditions: 'Réservation en ligne, Annulation gratuite 24h avant l’arrivée',
   },
   {
     id: 'suite-vue-mer-top-floor', title: 'Suite Vue Mer — Top floor', subtitle: 'Suite au dernier étage avec terrasse',
@@ -92,7 +92,7 @@ const defaultRooms = [
     description: 'Suite au dernier étage avec terrasse privée.', capacity: '3 personnes',
     category: 'bj-hotels', market: 'BJ', pays: 'Bénin', ville: 'Cotonou', quartier: 'Front de mer',
     chambres: 1, douches: 1, disponible: true, date_dispo: '2026-09-10',
-    conditions: 'Réservation en ligne, Annulation gratuite 48h avant',
+    conditions: 'Réservation en ligne, Annulation gratuite 24h avant l’arrivée',
   },
   {
     id: 'suite-charme-centre-ville', title: 'Suite Charme — Centre-ville', subtitle: 'Suite élégante en centre-ville',
@@ -112,7 +112,7 @@ const defaultRooms = [
     description: 'Grande suite familiale dans un cadre calme.', capacity: '4 personnes',
     category: 'bj-hotels', market: 'BJ', pays: 'Bénin', ville: 'Ouidah', quartier: 'Périphérie',
     chambres: 2, douches: 2, disponible: true, date_dispo: '2026-09-18',
-    conditions: 'Réservation en ligne, Annulation gratuite 48h avant',
+    conditions: 'Réservation en ligne, Annulation gratuite 24h avant l’arrivée',
   },
   {
     id: 'lumineux-centre-ville-studio', title: 'Lumineux — Centre-ville', subtitle: 'Studio moderne en centre-ville',

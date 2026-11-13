@@ -180,13 +180,18 @@ describe('requestReservationRefund', () => {
 
     expect(supabaseAdmin.rpc).toHaveBeenCalledWith(
       'payment_request_refund',
-      expect.objectContaining({ p_payment_id: 'pay-1', p_amount: 150_000 }),
+      // Annulation : la plateforme retient 2 % (3 000), le client reçoit 147 000.
+      expect.objectContaining({
+        p_payment_id: 'pay-1',
+        p_amount: 147_000,
+        p_platform_fee: 3_000,
+      }),
     );
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toContain('/v2/refunds');
     expect(JSON.parse(String(init.body))).toMatchObject({
       depositId: 'dep_pawapay',
-      amount: '150000',
+      amount: '147000',
       currency: 'XOF',
     });
     expect(JSON.parse(String(init.body)).refundId).toEqual(expect.any(String));
@@ -200,7 +205,42 @@ describe('requestReservationRefund', () => {
       requested: true,
       status: 'processing',
       refundId: 'refund-db-1',
+      platformFee: 3_000,
+      clientAmount: 147_000,
     });
+  });
+
+  it('rembourse la totalité hors annulation (pas de frais)', async () => {
+    const refundUpdate = fakeChain({ data: null, error: null });
+    useSupabaseTables(supabaseAdmin.from, {
+      reservations: fakeChain({ data: RESERVATION, error: null }),
+      payments: fakeChain({ data: PAYMENT, error: null }),
+      payment_refunds: [fakeChain({ data: [], error: null }), refundUpdate],
+    });
+    vi.mocked(supabaseAdmin.rpc).mockResolvedValue({
+      data: [{ refund_id: 'refund-db-1', already_refunded: 0, remaining: 0 }],
+      error: null,
+    } as never);
+    const fetchMock = stubFetch({
+      refundId: 'refund-pawa-1',
+      status: 'ACCEPTED',
+      amount: '150000',
+      currency: 'XOF',
+      created: '2026-10-27T10:00:00.000Z',
+    });
+
+    await requestReservationRefund({
+      reservationId: 'resa-1',
+      reason: 'goodwill',
+      requestedBy: 'admin:admin-1',
+    });
+
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith(
+      'payment_request_refund',
+      expect.objectContaining({ p_amount: 150_000, p_platform_fee: 0 }),
+    );
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(String(init.body)).amount).toBe('150000');
   });
 
   it('passe en traitement manuel sans identifiant de dépôt pawaPay', async () => {

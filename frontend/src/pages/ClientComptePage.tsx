@@ -32,6 +32,7 @@ export default function ClientComptePage() {
     const [reviewsError, setReviewsError] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [cancelNotice, setCancelNotice] = useState('');
     const [cancellingId, setCancellingId] = useState<string | null>(null);
     const [payingId, setPayingId] = useState<string | null>(null);
 
@@ -103,9 +104,15 @@ export default function ClientComptePage() {
   );
 
   const handleCancel = async (id: string) => {
-    if (!window.confirm('Annuler cette réservation ?')) return;
+    if (
+      !window.confirm(
+        "Annuler cette réservation ? Le remboursement vous sera versé à 98 % du montant (frais d'annulation de 2 %).",
+      )
+    )
+      return;
     setCancellingId(id);
     setError('');
+    setCancelNotice('');
     try {
       const result = await cancelMyReservation(id);
       // Le backend rembourse automatiquement une réservation payée : on
@@ -133,6 +140,21 @@ export default function ClientComptePage() {
             : r,
         ),
       );
+
+      // Le client veut savoir ce qu'il va récupérer : montant net et frais
+      // d'annulation retenus par la plateforme.
+      const refund = result?.refund as
+        | { clientAmount?: number; platformFee?: number; status?: string }
+        | undefined;
+      if (refund?.clientAmount) {
+        const fee = refund.platformFee ?? 0;
+        setCancelNotice(
+          `Annulation enregistrée : ${refund.clientAmount.toLocaleString('fr-FR')} FCFA vous seront remboursés` +
+            (fee > 0
+              ? ` (frais d'annulation : ${fee.toLocaleString('fr-FR')} FCFA).`
+              : '.'),
+        );
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Impossible d\'annuler la réservation.');
     } finally {
@@ -263,6 +285,7 @@ export default function ClientComptePage() {
         reviewable={Array.isArray(reviewable) ? reviewable : []}
         reviewedIds={reviewedReservationIds}
         reviewSuccess={reviewSuccess || ''}
+        cancelNotice={cancelNotice || ''}
         reviewForm={reviewForm}
         reviewError={reviewError || ''}
         reviewSubmitting={reviewSubmitting}

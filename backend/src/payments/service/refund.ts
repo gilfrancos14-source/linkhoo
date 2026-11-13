@@ -1,7 +1,8 @@
 /**
  * Remboursements pawaPay (phase 3).
  *
- * Règle produit : tout remboursement est TOTAL (100 % de la somme encaissée).
+ * Règle produit : un remboursement est TOTAL, sauf en cas d'annulation : la
+ * plateforme y retient 2 % (frais d'encaissement) et le client reçoit 98 %.
  *
  * Séquence :
  *   1. `payment_request_refund` réserve le montant SOUS VERROU et met à jour
@@ -21,6 +22,7 @@ import { createRefundId } from '../pawapay/utils';
 import type { PawapayWebhookEvent } from '../pawapay/webhooks';
 import type { PawapayCurrency } from '../pawapay/types';
 import type { RefundStatus } from '../types';
+import { splitCancellationFee } from '../cancellation';
 import { reconcileReservationRefundState } from './refundReconcile';
 
 export type RefundReason =
@@ -45,6 +47,10 @@ export interface RefundOutcome {
   readonly refundId: string | null;
   readonly reason?: RefundMissReason;
   readonly details?: string;
+  /** Frais d'annulation conservés par la plateforme (2 %). */
+  readonly platformFee?: number;
+  /** Montant effectivement renvoyé au client. */
+  readonly clientAmount?: number;
 }
 
 interface ReservationRefundRow {
@@ -73,6 +79,18 @@ const REASON_DETAILS: Record<RefundReason, string> = {
 };
 
 const ALIVE_REFUND_STATUSES = ['requested', 'processing', 'succeeded', 'manual_required'] as const;
+
+/**
+ * Motifs qui déclenchent les frais d'annulation (2 %). Les autres
+ * (litige, geste commercial, incident technique) sont des décisions du
+ * back-office : le montant remboursé reste celui décidé par l'administrateur.
+ */
+const CANCELLATION_REFUND_REASONS = new Set<RefundReason>([
+  'client_cancellation',
+  'gerant_refusal',
+  'gerant_cancellation',
+  'platform_cancellation',
+]);
 
 // NOTE : pas de table de codes motif : l'API pawaPay de remboursement
 // N'ACCEPTE PAS le champ `reason` (voir payments/pawapay/types.ts). Le motif
@@ -119,15 +137,20 @@ async function fetchRefundablePayment(
 async function alreadyRefundedAmount(paymentId: string): Promise<number> {
   const { data, error } = await supabaseAdmin
     .from('payment_refunds')
-    .select('amount')
+    .select('amount, policy_snapshot')
     .eq('payment_id', paymentId)
     .in('status', [...ALIVE_REFUND_STATUSES]);
 
   if (error) throw error;
-  return (data as { amount: number | string }[] | null)?.reduce(
-    (sum, row) => sum + Number(row.amount),
-    0,
-  ) ?? 0;
+  // Les frais d'annulation (2 %) sont conservés par la plateforme : ils
+  // comptent comme déjà remboursés, sinon un second appel les reverserait.
+  return (
+    (data as { amount: number | string; policy_snapshot?: { platform_fee?: number } | null }[] | null) ??
+    []
+  ).reduce((sum, row) => {
+    const fee = Number(row.policy_snapshot?.platform_fee ?? 0);
+    return sum + Number(row.amount) + (Number.isFinite(fee) ? fee : 0);
+  }, 0);
 }
 
 async function updateRefund(
@@ -230,9 +253,22 @@ export async function requestReservationRefund(input: {
   // son API — donc on le garde exploitable en base).
   const details = input.reasonDetails?.trim() || REASON_DETAILS[input.reason];
 
+  // Frais d'annulation : en cas d'annulation, la plateforme conserve 2 % du
+  // montant (frais d'encaissement) et le client reçoit le reste. Sur une
+  // annulation, la commission habituelle (5/10/15 %) n'est pas prélevée :
+  // elle ne s'applique qu'aux séjours réellement effectués.
+  const cancellation = CANCELLATION_REFUND_REASONS.has(input.reason);
+  const { fee, clientAmount } = cancellation
+    ? splitCancellationFee(remaining)
+    : { fee: 0, clientAmount: remaining };
+
+  if (clientAmount <= 0) {
+    return { requested: false, status: null, refundId: null, reason: 'already_refunded' };
+  }
+
   const { data, error } = await supabaseAdmin.rpc('payment_request_refund', {
     p_payment_id: payment.id,
-    p_amount: remaining,
+    p_amount: clientAmount,
     p_reason: input.reason,
     p_requested_by: input.requestedBy,
     p_reason_details: details.slice(0, 500),
@@ -241,6 +277,7 @@ export async function requestReservationRefund(input: {
       commission_percent: 0,
       deposit_percent: 100,
     },
+    p_platform_fee: fee,
   });
 
   if (error) {
@@ -306,7 +343,8 @@ export async function requestReservationRefund(input: {
     const response = await client.createRefund({
       refundId: refundUuid,
       depositId: payment.provider_payment_id,
-      amount: remaining.toFixed(0),
+      // Le client reçoit le montant net de frais d'annulation.
+      amount: clientAmount.toFixed(0),
       // pawaPay exige `currency` dès qu'un `amount` est fourni.
       currency: payment.currency as PawapayCurrency,
     });
@@ -317,7 +355,13 @@ export async function requestReservationRefund(input: {
       provider_status: response.status ?? 'ACCEPTED',
     });
 
-    return { requested: true, status: 'processing', refundId };
+    return {
+      requested: true,
+      status: 'processing',
+      refundId,
+      platformFee: fee,
+      clientAmount,
+    };
   } catch (error) {
     const definitive =
       error instanceof PawapayConfigError ||

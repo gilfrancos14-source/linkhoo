@@ -447,6 +447,47 @@ describeIntegration('parcours de paiement', () => {
     expect(Number(reservation.rows[0].refunded_amount)).toBe(2000);
     expect(reservation.rows[0].payment_status).toBe('partially_refunded');
   });
+
+  it('solde la réservation avec les frais d’annulation de 2 %', async () => {
+    const payment = await query<{ id: string }>(
+      'SELECT id FROM payments WHERE reference = $1',
+      [BOOKING_REFERENCE],
+    );
+    const paymentId = payment.rows[0].id;
+
+    // Il reste 3 000 sur le paiement (5 000 − 2 000 remboursés au test
+    // précédent). Le client reçoit 2 940, la plateforme garde 60.
+    const result = await supabaseAdmin.rpc('payment_request_refund', {
+      p_payment_id: paymentId,
+      p_amount: 2940,
+      p_reason: 'client_cancellation',
+      p_requested_by: 'admin_test',
+      p_reason_details: 'remboursement avec frais',
+      p_policy_snapshot: { source: 'test', commission_percent: 0, deposit_percent: 100 },
+      p_platform_fee: 60,
+    });
+
+    expect(result.error).toBeNull();
+    const row = (result.data as any[])[0];
+    expect(Number(row.remaining)).toBe(0);
+
+    const refund = await query<{ amount: string; snapshot: { platform_fee?: number } }>(
+      'SELECT amount, policy_snapshot AS snapshot FROM payment_refunds WHERE id = $1',
+      [row.refund_id],
+    );
+    // Le prestataire ne reçoit que la part du client.
+    expect(Number(refund.rows[0].amount)).toBe(2940);
+    expect(Number(refund.rows[0].snapshot.platform_fee)).toBe(60);
+
+    const reservation = await query<{ refunded_amount: string; payment_status: string }>(
+      'SELECT refunded_amount, payment_status FROM reservations WHERE id = $1',
+      [RESERVATION_ID],
+    );
+    // La réservation est soldée sur le montant TOTAL (2 000 + 2 940 + 60) :
+    // sinon le back-office proposerait de rembourser les 2 % restants.
+    expect(Number(reservation.rows[0].refunded_amount)).toBe(5000);
+    expect(reservation.rows[0].payment_status).toBe('refunded');
+  });
 });
 
 // ---------------------------------------------------------------------------

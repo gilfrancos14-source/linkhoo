@@ -479,6 +479,8 @@ export interface ClientMineReservationData extends ClientReservationData {
   montant: number | null;
   responded_at: string | null;
   room?: { img: string | null; alt: string | null; description: string | null } | null;
+  /** Date limite d'annulation (24 h avant l'arrivée), fournie par l'API. */
+  cancellation_deadline?: string | null;
 }
 
 export type ReservationCreatePayload = Omit<

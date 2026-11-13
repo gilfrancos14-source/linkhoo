@@ -128,6 +128,32 @@ Le délai de 24 h existe pour couvrir la fenêtre d'annulation qui suit la fin
 d'un séjour : verser à l'instant exact de la fin obligerait à reprendre de
 l'argent au gérant.
 
+## 5 ter. Annulation et frais d'annulation
+
+Deux règles décidées le 12/11/2026, appliquées par
+`backend/src/payments/cancellation.ts`.
+
+**Fenêtre d'annulation** — l'annulation par le client est possible jusqu'à
+**24 h avant la date d'arrivée** ; au-delà, l'API la refuse (403,
+`CANCELLATION_DEADLINE_PASSED`). La date limite est calculée côté serveur et
+exposée dans `GET /api/reservations/mine` (`cancellation_deadline`) : le front
+affiche l'information et désactive le bouton, sans jamais dupliquer la règle.
+
+**Frais d'annulation** — en cas d'annulation, le client est remboursé, mais la
+plateforme retient **2 %** du montant (frais d'encaissement) : le client
+reçoit 98 %. Le frais est un paramètre explicite de la RPC
+`payment_request_refund` (`p_platform_fee`) : la réservation est soldée sur le
+montant total (part client + frais), sinon le back-office proposerait de
+rembourser les 2 % restants. Il est conservé dans `policy_snapshot` et compte
+comme « déjà remboursé », pour qu'une seconde demande ne le reverse pas.
+
+Ces frais ne s'appliquent pas aux décisions du back-office (litige, geste
+commercial) : le montant remboursé reste celui choisi par l'administrateur.
+
+La commission de la plateforme (5 / 10 / 15 %) n'est prélevée que sur les
+séjours **effectués** : une réservation annulée n'aboutit à aucun reversement
+en faveur du gérant.
+
 ## 6. Ce qui reste hors périmètre
 
 - Suppression de la couche de compatibilité (nettoyage progressif).
