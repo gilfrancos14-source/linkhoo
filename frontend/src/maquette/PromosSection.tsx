@@ -156,7 +156,7 @@ export default function PromosSection({ market, cards, banners }: PromosSectionP
               <button
                 type="button"
                 aria-label="Fermer la sélection"
-                className="text-slate-400 hover:text-slate-600 text-xs"
+                className="text-slate-400 hover:text-slate-600 text-xs inline-flex items-center justify-center min-w-[44px] min-h-[44px]"
                 onClick={() => setDismissed(true)}
               >
                 <i className="fa-solid fa-xmark"></i>

@@ -432,7 +432,8 @@
   outline: 0;
   background: transparent;
   color: var(--sp-ink);
-  font-size: 14px;
+  /* 16 px : en dessous, iOS zoome la page au focus sur le champ. */
+  font-size: 16px;
   font-weight: 700;
 }
 

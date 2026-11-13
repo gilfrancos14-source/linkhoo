@@ -36,6 +36,17 @@ npm install
 npm run dev
 ```
 
+### Contrôle responsive (mobile-first)
+
+```bash
+npm run audit:responsive   # nécessite le serveur de dev sur :5173
+```
+
+Le script ouvre les pages principales dans Chromium et mesure, pour chaque
+largeur (320 → 1280 px) : le débordement horizontal, la taille des cibles
+tactiles (44 × 44 px minimum sur mobile) et la taille des polices de saisie
+(16 px minimum, sinon iOS zoome la page au focus).
+
 ## Backend
 
 ```bash

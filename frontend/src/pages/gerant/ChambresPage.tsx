@@ -258,7 +258,7 @@ export default function ChambresPage() {
                     <Icon id="down" />
                   </span>
                 </label>
-                <label className="block text-xs font-medium">Statut
+                <label className="block text-base font-medium">Statut
                   <span className="field mt-1.5">
                     <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as 'all' | 'available' | 'occupied')}>
                       <option value="all">Tous les statuts</option>

@@ -170,6 +170,7 @@
 .page-legal {
   padding: calc(var(--header-h) + 2rem) 0 4rem;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .page-legal__back {

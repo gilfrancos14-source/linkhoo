@@ -550,14 +550,14 @@
 .ct-input {
   display: block;
   width: 100%;
-  height: 33px;
+  height: 44px;
   padding: 0 12px;
   border: 1px solid #e5e7f0;
   border-radius: 6px;
   background: #fafafd;
   color: var(--ct-ink);
   font-family: inherit;
-  font-size: 10px;
+  font-size: 16px;
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -607,7 +607,7 @@
   height: 93px;
   min-height: 93px;
   padding: 10px 12px;
-  font-size: 10px;
+  font-size: 16px;
   line-height: 1.5;
   resize: vertical;
 }
@@ -1162,7 +1162,7 @@
   background: #f4f4fb;
   color: var(--ct-ink);
   font-family: inherit;
-  font-size: 9px;
+  font-size: 16px;
   outline: none;
 }
 
@@ -1470,20 +1470,22 @@
   font-size: 12.5px;
 }
 
+/* Saisie du formulaire de contact : 16 px minimum (iOS zoome au focus),
+   et 44 px de haut pour une cible confortable au doigt. */
 .ct-input {
-  height: 40px;
-  font-size: 14px;
+  height: 44px;
+  font-size: 16px;
 }
 
 .ct-form__message textarea {
   height: 120px;
   min-height: 120px;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .contact-page .ct-submit {
-  height: 42px;
-  font-size: 14px;
+  height: 44px;
+  font-size: 16px;
 }
 
 .ct-details__title {
@@ -1585,5 +1587,5 @@
 }
 
 .ct-newsletter input {
-  font-size: 11.5px;
+  font-size: 16px;
 }

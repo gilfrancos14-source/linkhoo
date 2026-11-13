@@ -876,7 +876,7 @@ export default function RoomDetailMaq7() {
                           value={form.dateDebut}
                           onChange={(event) => updateField({ dateDebut: event.target.value })}
                           onBlur={() => handleBlur('dateDebut')}
-                          className="w-full min-w-0 bg-transparent text-xs outline-none"
+                          className="w-full min-w-0 bg-transparent text-base outline-none"
                           aria-invalid={Boolean(errors.dateDebut && touched.dateDebut)}
                         />
                       </span>
@@ -896,7 +896,7 @@ export default function RoomDetailMaq7() {
                           aria-label="Date de fin"
                           placeholder="jj/mm/aaaa"
                           value={dateFin ? formatDate(`${dateFin}T00:00:00`) : ''}
-                          className="w-full min-w-0 bg-transparent text-xs outline-none placeholder:text-mute"
+                          className="w-full min-w-0 bg-transparent text-base outline-none placeholder:text-mute"
                         />
                       </span>
                     </label>
@@ -919,7 +919,7 @@ export default function RoomDetailMaq7() {
                           value={duree}
                           onChange={(event) => setDuree(event.target.value)}
                           onBlur={() => handleBlur('duree')}
-                          className="w-12 bg-transparent text-right text-xs font-semibold outline-none"
+                          className="w-12 bg-transparent text-right text-base font-semibold outline-none"
                           aria-invalid={Boolean(errors.duree && touched.duree)}
                         />
                         <span>{isMonthly ? 'mois' : 'nuit(s)'}</span>
@@ -988,7 +988,7 @@ export default function RoomDetailMaq7() {
                           value={form.name}
                           onChange={(event) => updateField({ name: event.target.value })}
                           onBlur={() => handleBlur('name')}
-                          className="mt-1 w-full rounded-lg border border-line px-3 py-2.5 text-xs outline-none focus:border-brand"
+                          className="mt-1 w-full rounded-lg border border-line px-3 py-2.5 text-base outline-none focus:border-brand"
                           aria-invalid={Boolean(errors.name && touched.name)}
                         />
                         {errors.name && touched.name && (
@@ -1012,7 +1012,7 @@ export default function RoomDetailMaq7() {
                           value={form.email}
                           onChange={(event) => updateField({ email: event.target.value })}
                           onBlur={() => handleBlur('email')}
-                          className="mt-1 w-full rounded-lg border border-line px-3 py-2.5 text-xs outline-none focus:border-brand"
+                          className="mt-1 w-full rounded-lg border border-line px-3 py-2.5 text-base outline-none focus:border-brand"
                           aria-invalid={Boolean(errors.email && touched.email)}
                         />
                         {errors.email && touched.email && (
@@ -1037,7 +1037,7 @@ export default function RoomDetailMaq7() {
                           value={form.phone}
                           onChange={(event) => updateField({ phone: event.target.value })}
                           onBlur={() => handleBlur('phone')}
-                          className="mt-1 w-full rounded-lg border border-line px-3 py-2.5 text-xs outline-none focus:border-brand"
+                          className="mt-1 w-full rounded-lg border border-line px-3 py-2.5 text-base outline-none focus:border-brand"
                           aria-invalid={Boolean(errors.phone && touched.phone)}
                         />
                         {errors.phone && touched.phone && (
@@ -1191,7 +1191,7 @@ export default function RoomDetailMaq7() {
                 <button
                   type="button"
                   onClick={() => setDescOpen((value) => !value)}
-                  className="mt-4 inline-flex items-center gap-1 text-[13px] font-bold text-brand"
+                  className="mt-4 inline-flex min-h-[44px] items-center gap-1 text-[13px] font-bold text-brand"
                 >
                   {descOpen ? 'Lire moins' : 'Lire plus'}
                   <Icon

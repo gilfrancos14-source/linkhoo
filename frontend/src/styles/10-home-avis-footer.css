@@ -139,7 +139,8 @@
   outline: none;
   padding: 0.5rem 0.9rem;
   color: var(--ink);
-  font-size: 0.9rem;
+  /* 16 px : en dessous, iOS zoome la page au focus sur le champ. */
+  font-size: 1rem;
 }
 
 .newsletter__input::placeholder {

@@ -1,0 +1,244 @@
+/* ==========================================================================
+   FONDATIONS TACTILES ET FORMULAIRES
+   ==========================================================================
+   Règles transverses, mobile-first (la base vaut pour le mobile, on
+   enrichit vers le haut) :
+
+   - les champs de saisie font au moins 16 px : en dessous, iOS zoome la
+     page au focus et le formulaire saute hors du champ ;
+   - les boutons-icônes gardent une zone tactile de 44 × 44 px, même quand
+     l'icône affichée est plus petite ;
+   - les éléments collés aux bords respectent les encoches (safe areas) ;
+   - les plein écran utilisent `dvh` (la barre d'adresse mobile fausse le
+     calcul de `100vh`).
+   ========================================================================== */
+
+/* ---------- 1. Champs de saisie : 16 px minimum (mobile) ---------- */
+
+/* En dessous de 16 px, iOS zoome la page au focus et le formulaire saute
+   hors du champ : la saisie devient pénible, voire impossible.
+   La spécificité (0,3,2) l'emporte sur les classes des pages, importées
+   après cette feuille dans leur propre chunk CSS : la règle s'applique
+   partout, sans dépendre de l'ordre d'import. */
+@media (max-width: 767px) {
+  html input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  html select:not([multiple]),
+  html textarea:not([readonly]) {
+    font-size: 16px;
+  }
+}
+
+/* Le retour tactile : le navigateur ne pose plus de délai avant le zoom
+   double-tap sur les champs. */
+input,
+select,
+textarea,
+button,
+a {
+  touch-action: manipulation;
+}
+
+/* ---------- 2. Boutons-icônes : 44 × 44 px ---------- */
+
+/* On agrandit la zone cliquable, pas l'icône : le rendu visuel ne bouge pas,
+   le doigt a une cible réelle. */
+button.ab-icon-btn,
+button.ct-icon-btn,
+button.acc-icon-btn,
+button.ab-topbar__close,
+button.ct-announce__close,
+button.acc-offline__close,
+button.newsletter__btn,
+.ab-newsletter button,
+.ct-newsletter button,
+.acc-newsletter button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Le bouton « Mon espace » et le bouton de connexion de l'en-tête. */
+.header-btn--espace,
+.header-btn--login,
+.acc-account-btn {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+  /* Les boutons d'action du back-office (ligne de tableau) restent lisibles
+     mais gagnent une zone tactile confortable. */
+.admin-btn,
+.admin-chip {
+  min-height: 44px;
+}
+
+/* Sélecteur de rôle (inscription) : deux onglets, cibles jumbo. */
+.register-page__role {
+  min-height: 44px;
+}
+
+/* ---------- 3. Navigation et pied de page (mobile) ---------- */
+
+/* Sur mobile, les liens de navigation et de pied de page sont des cibles
+   tactiles : ils gagnent 44 px de haut. Sur computer, la barre reste
+   compacte — c'est le geste mobile qui est en jeu. */
+@media (max-width: 767px) {
+  .acc-nav__link,
+  .acc-footer__list a,
+  .ab-footer__list a,
+  .ct-footer__list a,
+  .site-footer__list a,
+  .site-footer__legal a,
+  .site-footer__account a,
+  .site-footer__social a,
+  .acc-mobile-menu a,
+  .ab-mobile-menu a,
+  .ct-mobile-menu a,
+  .search-page__breadcrumb-home,
+  .error-page__link,
+  .ct-footer__legal a,
+  .ab-footer__legal a,
+  .acc-footer__legal a,
+  .site-footer__logo,
+  .ct-footer__logo,
+  .ab-footer__logo,
+  .acc-footer__logo {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* Le logo du pied de page : la zone cliquable fait au moins 44 px. */
+  .site-footer__logo,
+  .ct-footer__logo,
+  .ab-footer__logo,
+  .acc-footer__logo {
+    min-width: 44px;
+  }
+
+  /* Le logo de l'en-tête : idem. */
+  a.logo,
+  .logo__mark {
+    min-width: 44px;
+  }
+
+  /* Les liens de contact du pied de page (e-mail, téléphone) et les icônes
+     sociales : même traitement. */
+  .site-footer__contact a,
+  .acc-footer__contact a,
+  .ab-footer__contact a,
+  .ct-footer__contact a,
+  .site-footer__social a,
+  .acc-footer__social a,
+  .ab-footer__social a,
+  .ct-footer__social a {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Un e-mail ou un téléphone affiché dans une liste de coordonnées : la
+     cible reste un lien de 20 px de haut, difficile à viser au doigt. */
+  a[href^='mailto:'],
+  a[href^='tel:'] {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+/* ---------- 3. Barre de recherche de l'accueil ---------- */
+
+/* Les déclencheurs (« Séjour », « Voiture de location », « Choisir une
+   date ») sont des boutons : ils doivent être aussi hauts que les champs
+   voisins, sinon le doigt vise à côté. */
+.acc-search-field__input,
+.acc-search-field__select {
+  min-height: 44px;
+}
+
+.acc-search-date {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ---------- 4. Boutons-icônes du site (mobile) ---------- */
+
+/* Ces boutons n'affichent qu'une icône : la zone cliquable doit atteindre
+   44 × 44 px, sinon le doigt vise à côté sur un petit écran. */
+@media (max-width: 767px) {
+  button[aria-label^='Sauvegarder'],
+  button[aria-label='Fermer l\'événement'],
+  button[aria-label='Événement précédent'],
+  button[aria-label='Événement suivant'],
+  button[aria-label='Photo précédente'],
+  button[aria-label='Photo suivante'],
+  button[aria-label='Fermer la sélection'],
+  .acc-to-top,
+  .header-nav__link,
+  .ct-submit,
+  .ct-cta__btn,
+  .ct-map__link,
+  .ct-brand,
+  .ct-footer__logo {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Les pastilles du carrousel restent petites à l'œil (6 à 10 px) mais leur
+   zone cliquable est agrandie à 44 px par un pseudo-élément transparent. */
+button[aria-label^='Destination '],
+button[aria-label^='Slide '] {
+  position: relative;
+}
+
+button[aria-label^='Destination ']::after,
+button[aria-label^='Slide ']::after {
+  content: '';
+  position: absolute;
+  inset: -20px;
+}
+
+/* Les flèches du carrousel : 44 × 44 px au doigt. Le préfixe `button` passe
+   devant la règle de la page (mêmes classes, même spécificité). */
+@media (max-width: 767px) {
+  button.acc-slider__nav {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* ---------- 5. Safe areas (encoches, barre de gestes) ---------- */
+
+/* Les bandeaux fixes touchent le bord haut : on réserve la place de
+   l'encoche et de la barre d'état. */
+.site-header,
+.ab-topbar,
+.ct-announce,
+.acc-offline {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+/* ---------- 5. Plein écran : `dvh` plutôt que `vh` ---------- */
+
+/* `100vh` ignore la barre d'adresse mobile : le bas de page est coupé quand
+   la barre se rétracte. `dvh` suit la hauteur réelle. */
+.screen-dvh {
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: 100dvh;
+}
+
+/* ---------- 6. Mouvement réduit ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -81,6 +81,7 @@
 /* ── Clerk native auth ── */
 .clerk-auth {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -125,6 +126,7 @@
 /* ── Modern Loading ── */
 .auth-loading {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -311,6 +313,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   min-height: 100vh;
+  min-height: 100dvh;
   animation: admin-login-fade-in 0.6s var(--ease) both;
 }
 
@@ -630,6 +633,7 @@
   width: 100%;
   max-width: 500px;
   height: 100vh;
+  height: 100dvh;
   background: var(--admin-surface);
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
   transition: right 0.3s ease;

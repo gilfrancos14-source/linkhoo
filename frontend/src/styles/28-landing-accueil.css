@@ -1035,7 +1035,7 @@
   outline: none;
   color: var(--acc-ink);
   font-family: inherit;
-  font-size: 8px;
+  font-size: 16px;
 }
 
 .acc-newsletter input::placeholder {
@@ -1250,7 +1250,7 @@
 
 .acc-search-field__input,
 .acc-search-field__select {
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .acc-countries__eyebrow {
@@ -1369,7 +1369,13 @@
 }
 
 .acc-newsletter input {
-  font-size: 11px;
+  font-size: 16px;
+}
+
+/* Le champ doit XL : la largeur de 130 px tronquait le texte du placeholder. */
+.acc-newsletter {
+  max-width: 210px;
+  height: 44px;
 }
 
 @media (min-width: 768px) {

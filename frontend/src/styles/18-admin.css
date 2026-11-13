@@ -31,6 +31,7 @@
   display: grid;
   grid-template-columns: var(--admin-sidebar-w) 1fr;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--sky-50);
   transition: grid-template-columns 0.22s ease;
 }
@@ -49,6 +50,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   border-right: 1px solid var(--admin-border);
 }
@@ -4879,6 +4881,7 @@
   width: 100%;
   max-width: 500px;
   height: 100vh;
+  height: 100dvh;
   background: var(--admin-surface);
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
   transition: right 0.3s ease;

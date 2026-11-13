@@ -94,14 +94,14 @@ export default function HeroSection({ market }: HeroSectionProps) {
           <div className="inline-flex rounded-t-xl overflow-hidden shadow-sm">
             <button
               type="button"
-              className="bg-[#FF5E1E] text-white px-6 py-2.5 text-xs sm:text-sm font-bold flex items-center gap-2"
+              className="bg-[#FF5E1E] text-white px-6 py-2.5 min-h-[44px] text-xs sm:text-sm font-bold flex items-center gap-2"
             >
               <i className="fa-solid fa-umbrella-beach"></i>
               <span>Séjour</span>
             </button>
             <button
               type="button"
-              className="bg-white/95 hover:bg-white text-slate-700 px-6 py-2.5 text-xs sm:text-sm font-semibold flex items-center gap-2 transition backdrop-blur-sm"
+              className="bg-white/95 hover:bg-white text-slate-700 px-6 py-2.5 min-h-[44px] text-xs sm:text-sm font-semibold flex items-center gap-2 transition backdrop-blur-sm"
             >
               <i className="fa-solid fa-car"></i>
               <span>Voiture de location</span>
@@ -122,7 +122,7 @@ export default function HeroSection({ market }: HeroSectionProps) {
                 </label>
                 <input
                   id="maquette-destination"
-                  className="w-full p-0 text-xs text-slate-600 font-medium placeholder-slate-400 border-none focus:ring-0"
+                  className="w-full p-0 text-base text-slate-600 font-medium placeholder-slate-400 border-none focus:ring-0"
                   placeholder="Ville, quartier, hôtel, etc."
                   type="text"
                   value={destination}
@@ -139,7 +139,7 @@ export default function HeroSection({ market }: HeroSectionProps) {
                 <button
                   type="button"
                   id="maquette-arrivee"
-                  className="block text-xs text-slate-500 font-medium cursor-pointer text-left"
+                  className="block min-h-[44px] inline-flex items-center text-xs text-slate-500 font-medium cursor-pointer text-left"
                   onClick={() => openDatePicker(arriveeRef.current)}
                 >
                   {dateLabel(arrivee)}
@@ -163,7 +163,7 @@ export default function HeroSection({ market }: HeroSectionProps) {
                 <button
                   type="button"
                   id="maquette-depart"
-                  className="block text-xs text-slate-500 font-medium cursor-pointer text-left"
+                  className="block min-h-[44px] inline-flex items-center text-xs text-slate-500 font-medium cursor-pointer text-left"
                   onClick={() => openDatePicker(departRef.current)}
                 >
                   {dateLabel(depart)}
