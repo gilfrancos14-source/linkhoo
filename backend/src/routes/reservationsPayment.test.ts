@@ -299,32 +299,29 @@ describe('remboursement sur annulation', () => {
     expect(res.body.refund).toMatchObject({ requested: true, status: 'processing' });
   });
 
-  it('PATCH annulee : distingue une annulation après confirmation', async () => {
+  it('PATCH annulee : le gérant ne peut pas annuler une réservation confirmée', async () => {
     stubTables({
       gerants: [
         fakeChain({ data: qualifiedGerant, error: null }),
         fakeChain({ data: { nom: 'Aya' }, error: null }),
       ],
-      reservations: [
-        fakeChain({ data: { ...paidReservation, statut: 'confirmee' }, error: null }),
-        fakeChain({ data: { id: 'r1', statut: 'annulee' }, error: null }),
-      ],
+      reservations: fakeChain({
+        data: { ...paidReservation, statut: 'confirmee' },
+        error: null,
+      }),
       rooms: fakeChain({ data: { gerant_id: 'user_1' }, error: null }),
     });
-    vi.mocked(requestReservationRefund).mockResolvedValue({
-      requested: true,
-      status: 'processing',
-      refundId: 'refund-1',
-    });
 
-    await request(app)
+    const res = await request(app)
       .patch('/api/reservations/r1')
       .set('Authorization', clerkBearer('user_1'))
       .send({ statut: 'annulee' });
 
-    expect(requestReservationRefund).toHaveBeenCalledWith(
-      expect.objectContaining({ reason: 'gerant_cancellation' }),
-    );
+    // Seul le client peut annuler un séjour confirmé : ni annulation, ni
+    // remboursement déclenché par le gérant.
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('RESERVATION_CANCELLATION_BY_GERANT_FORBIDDEN');
+    expect(requestReservationRefund).not.toHaveBeenCalled();
   });
 
   it('PATCH confirmee : aucun remboursement', async () => {

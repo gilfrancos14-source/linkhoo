@@ -458,8 +458,17 @@ export default function DemandesReservationMaq4() {
                   {actionError && <p role="alert" className="mt-4 text-xs font-semibold text-red-600">{actionError}</p>}
                   {actionMessage && <p className="mt-4 text-xs font-semibold text-emerald-600">{actionMessage}</p>}
 
-                  <button type="button" onClick={() => changeStatut('confirmee')} disabled={updating} className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-dash-brand py-3 text-xs font-semibold text-white shadow-lg shadow-orange-200 hover:bg-dash-brand-dark disabled:opacity-60"><Icon id="check" className="i h-4 w-4 !stroke-[2.5]" />{updating ? 'Mise à jour...' : 'Confirmer la réservation'}</button>
-                  <button type="button" onClick={() => changeStatut('annulee')} disabled={updating} className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-red-400 bg-white py-3 text-xs font-semibold text-red-500 hover:bg-red-50 disabled:opacity-60"><Icon id="x" className="i h-4 w-4 !stroke-[2.5]" />Refuser la demande</button>
+                  {selected.statut === 'en_attente' ? (
+                    <>
+                      <button type="button" onClick={() => changeStatut('confirmee')} disabled={updating} className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg bg-dash-brand py-3 text-xs font-semibold text-white shadow-lg shadow-orange-200 hover:bg-dash-brand-dark disabled:opacity-60"><Icon id="check" className="i h-4 w-4 !stroke-[2.5]" />{updating ? 'Mise à jour...' : 'Confirmer la réservation'}</button>
+                      <button type="button" onClick={() => changeStatut('annulee')} disabled={updating} className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-red-400 bg-white py-3 text-xs font-semibold text-red-500 hover:bg-red-50 disabled:opacity-60"><Icon id="x" className="i h-4 w-4 !stroke-[2.5]" />Refuser la demande</button>
+                    </>
+                  ) : (
+                    <p className="mt-5 rounded-lg border border-sky-100 bg-sky-50 px-4 py-3 text-[11.5px] leading-relaxed text-slate-600">
+                      Cette réservation n'est plus une demande en attente : elle ne peut plus
+                      être confirmée ni refusée. Seul le client peut l'annuler.
+                    </p>
+                  )}
 
                   <div className="mt-5 flex gap-3 rounded-xl border border-sky-100 bg-sky-50 p-4">
                     <Icon id="info" className="i h-5 w-5 shrink-0 text-blue-600" />

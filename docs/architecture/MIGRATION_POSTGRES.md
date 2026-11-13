@@ -139,6 +139,19 @@ Deux règles décidées le 12/11/2026, appliquées par
 exposée dans `GET /api/reservations/mine` (`cancellation_deadline`) : le front
 affiche l'information et désactive le bouton, sans jamais dupliquer la règle.
 
+**Qui peut annuler** — **le client seul**. Les autres acteurs du système n'ont
+pas le droit d'annuler la réservation d'un client :
+
+| Acteur | Peut confirmer | Peut refuser une demande | Peut annuler une réservation confirmée |
+|---|---|---|---|
+| Le client | — | — | ✅ oui (frais de 2 %) |
+| Le gérant | ✅ | ✅ (demande en attente) | ❌ **403** |
+| L'administrateur | ✅ | ✅ (demande en attente, chambre indisponible) | ❌ |
+
+Le gérant qui tente d'annuler un séjour confirmé reçoit un 403
+(`RESERVATION_CANCELLATION_BY_GERANT_FORBIDDEN`) : le client a réservé, la
+chambre est retenue, et seule l'annulation du client libère le séjour.
+
 **Frais d'annulation** — quand le **client** annule, il est remboursé, mais la
 plateforme retient **2 %** du montant (frais d'encaissement) : le client
 reçoit 98 %. La taxe ne concerne que l'annulation par le client : un refus ou

@@ -471,6 +471,25 @@ describe('PATCH /api/reservations/:id', () => {
     expect(res.status).toBe(403);
   });
 
+  it('403 si le gérant tente d’annuler une réservation confirmée', async () => {
+    gerants = fakeChain({ data: qualifiedGerant, error: null });
+    reservations = fakeChain({
+      data: { id: 'r1', room_id: 'room-1', statut: 'confirmee', payment_status: 'paid' },
+      error: null,
+    });
+    rooms = fakeChain({ data: { gerant_id: 'user_1' }, error: null });
+    stubTables({});
+
+    const res = await request(app)
+      .patch('/api/reservations/r1')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ statut: 'annulee' });
+
+    // Seul le client peut annuler un séjour confirmé.
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('RESERVATION_CANCELLATION_BY_GERANT_FORBIDDEN');
+  });
+
   it('200 : confirme via le RPC', async () => {
     const gerantInfo = fakeChain({ data: { nom: 'Aya', phone: '+2250700000000' }, error: null });
     gerants = fakeChain({ data: qualifiedGerant, error: null });

@@ -429,9 +429,17 @@ export default function RoomDetailMaq7() {
     }));
   }, [signedIn, user]);
 
-  useEffect(() => {
+  // Réinitialisation de la galerie au changement de chambre.
+  //
+  // Fais pendant le rendu (et non dans un effet) : un effet s'exécute APRÈS
+  // l'affichage, donc il pouvait écraser le clic « photo suivante » que
+  // l'utilisateur venait de faire sur une chambre qui venait d'arriver — la
+  // photo revenait à la première sans raison.
+  const [galleryRoomId, setGalleryRoomId] = useState<string | undefined>(undefined);
+  if (room?.id !== galleryRoomId) {
+    setGalleryRoomId(room?.id);
     setCur(0);
-  }, [room?.id]);
+  }
 
   /* ----- Valeurs dérivées ----- */
 

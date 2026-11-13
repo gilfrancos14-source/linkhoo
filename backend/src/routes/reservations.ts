@@ -394,6 +394,18 @@ router.patch('/:id', requireClerkAuth, async (req: Request, res: Response, next:
       return res.status(403).json({ error: 'Non autorisé — cette réservation ne vous appartient pas' });
     }
 
+    // Seul le CLIENT peut annuler une réservation engagée. Le gérant peut
+    // confirmer une demande, ou la refuser tant qu'elle est en attente — mais
+    // il ne peut pas annuler un séjour confirmé et payé : le client a réservé,
+    // la chambre est retenue, et seule l'annulation du client (avec ses
+    // frais de 2 %) libère le séjour.
+    if (parsedBody.data.statut === 'annulee' && currentReservation.statut === 'confirmee') {
+      return res.status(403).json({
+        error: "Seul le client peut annuler une réservation confirmée.",
+        code: 'RESERVATION_CANCELLATION_BY_GERANT_FORBIDDEN',
+      });
+    }
+
     let data: Record<string, unknown> | null = null;
     if (parsedBody.data.statut === 'confirmee') {
       const { data: rpcRows, error: rpcError } = await supabaseAdmin.rpc('confirm_reservation_checked', {
