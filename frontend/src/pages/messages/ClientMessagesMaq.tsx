@@ -5,6 +5,7 @@ import { isMarketCode, marketByCode } from '../../config/markets';
 import { apiMessages, apiReviews, apiRooms, type Conversation, type Message, type RoomData } from '../../lib/api';
 import { formatPrice } from '../../lib/roomDisplay';
 import ClientSidebar from '../../components/client/ClientSidebar';
+import ClientSidebarToggle from '../../components/client/ClientSidebarToggle';
 
 /**
  * Espace client — « Mes messages ».
@@ -457,6 +458,7 @@ export default function ClientMessagesMaq({
       {/* ============ MAIN ============ */}
       <div className="client-main lg:flex lg:h-screen lg:flex-col">
         <header className="flex h-[67px] flex-none items-center justify-between border-b border-[#e6ebf5]/70 pl-[21px] pr-[22px]">
+          <ClientSidebarToggle />
           <form
             onSubmit={handleSearch}
             className="flex h-[38px] w-[590px] max-w-full items-center gap-3 rounded-lg border border-[#e6ebf5] bg-white px-4"

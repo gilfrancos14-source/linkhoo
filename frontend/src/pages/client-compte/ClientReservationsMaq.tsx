@@ -10,6 +10,7 @@ import ReviewForm from './ReviewForm';
 import type { ReviewFormState } from './types';
 import ClientReservationsCalendar from './ClientReservationsCalendar';
 import ClientSidebar from '../../components/client/ClientSidebar';
+import ClientSidebarToggle from '../../components/client/ClientSidebarToggle';
 
 /**
  * Espace client — « Mes réservations ».
@@ -298,6 +299,7 @@ export default function ClientReservationsMaq({
       {/* ============ MAIN ============ */}
       <div className="client-main">
         <header className="flex h-[70px] items-center justify-between pl-[23px] pr-6">
+          <ClientSidebarToggle />
           <form
             onSubmit={handleSearch}
             className="flex h-[38px] w-[588px] max-w-full items-center gap-3 rounded-lg border border-[#e6ebf5] bg-white px-4"

@@ -1,7 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import '../../styles/client-sidebar.css';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useClientUnread } from '../../hooks/useClientUnread';
+import { useClientSidebar, clientSidebarStore } from '../../lib/clientSidebarStore';
 
 /**
  * Sidebar unifiée pour toutes les pages client.
@@ -42,6 +44,21 @@ export default function ClientSidebar() {
   const homePath = useHomePath();
   const unreadMessages = useClientUnread();
   const { pathname, search } = useLocation();
+  const { open, collapsed } = useClientSidebar();
+
+  // Changer de page referme le tiroir : sur mobile, il resterait ouvert
+  // par-dessus du contenu.
+  useEffect(() => {
+    clientSidebarStore.close();
+  }, [pathname]);
+
+  // La sidebar réduite se signale sur le document : le contenu (qui vit hors
+  // de la sidebar) doit pouvoir reprendre toute la largeur, quelle que soit
+  // la page.
+  useEffect(() => {
+    document.body.classList.toggle('client-sidebar-collapsed', collapsed);
+    return () => document.body.classList.remove('client-sidebar-collapsed');
+  }, [collapsed]);
 
   const view = new URLSearchParams(search).get('view');
 
@@ -58,9 +75,52 @@ export default function ClientSidebar() {
     <>
       <SidebarSprite />
 
-      <aside className="client-sidebar fixed inset-y-0 left-0 z-20 flex w-[247px] flex-col overflow-y-auto border-r border-[#e6ebf5] bg-white">
+      {open && (
+        <div
+          className="client-sidebar-backdrop"
+          onClick={() => clientSidebarStore.close()}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={`client-sidebar fixed inset-y-0 left-0 z-20 flex w-[247px] flex-col overflow-y-auto border-r border-[#e6ebf5] bg-white${open ? ' is-open' : ''}`}
+        aria-label="Navigation de mon espace"
+      >
         <div className="flex h-[70px] flex-none items-center gap-2.5 px-[34px]">
           <img className="sidebar-logo" src="/logo.jpg" alt="Logo Linkhoo" />
+          <button
+            type="button"
+            className="client-sidebar__close"
+            onClick={() => clientSidebarStore.close()}
+            aria-label="Fermer la navigation"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M6 6l12 12M18 6L6 18"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="client-sidebar__toggle"
+            onClick={() => clientSidebarStore.toggleCollapsed()}
+            aria-label="Réduire la navigation"
+            aria-pressed={collapsed}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M15 6l-6 6 6 6"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
         </div>
 
         <nav className="mt-3 space-y-[4px] px-[15px]">

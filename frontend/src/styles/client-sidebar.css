@@ -26,6 +26,7 @@ aside.client-sidebar {
   overflow-y: auto;
   border-right: 1px solid #e6ebf5;
   background-color: #fff;
+  transition: transform 0.22s ease;
 }
 
 /* Logo de l'en-tête */
@@ -142,15 +143,30 @@ aside.client-sidebar .text-blue-400 {
   color: #60a5fa;
 }
 
-/* Sous 1024px, la sidebar passe au-dessus du contenu au lieu de le recouvrir. */
+/* Sous 1024px, la sidebar devient un tiroir hors écran, ouvert par le
+   bouton hamburger de la topbar (même comportement que l'espace gérant).
+   Au-dessus de 1024px, elle peut être réduite à un rail par le bouton
+   « Réduire le menu » (état mémorisé). */
 @media (max-width: 1024px) {
   aside.client-sidebar {
-    position: static;
-    width: 100%;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(82vw, var(--client-sidebar-w));
+    max-width: var(--client-sidebar-w);
     height: auto;
-    overflow: visible;
-    border-right: 0;
-    border-bottom: 1px solid #e6ebf5;
+    overflow-y: auto;
+    border-right: 1px solid #e6ebf5;
+    border-bottom: 0;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    z-index: 40;
+    box-shadow: 20px 0 40px rgba(0, 0, 0, 0.2);
+  }
+
+  aside.client-sidebar.is-open {
+    transform: translateX(0);
   }
 
   .client-main,
@@ -158,9 +174,79 @@ aside.client-sidebar .text-blue-400 {
     margin-left: 0;
   }
 
-  /* Les racines en flex (dashboard, favoris) empilent sidebar puis contenu. */
-  .cdash-maq:has(> aside.client-sidebar),
-  .res-maq:has(> aside.client-sidebar) {
-    flex-direction: column;
+  /* Le bouton « Réduire le menu » n'a pas de sens sur mobile : le tiroir
+     s'ouvre et se ferme avec le hamburger et la croix. */
+  aside.client-sidebar .client-sidebar__toggle {
+    display: none;
+  }
+}
+
+/* Ordinateur : la sidebar réduite laisse toute la place au contenu. */
+@media (min-width: 1025px) {
+  body.client-sidebar-collapsed aside.client-sidebar {
+    transform: translateX(-100%);
+  }
+
+  body.client-sidebar-collapsed .client-main,
+  body.client-sidebar-collapsed .admin.client-account > .admin-main {
+    margin-left: 0;
+  }
+
+  aside.client-sidebar .client-sidebar__close {
+    display: none;
+  }
+}
+
+/* Boutons de la sidebar : cible tactile confortable (44 × 44 px). */
+aside.client-sidebar .client-sidebar__close,
+aside.client-sidebar .client-sidebar__toggle {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #1d3f8f;
+  cursor: pointer;
+}
+
+aside.client-sidebar .client-sidebar__close:hover,
+aside.client-sidebar .client-sidebar__toggle:hover {
+  background-color: #f5f8ff;
+}
+
+/* Bouton hamburger de l'espace client (barre haute des pages). */
+.client-sidebar-btn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #e6ebf5;
+  border-radius: 10px;
+  background-color: #fff;
+  color: #1d3f8f;
+  cursor: pointer;
+}
+
+.client-sidebar-btn:hover {
+  background-color: #f5f8ff;
+}
+
+/* Fond assombri derrière le tiroir ouvert (mobile). */
+.client-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  background: rgba(15, 26, 45, 0.45);
+}
+
+@media (min-width: 1025px) {
+  /* Sur ordinateur, le fond assombri n'a pas lieu d'être : la sidebar est
+     dans le flux de la page. */
+  .client-sidebar-backdrop {
+    display: none;
   }
 }

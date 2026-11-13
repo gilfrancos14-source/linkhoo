@@ -8,6 +8,7 @@ import { type FavoriteRoomData } from '../../lib/api';
 import { priceWithCurrency } from '../../lib/roomDisplay';
 import { useFavorites } from '../../contexts/FavoritesContext';
 import ClientSidebar from '../../components/client/ClientSidebar';
+import ClientSidebarToggle from '../../components/client/ClientSidebarToggle';
 
 /**
  * Page "Mes favoris" — une interface moderne et élégante pour gérer les chambres favorites.
@@ -214,6 +215,7 @@ export default function ClientFavoritesPage({
         {/* Contenu principal */}
         <div className="min-w-0 flex-1">
           <header className="flex h-[60px] items-center gap-4 border-b border-slate-100 bg-white/70 px-4 sm:px-6">
+            <ClientSidebarToggle />
             <form
               onSubmit={handleSearch}
               className="flex h-9 w-full max-w-[520px] items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 text-slate-400"

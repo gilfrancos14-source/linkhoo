@@ -71,6 +71,13 @@ button.newsletter__btn,
   min-height: 44px;
 }
 
+/* Bouton de réduction de la sidebar (espace gérant et espace client). */
+.sidebar__toggle,
+.sidebar__close-mobile {
+  min-width: 44px;
+  min-height: 44px;
+}
+
 /* Sélecteur de rôle (inscription) : deux onglets, cibles jumbo. */
 .register-page__role {
   min-height: 44px;
@@ -226,7 +233,6 @@ button[aria-label^='Slide ']::after {
    la barre se rétracte. `dvh` suit la hauteur réelle. */
 .screen-dvh {
   min-height: 100vh;
-  min-height: 100dvh;
   min-height: 100dvh;
 }
 
