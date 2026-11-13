@@ -4,9 +4,10 @@
 --   - la commission de la plateforme (5 / 10 / 15 % selon le statut du
 --     gérant) n'est prélevée que si la réservation n'a PAS été annulée ET
 --     que le séjour a bien eu lieu ;
---   - en cas d'annulation, le client est remboursé, mais la plateforme
---     prélève 2 % du montant pour couvrir les frais de transaction et
---     d'encaissement. Le client reçoit donc 98 %.
+--   - quand le CLIENT annule, il est remboursé, mais la plateforme prélève
+--     2 % du montant pour couvrir les frais de transaction et d'encaissement.
+--     Le client reçoit donc 98 %. La taxe ne concerne que l'annulation par
+--     le client : un refus ou une annulation du gérant n'est pas pénalisé.
 --
 -- Le fee est un paramètre explicite de la RPC : la fonction doit solder la
 -- réservation (refunded_amount) avec le montant TOTAL (remboursé au client +

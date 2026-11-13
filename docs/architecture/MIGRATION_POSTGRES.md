@@ -139,9 +139,11 @@ Deux règles décidées le 12/11/2026, appliquées par
 exposée dans `GET /api/reservations/mine` (`cancellation_deadline`) : le front
 affiche l'information et désactive le bouton, sans jamais dupliquer la règle.
 
-**Frais d'annulation** — en cas d'annulation, le client est remboursé, mais la
+**Frais d'annulation** — quand le **client** annule, il est remboursé, mais la
 plateforme retient **2 %** du montant (frais d'encaissement) : le client
-reçoit 98 %. Le frais est un paramètre explicite de la RPC
+reçoit 98 %. La taxe ne concerne que l'annulation par le client : un refus ou
+une annulation du gérant, une décision de la plateforme ne sont pas
+pénalisés (le montant remboursé reste celui décidé). Le frais est un paramètre explicite de la RPC
 `payment_request_refund` (`p_platform_fee`) : la réservation est soldée sur le
 montant total (part client + frais), sinon le back-office proposerait de
 rembourser les 2 % restants. Il est conservé dans `policy_snapshot` et compte

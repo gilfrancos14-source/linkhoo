@@ -210,7 +210,7 @@ describe('requestReservationRefund', () => {
     });
   });
 
-  it('rembourse la totalité hors annulation (pas de frais)', async () => {
+  it('rembourse la totalité hors annulation client (pas de frais)', async () => {
     const refundUpdate = fakeChain({ data: null, error: null });
     useSupabaseTables(supabaseAdmin.from, {
       reservations: fakeChain({ data: RESERVATION, error: null }),
@@ -233,6 +233,39 @@ describe('requestReservationRefund', () => {
       reservationId: 'resa-1',
       reason: 'goodwill',
       requestedBy: 'admin:admin-1',
+    });
+
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith(
+      'payment_request_refund',
+      expect.objectContaining({ p_amount: 150_000, p_platform_fee: 0 }),
+    );
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(String(init.body)).amount).toBe('150000');
+  });
+
+  it('ne prélève pas de frais quand c’est le gérant qui annule', async () => {
+    const refundUpdate = fakeChain({ data: null, error: null });
+    useSupabaseTables(supabaseAdmin.from, {
+      reservations: fakeChain({ data: RESERVATION, error: null }),
+      payments: fakeChain({ data: PAYMENT, error: null }),
+      payment_refunds: [fakeChain({ data: [], error: null }), refundUpdate],
+    });
+    vi.mocked(supabaseAdmin.rpc).mockResolvedValue({
+      data: [{ refund_id: 'refund-db-1', already_refunded: 0, remaining: 0 }],
+      error: null,
+    } as never);
+    const fetchMock = stubFetch({
+      refundId: 'refund-pawa-1',
+      status: 'ACCEPTED',
+      amount: '150000',
+      currency: 'XOF',
+      created: '2026-10-27T10:00:00.000Z',
+    });
+
+    await requestReservationRefund({
+      reservationId: 'resa-1',
+      reason: 'gerant_refusal',
+      requestedBy: 'gerant:user_1',
     });
 
     expect(supabaseAdmin.rpc).toHaveBeenCalledWith(

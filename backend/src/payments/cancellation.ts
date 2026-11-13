@@ -20,9 +20,12 @@ export const CANCELLATION_FREE_HOURS = 24;
 /**
  * Frais de plateforme prélevés sur le remboursement d'une annulation.
  *
- * Règle commerciale : en cas d'annulation, le client est remboursé, mais la
+ * Règle commerciale : quand le CLIENT annule, il est remboursé, mais la
  * plateforme conserve 2 % du montant (frais d'encaissement et de
  * transaction). Le client reçoit donc 98 %.
+ *
+ * La taxe ne concerne que l'annulation par le client : un refus ou une
+ * annulation du gérant, une décision de la plateforme ne sont pas pénalisés.
  */
 export const CANCELLATION_FEE_PERCENT = 2;
 

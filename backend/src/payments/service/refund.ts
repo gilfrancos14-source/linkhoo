@@ -81,16 +81,14 @@ const REASON_DETAILS: Record<RefundReason, string> = {
 const ALIVE_REFUND_STATUSES = ['requested', 'processing', 'succeeded', 'manual_required'] as const;
 
 /**
- * Motifs qui déclenchent les frais d'annulation (2 %). Les autres
- * (litige, geste commercial, incident technique) sont des décisions du
- * back-office : le montant remboursé reste celui décidé par l'administrateur.
+ * Motifs qui déclenchent les frais d'annulation (2 %).
+ *
+ * Uniquement l'annulation par le CLIENT : c'est lui qui a réservé et
+ * annulé. Un refus ou une annulation du gérant, une décision de la
+ * plateforme ne sont pas pénalisés — le montant remboursé reste celui
+ * décidé (back-office).
  */
-const CANCELLATION_REFUND_REASONS = new Set<RefundReason>([
-  'client_cancellation',
-  'gerant_refusal',
-  'gerant_cancellation',
-  'platform_cancellation',
-]);
+const CANCELLATION_REFUND_REASONS = new Set<RefundReason>(['client_cancellation']);
 
 // NOTE : pas de table de codes motif : l'API pawaPay de remboursement
 // N'ACCEPTE PAS le champ `reason` (voir payments/pawapay/types.ts). Le motif
@@ -253,10 +251,11 @@ export async function requestReservationRefund(input: {
   // son API — donc on le garde exploitable en base).
   const details = input.reasonDetails?.trim() || REASON_DETAILS[input.reason];
 
-  // Frais d'annulation : en cas d'annulation, la plateforme conserve 2 % du
-  // montant (frais d'encaissement) et le client reçoit le reste. Sur une
-  // annulation, la commission habituelle (5/10/15 %) n'est pas prélevée :
-  // elle ne s'applique qu'aux séjours réellement effectués.
+  // Frais d'annulation : quand c'est le CLIENT qui annule, la plateforme
+  // conserve 2 % du montant (frais d'encaissement) et le client reçoit le
+  // reste. Un refus ou une annulation du gérant n'est pas pénalisé.
+  // Sur une annulation, la commission habituelle (5/10/15 %) n'est pas
+  // prélevée : elle ne s'applique qu'aux séjours réellement effectués.
   const cancellation = CANCELLATION_REFUND_REASONS.has(input.reason);
   const { fee, clientAmount } = cancellation
     ? splitCancellationFee(remaining)
