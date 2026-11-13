@@ -29,7 +29,10 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: `npx vite --config vite.auth.config.ts --host 127.0.0.1 --port ${PORT} --strictPort`,
+    // Vite est lancé directement (pas via npx) : sous Windows, Playwright ne
+    // tue que le processus qu'il a lancé, et un serveur de dev resté orphelin
+    // continue de surveiller le dépôt (CPU saturé, suites instables).
+    command: `node node_modules/vite/bin/vite.js --config vite.auth.config.ts --host 127.0.0.1 --port ${PORT} --strictPort`,
     url: baseURL,
     reuseExistingServer: true,
     timeout: 90_000,

@@ -61,6 +61,8 @@ function renderAdmin(entry: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Les tests de délai manipulent le temps : on repart toujours de timers réels.
+  vi.useRealTimers();
   mocks.getAdminToken.mockReturnValue(null);
   // Par défaut : pas de session valide (401) → redirection vers le login.
   mocks.getMe.mockRejectedValue(new mocks.AdminUnauthorizedError('Session expirée'));
@@ -68,6 +70,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
 });
 
 describe('AdminRouteGuard', () => {
@@ -114,6 +117,52 @@ describe('AdminRouteGuard', () => {
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument();
     expect(screen.queryByText('Connexion admin')).not.toBeInTheDocument();
     expect(screen.queryByText('Tableau de bord admin')).not.toBeInTheDocument();
+  });
+
+  it('affiche un retry quand la vérification de session n’aboutit jamais', async () => {
+    vi.useFakeTimers();
+    // La requête reste pendante (réseau figé) : le garde doit basculer sur
+    // l'écran « Réessayer » au terme des tentatives, et pas laisser tourner
+    // le spinner indéfiniment.
+    mocks.getMe.mockImplementation(() => new Promise<AdminData>(() => {}));
+
+    renderAdmin('/ci/admin');
+
+    expect(screen.getByText('Chargement...')).toBeInTheDocument();
+
+    // 1re tentative (8 s) : le garde retente tout seul.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+    expect(screen.getByText('Chargement...')).toBeInTheDocument();
+    expect(mocks.getMe).toHaveBeenCalledTimes(2);
+
+    // 2e tentative (8 s + 1,5 s de pause) : écran « Réessayer ».
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeInTheDocument();
+    expect(screen.queryByText('Connexion admin')).not.toBeInTheDocument();
+  });
+
+  it('retente automatiquement la session après une coupure brève', async () => {
+    vi.useFakeTimers();
+    mocks.getMe
+      .mockRejectedValueOnce(new Error('Délai dépassé'))
+      .mockResolvedValue(admin);
+
+    renderAdmin('/ci/admin');
+
+    expect(screen.getByText('Chargement...')).toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000);
+    });
+
+    expect(screen.getByText('Tableau de bord admin')).toBeInTheDocument();
+    expect(mocks.getMe).toHaveBeenCalledTimes(2);
   });
 
   it('détecte le marché bj dans le chemin', async () => {
