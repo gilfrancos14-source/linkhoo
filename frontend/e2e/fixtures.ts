@@ -346,6 +346,9 @@ export async function mockApi(page: Page, options: MockApiOptions = {}): Promise
       return respond(route, banners);
     }
     if (path === '/events') return respond(route, []);
+    // Liste des réservations du gérant (barre latérale de l'espace gérant) :
+    // sans ce mock, la réponse `{}` par défaut faisait échouer le `.map()`.
+    if (path === '/reservations') return respond(route, []);
     if (path === '/reservations/mine' || path === '/reservations/client') {
       return respond(route, []);
     }

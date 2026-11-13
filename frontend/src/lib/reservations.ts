@@ -107,7 +107,9 @@ function mapReservation(d: ReservationData): Reservation {
 
 export async function getReservations(): Promise<Reservation[]> {
   const data = await apiReservations.list();
-  return data.map(mapReservation);
+  // L'API renvoie un tableau ; si elle répond autre chose (erreur d'API mal
+  // typée), on ne veut pas faire tomber toute la page du gérant.
+  return Array.isArray(data) ? data.map(mapReservation) : [];
 }
 
 export async function addReservation(data: Omit<Reservation, 'id' | 'createdAt' | 'statut' | 'respondedAt'>): Promise<Reservation> {
