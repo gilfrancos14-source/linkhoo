@@ -47,22 +47,24 @@ test.describe('messagerie — client connecté', () => {
 
     const messagesLink = page.getByRole('link', { name: /Messages/ });
     await expect(messagesLink).toBeVisible();
-    await expect(messagesLink.locator('.compte-rail__pill')).toHaveText('3');
+    // La pastille de non-lus vit dans la sidebar unifiée (`.bd`).
+    await expect(messagesLink.locator('.bd')).toHaveText('3');
 
     await messagesLink.click();
     await expect(page).toHaveURL(/\/ci\/messages$/);
-    await expect(page.locator('.conv-row__name')).toContainText('Studio Cocody Riviera');
-    await expect(page.locator('.conv-row__unread')).toHaveText('3');
 
-    await page.locator('.conv-row').click();
+    // La liste des conversations (`.cv`) : titre de la chambre et compteur.
+    const conversationLink = page.locator('a.cv').first();
+    await expect(conversationLink.locator('h4')).toContainText('Studio Cocody Riviera');
+    await expect(page.getByLabel('3 non lus').first()).toBeVisible();
+
+    await conversationLink.click();
     await expect(page).toHaveURL(/\/ci\/messages\/conv-1$/);
-    await expect(page.locator('.msg-bubble__body')).toContainText('la chambre est-elle libre');
+    await expect(page.locator('.bm.ot p')).toContainText('la chambre est-elle libre');
 
     await page.getByLabel('Votre message').fill('Oui, elle est disponible en octobre.');
     await page.getByRole('button', { name: 'Envoyer' }).click();
-    await expect(page.locator('.msg-bubble--mine .msg-bubble__body')).toContainText(
-      'disponible en octobre',
-    );
+    await expect(page.locator('.bm.me p')).toContainText('disponible en octobre');
   });
 });
 
@@ -71,11 +73,13 @@ test.describe('messagerie — gérant connecté', () => {
     await signIn(page, 'gerant');
     await mockApi(page, { role: 'gerant', gerantUnreadCount: 5 });
 
-    await page.goto('/ci/gerant/messages');
+    await page.goto('/ci/gerant/messages/boite-reception');
 
-    await expect(page.locator('a[href$="/gerant/messages"] .sidebar__pill')).toHaveText('5');
     await expect(
-      page.getByRole('heading', { name: 'Messages', level: 1 }),
+      page.locator('a[href$="/gerant/messages/boite-reception"] .sidebar__pill'),
+    ).toHaveText('5');
+    await expect(
+      page.getByRole('heading', { name: 'Boîte de réception', level: 1 }),
     ).toBeVisible();
   });
 });

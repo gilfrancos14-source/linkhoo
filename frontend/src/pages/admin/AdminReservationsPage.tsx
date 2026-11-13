@@ -122,9 +122,11 @@ export default function AdminReservationsPage() {
       })
       .then((data) => {
         if (cancelled) return;
-        setReservations(data.items);
-        setTotal(data.total);
-        setCounts(data.counts);
+        // Une réponse partielle (proxy, version d'API en retard) ne doit pas
+        // faire tomber tout le back-office : on retombe sur des valeurs vides.
+        setReservations(data.items ?? []);
+        setTotal(data.total ?? 0);
+        setCounts(data.counts ?? ZERO_COUNTS);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -154,8 +156,8 @@ export default function AdminReservationsPage() {
       .getRefunds({ scope: 'all', limit: 50 })
       .then((data) => {
         if (cancelled) return;
-        setRefunds(data.items);
-        setRefundCounts(data.counts);
+        setRefunds(data.items ?? []);
+        setRefundCounts(data.counts ?? ZERO_REFUND_COUNTS);
       })
       .catch((err: unknown) => {
         if (cancelled) return;

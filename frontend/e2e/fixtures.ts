@@ -414,6 +414,14 @@ export async function mockApi(page: Page, options: MockApiOptions = {}): Promise
         counts: { total: 0, pending: 0, confirmed: 0, cancelled: 0 },
       });
     }
+    // Panneau remboursements de la page Réservations : sans ce mock, la page
+    // recevait `{}` et son rendu tombait dans l'ErrorBoundary.
+    if (path === '/admin/refunds') {
+      return respond(route, {
+        items: [],
+        counts: { failed: 0, manual_required: 0, processing: 0, total: 0 },
+      });
+    }
 
     return respond(route, {});
   });

@@ -417,17 +417,24 @@ export default function RoomDetailMaq7() {
 
   /* ----- Pré-remplissage client connecté ----- */
 
+  // Dépendances stables (des chaînes) : un objet `user` recréé à chaque rendu
+  // relançait cet effet, qui réécrivait un nouvel objet dans le formulaire →
+  // boucle de rendu infinie (« Maximum update depth exceeded ») bloquant la
+  // navigation depuis la fiche. Le garde `prev.name || …` évite aussi de
+  // renvoyer un état neuf quand rien ne change.
+  const accountName = [user?.firstName, user?.lastName].filter(Boolean).join(' ');
+  const accountEmail =
+    user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || '';
+
   useEffect(() => {
-    if (!signedIn || !user) return;
-    const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ');
-    const email =
-      user.primaryEmailAddress?.emailAddress || user.emailAddresses?.[0]?.emailAddress || '';
-    setForm((prev) => ({
-      ...prev,
-      name: prev.name || fullName,
-      email: prev.email || email,
-    }));
-  }, [signedIn, user]);
+    if (!signedIn || (!accountName && !accountEmail)) return;
+    setForm((prev) => {
+      const name = prev.name || accountName;
+      const email = prev.email || accountEmail;
+      if (name === prev.name && email === prev.email) return prev;
+      return { ...prev, name, email };
+    });
+  }, [signedIn, accountName, accountEmail]);
 
   // Réinitialisation de la galerie au changement de chambre.
   //

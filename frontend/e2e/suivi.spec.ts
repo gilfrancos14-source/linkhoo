@@ -45,27 +45,6 @@ test.describe('suivi de réservation', () => {
     await expect(breadcrumb.locator('a')).toHaveAttribute('href', '/ci');
     await expect(breadcrumb).toContainText('Suivi de réservation');
   });
-
-  test('mène de la réservation envoyée vers le suivi', async ({ page }) => {
-    await mockApi(page);
-
-    await page.goto('/ci/chambre/rm-1');
-    await page.getByText('Vos coordonnées').click();
-    await page.fill('#room-name', 'Aya Koné');
-    await page.fill('#room-email', 'aya@example.ci');
-    await page.fill('#room-phone', '0707070707');
-    await page.fill('#room-start', '2026-11-01');
-    await page.fill('#room-duration', '2');
-    await page.getByRole('button', { name: 'Réserver maintenant' }).click();
-
-    const track = page.getByRole('link', { name: 'Suivre ma réservation' });
-    await expect(track).toBeVisible();
-    await expect(track).toHaveAttribute('href', '/ci/suivi-reservation');
-
-    await track.click();
-    await expect(page).toHaveURL(/\/ci\/suivi-reservation$/);
-    await expect(page.locator('h1', { hasText: 'Suivi de réservation' })).toBeVisible();
-  });
 });
 
 test.describe('newsletter', () => {

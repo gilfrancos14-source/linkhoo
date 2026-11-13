@@ -14,53 +14,18 @@ test.describe('fiche chambre', () => {
     await expect(page.getByRole('region', { name: 'Réservation' })).toBeVisible();
   });
 
-  test('signale les champs obligatoires à la soumission vide', async ({ page }) => {
+  test('invite à se connecter pour réserver', async ({ page }) => {
     await mockApi(page);
 
     await page.goto('/ci/chambre/rm-1');
 
-    await page.getByRole('button', { name: 'Réserver maintenant' }).click();
+    // Sans session, la réservation n'est pas ouverte : la fiche propose la
+    // connexion (le parcours de réservation est couvert par `e2e/auth`).
+    const cta = page.getByRole('button', { name: 'Connectez-vous pour réserver' });
+    await expect(cta).toBeVisible();
+    await cta.click();
 
-    // Les coordonnées sont dans un <details> refermé : la soumission l'ouvre.
-    const nameField = page.locator('#room-name');
-    await expect(nameField).toBeVisible();
-    await expect(nameField.locator('..').getByRole('alert')).toHaveText(
-      'Veuillez renseigner votre nom.',
-    );
-    await expect(page.locator('#room-email').locator('..').getByRole('alert')).toHaveText(
-      'Veuillez renseigner votre email.',
-    );
-    await expect(page.getByRole('alert').filter({ hasText: 'date de début' })).toHaveText(
-      'Veuillez choisir une date de début.',
-    );
-    // Le téléphone est explicitement facultatif.
-    await expect(page.getByText('(optionnel)')).toBeVisible();
-    await expect(page.locator('#room-phone').locator('..').getByRole('alert')).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: 'Demande envoyée !' })).toHaveCount(0);
-  });
-
-  test('envoie une demande de réservation valide', async ({ page }) => {
-    await mockApi(page);
-
-    await page.goto('/ci/chambre/rm-1');
-
-    await page.getByText('Vos coordonnées').click();
-    await page.fill('#room-name', 'Aya Koné');
-    await page.fill('#room-email', 'aya@example.ci');
-    await page.fill('#room-phone', '0707070707');
-    await page.fill('#room-start', '2026-11-01');
-    await page.fill('#room-duration', '2');
-
-    // Date de fin calculée et affichée au format français.
-    await expect(page.locator('#room-end')).toHaveValue('03/11/2026');
-
-    await page.getByRole('button', { name: 'Réserver maintenant' }).click();
-
-    await expect(page.getByRole('heading', { name: 'Demande envoyée !' })).toBeVisible();
-    await expect(
-      page.getByRole('status').filter({ hasText: 'Votre demande a bien été transmise' }),
-    ).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Suivre ma réservation' })).toBeVisible();
+    await expect(page).toHaveURL(/\/ci\/login$/);
   });
 
   test('renvoie linvisible quand linidentifiant nexiste pas', async ({ page }) => {
