@@ -426,7 +426,17 @@ html:has(.gerant-dark) {
   outline: none !important;
 }
 
-/* Textes navy génériques. */
+.gerant-dark .text-\[\#2A416F\],
+.gerant-dark .text-\[\#2D4C8A\],
+.gerant-dark .text-\[\#2F4472\] {
+  color: #e8eef9;
+}
+
+.gerant-dark .text-\[\#6F82A6\],
+.gerant-dark .text-\[\#8393B0\],
+.gerant-dark .text-\[\#8B9BB8\] {
+  color: #94a3b8;
+}
 .gerant-dark .text-navy {
   color: #e8eef9;
 }
