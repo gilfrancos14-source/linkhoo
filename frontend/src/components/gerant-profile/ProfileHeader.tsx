@@ -1,12 +1,13 @@
 import { Bell } from 'lucide-react';
 import GerantThemeToggle from '../gerant/GerantThemeToggle';
+import MobileMenuButton from '../gerant/MobileMenuButton';
 
 /**
  * En-tête de la page Mes informations : barre de recherche, notifications,
  * et profil utilisateur avec menu déroulant.
  * Remplace les icônes SVG inline par lucide-react.
  */
-export function ProfileHeader({ userName }: { userName: string }) {
+export function ProfileHeader({ userName, onOpenMobile }: { userName: string; onOpenMobile?: () => void }) {
   return (
     <header className="flex h-[64px] items-center justify-between pl-[19px] pr-[26px]">
       <label className="flex h-9 w-full max-w-[590px] items-center gap-[15px] rounded-lg bg-white pl-6 pr-4 shadow-[0_1px_6px_rgba(20,40,90,0.05)]">
@@ -19,6 +20,7 @@ export function ProfileHeader({ userName }: { userName: string }) {
       </label>
 
       <div className="flex items-center gap-[28px]">
+        {onOpenMobile && <MobileMenuButton onOpen={onOpenMobile} />}
         <GerantThemeToggle />
         <button type="button" aria-label="Notifications" className="relative text-[#0F2150]">
           <Bell size={20} />

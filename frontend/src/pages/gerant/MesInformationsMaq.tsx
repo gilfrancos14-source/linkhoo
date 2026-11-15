@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useHomePath } from '../../hooks/useHomePath';
+import { useMobileSidebar } from '../../hooks/useMobileSidebar';
 import { useMarket } from '../../contexts/MarketContext';
 import { marketByCode } from '../../config/markets';
 import {
@@ -46,6 +47,7 @@ const DOC_LABELS: Record<VerificationDocType, string> = {
 export default function MesInformationsMaq() {
   const homePath = useHomePath();
   const { market } = useMarket();
+  const { mobileOpen, open: openMobile, close: closeMobile } = useMobileSidebar();
   const gerantPath = `${homePath}/gerant`;
   const suiviPath = `${gerantPath}/verification/suivi`;
 
@@ -85,7 +87,7 @@ export default function MesInformationsMaq() {
       <div className="verif-maq flex min-h-screen">
         <GerantSidebar />
         <div className="min-w-0 flex-1">
-          <ProfileHeader userName="Chargement…" />
+          <ProfileHeader userName="Chargement…" onOpenMobile={openMobile} />
           <main className="pb-10 pl-[22px] pr-[25px]">
             <p className="mt-4 text-center text-[13px] text-[#5F7396]">Chargement de votre profil…</p>
           </main>
@@ -147,9 +149,12 @@ export default function MesInformationsMaq() {
 
   return (
     <div className="verif-maq flex min-h-screen">
-      <GerantSidebar />
+      {mobileOpen && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={closeMobile} />}
+      <div className={`${mobileOpen ? 'fixed inset-y-0 left-0 z-50 lg:static' : 'hidden lg:block'}`}>
+        <GerantSidebar className={mobileOpen ? '!flex' : ''} />
+      </div>
       <div className="min-w-0 flex-1">
-        <ProfileHeader userName={fullName} />
+        <ProfileHeader userName={fullName} onOpenMobile={openMobile} />
         <main className="pb-10 pl-[22px] pr-[25px]">
           <ProfileBreadcrumb />
           {loadError && (

@@ -5,9 +5,11 @@ import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
 import { useGerantTheme } from '../../hooks/useGerantTheme';
+import { useMobileSidebar } from '../../hooks/useMobileSidebar';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
 import GerantSidebar from '../../components/gerant/GerantSidebar';
 import GerantThemeToggle from '../../components/gerant/GerantThemeToggle';
+import MobileMenuButton from '../../components/gerant/MobileMenuButton';
 import { apiPremium, type PremiumPlanId } from '../../lib/api';
 import { isPremiumActive } from '../../lib/premium';
 import '../../styles/26-premium.css';
@@ -261,6 +263,7 @@ export default function PremiumPage() {
   const chrome = useGerantChrome();
   const { isDark } = useGerantTheme();
   const themeClass = isDark ? ' gerant-dark' : '';
+  const { mobileOpen, open: openMobile, close: closeMobile } = useMobileSidebar();
 
   const gerantPath = `${homePath}/gerant`;
 
@@ -287,12 +290,16 @@ export default function PremiumPage() {
     <div className={`gerant-maq1 premium-maq min-h-screen bg-[#f5f8fc] text-[#0b1b3f] antialiased${themeClass}`}>
       <div className="flex min-h-screen">
         {/* ============ SIDEBAR ============ */}
-        <GerantSidebar />
+        {mobileOpen && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={closeMobile} />}
+        <div className={`${mobileOpen ? 'fixed inset-y-0 left-0 z-50 lg:static' : 'hidden lg:block'}`}>
+          <GerantSidebar className={mobileOpen ? '!flex' : ''} />
+        </div>
 
         {/* ============ MAIN ============ */}
         <main className="min-w-0 flex-1 px-4 py-4 lg:px-7">
           {/* Header */}
           <header className="flex items-center gap-4">
+            <MobileMenuButton onOpen={openMobile} />
             <label className="card flex max-w-3xl flex-1 items-center gap-3 px-5 py-3 text-slate-400">
               <Icon name="search" className="h-5 w-5" />
               <input

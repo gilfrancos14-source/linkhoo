@@ -1,9 +1,11 @@
 import { Fragment, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useOnlineStatus } from '../../../hooks/useOnlineStatus';
+import { useMobileSidebar } from '../../../hooks/useMobileSidebar';
 import GerantLogoutButton from '../../../components/GerantLogoutButton';
 import GerantSidebar from '../../../components/gerant/GerantSidebar';
 import GerantThemeToggle from '../../../components/gerant/GerantThemeToggle';
+import MobileMenuButton from '../../../components/gerant/MobileMenuButton';
 import {
   apiGerants,
   apiUpload,
@@ -346,6 +348,8 @@ export default function VerificationStaticSection({ gerantPath }: VerificationSt
   const [actionError, setActionError] = useState('');
   const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const { mobileOpen, open: openMobile, close: closeMobile } = useMobileSidebar();
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -696,7 +700,10 @@ export default function VerificationStaticSection({ gerantPath }: VerificationSt
         <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
       </svg>
 
-      <GerantSidebar />
+      <div className={`${mobileOpen ? 'fixed inset-y-0 left-0 z-50 lg:static' : 'hidden lg:block'}`}>
+        <GerantSidebar className={mobileOpen ? '!flex' : ''} />
+      </div>
+      {mobileOpen && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={closeMobile} />}
 
       <div className="min-w-0 flex-1">
         <header className="flex h-[64px] items-center justify-between pl-[17px] pr-[26px]">
@@ -706,6 +713,7 @@ export default function VerificationStaticSection({ gerantPath }: VerificationSt
           </label>
 
           <div className="flex items-center gap-[28px]">
+            <MobileMenuButton onOpen={openMobile} />
             <GerantThemeToggle />
             <button type="button" aria-label="Notifications" className="relative text-[#0F2150]">
               <svg className="ic h-[20px] w-[20px]"><use href="#i-bell" /></svg>

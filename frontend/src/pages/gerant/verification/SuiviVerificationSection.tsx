@@ -3,6 +3,8 @@ import GerantLogoutButton from '../../../components/GerantLogoutButton';
 import GerantSidebar from '../../../components/gerant/GerantSidebar';
 import GerantThemeToggle from '../../../components/gerant/GerantThemeToggle';
 import { useGerantChrome } from '../../../hooks/useGerantChrome';
+import { useMobileSidebar } from '../../../hooks/useMobileSidebar';
+import MobileMenuButton from '../../../components/gerant/MobileMenuButton';
 import { useSuiviVerification } from './useSuiviVerification';
 import {
   DOCUMENT_LABELS,
@@ -191,6 +193,7 @@ export default function SuiviVerificationSection({ gerantPath }: SuiviVerificati
 
   const chrome = useGerantChrome();
   const { gerant, status, documents, loading, error, reload } = useSuiviVerification();
+  const { mobileOpen, open: openMobile, close: closeMobile } = useMobileSidebar();
 
   const overall = toVerificationStatus(status?.verification_status);
   const submittedAt = status?.verification_submitted_at ?? null;
@@ -276,7 +279,10 @@ export default function SuiviVerificationSection({ gerantPath }: SuiviVerificati
         <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
       </svg>
 
-      <GerantSidebar />
+      <div className={`${mobileOpen ? 'fixed inset-y-0 left-0 z-50 lg:static' : 'hidden lg:block'}`}>
+        <GerantSidebar className={mobileOpen ? '!flex' : ''} />
+      </div>
+      {mobileOpen && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={closeMobile} />}
 
       <div className="min-w-0 flex-1">
         <header className="flex h-[64px] items-center justify-between pl-[17px] pr-[26px]">
@@ -286,6 +292,7 @@ export default function SuiviVerificationSection({ gerantPath }: SuiviVerificati
           </label>
 
           <div className="flex items-center gap-[28px]">
+            <MobileMenuButton onOpen={openMobile} />
             <GerantThemeToggle />
             <button type="button" aria-label="Notifications" className="relative text-[#0F2150]">
               <svg className="ic h-[20px] w-[20px]"><use href="#i-bell" /></svg>

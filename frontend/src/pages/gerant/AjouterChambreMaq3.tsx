@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
 import { useGerantTheme } from '../../hooks/useGerantTheme';
+import { useMobileSidebar } from '../../hooks/useMobileSidebar';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
 import GerantSidebar from '../../components/gerant/GerantSidebar';
 import GerantThemeToggle from '../../components/gerant/GerantThemeToggle';
+import MobileMenuButton from '../../components/gerant/MobileMenuButton';
 import { formatPrice } from '../../lib/roomDisplay';
 import '../../styles/35-gerant-maq3.css';
 import { emptyForm, type PreviewSnapshot } from './ajouter-chambre/form';
@@ -24,6 +26,7 @@ export default function AjouterChambreMaq3() {
   const chrome = useGerantChrome();
   const { isDark } = useGerantTheme();
   const themeClass = isDark ? ' gerant-dark' : '';
+  const { mobileOpen, open: openMobile, close: closeMobile } = useMobileSidebar();
   const gerantPath = `${homePath}/gerant`;
   const chambresPath = `${gerantPath}/chambres`;
   const [preview, setPreview] = useState<PreviewSnapshot>({
@@ -80,10 +83,14 @@ export default function AjouterChambreMaq3() {
       </svg>
 
       <div className="flex min-h-screen">
-        <GerantSidebar />
+        {mobileOpen && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={closeMobile} />}
+        <div className={`${mobileOpen ? 'fixed inset-y-0 left-0 z-50 lg:static' : 'hidden lg:block'}`}>
+          <GerantSidebar className={mobileOpen ? '!flex' : ''} />
+        </div>
 
         <main className="min-w-0 flex-1 px-4 py-4 lg:px-7">
           <header className="flex items-center gap-4">
+            <MobileMenuButton onOpen={openMobile} />
             <label className="card flex max-w-3xl flex-1 items-center gap-3 px-5 py-3 text-slate-400">
               <Icon id="search" className="i h-5 w-5" />
               <input type="search" placeholder="Rechercher une chambre, une catégorie…" className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400" />

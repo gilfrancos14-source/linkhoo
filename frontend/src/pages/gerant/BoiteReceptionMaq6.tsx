@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
 import { useGerantTheme } from '../../hooks/useGerantTheme';
+import { useMobileSidebar } from '../../hooks/useMobileSidebar';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
 import GerantSidebar from '../../components/gerant/GerantSidebar';
 import GerantThemeToggle from '../../components/gerant/GerantThemeToggle';
+import MobileMenuButton from '../../components/gerant/MobileMenuButton';
 import { apiMessages, type Conversation, type Message } from '../../lib/api';
 import { fetchRoomById, type Room } from '../../data/rooms';
 import { priceWithCurrency } from '../../lib/roomDisplay';
@@ -97,6 +99,7 @@ export default function BoiteReceptionMaq6() {
   const chrome = useGerantChrome();
   const { isDark } = useGerantTheme();
   const themeClass = isDark ? ' gerant-dark' : '';
+  const { mobileOpen, open: openMobile, close: closeMobile } = useMobileSidebar();
   const gerantPath = `${homePath}/gerant`;
   const chambresPath = `${gerantPath}/chambres`;
   const demandesPath = `${gerantPath}/reservations/demandes`;
@@ -300,10 +303,14 @@ export default function BoiteReceptionMaq6() {
       </svg>
 
       <div className="flex min-h-screen">
-        <GerantSidebar />
+        {mobileOpen && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={closeMobile} />}
+        <div className={`${mobileOpen ? 'fixed inset-y-0 left-0 z-50 lg:static' : 'hidden lg:block'}`}>
+          <GerantSidebar className={mobileOpen ? '!flex' : ''} />
+        </div>
 
         <div className="min-w-0 flex-1">
           <header className="flex items-center justify-between gap-4 px-6 py-4 lg:px-8">
+            <MobileMenuButton onOpen={openMobile} />
             <label className={`flex w-full max-w-xl items-center gap-3 px-5 py-3 text-sm text-slate-400 ${cardCls}`}>
               <Icon id="search" className="ico w-5 h-5 shrink-0" />
               <input

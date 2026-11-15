@@ -2,13 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
 import { useHomePath } from '../../hooks/useHomePath';
+import { useMobileSidebar } from '../../hooks/useMobileSidebar';
 import { apiPremium } from '../../lib/api';
 import GerantSidebar from '../../components/gerant/GerantSidebar';
 import GerantThemeToggle from '../../components/gerant/GerantThemeToggle';
+import MobileMenuButton from '../../components/gerant/MobileMenuButton';
 
 export default function PremiumSuccessPage() {
   const homePath = useHomePath();
   const { userId, isLoaded } = useAuth();
+  const { mobileOpen, open: openMobile, close: closeMobile } = useMobileSidebar();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
   const [rechecking, setRechecking] = useState(false);
@@ -62,9 +65,13 @@ export default function PremiumSuccessPage() {
 
   return (
     <div className="flex min-h-screen">
-      <GerantSidebar />
+      {mobileOpen && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={closeMobile} />}
+      <div className={`${mobileOpen ? 'fixed inset-y-0 left-0 z-50 lg:static' : 'hidden lg:block'}`}>
+        <GerantSidebar className={mobileOpen ? '!flex' : ''} />
+      </div>
       <div className="min-w-0 flex-1">
-      <div className="flex justify-end px-4 py-4 lg:px-7">
+      <div className="flex items-center justify-end gap-2 px-4 py-4 lg:px-7">
+        <MobileMenuButton onOpen={openMobile} />
         <GerantThemeToggle />
       </div>
     <div className="dash">
