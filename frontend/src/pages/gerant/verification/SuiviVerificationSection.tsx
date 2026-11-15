@@ -286,7 +286,7 @@ export default function SuiviVerificationSection({ gerantPath }: SuiviVerificati
 
       <div className="min-w-0 flex-1">
         <header className="flex h-[64px] items-center justify-between pl-[17px] pr-[26px]">
-          <label className="flex h-9 w-full max-w-[590px] items-center gap-[15px] rounded-lg bg-white pl-6 pr-4 shadow-[0_1px_6px_rgba(20,40,90,0.05)] ring-1 ring-[#EEF2F8]">
+          <label className="hidden sm:flex h-9 w-full max-w-[590px] items-center gap-[15px] rounded-lg bg-white pl-6 pr-4 shadow-[0_1px_6px_rgba(20,40,90,0.05)] ring-1 ring-[#EEF2F8]">
             <svg className="ic h-[17px] w-[17px] shrink-0 text-[#0F2150]"><use href="#i-search" /></svg>
             <input type="search" placeholder="Rechercher une chambre, une catégorie..." className="w-full bg-transparent text-[11.5px] text-[#0F2150] placeholder:text-[#8A99B5] focus:outline-none" />
           </label>

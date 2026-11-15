@@ -10,7 +10,7 @@ import MobileMenuButton from '../gerant/MobileMenuButton';
 export function ProfileHeader({ userName, onOpenMobile }: { userName: string; onOpenMobile?: () => void }) {
   return (
     <header className="flex h-[64px] items-center justify-between pl-[19px] pr-[26px]">
-      <label className="flex h-9 w-full max-w-[590px] items-center gap-[15px] rounded-lg bg-white pl-6 pr-4 shadow-[0_1px_6px_rgba(20,40,90,0.05)]">
+      <label className="hidden sm:flex h-9 w-full max-w-[590px] items-center gap-[15px] rounded-lg bg-white pl-6 pr-4 shadow-[0_1px_6px_rgba(20,40,90,0.05)]">
         <Search className="h-4 w-4 text-[#0F2150]" />
         <input
           type="search"

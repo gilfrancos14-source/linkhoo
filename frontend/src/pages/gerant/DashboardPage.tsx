@@ -281,7 +281,7 @@ export default function DashboardPage() {
             <button className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-dash-navy lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Ouvrir le menu">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
             </button>
-            <label className="card flex max-w-3xl flex-1 items-center gap-3 px-5 py-3 text-slate-400">
+            <label className="hidden sm:flex card flex max-w-3xl flex-1 items-center gap-3 px-5 py-3 text-slate-400">
               <Icon id="search" className="i h-5 w-5" />
               <input type="search" placeholder="Rechercher une chambre, une catégorie…" className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400" />
             </label>

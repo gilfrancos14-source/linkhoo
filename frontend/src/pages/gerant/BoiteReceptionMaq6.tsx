@@ -311,7 +311,7 @@ export default function BoiteReceptionMaq6() {
         <div className="min-w-0 flex-1">
           <header className="flex items-center justify-between gap-4 px-6 py-4 lg:px-8">
             <MobileMenuButton onOpen={openMobile} />
-            <label className={`flex w-full max-w-xl items-center gap-3 px-5 py-3 text-sm text-slate-400 ${cardCls}`}>
+            <label className={`hidden sm:flex w-full max-w-xl items-center gap-3 px-5 py-3 text-sm text-slate-400 ${cardCls}`}>
               <Icon id="search" className="ico w-5 h-5 shrink-0" />
               <input
                 type="search"

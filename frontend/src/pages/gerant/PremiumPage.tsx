@@ -300,7 +300,7 @@ export default function PremiumPage() {
           {/* Header */}
           <header className="flex items-center gap-4">
             <MobileMenuButton onOpen={openMobile} />
-            <label className="card flex max-w-3xl flex-1 items-center gap-3 px-5 py-3 text-slate-400">
+            <label className="hidden sm:flex card flex max-w-3xl flex-1 items-center gap-3 px-5 py-3 text-slate-400">
               <Icon name="search" className="h-5 w-5" />
               <input
                 type="search"
