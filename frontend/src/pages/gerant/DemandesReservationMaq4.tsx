@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
+import { useGerantTheme } from '../../hooks/useGerantTheme';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
 import GerantSidebar from '../../components/gerant/GerantSidebar';
+import GerantThemeToggle from '../../components/gerant/GerantThemeToggle';
 import { fetchMyRooms, type Room } from '../../data/rooms';
 import {
   getReservations,
@@ -118,6 +120,8 @@ function bathsLabel(count: number): string {
 export default function DemandesReservationMaq4() {
   const homePath = useHomePath();
   const chrome = useGerantChrome();
+  const { isDark } = useGerantTheme();
+  const themeClass = isDark ? ' gerant-dark' : '';
   const gerantPath = `${homePath}/gerant`;
   const reservationsPath = `${gerantPath}/reservations`;
 
@@ -239,7 +243,7 @@ export default function DemandesReservationMaq4() {
   const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1).slice(0, 5);
 
   return (
-    <div className="gerant-maq4 bg-[#f5f8fc] text-dash-navy antialiased">
+    <div className={`gerant-maq4 bg-[#f5f8fc] text-dash-navy antialiased${themeClass}`}>
       <svg className="absolute h-0 w-0" aria-hidden="true">
         <symbol id="home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-5h4v5" /></symbol>
         <symbol id="bed" viewBox="0 0 24 24"><path d="M3 20V5M3 16h18v4M21 16v-4a3 3 0 0 0-3-3h-7v7" /><circle cx="7" cy="11" r="1.5" /></symbol>
@@ -282,6 +286,7 @@ export default function DemandesReservationMaq4() {
               <Icon id="search" className="i h-5 w-5" />
               <input type="search" placeholder="Rechercher une chambre, une catégorie…" className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400" />
             </label>
+            <GerantThemeToggle />
             <button type="button" className="relative ml-auto p-2 text-dash-navy" aria-label="Notifications">
               <Icon id="bell" className="i h-6 w-6" />
               {chrome.messagesUnread > 0 && <span className="absolute right-0.5 top-0 grid h-4 w-4 place-items-center rounded-full bg-dash-brand text-[10px] font-bold text-white">{chrome.messagesUnread}</span>}

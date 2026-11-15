@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth, useClerk, useUser } from '@clerk/clerk-react';
 import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
+import { useGerantTheme } from '../../hooks/useGerantTheme';
 import { fetchMyRooms } from '../../data/rooms';
 import GerantNotifications from '../../components/gerant/GerantNotifications';
 import { apiGerants, apiMessages, type GerantData } from '../../lib/api';
@@ -10,6 +11,8 @@ import { GerantSessionProvider } from '../../contexts/GerantSessionContext';
 import { isPremiumActive } from '../../lib/premium';
 import '../../styles/18-admin.css';
 import '../../styles/33-gerant-blank.css';
+import '../../styles/gerant-dark.css';
+import GerantThemeToggle from '../../components/gerant/GerantThemeToggle';
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkConfigured = clerkKey && clerkKey.startsWith('pk_');
@@ -21,7 +24,9 @@ export default function AdminLayout() {
   const { userId } = useAuth();
   const { signOut } = useClerk();
   const { user } = useUser();
+  const { isDark } = useGerantTheme();
   const gerantPath = `${homePath}/gerant`;
+  const themeClass = isDark ? 'gerant-dark' : '';
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('gerant-sidebar') === 'true');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [messagesUnread, setMessagesUnread] = useState(0);
@@ -131,7 +136,7 @@ export default function AdminLayout() {
 
   return (
     <GerantSessionProvider value={handleSignOut}>
-      <div className={`admin ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''} ${isBlankPage ? 'admin--blank' : ''} ${isMaqSidebarPage ? 'admin--maq-sidebar' : ''}`}>
+      <div className={`admin ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''} ${isBlankPage ? 'admin--blank' : ''} ${isMaqSidebarPage ? 'admin--maq-sidebar' : ''} ${themeClass}`}>
         {mobileOpen && <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} />}
       <aside className="sidebar">
         <div className="sidebar__header">
@@ -232,6 +237,8 @@ export default function AdminLayout() {
 
           <div className="topbar__right">
             {!isBlankPage && <GerantNotifications isQualified={isQualified} />}
+
+            <GerantThemeToggle />
 
             <NavLink to={homePath} className="topbar__cta">Retour au site</NavLink>
           </div>

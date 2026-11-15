@@ -4,8 +4,10 @@ import { useAuth } from '@clerk/clerk-react';
 import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
+import { useGerantTheme } from '../../hooks/useGerantTheme';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
 import GerantSidebar from '../../components/gerant/GerantSidebar';
+import GerantThemeToggle from '../../components/gerant/GerantThemeToggle';
 import { apiPremium, type PremiumPlanId } from '../../lib/api';
 import { isPremiumActive } from '../../lib/premium';
 import '../../styles/26-premium.css';
@@ -257,6 +259,8 @@ export default function PremiumPage() {
   const homePath = useHomePath();
   const { userId } = useAuth();
   const chrome = useGerantChrome();
+  const { isDark } = useGerantTheme();
+  const themeClass = isDark ? ' gerant-dark' : '';
 
   const gerantPath = `${homePath}/gerant`;
 
@@ -280,7 +284,7 @@ export default function PremiumPage() {
   };
 
   return (
-    <div className="gerant-maq1 premium-maq min-h-screen bg-[#f5f8fc] text-[#0b1b3f] antialiased">
+    <div className={`gerant-maq1 premium-maq min-h-screen bg-[#f5f8fc] text-[#0b1b3f] antialiased${themeClass}`}>
       <div className="flex min-h-screen">
         {/* ============ SIDEBAR ============ */}
         <GerantSidebar />
@@ -297,6 +301,7 @@ export default function PremiumPage() {
                 className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
               />
             </label>
+            <GerantThemeToggle />
             <button
               type="button"
               className="relative ml-auto p-2 text-dash-navy"

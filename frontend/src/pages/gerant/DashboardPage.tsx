@@ -6,6 +6,7 @@ import { useGerantTheme } from '../../hooks/useGerantTheme';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
 import GerantSidebar from '../../components/gerant/GerantSidebar';
 import GerantNotifications from '../../components/gerant/GerantNotifications';
+import GerantThemeToggle from '../../components/gerant/GerantThemeToggle';
 import { fetchMyRooms, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import { getReservations, statutLabels, type Reservation } from '../../lib/reservations';
@@ -83,7 +84,7 @@ function statutPill(statut: Reservation['statut']): string {
 export default function DashboardPage() {
   const homePath = useHomePath();
   const chrome = useGerantChrome();
-  const { isDark, toggleTheme } = useGerantTheme();
+  const { isDark } = useGerantTheme();
   const themeClass = isDark ? ' gerant-dark' : '';
   const gerantPath = `${homePath}/gerant`;
   const chambresPath = `${gerantPath}/chambres`;
@@ -277,16 +278,8 @@ export default function DashboardPage() {
               <Icon id="search" className="i h-5 w-5" />
               <input type="search" placeholder="Rechercher une chambre, une catégorie…" className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400" />
             </label>
-            <button
-              type="button"
-              className="gerant-theme-toggle card grid h-11 w-11 shrink-0 place-items-center text-dash-navy"
-              aria-label={isDark ? 'Désactiver le mode sombre' : 'Activer le mode sombre'}
-              aria-pressed={isDark}
-              title={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
-              onClick={toggleTheme}
-            >
-              <Icon id={isDark ? 'sun' : 'moon'} className="i h-5 w-5" />
-            </button>
+            <GerantThemeToggle />
+
             <GerantNotifications
               isQualified={!!chrome.gerant?.is_verified}
               variant="dashboard"

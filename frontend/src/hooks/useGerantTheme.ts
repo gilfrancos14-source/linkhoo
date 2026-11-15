@@ -6,14 +6,13 @@ export type GerantTheme = 'light' | 'dark';
 export const GERANT_THEME_STORAGE_KEY = 'gerant-theme';
 
 function readStoredTheme(): GerantTheme {
-  if (typeof window === 'undefined') return 'light';
+  if (typeof window === 'undefined') return 'dark';
   try {
-    return window.localStorage.getItem(GERANT_THEME_STORAGE_KEY) === 'dark'
-      ? 'dark'
-      : 'light';
+    const stored = window.localStorage.getItem(GERANT_THEME_STORAGE_KEY);
+    return stored === 'light' ? 'light' : 'dark';
   } catch {
-    // Stockage bloqué (navigation privée, quota) : on reste en clair.
-    return 'light';
+    // Stockage bloqué (navigation privée, quota) : on reste en sombre.
+    return 'dark';
   }
 }
 
@@ -21,9 +20,8 @@ function readStoredTheme(): GerantTheme {
  * Thème clair/sombre du tableau de bord gérant.
  *
  * Le choix est mémorisé dans `localStorage` et réappliqué au prochain
- * chargement. Le défaut reste le thème clair : on ne suit pas
- * `prefers-color-scheme`, pour ne pas changer l'apparence des gérants qui
- * n'ont jamais demandé le mode sombre.
+ * chargement. Le défaut est le thème sombre pour une meilleure expérience
+ * de lecture et pour réduire la fatigue oculaire pendant le travail.
  */
 export function useGerantTheme() {
   const [theme, setTheme] = useState<GerantTheme>(readStoredTheme);

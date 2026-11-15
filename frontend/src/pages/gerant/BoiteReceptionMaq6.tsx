@@ -2,8 +2,10 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
+import { useGerantTheme } from '../../hooks/useGerantTheme';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
 import GerantSidebar from '../../components/gerant/GerantSidebar';
+import GerantThemeToggle from '../../components/gerant/GerantThemeToggle';
 import { apiMessages, type Conversation, type Message } from '../../lib/api';
 import { fetchRoomById, type Room } from '../../data/rooms';
 import { priceWithCurrency } from '../../lib/roomDisplay';
@@ -93,6 +95,8 @@ const INBOX_POLL_MS = 30_000;
 export default function BoiteReceptionMaq6() {
   const homePath = useHomePath();
   const chrome = useGerantChrome();
+  const { isDark } = useGerantTheme();
+  const themeClass = isDark ? ' gerant-dark' : '';
   const gerantPath = `${homePath}/gerant`;
   const chambresPath = `${gerantPath}/chambres`;
   const demandesPath = `${gerantPath}/reservations/demandes`;
@@ -267,7 +271,7 @@ export default function BoiteReceptionMaq6() {
   const roomTitle = room?.title ?? selected?.room?.title ?? 'Chambre';
 
   return (
-    <div className="gerant-maq6 min-h-screen bg-[#F7F9FC] font-sans text-[#1E2A44] antialiased">
+    <div className={`gerant-maq6 min-h-screen bg-[#F7F9FC] font-sans text-[#1E2A44] antialiased${themeClass}`}>
       <svg className="hidden" aria-hidden="true">
         <symbol id="home" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="M9 22V12h6v10" /></symbol>
         <symbol id="bed" viewBox="0 0 24 24"><path d="M2 20v-9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v9M2 16h20M6 9V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3" /></symbol>
@@ -311,6 +315,7 @@ export default function BoiteReceptionMaq6() {
               />
             </label>
             <div className="flex items-center gap-5">
+              <GerantThemeToggle />
               <button type="button" className="relative" aria-label="Notifications">
                 <Icon id="bell" className="ico w-6 h-6 shrink-0 text-[#1E2A44]" />
                 {chrome.messagesUnread > 0 && <span className="absolute -right-2 -top-2 grid h-4 w-4 place-items-center rounded-full bg-[#F26A21] text-[10px] font-bold text-white">{chrome.messagesUnread}</span>}

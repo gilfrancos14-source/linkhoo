@@ -1,26 +1,34 @@
 /* ==========================================================================
    Mode sombre du tableau de bord gérant (`/gerant`).
 
-   La classe `gerant-dark` est posée sur la racine `.gerant-maq1` par
-   `DashboardPage` : aucune autre page gérant n'est affectée.
+   La classe `gerant-dark` est posée sur la racine du layout admin
+   (`AdminLayout`, toutes les pages `/gerant`) et, pour les pages qui
+   reproduisent une maquette complète, sur leur propre div racine
+   (`.gerant-maq1`, `.gerant-maq2`, …).
 
-   Les sélecteurs sont préfixés par `.gerant-maq1.gerant-dark` pour l'emporter
+   Les sélecteurs sont préfixés par `:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark` pour l'emporter
    à la fois sur les utilitaires Tailwind (une classe) et sur les règles de
    `33-gerant-blank.css` / `gerant-sidebar.css` (deux classes), quel que soit
    l'ordre d'injection des feuilles dans le chunk de la route.
+
+   Le layout (`.admin`) porte lui-même la classe : les pages qui utilisent le
+   chrome admin standard héritent donc du fond sombre sans div dédiée.
    ========================================================================== */
 
 /* ---------- Surfaces ---------- */
 
-.gerant-maq1.gerant-dark {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark,
+.admin.gerant-dark {
   background: #0b1220;
   color: #e2e8f0;
 }
 
-/* Le chrome de `AdminLayout` est masqué sur cette route, mais son fond clair
-   resterait visible au-delà du contenu (overscroll, rebond mobile). */
+/* Le chrome de `AdminLayout` est masqué sur les pages maquette, mais son
+   fond clair resterait visible au-delà du contenu (overscroll, rebond mobile). */
 .admin.admin--blank:has(.gerant-dark),
-.admin.admin--blank:has(.gerant-dark) .admin-main {
+.admin.admin--blank:has(.gerant-dark) .admin-main,
+.admin.admin--blank.gerant-dark,
+.admin.admin--blank.gerant-dark .admin-main {
   background: #0b1220;
 }
 
@@ -29,13 +37,13 @@ html:has(.gerant-dark) {
   color-scheme: dark;
 }
 
-.gerant-maq1.gerant-dark *,
-.gerant-maq1.gerant-dark *::before,
-.gerant-maq1.gerant-dark *::after {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark *,
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark *::before,
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark *::after {
   border-color: #1e293b;
 }
 
-.gerant-maq1.gerant-dark .card {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .card {
   background: #111c2e;
   border-color: #1e293b;
   box-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
@@ -43,323 +51,381 @@ html:has(.gerant-dark) {
 
 /* ---------- Textes ---------- */
 
-.gerant-maq1.gerant-dark .text-dash-navy {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-dash-navy {
   color: #e8eef9;
 }
 
 /* `!text-dash-navy` (liens « Voir tout/toutes ») est un utilitaire important. */
-.gerant-maq1.gerant-dark .\!text-dash-navy {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .\!text-dash-navy {
   color: #e8eef9 !important;
 }
 
-.gerant-maq1.gerant-dark .dash-page-head {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .dash-page-head {
   color: #f1f5f9;
 }
 
-.gerant-maq1.gerant-dark .text-slate-400 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-slate-400 {
   color: #7c8ba3;
 }
 
-.gerant-maq1.gerant-dark .text-slate-500 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-slate-500 {
   color: #94a3b8;
 }
 
-.gerant-maq1.gerant-dark .text-slate-600 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-slate-600 {
   color: #cbd5e1;
 }
 
-.gerant-maq1.gerant-dark .placeholder\:text-slate-400::placeholder,
-.gerant-maq1.gerant-dark input::placeholder {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .placeholder\:text-slate-400::placeholder,
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark input::placeholder {
   color: #64748b;
 }
 
-.gerant-maq1.gerant-dark .text-sky-500,
-.gerant-maq1.gerant-dark .text-sky-600 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-sky-500,
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-sky-600 {
   color: #7dd3fc;
 }
 
-.gerant-maq1.gerant-dark .text-indigo-500 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-indigo-500 {
   color: #a5b4fc;
 }
 
-.gerant-maq1.gerant-dark .text-pink-500 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-pink-500 {
   color: #f9a8d4;
 }
 
-.gerant-maq1.gerant-dark .text-teal-600 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-teal-600 {
   color: #5eead4;
 }
 
-.gerant-maq1.gerant-dark .text-violet-500 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-violet-500 {
   color: #c4b5fd;
 }
 
-.gerant-maq1.gerant-dark .text-amber-500 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-amber-500 {
   color: #fcd34d;
 }
 
-.gerant-maq1.gerant-dark .text-orange-500 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-orange-500 {
   color: #fb923c;
 }
 
-.gerant-maq1.gerant-dark .text-emerald-500,
-.gerant-maq1.gerant-dark .text-emerald-600 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-emerald-500,
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-emerald-600 {
   color: #34d399;
 }
 
-.gerant-maq1.gerant-dark .text-red-500,
-.gerant-maq1.gerant-dark .text-red-600 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-red-500,
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-red-600 {
   color: #f87171;
 }
 
-.gerant-maq1.gerant-dark .text-\[\#C23B3B\] {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-\[\#C23B3B\] {
   color: #f87171;
 }
 
 /* ---------- Fonds des pastilles et encarts ---------- */
 
-.gerant-maq1.gerant-dark .bg-white {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-white {
   background-color: #0f1a2b;
 }
 
-.gerant-maq1.gerant-dark .bg-slate-50 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-slate-50 {
   background-color: #16233a;
 }
 
-.gerant-maq1.gerant-dark .hover\:bg-slate-100:hover {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .hover\:bg-slate-100:hover {
   background-color: #1e293b;
 }
 
-.gerant-maq1.gerant-dark .hover\:bg-\[\#FDE8E8\]:hover {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .hover\:bg-\[\#FDE8E8\]:hover {
   background-color: rgba(194, 59, 59, 0.18);
 }
 
-.gerant-maq1.gerant-dark .bg-sky-50 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-sky-50 {
   background-color: #10233a;
 }
 
-.gerant-maq1.gerant-dark .bg-sky-100 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-sky-100 {
   background-color: rgba(56, 189, 248, 0.16);
 }
 
-.gerant-maq1.gerant-dark .bg-indigo-100 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-indigo-100 {
   background-color: rgba(129, 140, 248, 0.18);
 }
 
-.gerant-maq1.gerant-dark .bg-pink-100 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-pink-100 {
   background-color: rgba(244, 114, 182, 0.18);
 }
 
-.gerant-maq1.gerant-dark .bg-teal-100 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-teal-100 {
   background-color: rgba(45, 212, 191, 0.18);
 }
 
-.gerant-maq1.gerant-dark .bg-violet-100 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-violet-100 {
   background-color: rgba(167, 139, 250, 0.18);
 }
 
-.gerant-maq1.gerant-dark .bg-amber-100 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-amber-100 {
   background-color: rgba(251, 191, 36, 0.18);
 }
 
-.gerant-maq1.gerant-dark .bg-orange-100 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-orange-100 {
   background-color: rgba(249, 115, 22, 0.16);
 }
 
-.gerant-maq1.gerant-dark .bg-emerald-100 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-emerald-100 {
   background-color: rgba(16, 185, 129, 0.16);
 }
 
-.gerant-maq1.gerant-dark .bg-red-100 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-red-100 {
   background-color: rgba(239, 68, 68, 0.16);
 }
 
-.gerant-maq1.gerant-dark .bg-dash-brand-soft {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-dash-brand-soft {
   background-color: rgba(249, 115, 22, 0.12);
 }
 
 /* ---------- Bordures et séparateurs ---------- */
 
-.gerant-maq1.gerant-dark .border-slate-100 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .border-slate-100 {
   border-color: #1e293b;
 }
 
-.gerant-maq1.gerant-dark .border-sky-100 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .border-sky-100 {
   border-color: #1d3a5f;
 }
 
-.gerant-maq1.gerant-dark .border-orange-100 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .border-orange-100 {
   border-color: rgba(249, 115, 22, 0.32);
 }
 
-.gerant-maq1.gerant-dark .hover\:border-orange-200:hover {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .hover\:border-orange-200:hover {
   border-color: rgba(251, 146, 60, 0.5);
 }
 
-.gerant-maq1.gerant-dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
   border-color: #1e293b;
 }
 
 /* L'ombre orange du bouton d'ajout est trop lumineuse sur fond sombre. */
-.gerant-maq1.gerant-dark .shadow-orange-200 {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .shadow-orange-200 {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
 }
 
 /* ---------- Sidebar (composant partagé, thème posé par le dashboard) ---------- */
 
-.gerant-maq1.gerant-dark aside.gerb {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb {
   background: #0f1a2b;
   border-color: #1e293b;
 }
 
 /* Le logo est un JPEG à fond blanc : il lui faut une plaque claire. */
-.gerant-maq1.gerant-dark aside.gerb .sidebar-logo {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb .sidebar-logo {
   background: #f8fafc;
   border-radius: 10px;
   padding: 4px 8px;
 }
 
-.gerant-maq1.gerant-dark aside.gerb .grp {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb .grp {
   color: #cbd5e1;
 }
 
-.gerant-maq1.gerant-dark aside.gerb .grp--active {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb .grp--active {
   background: rgba(249, 115, 22, 0.16);
   color: #fdba74;
 }
 
-.gerant-maq1.gerant-dark aside.gerb .sub {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb .sub {
   color: #94a3b8;
 }
 
-.gerant-maq1.gerant-dark aside.gerb .sub:hover {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb .sub:hover {
   color: #f1f5f9;
 }
 
-.gerant-maq1.gerant-dark aside.gerb .sub svg {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb .sub svg {
   color: #64748b;
 }
 
-.gerant-maq1.gerant-dark aside.gerb .sub.on {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb .sub.on {
   color: #fdba74;
 }
 
-.gerant-maq1.gerant-dark aside.gerb .sub.on svg {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb .sub.on svg {
   color: #fb923c;
 }
 
 /* ---------- Bouton de bascule du thème ---------- */
 
-.gerant-maq1.gerant-dark .gerant-theme-toggle {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .gerant-theme-toggle,
+.admin.gerant-dark .gerant-theme-toggle {
   color: #fbbf24;
 }
 
 /* ---------- Panneau de notifications ---------- */
 
-.gerant-maq1.gerant-dark .notif-dropdown {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-dropdown {
   background: #111c2e;
   border-color: #1e293b;
   box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55);
 }
 
-.gerant-maq1.gerant-dark .notif-dropdown__head {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-dropdown__head {
   color: #e8eef9;
   border-color: #1e293b;
 }
 
-.gerant-maq1.gerant-dark .notif-dropdown__mark {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-dropdown__mark {
   color: #7dd3fc;
 }
 
-.gerant-maq1.gerant-dark .notif-dropdown__mark:hover {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-dropdown__mark:hover {
   color: #bae6fd;
 }
 
-.gerant-maq1.gerant-dark .notif-dropdown__empty {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-dropdown__empty {
   color: #94a3b8;
 }
 
-.gerant-maq1.gerant-dark .notif-item {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-item {
   border-bottom-color: #1b2740;
 }
 
-.gerant-maq1.gerant-dark .notif-item:hover {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-item:hover {
   background: #16233a;
 }
 
-.gerant-maq1.gerant-dark .notif-item--unread {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-item--unread {
   background: #122a44;
 }
 
-.gerant-maq1.gerant-dark .notif-item--unread:hover {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-item--unread:hover {
   background: #17334f;
 }
 
-.gerant-maq1.gerant-dark .notif-item__icon {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-item__icon {
   background: rgba(56, 189, 248, 0.16);
   color: #7dd3fc;
 }
 
-.gerant-maq1.gerant-dark .notif-item__text {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-item__text {
   color: #e8eef9;
 }
 
-.gerant-maq1.gerant-dark .notif-item__time {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-item__time {
   color: #94a3b8;
 }
 
-.gerant-maq1.gerant-dark .notif-item__dates {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-item__dates {
   color: #7dd3fc;
 }
 
-.gerant-maq1.gerant-dark .notif-action--verify {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-action--verify {
   background: rgba(56, 189, 248, 0.14);
   border-color: #0ea5e9;
   color: #bae6fd;
 }
 
-.gerant-maq1.gerant-dark .notif-action--verify:hover {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-action--verify:hover {
   background: #0284c7;
   color: #fff;
 }
 
 /* ---------- Modale de vérification d'une réservation ---------- */
 
-.gerant-maq1.gerant-dark .verify-modal {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-modal {
   background: #111c2e;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
 }
 
-.gerant-maq1.gerant-dark .verify-modal__loading p {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-modal__loading p {
   color: #e8eef9;
 }
 
-.gerant-maq1.gerant-dark .verify-modal__room,
-.gerant-maq1.gerant-dark .verify-modal__result p {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-modal__room,
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-modal__result p {
   color: #94a3b8;
 }
 
-.gerant-maq1.gerant-dark .verify-spinner {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-spinner {
   border-color: #1e293b;
   border-top-color: #38bdf8;
 }
 
-.gerant-maq1.gerant-dark .verify-modal__icon--available {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-modal__icon--available {
   background: rgba(16, 185, 129, 0.16);
   color: #34d399;
 }
 
-.gerant-maq1.gerant-dark .verify-modal__icon--unavailable {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-modal__icon--unavailable {
   background: rgba(239, 68, 68, 0.16);
   color: #f87171;
 }
 
-.gerant-maq1.gerant-dark .verify-btn--cancel {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-btn--cancel {
   background: #16233a;
   border-color: #1e293b;
   color: #cbd5e1;
 }
 
-.gerant-maq1.gerant-dark .verify-btn--cancel:hover {
+:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-btn--cancel:hover {
   background: #1e293b;
+}
+
+/* ---------- Chrome du layout admin (`AdminLayout`) — toutes les pages ---------- */
+
+/* Sidebar admin partagée (pages « chrome admin », ex. réservations). */
+.admin.gerant-dark .sidebar {
+  background: #0f1a2b;
+  color: #e2e8f0;
+  border-right-color: #1e293b;
+}
+
+.admin.gerant-dark .sidebar__label,
+.admin.gerant-dark .sidebar__user-role,
+.admin.gerant-dark .sidebar__link {
+  color: #e2e8f0;
+}
+
+.admin.gerant-dark .sidebar__link:hover {
+  background: #16233a;
+  color: #7dd3fc;
+}
+
+.admin.gerant-dark .sidebar__link--active {
+  background: rgba(249, 115, 22, 0.16);
+  color: #fdba74;
+}
+
+.admin.gerant-dark .sidebar__toggle,
+.admin.gerant-dark .sidebar__close-mobile {
+  background: #16233a;
+  border-color: #1e293b;
+  color: #94a3b8;
+}
+
+/* Topbar (chrome admin partagé). */
+.admin.gerant-dark .topbar {
+  background: rgba(11, 18, 32, 0.85);
+  border-bottom-color: #1e293b;
+}
+
+.admin.gerant-dark .topbar__menu-btn {
+  background: #111c2e;
+  border-color: #1e293b;
+  color: #94a3b8;
+}
+
+/* Contenu admin standard (hors maquette). */
+.admin.gerant-dark .admin-content {
+  color: #e2e8f0;
+}
+
+/* Cards utilisées hors des pages maquette (ex. `.admin-page`). */
+.admin.gerant-dark .admin-content .card,
+.admin.gerant-dark .admin-page .card {
+  background: #111c2e;
+  border-color: #1e293b;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
 }
