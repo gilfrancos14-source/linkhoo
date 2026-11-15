@@ -109,8 +109,37 @@
   }
 }
 
-@media (max-width: 560px) {
-  .container {
+@media (max-width: 640px) {
+  .card {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .card > * {
+    min-width: 0;
+  }
+  .card p,
+  .card span,
+  .card div,
+  .card h1,
+  .card h2,
+  .card h3,
+  .card li,
+  .card td,
+  .card th {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  /* Évite le débordement horizontal des conteneurs flex sur mobile. */
+  .flex.min-h-screen,
+  main,
+  .admin-content,
+  .admin-main {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+}
     width: min(100% - 1.5rem, var(--container));
   }
 
