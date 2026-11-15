@@ -19,7 +19,7 @@ const SUPABASE_PUBLIC_IMAGE_RE =
   /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/images\/[A-Za-z0-9._~-]+(?:\/[A-Za-z0-9._~-]+)*$/;
 const LOCAL_IMAGE_RE = /^\/images\/[A-Za-z0-9._~-]+(?:\/[A-Za-z0-9._~-]+)*$/;
 const STORAGE_IMAGE_PATH_RE = /^\/api\/media\/images\/[A-Za-z0-9._~-]+(?:\/[A-Za-z0-9._~-]+)*$/;
-const PROD_MEDIA_RE = /^https:\/\/[^\/]+\/media\/images\/[A-Za-z0-9._~-]+(?:\/[A-Za-z0-9._~-]+)*$/;
+const PROD_MEDIA_RE = /^https:\/\/[^/]+\/media\/images\/[A-Za-z0-9._~-]+(?:\/[A-Za-z0-9._~-]+)*$/;
 
 export function isAllowedImageUrl(value: string): boolean {
   if (LOCAL_IMAGE_RE.test(value)) return true;

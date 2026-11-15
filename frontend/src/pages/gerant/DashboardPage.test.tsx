@@ -8,6 +8,7 @@ import type { Category } from '../../data/categories';
 import type { GerantData } from '../../lib/api';
 import type { Reservation } from '../../lib/reservations';
 
+
 const mocks = vi.hoisted(() => ({
   fetchMyRooms: vi.fn<() => Promise<Room[]>>(),
   fetchCategoriesByMarket: vi.fn<(market: string) => Promise<Category[]>>(),

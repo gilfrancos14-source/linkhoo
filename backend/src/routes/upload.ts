@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { extname } from 'path';
 import multer from 'multer';
 import sharp from 'sharp';
-import { supabaseAdmin } from '../config/supabase';
+
 import { requireClerkOrAdminAuth, requireAdminOrGerant } from '../middleware/clerkAuth';
 import { sanitizeOwnerId } from '../utils/verificationStorage';
 import {

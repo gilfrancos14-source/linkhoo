@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
+import { useGerantTheme } from '../../hooks/useGerantTheme';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
 import GerantSidebar from '../../components/gerant/GerantSidebar';
 import GerantNotifications from '../../components/gerant/GerantNotifications';
@@ -10,6 +11,7 @@ import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import { getReservations, statutLabels, type Reservation } from '../../lib/reservations';
 import { apiPayouts, type PayoutBalanceData } from '../../lib/api';
 import { formatPrice } from '../../lib/roomDisplay';
+import '../../styles/gerant-dark.css';
 
 
 
@@ -81,6 +83,8 @@ function statutPill(statut: Reservation['statut']): string {
 export default function DashboardPage() {
   const homePath = useHomePath();
   const chrome = useGerantChrome();
+  const { isDark, toggleTheme } = useGerantTheme();
+  const themeClass = isDark ? ' gerant-dark' : '';
   const gerantPath = `${homePath}/gerant`;
   const chambresPath = `${gerantPath}/chambres`;
   const demandesPath = `${gerantPath}/reservations/demandes`;
@@ -222,7 +226,7 @@ export default function DashboardPage() {
   // Afficher un écran de chargement global si nécessaire
   if (globalLoading) {
     return (
-      <div className="gerant-maq1 bg-[#f5f8fc] text-dash-navy antialiased flex items-center justify-center min-h-screen">
+      <div className={`gerant-maq1 bg-[#f5f8fc] text-dash-navy antialiased flex items-center justify-center min-h-screen${themeClass}`}>
         <div className="text-center">
           <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-dash-brand border-t-transparent"></div>
           <p className="mt-4 text-lg font-medium text-dash-navy">Chargement de votre tableau de bord...</p>
@@ -233,7 +237,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="gerant-maq1 bg-[#f5f8fc] text-dash-navy antialiased">
+    <div className={`gerant-maq1 bg-[#f5f8fc] text-dash-navy antialiased${themeClass}`}>
       <svg className="absolute h-0 w-0" aria-hidden="true">
         <symbol id="home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-5h4v5" /></symbol>
         <symbol id="bed" viewBox="0 0 24 24"><path d="M3 20V5M3 16h18v4M21 16v-4a3 3 0 0 0-3-3h-7v7" /><circle cx="7" cy="11" r="1.5" /></symbol>
@@ -260,6 +264,8 @@ export default function DashboardPage() {
         <symbol id="build" viewBox="0 0 24 24"><path d="M5 21V4h10v17M15 9h4v12M9 8h2M9 12h2M9 16h2M3 21h18" /></symbol>
         <symbol id="list" viewBox="0 0 24 24"><path d="M4 6h2M4 12h2M4 18h2M9 6h11M9 12h11M9 18h11" /></symbol>
         <symbol id="dots" viewBox="0 0 24 24"><g fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></g></symbol>
+        <symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></symbol>
+        <symbol id="moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></symbol>
       </svg>
 
       <div className="flex min-h-screen">
@@ -271,6 +277,16 @@ export default function DashboardPage() {
               <Icon id="search" className="i h-5 w-5" />
               <input type="search" placeholder="Rechercher une chambre, une catégorie…" className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400" />
             </label>
+            <button
+              type="button"
+              className="gerant-theme-toggle card grid h-11 w-11 shrink-0 place-items-center text-dash-navy"
+              aria-label={isDark ? 'Désactiver le mode sombre' : 'Activer le mode sombre'}
+              aria-pressed={isDark}
+              title={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
+              onClick={toggleTheme}
+            >
+              <Icon id={isDark ? 'sun' : 'moon'} className="i h-5 w-5" />
+            </button>
             <GerantNotifications
               isQualified={!!chrome.gerant?.is_verified}
               variant="dashboard"

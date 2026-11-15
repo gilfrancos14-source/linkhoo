@@ -349,7 +349,7 @@ describe('POST /api/upload — échecs des artefacts', () => {
     const originalFrom = localStorage.from;
     localStorage.from = vi.fn().mockImplementation((bucket: string) => {
       const bucketMock = originalFrom.call(localStorage, bucket);
-      const originalUpload = bucketMock.upload;
+      const _originalUpload = bucketMock.upload;
       bucketMock.upload = vi.fn().mockResolvedValueOnce({
         data: null,
         error: { message: 'Erreur disque plein' },
@@ -375,7 +375,7 @@ describe('POST /api/upload — échecs des artefacts', () => {
     const originalFrom = localStorage.from;
     localStorage.from = vi.fn().mockImplementation((bucket: string) => {
       const bucketMock = originalFrom.call(localStorage, bucket);
-      const originalCreateSignedUrl = bucketMock.createSignedUrl;
+      const _originalCreateSignedUrl = bucketMock.createSignedUrl;
       bucketMock.createSignedUrl = vi.fn().mockResolvedValueOnce({
         data: null,
         error: { message: 'Bucket verrouillé' },
