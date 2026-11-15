@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import GerantLogoutButton from '../../../components/GerantLogoutButton';
 import GerantSidebar from '../../../components/gerant/GerantSidebar';
+import GerantThemeToggle from '../../../components/gerant/GerantThemeToggle';
 import { useGerantChrome } from '../../../hooks/useGerantChrome';
 import { useSuiviVerification } from './useSuiviVerification';
 import {
@@ -285,6 +286,7 @@ export default function SuiviVerificationSection({ gerantPath }: SuiviVerificati
           </label>
 
           <div className="flex items-center gap-[28px]">
+            <GerantThemeToggle />
             <button type="button" aria-label="Notifications" className="relative text-[#0F2150]">
               <svg className="ic h-[20px] w-[20px]"><use href="#i-bell" /></svg>
               {chrome.messagesUnread > 0 && (

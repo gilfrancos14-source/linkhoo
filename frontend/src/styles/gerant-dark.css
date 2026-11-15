@@ -416,6 +416,16 @@ html:has(.gerant-dark) {
   color: #94a3b8;
 }
 
+/* ---------- Bordures autour de la recherche et de l'avatar (mode sombre) ---------- */
+
+.gerant-dark header .card,
+.gerant-dark header [class*="ring-1"],
+.gerant-dark header [class*="ring-["] {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
 /* Textes navy génériques. */
 .gerant-dark .text-navy {
   color: #e8eef9;

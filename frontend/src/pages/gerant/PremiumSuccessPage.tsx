@@ -4,6 +4,7 @@ import { useAuth } from '@clerk/clerk-react';
 import { useHomePath } from '../../hooks/useHomePath';
 import { apiPremium } from '../../lib/api';
 import GerantSidebar from '../../components/gerant/GerantSidebar';
+import GerantThemeToggle from '../../components/gerant/GerantThemeToggle';
 
 export default function PremiumSuccessPage() {
   const homePath = useHomePath();
@@ -63,6 +64,9 @@ export default function PremiumSuccessPage() {
     <div className="flex min-h-screen">
       <GerantSidebar />
       <div className="min-w-0 flex-1">
+      <div className="flex justify-end px-4 py-4 lg:px-7">
+        <GerantThemeToggle />
+      </div>
     <div className="dash">
       <div className="dash-page-head">
         <h1 className="dash-page-head">Premium</h1>

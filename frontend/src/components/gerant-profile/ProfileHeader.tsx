@@ -1,4 +1,5 @@
 import { Bell } from 'lucide-react';
+import GerantThemeToggle from '../gerant/GerantThemeToggle';
 
 /**
  * En-tête de la page Mes informations : barre de recherche, notifications,
@@ -18,6 +19,7 @@ export function ProfileHeader({ userName }: { userName: string }) {
       </label>
 
       <div className="flex items-center gap-[28px]">
+        <GerantThemeToggle />
         <button type="button" aria-label="Notifications" className="relative text-[#0F2150]">
           <Bell size={20} />
           <span className="absolute -right-[9px] -top-[8px] grid h-[15px] w-[15px] place-items-center rounded-full bg-[#F26B1D] text-[9px] font-bold text-white">2</span>

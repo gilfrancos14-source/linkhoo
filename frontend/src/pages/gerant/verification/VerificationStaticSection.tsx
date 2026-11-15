@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useOnlineStatus } from '../../../hooks/useOnlineStatus';
 import GerantLogoutButton from '../../../components/GerantLogoutButton';
 import GerantSidebar from '../../../components/gerant/GerantSidebar';
+import GerantThemeToggle from '../../../components/gerant/GerantThemeToggle';
 import {
   apiGerants,
   apiUpload,
@@ -705,6 +706,7 @@ export default function VerificationStaticSection({ gerantPath }: VerificationSt
           </label>
 
           <div className="flex items-center gap-[28px]">
+            <GerantThemeToggle />
             <button type="button" aria-label="Notifications" className="relative text-[#0F2150]">
               <svg className="ic h-[20px] w-[20px]"><use href="#i-bell" /></svg>
               <span className="absolute -right-[9px] -top-[8px] grid h-[15px] w-[15px] place-items-center rounded-full bg-[#F26B1D] text-[9px] font-bold text-white">2</span>
