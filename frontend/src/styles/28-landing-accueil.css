@@ -1122,7 +1122,7 @@
     gap: 32px;
     margin-left: -20px;
     /* Respire à droite du dernier lien (« Avis ») avant les boutons d'action. */
-    padding-right: 32px;
+    padding-right: 96px;
     font-size: 14px;
     font-weight: 500;
     transform: translate(-50%, -50%);
