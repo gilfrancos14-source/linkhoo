@@ -462,9 +462,9 @@ export default function DashboardPage() {
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/25"><Icon id="plus" className="i h-5 w-5 !stroke-2" /></span>
                   <span><span className="block text-sm font-semibold">Ajouter une chambre</span><span className="block text-xs text-orange-100">Avec l'assistant en 4 étapes</span></span>
                 </Link>
-                <Link to={`${gerantPath}/reservations`} className="flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 hover:bg-slate-100">
+                <Link to={`${gerantPath}/reservations/calendrier`} className="flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 hover:bg-slate-100">
                   <Icon id="cal" className="i h-7 w-7 shrink-0 text-slate-500" />
-                  <span><span className="block text-sm font-semibold">Voir mes réservations</span><span className="block text-xs text-slate-500">Gérer les demandes</span></span>
+                  <span><span className="block text-sm font-semibold">Voir mes réservations</span><span className="block text-xs text-slate-500">Planning de vos séjours</span></span>
                 </Link>
                 <Link to={`${gerantPath}/messages/boite-reception`} className="flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-4 hover:bg-slate-100">
                   <Icon id="chat" className="i h-7 w-7 shrink-0 text-slate-500" />

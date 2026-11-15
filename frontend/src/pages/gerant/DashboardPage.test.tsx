@@ -217,7 +217,7 @@ describe('DashboardPage', () => {
         '/ci/gerant/reversements',
         '/ci/gerant/chambres',
         '/ci/gerant/chambres/ajouter',
-        '/ci/gerant/reservations',
+        '/ci/gerant/reservations/calendrier',
         '/ci/gerant/reservations/demandes',
         '/ci/gerant/messages/boite-reception',
         '/ci/gerant/verification',
@@ -232,7 +232,7 @@ describe('DashboardPage', () => {
     const uniqueLinks: Array<[RegExp, string]> = [
       [/Solde disponible/, '/ci/gerant/reversements'],
       [/Découvrir le Premium/i, '/ci/gerant/premium'],
-      [/Voir mes réservations/i, '/ci/gerant/reservations'],
+      [/Voir mes réservations/i, '/ci/gerant/reservations/calendrier'],
       [/Voir mes messages/i, '/ci/gerant/messages/boite-reception'],
       [/Compte vérifié|Vérifier mon compte/i, '/ci/gerant/verification'],
       [/Ajouter une chambre/i, '/ci/gerant/chambres/ajouter'],
