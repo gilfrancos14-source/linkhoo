@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useClerk } from '@clerk/clerk-react';
 import { useMarket } from '../../contexts/MarketContext';
@@ -9,6 +10,7 @@ import { priceWithCurrency } from '../../lib/roomDisplay';
 import { useFavorites } from '../../contexts/FavoritesContext';
 import ClientSidebar from '../../components/client/ClientSidebar';
 import ClientSidebarToggle from '../../components/client/ClientSidebarToggle';
+import { fadeInVariants, slideInFromBottomVariants, fadeInUpVariants, gridStaggerVariants, scaleInVariants } from '../../lib/animations.tsx';
 
 /**
  * Page "Mes favoris" — une interface moderne et élégante pour gérer les chambres favorites.
@@ -270,22 +272,42 @@ export default function ClientFavoritesPage({
 
           <main className="p-6">
             {/* Hero section */}
-            <section className="favorites-hero relative mb-8 overflow-hidden rounded-2xl">
+            <motion.section 
+              className="favorites-hero relative mb-8 overflow-hidden rounded-2xl"
+              initial="hidden"
+              animate="visible"
+              variants={fadeInVariants}
+            >
               <div className="absolute inset-0 bg-black/10" />
               <div className="relative p-8 md:p-12">
-                <div className="flex items-center gap-3 mb-4">
+                <motion.div 
+                  className="flex items-center gap-3 mb-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={slideInFromBottomVariants}
+                >
                   <Icon id="heart" className="f h-8 w-8 text-white" />
                   <h1 className="favorites-hero__title">Mes Chambres Favorites</h1>
-                </div>
-                <p className="favorites-hero__subtitle">
+                </motion.div>
+                <motion.p 
+                  className="favorites-hero__subtitle"
+                  initial="hidden"
+                  animate="visible"
+                  variants={slideInFromBottomVariants}
+                  transition={{ delay: 0.2 }}
+                >
                   Découvrez à nouveau vos sélections préférées et trouvez votre prochain séjour parfait.
-                </p>
+                </motion.p>
                 
                 {/* Formulaire de recherche */}
-                <form
+                <motion.form
                   onSubmit={handleHeroSearch}
                   noValidate
                   className="relative flex flex-wrap items-center gap-2 rounded-xl bg-white p-2 pl-5 text-slate-800"
+                  initial="hidden"
+                  animate="visible"
+                  variants={slideInFromBottomVariants}
+                  transition={{ delay: 0.4 }}
                 >
                   <div className="flex min-w-[170px] flex-1 items-center gap-3 py-1">
                     <Icon id="pin" className="text-purple-600" />
@@ -402,41 +424,65 @@ export default function ClientFavoritesPage({
                       {heroError}
                     </p>
                   )}
-                </form>
+                </motion.form>
               </div>
-            </section>
+            </motion.section>
 
             {/* Stats et filtres */}
-            <div className="mb-8">
+            <motion.div 
+              className="mb-8"
+              initial="hidden"
+              animate="visible"
+              variants={fadeInVariants}
+              transition={{ delay: 0.6 }}
+            >
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                <div>
+                <motion.div
+                  initial="hidden"
+                  animate="visible"
+                  variants={slideInFromBottomVariants}
+                >
                   <h2 className="text-2xl font-bold text-slate-800">Vos Favoris</h2>
                   <p className="text-slate-600 mt-1">
                     {filteredFavorites.length} chambre{filteredFavorites.length > 1 ? 's' : ''} sauvegardée{filteredFavorites.length > 1 ? 's' : ''}
                   </p>
-                </div>
+                </motion.div>
                 
-                <div className="flex items-center gap-4">
+                <motion.div 
+                  className="flex items-center gap-4"
+                  initial="hidden"
+                  animate="visible"
+                  variants={slideInFromBottomVariants}
+                  transition={{ delay: 0.8 }}
+                >
                   {/* Mode d'affichage */}
-                  <div className="flex rounded-lg border border-slate-200 bg-white">
-                    <button
+                  <motion.div 
+                    className="flex rounded-lg border border-slate-200 bg-white"
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <motion.button
                       type="button"
                       className={`px-3 py-2 rounded-l-lg ${viewMode === 'grid' ? 'bg-purple-100 text-purple-700' : 'text-slate-600 hover:bg-slate-50'}`}
                       onClick={() => setViewMode('grid')}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       <Icon id="view-grid" className="h-5 w-5" />
-                    </button>
-                    <button
+                    </motion.button>
+                    <motion.button
                       type="button"
                       className={`px-3 py-2 rounded-r-lg ${viewMode === 'list' ? 'bg-purple-100 text-purple-700' : 'text-slate-600 hover:bg-slate-50'}`}
                       onClick={() => setViewMode('list')}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       <Icon id="view-list" className="h-5 w-5" />
-                    </button>
-                  </div>
+                    </motion.button>
+                  </motion.div>
 
                   {/* Tri */}
-                  <select
+                  <motion.select
                     value={sortBy}
                     onChange={(e) => {
                       const value = e.target.value;
@@ -445,16 +491,18 @@ export default function ClientFavoritesPage({
                       }
                     }}
                     className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    whileFocus={{ scale: 1.02 }}
+                    transition={{ duration: 0.2 }}
                   >
                     <option value="recent">Plus récentes</option>
                     <option value="price-low">Prix croissant</option>
                     <option value="price-high">Prix décroissant</option>
                     <option value="rating">Meilleures notes</option>
-                  </select>
-                </div>
+                  </motion.select>
+                </motion.div>
               </div>
 
-            </div>
+            </motion.div>
 
             {/* Liste des favoris */}
             {loading ? (
@@ -466,20 +514,33 @@ export default function ClientFavoritesPage({
                 <p className="text-red-600">{error}</p>
               </div>
             ) : filteredFavorites.length > 0 ? (
-              <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+              <motion.div 
+                className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}
+                variants={gridStaggerVariants}
+                initial="hidden"
+                animate="visible"
+              >
                 {filteredFavorites.map((favorite, index) => (
-                  <article key={`favorite-${typeof favorite.id === 'string' ? favorite.id : index}`} className={`card overflow-hidden rounded-xl border border-slate-200 bg-white hover:shadow-lg transition-shadow duration-300 ${viewMode === 'list' ? 'flex' : ''}`}>
+                  <motion.article 
+                    key={`favorite-${typeof favorite.id === 'string' ? favorite.id : index}`} 
+                    className={`card overflow-hidden rounded-xl border border-slate-200 bg-white hover:shadow-lg transition-shadow duration-300 ${viewMode === 'list' ? 'flex' : ''}`}
+                    variants={fadeInUpVariants}
+                    whileHover={{ y: -4, scale: 1.02, transition: { duration: 0.2 } }}
+                    whileTap={{ scale: 0.98 }}
+                  >
                     <div className={viewMode === 'grid' ? 'relative h-[200px]' : 'relative h-[200px] flex-shrink-0'}>
                       {favorite.img && typeof favorite.img === 'string' && (
-                        <img
+                        <motion.img
                           src={favorite.img}
                           alt={favorite.alt || favorite.title || 'Image'}
                           className="absolute inset-0 h-full w-full object-cover"
                           loading="lazy"
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ duration: 0.3 }}
                         />
                       )}
                       <div className="absolute top-3 right-3">
-                        <button
+                        <motion.button
                           type="button"
                           aria-label={
                             typeof favorite.title === 'string'
@@ -492,9 +553,11 @@ export default function ClientFavoritesPage({
                               void remove(favorite.id).catch(() => {});
                             }
                           }}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                         >
                           <Icon id="heart" className="f !h-4 !w-4 text-red-500" />
-                        </button>
+                        </motion.button>
                       </div>
 
                     </div>
@@ -523,39 +586,66 @@ export default function ClientFavoritesPage({
                       </div>
                       
                       <div className="flex gap-2">
-                        <Link
-                          to={`${homePath}/chambre/${typeof favorite.id === 'string' ? favorite.id : ''}`}
-                          className="flex-1 rounded-lg bg-purple-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
-                        >
-                          Voir la chambre
-                        </Link>
-                        <button
+                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                          <Link
+                            to={`${homePath}/chambre/${typeof favorite.id === 'string' ? favorite.id : ''}`}
+                            className="flex-1 rounded-lg bg-purple-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
+                          >
+                            Voir la chambre
+                          </Link>
+                        </motion.div>
+                        <motion.button
                           type="button"
                           className="rounded-lg border border-purple-600 px-4 py-2 text-sm font-semibold text-purple-600 hover:bg-purple-50 transition-colors"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
                         >
                           Réserver
-                        </button>
+                        </motion.button>
                       </div>
                     </div>
-                  </article>
+                  </motion.article>
                 ))}
-              </div>
+              </motion.div>
             ) : (
-              <div className="text-center py-12">
-                <div className="mx-auto w-24 h-24 rounded-full bg-purple-100 flex items-center justify-center mb-4">
-                  <Icon id="heart" className="f !h-12 !w-12 text-purple-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-slate-800 mb-2">Aucune chambre favorite</h3>
-                <p className="text-slate-600 mb-6">
-                  Parcourez notre sélection et ajoutez les chambres que vous aimez à vos favoris.
-                </p>
-                <Link
-                  to={searchPath}
-                  className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-6 py-3 text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
+              <motion.div 
+                className="text-center py-12"
+                initial="hidden"
+                animate="visible"
+                variants={fadeInVariants}
+              >
+                <motion.div 
+                  className="mx-auto w-24 h-24 rounded-full bg-purple-100 flex items-center justify-center mb-4"
+                  variants={scaleInVariants}
                 >
-                  Explorer les chambres<Icon id="arrow" className="!h-4 !w-4" />
-                </Link>
-              </div>
+                  <Icon id="heart" className="f !h-12 !w-12 text-purple-400" />
+                </motion.div>
+                <motion.h3 
+                  className="text-xl font-semibold text-slate-800 mb-2"
+                  variants={fadeInVariants}
+                  transition={{ delay: 0.2 }}
+                >
+                  Aucune chambre favorite
+                </motion.h3>
+                <motion.p 
+                  className="text-slate-600 mb-6"
+                  variants={fadeInVariants}
+                  transition={{ delay: 0.3 }}
+                >
+                  Parcourez notre sélection et ajoutez les chambres que vous aimez à vos favoris.
+                </motion.p>
+                <motion.div
+                  variants={fadeInVariants}
+                  transition={{ delay: 0.4 }}
+                >
+                  <Link
+                    to={searchPath}
+                    className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-6 py-3 text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
+                  >
+                    Explorer les chambres<Icon id="arrow" className="!h-4 !w-4" />
+                  </Link>
+                </motion.div>
+              </motion.div>
             )}
           </main>
         </div>

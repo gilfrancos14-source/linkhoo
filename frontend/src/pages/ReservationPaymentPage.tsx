@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useHomePath } from '../hooks/useHomePath';
@@ -94,7 +95,12 @@ export default function ReservationPaymentPage() {
           : 'Paiement non confirmé';
 
   return (
-    <main className="client-reservation">
+    <motion.main
+      className="client-reservation"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+    >
       <div className="container">
         <nav className="room-detail__breadcrumb" aria-label="Fil d'Ariane">
           <Link to={homePath}>Accueil</Link>
@@ -162,6 +168,6 @@ export default function ReservationPaymentPage() {
           </div>
         </div>
       </div>
-    </main>
+    </motion.main>
   );
 }

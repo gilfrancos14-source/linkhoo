@@ -8,6 +8,7 @@ import AboutStats from '../components/a-propos/AboutStats';
 import AboutTeam from '../components/a-propos/AboutTeam';
 import AboutTopBar from '../components/a-propos/AboutTopBar';
 import AboutWhy from '../components/a-propos/AboutWhy';
+import { AnimatedSection } from '../lib/animations';
 import '../styles/29-page-a-propos.css';
 
 export default function AProposPage() {
@@ -16,12 +17,24 @@ export default function AProposPage() {
       <AboutTopBar />
       <AboutHeader />
       <main>
-        <AboutHero />
-        <AboutPillars />
-        <AboutStats />
-        <AboutWhy />
-        <AboutTeam />
-        <AboutCta />
+        <AnimatedSection>
+          <AboutHero />
+        </AnimatedSection>
+        <AnimatedSection>
+          <AboutPillars />
+        </AnimatedSection>
+        <AnimatedSection>
+          <AboutStats />
+        </AnimatedSection>
+        <AnimatedSection>
+          <AboutWhy />
+        </AnimatedSection>
+        <AnimatedSection>
+          <AboutTeam />
+        </AnimatedSection>
+        <AnimatedSection>
+          <AboutCta />
+        </AnimatedSection>
       </main>
       <AboutFooter />
       <LandingBackToTop />

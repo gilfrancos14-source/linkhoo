@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, useNavigate } from 'react-router-dom'
 import { ClerkProvider } from '@clerk/clerk-react'
+import { MotionConfig } from 'framer-motion'
 import '@fontsource/poppins/300.css';
 import '@fontsource/poppins/400.css';
 import '@fontsource/poppins/500.css';
@@ -45,11 +46,13 @@ function ClerkShell({ children }: { children: React.ReactNode }) {
 
 function Root() {
   return (
-    <BrowserRouter>
-      <ClerkShell>
-        <App />
-      </ClerkShell>
-    </BrowserRouter>
+    <MotionConfig reducedMotion="user">
+      <BrowserRouter>
+        <ClerkShell>
+          <App />
+        </ClerkShell>
+      </BrowserRouter>
+    </MotionConfig>
   );
 }
 

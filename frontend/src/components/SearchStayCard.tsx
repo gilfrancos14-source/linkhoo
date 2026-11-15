@@ -1,9 +1,11 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { priceWithCurrency } from '../lib/roomDisplay';
 import '../styles/05-home-staycard.css';
 import type { Room } from '../data/rooms';
 import { useFavorites } from '../contexts/FavoritesContext';
 import Icon from './landing/icons';
+
 
 interface SearchStayCardProps {
   room: Room;
@@ -47,7 +49,13 @@ export default function SearchStayCard({
   const location = [room.quartier, room.ville].filter(Boolean).join(' · ');
 
   return (
-    <article className={`stay-card${variant === 'featured' ? ' stay-card--featured' : ''}`}>
+    <motion.article 
+      className={`stay-card${variant === 'featured' ? ' stay-card--featured' : ''}`}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
+    >
       <div className="stay-card__media">
         <Link to={href} className="stay-card__media-link" aria-label={priceLabel}>
           <img
@@ -128,6 +136,6 @@ export default function SearchStayCard({
           <Icon name="arrowRight" size={19} />
         </Link>
       </div>
-    </article>
+    </motion.article>
   );
 }

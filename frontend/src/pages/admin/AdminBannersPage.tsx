@@ -399,7 +399,7 @@ export default function AdminBannersPage() {
                     <span className="upload-particles"></span>
                     {isDragging ? 'Déposez l\'image ici' : 'Cliquez ou glissez une image'}
                   </p>
-                  <span>JPEG, PNG, WebP, GIF — 2 Mo max</span>
+                  <span>JPEG/JPG, PNG, WebP, GIF - 2 Mo max</span>
                 </>
               )}
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />

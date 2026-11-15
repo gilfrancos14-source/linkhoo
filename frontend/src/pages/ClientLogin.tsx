@@ -1,4 +1,5 @@
 import { SignIn, useAuth } from '@clerk/clerk-react';
+import { motion } from 'framer-motion';
 import { useParams, Navigate } from 'react-router-dom';
 import SplitAuthLayout, {
   clerkFormAppearance,
@@ -6,6 +7,7 @@ import SplitAuthLayout, {
 } from '../components/SplitAuthLayout';
 import '../styles/20-auth.css';
 import '../styles/22-register.css';
+import { fadeInVariants } from '../lib/animations.tsx';
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkConfigured = Boolean(clerkKey && clerkKey.startsWith('pk_'));
@@ -47,19 +49,25 @@ export default function ClientLogin() {
   }
 
   return (
-    <SplitAuthLayout
-      title="Heureux de vous revoir"
-      subtitle="Connectez-vous pour retrouver votre espace client, vos réservations et vos avis."
-      benefits={benefits}
-      formLabel="Formulaire de connexion"
+    <motion.div
+      variants={fadeInVariants}
+      initial="hidden"
+      animate="visible"
     >
-      <SignIn
-        routing="path"
-        path={`/${currentMarket}/login`}
-        signUpUrl={`/${currentMarket}/inscription`}
-        fallbackRedirectUrl={`/${currentMarket}/compte`}
-        appearance={clerkFormAppearance}
-      />
-    </SplitAuthLayout>
+      <SplitAuthLayout
+        title="Heureux de vous revoir"
+        subtitle="Connectez-vous pour retrouver votre espace client, vos réservations et vos avis."
+        benefits={benefits}
+        formLabel="Formulaire de connexion"
+      >
+        <SignIn
+          routing="path"
+          path={`/${currentMarket}/login`}
+          signUpUrl={`/${currentMarket}/inscription`}
+          fallbackRedirectUrl={`/${currentMarket}/compte`}
+          appearance={clerkFormAppearance}
+        />
+      </SplitAuthLayout>
+    </motion.div>
   );
 }

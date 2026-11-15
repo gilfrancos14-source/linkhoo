@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { motion } from 'framer-motion';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { useMarket } from '../contexts/MarketContext';
@@ -12,6 +13,7 @@ import { fetchRoomById, type Room } from '../data/rooms';
 import { apiMessages, apiReviews, type RoomReviewsResponse } from '../lib/api';
 import '../styles/40-room-detail-maq7.css';
 import '../styles/15-room-detail.css';
+import { fadeInVariants } from '../lib/animations.tsx';
 import {
   computeDateFin,
   maxDuree,
@@ -657,10 +659,20 @@ export default function RoomDetailMaq7() {
   }
 
   return (
-    <div className="room-detail-maq7 min-h-screen bg-[#F6F8FB] font-sans text-ink antialiased">
+    <motion.div
+      variants={fadeInVariants}
+      initial="hidden"
+      animate="visible"
+      className="room-detail-maq7 min-h-screen bg-[#F6F8FB] font-sans text-ink antialiased"
+    >
       <MarketHeader homePath={homePath} market={market} />
 
-      <main className="mx-auto max-w-6xl px-4 py-4 lg:px-6 lg:py-6">
+      <motion.main 
+        className="mx-auto max-w-6xl px-4 py-4 lg:px-6 lg:py-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
         {/* Fil d'Ariane */}
         <nav
           className="mb-4 hidden items-center gap-2 text-xs text-mute lg:flex"
@@ -1351,8 +1363,8 @@ export default function RoomDetailMaq7() {
             </div>
           </section>
         </div>
-      </main>
-    </div>
+      </motion.main>
+    </motion.div>
   );
 }
 

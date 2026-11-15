@@ -8,6 +8,7 @@ import LandingReviews from '../components/landing/LandingReviews';
 import LandingSlider from '../components/landing/LandingSlider';
 import LandingTopBar from '../components/landing/LandingTopBar';
 import { DEFAULT_COUNTRY, type Country } from '../components/landing/data';
+import { AnimatedSection } from '../lib/animations.tsx';
 
 export default function LandingPage() {
   const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
@@ -32,9 +33,15 @@ export default function LandingPage() {
       />
       <main>
         <LandingHero country={country} onCountryChange={setCountry} />
-        <LandingCountries country={country} onCountryChange={setCountry} />
-        <LandingSlider />
-        <LandingReviews />
+        <AnimatedSection>
+          <LandingCountries country={country} onCountryChange={setCountry} />
+        </AnimatedSection>
+        <AnimatedSection>
+          <LandingSlider />
+        </AnimatedSection>
+        <AnimatedSection>
+          <LandingReviews />
+        </AnimatedSection>
       </main>
       <LandingFooter />
       <LandingBackToTop />

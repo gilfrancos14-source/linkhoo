@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useRef, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
 import '../styles/17-search-results.css';
@@ -18,6 +19,7 @@ import LandingFooter from '../components/landing/LandingFooter';
 import LandingHeader from '../components/landing/LandingHeader';
 import { COUNTRIES, DEFAULT_COUNTRY } from '../components/landing/data';
 import Icon from '../components/landing/icons';
+import { AnimatedList } from '../lib/animations.tsx';
 
 const ITEMS_PER_PAGE = 6;
 const PRICE_CEILING = 500_000;
@@ -972,20 +974,32 @@ export default function SearchResultsPage() {
                   )}
                 </div>
               ) : (
-                <div
-                  className={`search-page__grid${
-                    viewMode === 'list' ? ' search-page__grid--list' : ''
-                  }`}
-                >
-                  {sortedRooms.map((room) => (
-                    <SearchStayCard
-                      key={room.id}
-                      room={room}
-                      href={roomHref(room)}
-                      meta={searchMeta(room)}
-                    />
-                  ))}
-                </div>
+                <AnimatedList>
+                  <div
+                    className={`search-page__grid${
+                      viewMode === 'list' ? ' search-page__grid--list' : ''
+                    }`}
+                  >
+                    {sortedRooms.map((room, index) => (
+                      <motion.div
+                        key={room.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          duration: 0.35,
+                          delay: Math.min(index * 0.05, 0.25),
+                          ease: 'easeOut',
+                        }}
+                      >
+                        <SearchStayCard
+                          room={room}
+                          href={roomHref(room)}
+                          meta={searchMeta(room)}
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+                </AnimatedList>
               )}
 
               <SearchPagination

@@ -8,6 +8,7 @@ import ContactHero from '../components/contact/ContactHero';
 import ContactLocation from '../components/contact/ContactLocation';
 import ContactTopBar from '../components/contact/ContactTopBar';
 import LandingBackToTop from '../components/landing/LandingBackToTop';
+import { AnimatedSection } from '../lib/animations';
 import '../styles/30-page-contact.css';
 
 export default function ContactPage() {
@@ -17,23 +18,35 @@ export default function ContactPage() {
       <ContactHeader />
 
       <main>
-        <ContactHero />
+        <AnimatedSection>
+          <ContactHero />
+        </AnimatedSection>
 
         <section className="ct-contact">
           <div className="ct-contact__inner">
-            <ContactForm />
-            <ContactDetails />
+            <AnimatedSection>
+              <ContactForm />
+            </AnimatedSection>
+            <AnimatedSection>
+              <ContactDetails />
+            </AnimatedSection>
           </div>
         </section>
 
         <section className="ct-info">
           <div className="ct-info__inner">
-            <ContactLocation />
-            <ContactFaq />
+            <AnimatedSection>
+              <ContactLocation />
+            </AnimatedSection>
+            <AnimatedSection>
+              <ContactFaq />
+            </AnimatedSection>
           </div>
         </section>
 
-        <ContactCta />
+        <AnimatedSection>
+          <ContactCta />
+        </AnimatedSection>
       </main>
 
       <ContactFooter />

@@ -1,8 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import Icon from './icons';
 import { COUNTRIES, type Country } from './data';
+import { AnimatedSection, slideInFromBottomVariants } from '../../lib/animations';
 
 interface LandingHeroProps {
   country: Country;
@@ -43,21 +45,40 @@ export default function LandingHero({ country, onCountryChange }: LandingHeroPro
   return (
     <section className="acc-hero" id="accueil">
       <div className="acc-container acc-hero__inner">
-        <div>
-          <p className="acc-hero__eyebrow">
-            Location de chambres, appartements, villas et plus encore
-          </p>
-          <h1 className="acc-hero__title">
-            <span className="acc-hero__title-brand">Linkhoo</span> – La location directe en
-            Afrique de l&apos;Ouest
-          </h1>
-          <p className="acc-hero__sub">
-            Trouvez facilement le logement idéal pour vos séjours, vos voyages ou vos déplacements
-            professionnels.
-          </p>
-        </div>
+        <AnimatedSection variants={slideInFromBottomVariants}>
+            <div>
+              <p className="acc-hero__eyebrow">
+                Location de chambres, appartements, villas et plus encore
+              </p>
+              <motion.h1 
+                className="acc-hero__title"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+              >
+                <span className="acc-hero__title-brand">Linkhoo</span> – La location directe en
+                Afrique de l&apos;Ouest
+              </motion.h1>
+              <motion.p 
+                className="acc-hero__sub"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+              >
+                Trouvez facilement le logement idéal pour vos séjours, vos voyages ou vos déplacements
+                professionnels.
+              </motion.p>
+            </div>
+          </AnimatedSection>
 
-        <form className="acc-hero-search" onSubmit={handleSubmit} role="search">
+        <motion.form 
+          className="acc-hero-search" 
+          onSubmit={handleSubmit} 
+          role="search"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+        >
           <label className="acc-search-field" htmlFor="acc-search-keyword">
             <Icon name="search" size={20} />
             <span className="acc-search-field__body">
@@ -121,7 +142,7 @@ export default function LandingHero({ country, onCountryChange }: LandingHeroPro
           <button type="submit" className="acc-search-submit" aria-label="Rechercher">
             <Icon name="search" size={24} />
           </button>
-        </form>
+        </motion.form>
       </div>
     </section>
   );

@@ -7,6 +7,7 @@ import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import { apiMessages, type ClientMineReservationData, type Conversation, type FavoriteRoomData, type ReviewData } from '../../lib/api';
 import { statutLabels } from '../../lib/reservations';
 import { formatPrice, priceWithCurrency } from '../../lib/roomDisplay';
+import { AnimatedSection } from '../../lib/animations';
 import ClientSidebar from '../../components/client/ClientSidebar';
 import ClientSidebarToggle from '../../components/client/ClientSidebarToggle';
 
@@ -421,7 +422,8 @@ export default function ClientDashboardMaq({
               )}
 
               {/* Hero */}
-              <section className="relative flex min-h-[252px] flex-col justify-between overflow-hidden rounded-xl bg-navy-900 text-white">
+              <AnimatedSection>
+                <section className="relative flex min-h-[252px] flex-col justify-between overflow-hidden rounded-xl bg-navy-900 text-white">
                 <img
                   src="/images/pexels-artbovich-7214173.webp"
                   alt=""
@@ -573,9 +575,11 @@ export default function ClientDashboardMaq({
                   )}
                 </form>
               </section>
+              </AnimatedSection>
 
               {/* Stats */}
-              <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              <AnimatedSection>
+                <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <div className="card p-4">
                   <span className="grid h-11 w-11 place-items-center rounded-xl bg-orange-500 text-white">
                     <Icon id="bed" />
@@ -621,9 +625,11 @@ export default function ClientDashboardMaq({
                   </p>
                 </div>
               </section>
+              </AnimatedSection>
 
               {/* Prochaines réservations */}
-              <section className="card p-4">
+              <AnimatedSection>
+                <section className="card p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="flex items-center gap-3 text-base font-semibold text-navy">
                     <Icon id="cal" className="text-blue-700" />Vos prochaines réservations
@@ -690,10 +696,12 @@ export default function ClientDashboardMaq({
                     </Link>
                   </div>
                 )}
-              </section>
+                </section>
+              </AnimatedSection>
 
               {/* Récemment consultées */}
-              <section className="card p-4">
+              <AnimatedSection>
+                <section className="card p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="flex items-center gap-3 text-base font-semibold text-navy">
                     <Icon id="cal" className="text-blue-700" />Chambres récemment consultées
@@ -747,12 +755,14 @@ export default function ClientDashboardMaq({
                   </p>
                 )}
               </section>
+              </AnimatedSection>
             </div>
 
             {/* ========== COLONNE DROITE ========== */}
             <aside className="space-y-5">
               {/* Profil */}
-              <section className="card overflow-hidden">
+              <AnimatedSection>
+                <section className="card overflow-hidden">
                 <div className="flex items-center gap-4 bg-gradient-to-r from-navy-900 to-navy p-4 text-white">
                   {avatarUrl ? (
                     <img
@@ -796,9 +806,11 @@ export default function ClientDashboardMaq({
                   </dl>
                 </div>
               </section>
+              </AnimatedSection>
 
               {/* Premium */}
-              <section className="flex gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4">
+              <AnimatedSection>
+                <section className="flex gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4">
                 <Icon id="crown" className="f h-10 w-10 text-habi" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold leading-snug text-habi">
@@ -814,9 +826,11 @@ export default function ClientDashboardMaq({
                   </div>
                 </div>
               </section>
+              </AnimatedSection>
 
               {/* Messages récents */}
-              <section className="card p-4">
+              <AnimatedSection>
+                <section className="card p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="flex items-center gap-3 text-sm font-semibold text-navy">
                     <Icon id="msg" className="text-blue-700" />Messages récents
@@ -918,9 +932,11 @@ export default function ClientDashboardMaq({
                   </p>
                 )}
               </section>
+              </AnimatedSection>
 
               {/* Support */}
-              <section className="flex gap-4 rounded-xl border border-blue-100 bg-blue-50/50 p-4">
+              <AnimatedSection>
+                <section className="flex gap-4 rounded-xl border border-blue-100 bg-blue-50/50 p-4">
                 <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-blue-100 text-blue-700">
                   <Icon id="help" className="h-6 w-6" />
                 </span>
@@ -937,6 +953,7 @@ export default function ClientDashboardMaq({
                   </Link>
                 </div>
               </section>
+              </AnimatedSection>
             </aside>
           </main>
         </div>

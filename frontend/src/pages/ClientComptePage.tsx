@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, type FormEvent } from 'react';
+import { motion } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { useHomePath } from '../hooks/useHomePath';
@@ -9,6 +10,7 @@ import { getMyReservations, cancelMyReservation, startReservationPayment } from 
 import { redirectTo } from '../lib/navigation';
 import { marketByCode, type MarketCode } from '../config/markets';
 import { formatDateLong } from '../lib/formatDate';
+import { fadeInVariants } from '../lib/animations.tsx';
 
 import type { View, ReviewFormState } from './client-compte/types';
 import ClientAccountLayout from '../components/ClientAccountLayout';
@@ -304,18 +306,24 @@ export default function ClientComptePage() {
   // Vue « Mes favoris » : nouvelle interface moderne et élégante
   if (view === 'favorites') {
     return (
-      <ClientFavoritesPage
-        displayName={firstName || profileForm.prenom || 'Client'}
-        email={email}
-        profileFirstName={profileForm.prenom || ''}
-        profileLastName={profileForm.nom || ''}
-        phone={profileForm.telephone || ''}
-        avatarUrl={user?.imageUrl || undefined}
-        favorites={Array.isArray(favorites) ? favorites : []}
-        loading={favoritesLoading}
-        error={error || ''}
-        homePath={homePath}
-      />
+      <motion.div
+        variants={fadeInVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <ClientFavoritesPage
+          displayName={firstName || profileForm.prenom || 'Client'}
+          email={email}
+          profileFirstName={profileForm.prenom || ''}
+          profileLastName={profileForm.nom || ''}
+          phone={profileForm.telephone || ''}
+          avatarUrl={user?.imageUrl || undefined}
+          favorites={Array.isArray(favorites) ? favorites : []}
+          loading={favoritesLoading}
+          error={error || ''}
+          homePath={homePath}
+        />
+      </motion.div>
     );
   }
 
@@ -325,21 +333,32 @@ export default function ClientComptePage() {
   const memberSince = formatDateLong(clientCreatedAt);
 
   return (
-    <ClientAccountLayout>
-      <div className="admin-content">
-        <ProfilePanel
-          profileForm={profileForm}
-          email={email}
-          marketLabel={marketLabel}
-          memberSince={memberSince}
-          avatarUrl={user?.imageUrl || undefined}
-          saving={profileSaving}
-          error={profileError}
-          success={profileSuccess}
-          onChange={handleProfileChange}
-          onSubmit={handleProfileSubmit}
-        />
-      </div>
-    </ClientAccountLayout>
+    <motion.div
+      variants={fadeInVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      <ClientAccountLayout>
+        <motion.div 
+          className="admin-content"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <ProfilePanel
+            profileForm={profileForm}
+            email={email}
+            marketLabel={marketLabel}
+            memberSince={memberSince}
+            avatarUrl={user?.imageUrl || undefined}
+            saving={profileSaving}
+            error={profileError}
+            success={profileSuccess}
+            onChange={handleProfileChange}
+            onSubmit={handleProfileSubmit}
+          />
+        </motion.div>
+      </ClientAccountLayout>
+    </motion.div>
   );
 }

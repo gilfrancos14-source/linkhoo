@@ -25,6 +25,7 @@
     "lucide-react": "^1.64.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-intersection-observer": "^11.0.1",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.18.3",
     "recharts": "^3.10.1"

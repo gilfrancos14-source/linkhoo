@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useClerk } from '@clerk/clerk-react';
 import { useMarket } from '../../contexts/MarketContext';
 import { marketByCode, type MarketCode } from '../../config/markets';
@@ -529,7 +530,8 @@ export default function ClientReservationsMaq({
                   </button>
                 </div>
               ) : (
-                filtered.map((reservation) => {
+                <>
+                  {filtered.map((reservation) => {
                   const statut = visualStatut(reservation, todayIso);
                   const style = STATUT_STYLES[statut];
                   const nights = nightsOf(reservation);
@@ -556,7 +558,13 @@ export default function ClientReservationsMaq({
                     : searchPath;
 
                   return (
-                    <article className="rs" key={reservation.id}>
+                    <motion.article 
+                      className="rs" 
+                      key={reservation.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
                       <div className="im">
                         {reservation.room?.img && (
                           <img
@@ -659,14 +667,15 @@ export default function ClientReservationsMaq({
                           </div>
                         )}
                       </div>
-                    </article>
+                    </motion.article>
                   );
-                })
+                })}
+                </>
               )}
-            </div>
-            )}
+          </div>
+        )}
 
-            {viewMode === 'calendar' && (
+          {viewMode === 'calendar' && (
               <div className="mt-[21px]">
                 <ClientReservationsCalendar
                   reservations={reservations}

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useHomePath } from '../hooks/useHomePath';
+import { AnimatedSection } from '../lib/animations';
 
 export default function MentionsLegales() {
   const homePath = useHomePath();
@@ -11,6 +12,7 @@ export default function MentionsLegales() {
         <h1 className="page-legal__title">Mentions légales</h1>
         <p className="page-legal__update">Dernière mise à jour : 9 septembre 2026</p>
 
+        <AnimatedSection>
         <section className="page-legal__section">
           <h2>1. Éditeur du site</h2>
           <p>
@@ -24,14 +26,18 @@ export default function MentionsLegales() {
             <li><strong>Téléphone :</strong> +33 1 23 45 67 89</li>
           </ul>
         </section>
+      </AnimatedSection>
 
+      <AnimatedSection>
         <section className="page-legal__section">
           <h2>2. Hébergeur</h2>
           <p>
             Ce site est hébergé par <strong>Vercel Inc.</strong>, 340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis.
           </p>
         </section>
+      </AnimatedSection>
 
+      <AnimatedSection>
         <section className="page-legal__section">
           <h2>3. Propriété intellectuelle</h2>
           <p>
@@ -44,7 +50,9 @@ export default function MentionsLegales() {
             son contenu, par quelque procédé que ce soit, est interdite sans autorisation préalable écrite d'Linkhoo.
           </p>
         </section>
+      </AnimatedSection>
 
+      <AnimatedSection>
         <section className="page-legal__section">
           <h2>4. Données personnelles</h2>
           <p>
@@ -59,7 +67,9 @@ export default function MentionsLegales() {
             Pour plus d'informations, consultez notre <Link to={`${homePath}/politique-de-confidentialite`}>Politique de confidentialité</Link>.
           </p>
         </section>
+      </AnimatedSection>
 
+      <AnimatedSection>
         <section className="page-legal__section">
           <h2>5. Cookies</h2>
           <p>
@@ -71,7 +81,9 @@ export default function MentionsLegales() {
             certaines fonctionnalités du site.
           </p>
         </section>
+      </AnimatedSection>
 
+      <AnimatedSection>
         <section className="page-legal__section">
           <h2>6. Limitation de responsabilité</h2>
           <p>
@@ -83,7 +95,9 @@ export default function MentionsLegales() {
             descriptions peuvent être susceptibles de modifications. Seul le contrat de bail fait foi.
           </p>
         </section>
+      </AnimatedSection>
 
+      <AnimatedSection>
         <section className="page-legal__section">
           <h2>7. Liens hypertextes</h2>
           <p>
@@ -91,7 +105,9 @@ export default function MentionsLegales() {
             le contenu de ces sites tiers et décline toute responsabilité quant à leur contenu.
           </p>
         </section>
+      </AnimatedSection>
 
+      <AnimatedSection>
         <section className="page-legal__section">
           <h2>8. Droit applicable</h2>
           <p>
@@ -99,6 +115,7 @@ export default function MentionsLegales() {
             compétents de Paris seront seuls compétents.
           </p>
         </section>
+      </AnimatedSection>
       </div>
     </div>
   );
