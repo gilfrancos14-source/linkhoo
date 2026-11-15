@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth, useClerk, useUser } from '@clerk/clerk-react';
 import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
-import { useGerantTheme } from '../../hooks/useGerantTheme';
+import { useGerantTheme, GerantThemeProvider } from '../../hooks/useGerantTheme';
 import { fetchMyRooms } from '../../data/rooms';
 import GerantNotifications from '../../components/gerant/GerantNotifications';
 import { apiGerants, apiMessages, type GerantData } from '../../lib/api';
@@ -135,8 +135,9 @@ export default function AdminLayout() {
     pathname === `${gerantPath}/premium/success/`;
 
   return (
-    <GerantSessionProvider value={handleSignOut}>
-      <div className={`admin ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''} ${isBlankPage ? 'admin--blank' : ''} ${isMaqSidebarPage ? 'admin--maq-sidebar' : ''} ${themeClass}`}>
+    <GerantThemeProvider>
+      <GerantSessionProvider value={handleSignOut}>
+        <div className={`admin ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''} ${isBlankPage ? 'admin--blank' : ''} ${isMaqSidebarPage ? 'admin--maq-sidebar' : ''} ${themeClass}`}>
         {mobileOpen && <div className="sidebar-backdrop" onClick={() => setMobileOpen(false)} />}
       <aside className="sidebar">
         <div className="sidebar__header">
@@ -250,5 +251,6 @@ export default function AdminLayout() {
       </div>
       </div>
     </GerantSessionProvider>
+    </GerantThemeProvider>
   );
 }

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
+import type { ReactNode } from 'react';
 
 export type GerantTheme = 'light' | 'dark';
 
@@ -11,32 +12,57 @@ function readStoredTheme(): GerantTheme {
     const stored = window.localStorage.getItem(GERANT_THEME_STORAGE_KEY);
     return stored === 'light' ? 'light' : 'dark';
   } catch {
-    // Stockage bloqué (navigation privée, quota) : on reste en sombre.
     return 'dark';
   }
+}
+
+// Store partagé (module-level) pour que toutes les instances du hook
+// (layout + pages) restent synchronisées, même sans fournisseur de contexte.
+let currentTheme: GerantTheme = readStoredTheme();
+const listeners = new Set<() => void>();
+
+function setTheme(next: GerantTheme) {
+  if (next === currentTheme) return;
+  currentTheme = next;
+  try {
+    window.localStorage.setItem(GERANT_THEME_STORAGE_KEY, next);
+  } catch {
+    // Le thème reste valable pour la session en cours.
+  }
+  listeners.forEach((l) => l());
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function getSnapshot(): GerantTheme {
+  return currentTheme;
+}
+
+function getServerSnapshot(): GerantTheme {
+  return 'dark';
 }
 
 /**
  * Thème clair/sombre du tableau de bord gérant.
  *
- * Le choix est mémorisé dans `localStorage` et réappliqué au prochain
- * chargement. Le défaut est le thème sombre pour une meilleure expérience
- * de lecture et pour réduire la fatigue oculaire pendant le travail.
+ * État partagé au niveau du module : le bouton de bascule agit sur toutes
+ * les pages simultanément (layout + pages rendues dans `<Outlet />`).
  */
 export function useGerantTheme() {
-  const [theme, setTheme] = useState<GerantTheme>(readStoredTheme);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(GERANT_THEME_STORAGE_KEY, theme);
-    } catch {
-      // Le thème reste valable pour la session en cours.
-    }
-  }, [theme]);
+  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const toggleTheme = useCallback(() => {
-    setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
+    setTheme(currentTheme === 'dark' ? 'light' : 'dark');
   }, []);
 
   return { theme, isDark: theme === 'dark', toggleTheme };
+}
+
+// Fournisseur optionnel conservé pour compatibilité (no-op : le store est
+// déjà partagé au niveau du module).
+export function GerantThemeProvider({ children }: { children: ReactNode }) {
+  return children;
 }
