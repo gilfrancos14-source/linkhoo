@@ -841,6 +841,42 @@
   font-size: 14.5px;
 }
 
+/* La main 👋 du « Bonjour » salue : rotation douce puis pause, en boucle. */
+.dash-wave {
+  display: inline-block;
+  transform-origin: 70% 80%;
+  animation: dash-wave 2.6s ease-in-out infinite;
+}
+
+@keyframes dash-wave {
+  0%,
+  55%,
+  100% {
+    transform: rotate(0deg);
+  }
+  10% {
+    transform: rotate(14deg);
+  }
+  20% {
+    transform: rotate(-8deg);
+  }
+  30% {
+    transform: rotate(14deg);
+  }
+  40% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash-wave {
+    animation: none;
+  }
+}
+
 /* Hero d'accueil du tableau de bord gérant */
 .dash-hero {
   position: relative;
