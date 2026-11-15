@@ -2,6 +2,7 @@ import { verifyToken } from '@clerk/backend';
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { supabaseAdmin } from '../config/supabase';
+import { ADMIN_COOKIE_NAME, readCookie } from '../utils/adminCookie';
 
 const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET!;
 const CLOCK_SKEW_IN_MS = 60_000;
@@ -31,12 +32,16 @@ export async function requireClerkAuth(req: Request, res: Response, next: NextFu
 }
 
 export async function requireClerkOrAdminAuth(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
+  // F4 : cookie HttpOnly admin accepté (transport nominal navigateur) + Bearer
+  // (clients API / tests). Un seul chemin d'auth, jamais les deux en parallèle.
+  const bearer = req.headers.authorization?.startsWith('Bearer ')
+    ? req.headers.authorization.slice(7)
+    : null;
+  const token = bearer ?? readCookie(req, ADMIN_COOKIE_NAME);
+
+  if (!token) {
     return res.status(401).json({ error: 'Token d\'authentification manquant' });
   }
-
-  const token = authHeader.slice(7);
 
   try {
     const payload = await verifyToken(token, {

@@ -11,6 +11,7 @@ import {
   IMAGE_CHECK_REJECT_MESSAGE,
   ImageCheckQueueFullError,
 } from '../services/apartmentImageCheck';
+import { localStorage } from '../db/storage';
 
 const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'] as const;
 const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf'] as const;
@@ -42,7 +43,7 @@ const upload = multer({
   fileFilter: (_req, file, callback) => {
     const extension = extname(file.originalname).slice(1).toLowerCase();
     if (!allowedMimeTypes.includes(file.mimetype as typeof allowedMimeTypes[number]) || !allowedExtensions.includes(extension as typeof allowedExtensions[number])) {
-      return callback(new Error('Seuls les fichiers JPEG, PNG, WebP, GIF et PDF sont autorisés'));
+      return callback(new Error('Seuls les fichiers JPEG/JPG, PNG, WebP, GIF et PDF sont autorisés'));
     }
     callback(null, true);
   },
@@ -121,20 +122,18 @@ router.post('/', requireClerkOrAdminAuth, requireAdminOrGerant, handleUpload, as
     const randomName = `${randomUUID()}.${uploadExtension}`;
     const ownerId = sanitizeOwnerId(req.auth?.userId || 'admin');
     const fileName = bucket === 'verification-docs' ? `${ownerId}/${randomName}` : randomName;
-    const { error } = await supabaseAdmin.storage.from(bucket).upload(fileName, uploadBuffer, {
+    const { error } = await localStorage.from(bucket).upload(fileName, uploadBuffer, {
       contentType: uploadContentType,
       upsert: false,
     });
     if (error) throw error;
 
     if (bucket === 'verification-docs') {
-      const { data: signData, error: signError } = await supabaseAdmin.storage
-        .from(bucket)
-        .createSignedUrl(fileName, 3600);
+      const { data: signData, error: signError } = await localStorage.from(bucket).createSignedUrl(fileName, 3600);
       if (signError) throw signError;
       res.json({ url: signData.signedUrl, path: fileName });
     } else {
-      const { data: urlData } = supabaseAdmin.storage.from(bucket).getPublicUrl(fileName);
+      const { data: urlData } = localStorage.from(bucket).getPublicUrl(fileName);
       res.json({ url: urlData.publicUrl, path: fileName });
     }
   } catch (err) {

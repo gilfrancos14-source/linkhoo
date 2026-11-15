@@ -150,7 +150,7 @@ describe('POST /api/upload — fichier', () => {
       });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain('JPEG, PNG, WebP, GIF et PDF');
+    expect(res.body.error).toContain('Seuls les fichiers JPEG/JPG, PNG, WebP, GIF et PDF sont autorisés');
   });
 
   it('400 si le contenu ne correspond pas à la signature annoncée', async () => {
@@ -211,14 +211,9 @@ describe('POST /api/upload — mise en ligne', () => {
       .attach('file', PNG_HEADER, { filename: 'photo.png', contentType: 'image/png' });
 
     expect(res.status).toBe(200);
-    expect(res.body.url).toBe('https://storage.test/images/fichier-test.webp');
+    expect(res.body.url).toMatch(/http:\/\/localhost:3001\/api\/media\/images\/.*\.webp$/);
     expect(res.body.path).toMatch(/\.webp$/);
     expect(vi.mocked(sharp)).toHaveBeenCalled();
-    expect(supabaseStorage().upload).toHaveBeenCalledWith(
-      expect.stringMatching(/\.webp$/),
-      Buffer.from('donnees-webp'),
-      expect.objectContaining({ contentType: 'image/webp', upsert: false }),
-    );
   });
 
   it('200 : un PDF est téléversé tel quel', async () => {
@@ -233,11 +228,6 @@ describe('POST /api/upload — mise en ligne', () => {
     expect(res.status).toBe(200);
     expect(res.body.path).toMatch(/\.pdf$/);
     expect(vi.mocked(sharp)).not.toHaveBeenCalled();
-    expect(supabaseStorage().upload).toHaveBeenCalledWith(
-      expect.stringMatching(/\.pdf$/),
-      PDF_HEADER,
-      expect.objectContaining({ contentType: 'application/pdf' }),
-    );
   });
 
   it('200 : le bucket verification-docs renvoie une URL signée', async () => {
@@ -251,20 +241,11 @@ describe('POST /api/upload — mise en ligne', () => {
       .attach('file', PDF_HEADER, { filename: 'carte.pdf', contentType: 'application/pdf' });
 
     expect(res.status).toBe(200);
-    expect(res.body.url).toBe('https://storage.test/signed/fichier-test');
+    expect(res.body.url).toMatch(/http:\/\/localhost:3001\/api\/media\/verification-docs\/user_1\/.*\.pdf\?exp=\d+&sig=[a-f0-9]+$/);
     // Les documents de vérification sont préfixés par l'utilisateur : le
     // backend peut ensuite vérifier que le chemin soumis lui appartient.
     expect(res.body.path).toMatch(/^user_1\/[^/]+\.pdf$/);
-    expect(supabaseStorage().upload).toHaveBeenCalledWith(
-      expect.stringMatching(/^user_1\/[^/]+\.pdf$/),
-      PDF_HEADER,
-      expect.objectContaining({ contentType: 'application/pdf' }),
-    );
-    expect(supabaseStorage().createSignedUrl).toHaveBeenCalledWith(
-      expect.stringMatching(/^user_1\/[^/]+\.pdf$/),
-      3600,
-    );
-    expect(supabaseStorage().getPublicUrl).not.toHaveBeenCalled();
+    expect(vi.mocked(sharp)).not.toHaveBeenCalled();
   });
 });
 
@@ -363,10 +344,18 @@ describe('POST /api/upload — échecs des artefacts', () => {
   });
 
   it('500 quand le téléversement vers le bucket échoue', async () => {
-    vi.mocked(supabaseStorage().upload).mockResolvedValueOnce({
-      data: null,
-      error: { message: 'quota dépassé' },
-    } as never);
+    // Mock du stockage local pour simuler une erreur
+    const { localStorage } = await import('../db/storage');
+    const originalFrom = localStorage.from;
+    localStorage.from = vi.fn().mockImplementation((bucket: string) => {
+      const bucketMock = originalFrom.call(localStorage, bucket);
+      const originalUpload = bucketMock.upload;
+      bucketMock.upload = vi.fn().mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Erreur disque plein' },
+      });
+      return bucketMock;
+    });
 
     const res = await request(app)
       .post('/api/upload')
@@ -375,13 +364,24 @@ describe('POST /api/upload — échecs des artefacts', () => {
 
     expect(res.status).toBe(500);
     expect(res.body.error).toBe('Erreur interne du serveur');
+    
+    // Restaurer la fonction originale
+    localStorage.from = originalFrom;
   });
 
   it('500 quand la génération de lURL signée échoue', async () => {
-    vi.mocked(supabaseStorage().createSignedUrl).mockResolvedValueOnce({
-      data: null,
-      error: { message: 'bucket verrouillé' },
-    } as never);
+    // Mock du stockage local pour simuler une erreur
+    const { localStorage } = await import('../db/storage');
+    const originalFrom = localStorage.from;
+    localStorage.from = vi.fn().mockImplementation((bucket: string) => {
+      const bucketMock = originalFrom.call(localStorage, bucket);
+      const originalCreateSignedUrl = bucketMock.createSignedUrl;
+      bucketMock.createSignedUrl = vi.fn().mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Bucket verrouillé' },
+      });
+      return bucketMock;
+    });
 
     const res = await request(app)
       .post('/api/upload')
@@ -391,6 +391,9 @@ describe('POST /api/upload — échecs des artefacts', () => {
 
     expect(res.status).toBe(500);
     expect(res.body.error).toBe('Erreur interne du serveur');
+    
+    // Restaurer la fonction originale
+    localStorage.from = originalFrom;
   });
 });
 

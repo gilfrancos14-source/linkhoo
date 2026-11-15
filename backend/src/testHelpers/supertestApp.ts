@@ -139,10 +139,10 @@ export function createSupabaseMock(): Record<string, unknown> {
   storageBucket = {
     upload: vi.fn(async () => ({ data: { path: 'fichier-test' }, error: null })),
     getPublicUrl: vi.fn(() => ({
-      data: { publicUrl: 'https://storage.test/images/fichier-test.webp' },
+      data: { publicUrl: 'http://localhost:3001/api/media/images/fichier-test.webp' },
     })),
     createSignedUrl: vi.fn(async () => ({
-      data: { signedUrl: 'https://storage.test/signed/fichier-test' },
+      data: { signedUrl: 'http://localhost:3001/api/media/verification-docs/user_1/fichier-test?exp=1794642991&sig=d227eba48ffdcedeb339e7f1f13bdf7ff7dbbf3e7aeca3895f6f3674a2d4453a' },
       error: null,
     })),
     remove: vi.fn(async () => ({ data: [], error: null })),

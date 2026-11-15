@@ -19,6 +19,7 @@ const SUPABASE_PUBLIC_IMAGE_RE =
   /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/images\/[A-Za-z0-9._~-]+(?:\/[A-Za-z0-9._~-]+)*$/;
 const LOCAL_IMAGE_RE = /^\/images\/[A-Za-z0-9._~-]+(?:\/[A-Za-z0-9._~-]+)*$/;
 const STORAGE_IMAGE_PATH_RE = /^\/api\/media\/images\/[A-Za-z0-9._~-]+(?:\/[A-Za-z0-9._~-]+)*$/;
+const PROD_MEDIA_RE = /^https:\/\/[^\/]+\/media\/images\/[A-Za-z0-9._~-]+(?:\/[A-Za-z0-9._~-]+)*$/;
 
 export function isAllowedImageUrl(value: string): boolean {
   if (LOCAL_IMAGE_RE.test(value)) return true;
@@ -27,7 +28,7 @@ export function isAllowedImageUrl(value: string): boolean {
   try {
     const url = new URL(value);
     if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
-    return STORAGE_IMAGE_PATH_RE.test(url.pathname);
+    return STORAGE_IMAGE_PATH_RE.test(url.pathname) || PROD_MEDIA_RE.test(value);
   } catch {
     return false;
   }
