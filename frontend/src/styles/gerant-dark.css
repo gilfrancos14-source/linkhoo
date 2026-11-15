@@ -382,7 +382,50 @@ html:has(.gerant-dark) {
   background: #1e293b;
 }
 
-/* ---------- Chrome du layout admin (`AdminLayout`) — toutes les pages ---------- */
+/* ---------- Textes aux couleurs personnalisées (pages vérification, reversements, etc.) ---------- */
+
+.gerant-dark .text-\[\#0F2150\],
+.gerant-dark .text-\[\#0D2150\],
+.gerant-dark .text-\[\#1F3566\],
+.gerant-dark .text-\[\#1F3C88\],
+.gerant-dark .text-\[\#1F3C7A\],
+.gerant-dark .text-\[\#12285A\],
+.gerant-dark .text-\[\#1B3A82\] {
+  color: #e8eef9;
+}
+
+.gerant-dark .text-\[\#2A3F6E\],
+.gerant-dark .text-\[\#2447A5\],
+.gerant-dark .text-\[\#2F5FC4\],
+.gerant-dark .text-\[\#3563C8\],
+.gerant-dark .text-\[\#2F6BD6\],
+.gerant-dark .text-\[\#2F4C8F\] {
+  color: #7dd3fc;
+}
+
+.gerant-dark .text-\[\#3D4F73\],
+.gerant-dark .text-\[\#40527C\],
+.gerant-dark .text-\[\#37588F\],
+.gerant-dark .text-\[\#3F5683\],
+.gerant-dark .text-\[\#4A5B80\] {
+  color: #cbd5e1;
+}
+
+.gerant-dark .text-\[\#5F7396\],
+.gerant-dark .text-\[\#8A99B5\] {
+  color: #94a3b8;
+}
+
+/* Textes navy génériques. */
+.gerant-dark .text-navy {
+  color: #e8eef9;
+}
+
+/* Texte sombre des pages Premium et Boîte de réception. */
+.gerant-dark .text-\[\#0b1b3f\],
+.gerant-dark .text-\[\#1E2A44\] {
+  color: #e8eef9;
+}
 
 /* Sidebar admin partagée (pages « chrome admin », ex. réservations). */
 .admin.gerant-dark .sidebar {
