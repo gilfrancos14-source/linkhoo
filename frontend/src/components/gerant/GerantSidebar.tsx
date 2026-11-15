@@ -51,7 +51,7 @@ function SidebarSprite() {
 
 const subClass = ({ isActive }: { isActive: boolean }) => (isActive ? 'sub on' : 'sub');
 
-export default function GerantSidebar() {
+export default function GerantSidebar({ className = '' }: { className?: string }) {
   const homePath = useHomePath();
   const gerantPath = `${homePath}/gerant`;
   const chambresPath = `${gerantPath}/chambres`;
@@ -59,7 +59,7 @@ export default function GerantSidebar() {
   const chrome = useGerantChrome();
 
   return (
-    <aside className="gerb sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white px-4 py-5 lg:flex">
+    <aside className={`gerb sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white px-4 py-5 lg:flex ${className}`}>
       <SidebarSprite />
 
       <Link to={gerantPath} className="mb-6 flex items-center gap-2.5 px-2" aria-label="Linkhoo - retour à l'accueil">

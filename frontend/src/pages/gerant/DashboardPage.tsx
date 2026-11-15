@@ -86,6 +86,7 @@ export default function DashboardPage() {
   const chrome = useGerantChrome();
   const { isDark } = useGerantTheme();
   const themeClass = isDark ? ' gerant-dark' : '';
+  const [mobileOpen, setMobileOpen] = useState(false);
   const gerantPath = `${homePath}/gerant`;
   const chambresPath = `${gerantPath}/chambres`;
   const demandesPath = `${gerantPath}/reservations/demandes`;
@@ -270,10 +271,16 @@ export default function DashboardPage() {
       </svg>
 
       <div className="flex min-h-screen">
-        <GerantSidebar />
+        {mobileOpen && <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setMobileOpen(false)} />}
+        <div className={`${mobileOpen ? 'fixed inset-y-0 left-0 z-50 lg:static' : 'hidden lg:block'}`}>
+          <GerantSidebar className={mobileOpen ? '!flex' : ''} />
+        </div>
 
         <main className="min-w-0 flex-1 px-4 py-4 lg:px-7">
           <header className="flex items-center gap-4">
+            <button className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-dash-navy lg:hidden" onClick={() => setMobileOpen(true)} aria-label="Ouvrir le menu">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+            </button>
             <label className="card flex max-w-3xl flex-1 items-center gap-3 px-5 py-3 text-slate-400">
               <Icon id="search" className="i h-5 w-5" />
               <input type="search" placeholder="Rechercher une chambre, une catégorie…" className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400" />
