@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MarketProvider } from '../../contexts/MarketContext';
 import DashboardPage from './DashboardPage';
@@ -15,6 +15,10 @@ const mocks = vi.hoisted(() => ({
   getMe: vi.fn<() => Promise<GerantData>>(),
   gerantUnread: vi.fn<() => Promise<{ count: number }>>(),
   getBalance: vi.fn<() => Promise<unknown>>(),
+  getNotifications: vi.fn<() => Promise<unknown[]>>(),
+  markAsRead: vi.fn<(id: string) => Promise<void>>(),
+  markAllAsRead: vi.fn<() => Promise<void>>(),
+  addClientNotification: vi.fn<(data: Record<string, unknown>) => Promise<void>>(),
 }));
 
 vi.mock('../../data/rooms', () => ({
@@ -38,6 +42,13 @@ vi.mock('../../lib/reservations', async (importOriginal) => {
     getReservations: mocks.getReservations,
   };
 });
+
+vi.mock('../../lib/notifications', () => ({
+  getNotifications: mocks.getNotifications,
+  markAsRead: mocks.markAsRead,
+  markAllAsRead: mocks.markAllAsRead,
+  addClientNotification: mocks.addClientNotification,
+}));
 
 const gerant: GerantData = {
   id: 'gerant-1',
@@ -151,6 +162,10 @@ beforeEach(() => {
   mocks.getMe.mockResolvedValue(gerant);
   mocks.gerantUnread.mockResolvedValue({ count: 0 });
   mocks.getBalance.mockResolvedValue(undefined);
+  mocks.getNotifications.mockResolvedValue([]);
+  mocks.markAsRead.mockResolvedValue(undefined);
+  mocks.markAllAsRead.mockResolvedValue(undefined);
+  mocks.addClientNotification.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -183,6 +198,64 @@ describe('DashboardPage', () => {
       'href',
       '/ci/gerant/reservations/demandes',
     );
+  });
+
+  it('chaque lien du tableau de bord pointe vers la bonne page gérant', async () => {
+    renderDashboard();
+
+    await screen.findByText('Chambres enregistrées');
+
+    // Le contenu du dashboard (hors sidebar) ne doit contenir que les 8
+    // destinations gérant : une faute de frappe ou un lien mort casse ce test.
+    const main = screen.getByRole('main');
+    const hrefs = within(main)
+      .getAllByRole('link')
+      .map((link) => link.getAttribute('href'));
+
+    expect(new Set(hrefs)).toEqual(
+      new Set([
+        '/ci/gerant/reversements',
+        '/ci/gerant/chambres',
+        '/ci/gerant/chambres/ajouter',
+        '/ci/gerant/reservations',
+        '/ci/gerant/reservations/demandes',
+        '/ci/gerant/messages/boite-reception',
+        '/ci/gerant/verification',
+        '/ci/gerant/premium',
+      ]),
+    );
+    for (const href of hrefs) {
+      expect(href).toMatch(/^\/ci\/gerant(\/|$)/);
+    }
+
+    // Libellés uniques : le libellé affiché correspond bien à sa page.
+    const uniqueLinks: Array<[RegExp, string]> = [
+      [/Solde disponible/, '/ci/gerant/reversements'],
+      [/Découvrir le Premium/i, '/ci/gerant/premium'],
+      [/Voir mes réservations/i, '/ci/gerant/reservations'],
+      [/Voir mes messages/i, '/ci/gerant/messages/boite-reception'],
+      [/Compte vérifié|Vérifier mon compte/i, '/ci/gerant/verification'],
+      [/Ajouter une chambre/i, '/ci/gerant/chambres/ajouter'],
+    ];
+    for (const [name, href] of uniqueLinks) {
+      expect(within(main).getByRole('link', { name })).toHaveAttribute('href', href);
+    }
+
+    // « Voir tout / Voir toutes » est répété : on vérifie chaque section.
+    const sectionOf = (heading: RegExp) =>
+      screen.getByRole('heading', { name: heading }).closest('section') as HTMLElement;
+
+    expect(
+      within(sectionOf(/Catégories de vos chambres/)).getByRole('link', { name: /Voir tout/i }),
+    ).toHaveAttribute('href', '/ci/gerant/chambres');
+    expect(
+      within(sectionOf(/Chambres récentes/)).getByRole('link', { name: /Voir toutes/i }),
+    ).toHaveAttribute('href', '/ci/gerant/chambres');
+    expect(
+      within(sectionOf(/Dernières demandes de réservation/)).getByRole('link', {
+        name: /Voir tout/i,
+      }),
+    ).toHaveAttribute('href', '/ci/gerant/reservations/demandes');
   });
 
   it('continue d\'afficher les chambres quand les réservations sont réservées aux gérants vérifiés', async () => {
@@ -234,5 +307,62 @@ describe('DashboardPage', () => {
     ).toBeInTheDocument();
     expect(within(card).queryByText('XOF')).not.toBeInTheDocument();
     expect(within(card).queryByText(/^0/)).not.toBeInTheDocument();
+  });
+
+  it('ouvre le panneau des notifications depuis la cloche', async () => {
+    mocks.getNotifications.mockResolvedValue([
+      {
+        id: 'notif-1',
+        type: 'reservation',
+        roomTitle: 'Studio Ayida',
+        roomId: 'room-2',
+        clientName: 'Aïcha Diallo',
+        clientEmail: 'aicha@ilehya.ci',
+        clientPhone: '+225 01 01 01 01',
+        message: 'Demande de réservation',
+        date: new Date().toISOString(),
+        read: false,
+        reservationId: 'res-1',
+      },
+    ]);
+
+    renderDashboard();
+
+    const bell = await screen.findByRole('button', { name: 'Notifications' });
+    await waitFor(() => expect(within(bell).getByText('1')).toBeInTheDocument());
+
+    fireEvent.click(bell);
+
+    expect(await screen.findByText(/Demande de réservation pour/)).toBeInTheDocument();
+    expect(screen.getByText('Studio Ayida')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Demande de réservation/ }));
+    expect(mocks.markAsRead).toHaveBeenCalledWith('notif-1');
+  });
+
+  it('marque toutes les notifications comme lues depuis le panneau', async () => {
+    mocks.getNotifications.mockResolvedValue([
+      {
+        id: 'notif-1',
+        type: 'reservation_cancelled',
+        roomTitle: 'Villa avec piscine',
+        roomId: 'room-2',
+        clientName: 'Aïcha Diallo',
+        clientEmail: 'aicha@ilehya.ci',
+        clientPhone: '+225 01 01 01 01',
+        message: 'Réservation annulée',
+        date: new Date().toISOString(),
+        read: false,
+      },
+    ]);
+
+    renderDashboard();
+
+    const bell = await screen.findByRole('button', { name: 'Notifications' });
+    await waitFor(() => expect(within(bell).getByText('1')).toBeInTheDocument());
+    fireEvent.click(bell);
+    fireEvent.click(await screen.findByRole('button', { name: 'Tout marquer lu' }));
+
+    expect(mocks.markAllAsRead).toHaveBeenCalledTimes(1);
   });
 });

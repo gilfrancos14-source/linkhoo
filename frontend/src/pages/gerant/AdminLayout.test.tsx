@@ -121,7 +121,7 @@ function LocationProbe() {
   return <div data-testid="location">{location.pathname}</div>;
 }
 
-function renderLayout(entry = '/ci/gerant') {
+function renderLayout(entry = '/ci/gerant/reservations') {
   return render(
     <MemoryRouter initialEntries={[entry]}>
       <MarketProvider>
@@ -265,7 +265,7 @@ describe('structure de la barre latérale', () => {
   });
 
   it('rend le contenu de la route enfant dans la zone principale', async () => {
-    renderLayout();
+    renderLayout('/ci/gerant');
 
     expect(screen.getByText('Contenu aperçu')).toBeInTheDocument();
   });

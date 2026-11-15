@@ -4,6 +4,7 @@ import { useHomePath } from '../../hooks/useHomePath';
 import { useGerantChrome } from '../../hooks/useGerantChrome';
 import GerantLogoutButton from '../../components/GerantLogoutButton';
 import GerantSidebar from '../../components/gerant/GerantSidebar';
+import GerantNotifications from '../../components/gerant/GerantNotifications';
 import { fetchMyRooms, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import { getReservations, statutLabels, type Reservation } from '../../lib/reservations';
@@ -270,10 +271,11 @@ export default function DashboardPage() {
               <Icon id="search" className="i h-5 w-5" />
               <input type="search" placeholder="Rechercher une chambre, une catégorie…" className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400" />
             </label>
-            <button type="button" className="relative ml-auto p-2 text-dash-navy" aria-label="Notifications">
-              <Icon id="bell" className="i h-6 w-6" />
-              {chrome.messagesUnread > 0 && <span className="absolute right-0.5 top-0 grid h-4 w-4 place-items-center rounded-full bg-dash-brand text-[10px] font-bold text-white">{chrome.messagesUnread}</span>}
-            </button>
+            <GerantNotifications
+              isQualified={!!chrome.gerant?.is_verified}
+              variant="dashboard"
+              className="ml-auto"
+            />
             <div className="card flex items-center gap-3 py-2 pl-2 pr-4">
               <span className="avatar h-10 w-10 text-xs">{chrome.initials}</span>
               <div className="hidden text-xs sm:block"><p className="font-semibold">{chrome.displayName}</p><p className="text-slate-400">Gérant</p></div>
