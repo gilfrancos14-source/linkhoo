@@ -6,7 +6,7 @@
    reproduisent une maquette complète, sur leur propre div racine
    (`.gerant-maq1`, `.gerant-maq2`, …).
 
-   Les sélecteurs sont préfixés par `:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark` pour l'emporter
+   Les sélecteurs sont préfixés par `.gerant-dark` pour l'emporter
    à la fois sur les utilitaires Tailwind (une classe) et sur les règles de
    `33-gerant-blank.css` / `gerant-sidebar.css` (deux classes), quel que soit
    l'ordre d'injection des feuilles dans le chunk de la route.
@@ -17,9 +17,18 @@
 
 /* ---------- Surfaces ---------- */
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark,
+.gerant-dark,
 .admin.gerant-dark {
   background: #0b1220;
+  color: #e2e8f0;
+}
+
+/* Fond sombre pour toutes les divs racines des pages gérant (blank et chrome
+   admin) : le layout porte la classe `gerant-dark`, et la page est rendue
+   dans `.admin-content`. Sans cette règle, la div racine de la page conserve
+   son fond clair (`bg-[#f5f8fc]`). */
+.admin.gerant-dark .admin-content > div {
+  background: #0b1220 !important;
   color: #e2e8f0;
 }
 
@@ -37,13 +46,13 @@ html:has(.gerant-dark) {
   color-scheme: dark;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark *,
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark *::before,
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark *::after {
+.gerant-dark *,
+.gerant-dark *::before,
+.gerant-dark *::after {
   border-color: #1e293b;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .card {
+.gerant-dark .card {
   background: #111c2e;
   border-color: #1e293b;
   box-shadow: 0 2px 14px rgba(0, 0, 0, 0.35);
@@ -51,325 +60,325 @@ html:has(.gerant-dark) {
 
 /* ---------- Textes ---------- */
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-dash-navy {
+.gerant-dark .text-dash-navy {
   color: #e8eef9;
 }
 
 /* `!text-dash-navy` (liens « Voir tout/toutes ») est un utilitaire important. */
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .\!text-dash-navy {
+.gerant-dark .\!text-dash-navy {
   color: #e8eef9 !important;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .dash-page-head {
+.gerant-dark .dash-page-head {
   color: #f1f5f9;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-slate-400 {
+.gerant-dark .text-slate-400 {
   color: #7c8ba3;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-slate-500 {
+.gerant-dark .text-slate-500 {
   color: #94a3b8;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-slate-600 {
+.gerant-dark .text-slate-600 {
   color: #cbd5e1;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .placeholder\:text-slate-400::placeholder,
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark input::placeholder {
+.gerant-dark .placeholder\:text-slate-400::placeholder,
+.gerant-dark input::placeholder {
   color: #64748b;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-sky-500,
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-sky-600 {
+.gerant-dark .text-sky-500,
+.gerant-dark .text-sky-600 {
   color: #7dd3fc;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-indigo-500 {
+.gerant-dark .text-indigo-500 {
   color: #a5b4fc;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-pink-500 {
+.gerant-dark .text-pink-500 {
   color: #f9a8d4;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-teal-600 {
+.gerant-dark .text-teal-600 {
   color: #5eead4;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-violet-500 {
+.gerant-dark .text-violet-500 {
   color: #c4b5fd;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-amber-500 {
+.gerant-dark .text-amber-500 {
   color: #fcd34d;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-orange-500 {
+.gerant-dark .text-orange-500 {
   color: #fb923c;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-emerald-500,
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-emerald-600 {
+.gerant-dark .text-emerald-500,
+.gerant-dark .text-emerald-600 {
   color: #34d399;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-red-500,
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-red-600 {
+.gerant-dark .text-red-500,
+.gerant-dark .text-red-600 {
   color: #f87171;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .text-\[\#C23B3B\] {
+.gerant-dark .text-\[\#C23B3B\] {
   color: #f87171;
 }
 
 /* ---------- Fonds des pastilles et encarts ---------- */
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-white {
+.gerant-dark .bg-white {
   background-color: #0f1a2b;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-slate-50 {
+.gerant-dark .bg-slate-50 {
   background-color: #16233a;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .hover\:bg-slate-100:hover {
+.gerant-dark .hover\:bg-slate-100:hover {
   background-color: #1e293b;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .hover\:bg-\[\#FDE8E8\]:hover {
+.gerant-dark .hover\:bg-\[\#FDE8E8\]:hover {
   background-color: rgba(194, 59, 59, 0.18);
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-sky-50 {
+.gerant-dark .bg-sky-50 {
   background-color: #10233a;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-sky-100 {
+.gerant-dark .bg-sky-100 {
   background-color: rgba(56, 189, 248, 0.16);
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-indigo-100 {
+.gerant-dark .bg-indigo-100 {
   background-color: rgba(129, 140, 248, 0.18);
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-pink-100 {
+.gerant-dark .bg-pink-100 {
   background-color: rgba(244, 114, 182, 0.18);
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-teal-100 {
+.gerant-dark .bg-teal-100 {
   background-color: rgba(45, 212, 191, 0.18);
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-violet-100 {
+.gerant-dark .bg-violet-100 {
   background-color: rgba(167, 139, 250, 0.18);
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-amber-100 {
+.gerant-dark .bg-amber-100 {
   background-color: rgba(251, 191, 36, 0.18);
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-orange-100 {
+.gerant-dark .bg-orange-100 {
   background-color: rgba(249, 115, 22, 0.16);
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-emerald-100 {
+.gerant-dark .bg-emerald-100 {
   background-color: rgba(16, 185, 129, 0.16);
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-red-100 {
+.gerant-dark .bg-red-100 {
   background-color: rgba(239, 68, 68, 0.16);
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .bg-dash-brand-soft {
+.gerant-dark .bg-dash-brand-soft {
   background-color: rgba(249, 115, 22, 0.12);
 }
 
 /* ---------- Bordures et séparateurs ---------- */
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .border-slate-100 {
+.gerant-dark .border-slate-100 {
   border-color: #1e293b;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .border-sky-100 {
+.gerant-dark .border-sky-100 {
   border-color: #1d3a5f;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .border-orange-100 {
+.gerant-dark .border-orange-100 {
   border-color: rgba(249, 115, 22, 0.32);
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .hover\:border-orange-200:hover {
+.gerant-dark .hover\:border-orange-200:hover {
   border-color: rgba(251, 146, 60, 0.5);
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+.gerant-dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
   border-color: #1e293b;
 }
 
 /* L'ombre orange du bouton d'ajout est trop lumineuse sur fond sombre. */
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .shadow-orange-200 {
+.gerant-dark .shadow-orange-200 {
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
 }
 
 /* ---------- Sidebar (composant partagé, thème posé par le dashboard) ---------- */
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb {
+.gerant-dark aside.gerb {
   background: #0f1a2b;
   border-color: #1e293b;
 }
 
 /* Le logo est un JPEG à fond blanc : il lui faut une plaque claire. */
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb .sidebar-logo {
+.gerant-dark aside.gerb .sidebar-logo {
   background: #f8fafc;
   border-radius: 10px;
   padding: 4px 8px;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb .grp {
+.gerant-dark aside.gerb .grp {
   color: #cbd5e1;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb .grp--active {
+.gerant-dark aside.gerb .grp--active {
   background: rgba(249, 115, 22, 0.16);
   color: #fdba74;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb .sub {
+.gerant-dark aside.gerb .sub {
   color: #94a3b8;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb .sub:hover {
+.gerant-dark aside.gerb .sub:hover {
   color: #f1f5f9;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb .sub svg {
+.gerant-dark aside.gerb .sub svg {
   color: #64748b;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb .sub.on {
+.gerant-dark aside.gerb .sub.on {
   color: #fdba74;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark aside.gerb .sub.on svg {
+.gerant-dark aside.gerb .sub.on svg {
   color: #fb923c;
 }
 
 /* ---------- Bouton de bascule du thème ---------- */
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .gerant-theme-toggle,
+.gerant-dark .gerant-theme-toggle,
 .admin.gerant-dark .gerant-theme-toggle {
   color: #fbbf24;
 }
 
 /* ---------- Panneau de notifications ---------- */
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-dropdown {
+.gerant-dark .notif-dropdown {
   background: #111c2e;
   border-color: #1e293b;
   box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55);
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-dropdown__head {
+.gerant-dark .notif-dropdown__head {
   color: #e8eef9;
   border-color: #1e293b;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-dropdown__mark {
+.gerant-dark .notif-dropdown__mark {
   color: #7dd3fc;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-dropdown__mark:hover {
+.gerant-dark .notif-dropdown__mark:hover {
   color: #bae6fd;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-dropdown__empty {
+.gerant-dark .notif-dropdown__empty {
   color: #94a3b8;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-item {
+.gerant-dark .notif-item {
   border-bottom-color: #1b2740;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-item:hover {
+.gerant-dark .notif-item:hover {
   background: #16233a;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-item--unread {
+.gerant-dark .notif-item--unread {
   background: #122a44;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-item--unread:hover {
+.gerant-dark .notif-item--unread:hover {
   background: #17334f;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-item__icon {
+.gerant-dark .notif-item__icon {
   background: rgba(56, 189, 248, 0.16);
   color: #7dd3fc;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-item__text {
+.gerant-dark .notif-item__text {
   color: #e8eef9;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-item__time {
+.gerant-dark .notif-item__time {
   color: #94a3b8;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-item__dates {
+.gerant-dark .notif-item__dates {
   color: #7dd3fc;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-action--verify {
+.gerant-dark .notif-action--verify {
   background: rgba(56, 189, 248, 0.14);
   border-color: #0ea5e9;
   color: #bae6fd;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .notif-action--verify:hover {
+.gerant-dark .notif-action--verify:hover {
   background: #0284c7;
   color: #fff;
 }
 
 /* ---------- Modale de vérification d'une réservation ---------- */
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-modal {
+.gerant-dark .verify-modal {
   background: #111c2e;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-modal__loading p {
+.gerant-dark .verify-modal__loading p {
   color: #e8eef9;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-modal__room,
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-modal__result p {
+.gerant-dark .verify-modal__room,
+.gerant-dark .verify-modal__result p {
   color: #94a3b8;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-spinner {
+.gerant-dark .verify-spinner {
   border-color: #1e293b;
   border-top-color: #38bdf8;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-modal__icon--available {
+.gerant-dark .verify-modal__icon--available {
   background: rgba(16, 185, 129, 0.16);
   color: #34d399;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-modal__icon--unavailable {
+.gerant-dark .verify-modal__icon--unavailable {
   background: rgba(239, 68, 68, 0.16);
   color: #f87171;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-btn--cancel {
+.gerant-dark .verify-btn--cancel {
   background: #16233a;
   border-color: #1e293b;
   color: #cbd5e1;
 }
 
-:is(.gerant-maq1, .gerant-maq2, .gerant-maq3, .gerant-maq4, .gerant-maq5, .gerant-maq6).gerant-dark .verify-btn--cancel:hover {
+.gerant-dark .verify-btn--cancel:hover {
   background: #1e293b;
 }
 
