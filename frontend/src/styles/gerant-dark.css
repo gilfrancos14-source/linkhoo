@@ -441,6 +441,11 @@ html:has(.gerant-dark) {
   color: #e8eef9;
 }
 
+/* Texte très sombre de la page Premium. */
+.gerant-dark .text-\[\#1a1f71\] {
+  color: #e8eef9;
+}
+
 /* Texte sombre des pages Premium et Boîte de réception. */
 .gerant-dark .text-\[\#0b1b3f\],
 .gerant-dark .text-\[\#1E2A44\] {
