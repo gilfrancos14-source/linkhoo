@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MarketProvider } from '../../contexts/MarketContext';
 import DashboardPage from './DashboardPage';
@@ -199,5 +199,40 @@ describe('DashboardPage', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText('Impossible de charger vos chambres.')).not.toBeInTheDocument();
+  });
+
+  it('affiche le solde disponible renvoyé par l’API', async () => {
+    mocks.getBalance.mockResolvedValue({
+      currency: 'XOF',
+      earned: 950_000,
+      available: 912_500,
+      pending: 34_000,
+      paid: 3_500,
+      last_payout_at: null,
+      commission_percent: 10,
+      commission_tier: 'verified',
+    });
+
+    renderDashboard();
+
+    const card = await screen.findByRole('link', { name: /Solde disponible/ });
+    expect(within(card).getByText(/912 500/)).toBeInTheDocument();
+    expect(within(card).getByText('XOF')).toBeInTheDocument();
+    expect(within(card).getByText(/En cours : 34 000/)).toBeInTheDocument();
+    expect(within(card).getByText(/Déjà versé :\s*3 500/)).toBeInTheDocument();
+  });
+
+  it('signale un solde indisponible quand l’API échoue, sans afficher 0', async () => {
+    mocks.getBalance.mockRejectedValue(new Error('réseau indisponible'));
+
+    renderDashboard();
+
+    const card = await screen.findByRole('link', { name: /Solde disponible/ });
+    expect(await within(card).findByText('—')).toBeInTheDocument();
+    expect(
+      within(card).getByText('Solde momentanément indisponible — voir Reversements.'),
+    ).toBeInTheDocument();
+    expect(within(card).queryByText('XOF')).not.toBeInTheDocument();
+    expect(within(card).queryByText(/^0/)).not.toBeInTheDocument();
   });
 });

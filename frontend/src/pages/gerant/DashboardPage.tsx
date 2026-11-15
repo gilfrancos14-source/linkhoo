@@ -92,6 +92,8 @@ export default function DashboardPage() {
   const [reservationsError, setReservationsError] = useState('');
   const [globalLoading, setGlobalLoading] = useState(true);
   const [payoutBalance, setPayoutBalance] = useState<PayoutBalanceData | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(true);
+  const [balanceError, setBalanceError] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -144,10 +146,17 @@ export default function DashboardPage() {
     apiPayouts
       .getBalance()
       .then((balance) => {
-        if (alive) setPayoutBalance(balance);
+        if (!alive) return;
+        setPayoutBalance(balance);
+        setBalanceError(false);
       })
       .catch(() => {
-        // Un solde indisponible ne doit pas casser le tableau de bord.
+        // Un solde indisponible ne doit pas casser le tableau de bord, mais il
+        // ne doit pas non plus afficher « 0 » : on signale l'échec.
+        if (alive) setBalanceError(true);
+      })
+      .finally(() => {
+        if (alive) setBalanceLoading(false);
       });
     return () => {
       alive = false;
@@ -316,14 +325,30 @@ export default function DashboardPage() {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-slate-600">Solde disponible</p>
                   <p className="text-2xl font-bold text-dash-navy">
-                    {formatPrice(payoutBalance?.available ?? 0)}{' '}
-                    <span className="text-sm font-semibold text-slate-500">
-                      {payoutBalance?.currency ?? 'XOF'}
-                    </span>
+                    {balanceLoading ? (
+                      '…'
+                    ) : balanceError ? (
+                      '—'
+                    ) : (
+                      <>
+                        {formatPrice(payoutBalance?.available ?? 0)}{' '}
+                        <span className="text-sm font-semibold text-slate-500">
+                          {payoutBalance?.currency ?? 'XOF'}
+                        </span>
+                      </>
+                    )}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    En cours : {formatPrice(payoutBalance?.pending ?? 0)} · Déjà versé :{' '}
-                    {formatPrice(payoutBalance?.paid ?? 0)}
+                    {balanceLoading ? (
+                      'Chargement du solde…'
+                    ) : balanceError ? (
+                      'Solde momentanément indisponible — voir Reversements.'
+                    ) : (
+                      <>
+                        En cours : {formatPrice(payoutBalance?.pending ?? 0)} · Déjà versé :{' '}
+                        {formatPrice(payoutBalance?.paid ?? 0)}
+                      </>
+                    )}
                   </p>
                 </div>
                 <span className="link inline-flex items-center gap-1 !font-semibold">

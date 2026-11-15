@@ -140,6 +140,45 @@ describe('PUT /api/payouts/settings', () => {
   });
 });
 
+describe('GET /api/payouts/balance', () => {
+  it('401 sans token', async () => {
+    const res = await request(app).get('/api/payouts/balance');
+    expect(res.status).toBe(401);
+  });
+
+  it('renvoie le portefeuille du gérant connecté', async () => {
+    useSupabaseTables(supabaseAdmin.from, {
+      gerants: fakeChain({ data: SETTINGS, error: null }),
+      // Aucune chambre : le calcul s'arrête avant les réservations/paiements.
+      rooms: fakeChain({ data: [], error: null }),
+      payment_payouts: fakeChain({
+        data: [
+          {
+            net_amount: '40000',
+            currency: 'XOF',
+            status: 'scheduled',
+            paid_at: null,
+          },
+        ],
+        error: null,
+      }),
+    });
+
+    const res = await request(app)
+      .get('/api/payouts/balance')
+      .set('Authorization', clerkBearer('user_1'));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      currency: 'XOF',
+      earned: 0,
+      available: 0,
+      pending: 40_000,
+      paid: 0,
+    });
+  });
+});
+
 describe('GET /api/payouts/mine', () => {
   it('renvoie les reversements du gérant sans identifiant prestataire', async () => {
     useSupabaseTables(supabaseAdmin.from, {
