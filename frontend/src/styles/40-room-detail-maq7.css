@@ -183,13 +183,20 @@
     height: 420px;
   }
 
+  /* Une seule photo : la principale occupe toute la largeur, sans colonne
+     de vignettes vide. */
+  .room-detail-maq7 .m7-gallery--single {
+    grid-template-columns: 1fr;
+  }
+
   .room-detail-maq7 .m7-gallery__main {
     height: 100%;
   }
 
   .room-detail-maq7 .m7-gallery__side {
     display: grid;
-    grid-template-rows: 1fr 1fr 1fr;
+    grid-template-rows: none;
+    grid-auto-rows: minmax(0, 1fr);
     gap: 0.75rem;
     height: 100%;
     min-height: 0;

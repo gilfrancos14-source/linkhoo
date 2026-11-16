@@ -285,6 +285,29 @@ describe('RoomDetailMaq7 — galerie', () => {
     ).toBeInTheDocument();
     expect(await screen.findByText('3/3')).toBeInTheDocument();
   });
+
+  it('n’affiche que les vignettes des photos existantes (aucun emplacement vide)', async () => {
+    mocks.fetchRoomById.mockResolvedValue(
+      makeRoom({ images: ['/images/a.jpg', '/images/b.jpg'] }),
+    );
+
+    await renderLoaded();
+
+    expect(document.querySelectorAll('.m7-gallery__thumb')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Voir la photo 2' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Voir la photo 3' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Voir la photo 4' })).toBeNull();
+  });
+
+  it('élargit la photo principale quand la chambre n’a qu’une seule image', async () => {
+    mocks.fetchRoomById.mockResolvedValue(makeRoom({ images: ['/images/a.jpg'], img: '/images/a.jpg' }));
+
+    await renderLoaded();
+
+    expect(document.querySelectorAll('.m7-gallery__thumb')).toHaveLength(0);
+    expect(document.querySelector('.m7-gallery--single')).toBeInTheDocument();
+    expect(screen.getByAltText('Suite vue mer — photo 1 sur 1')).toBeInTheDocument();
+  });
 });
 
 function fillReservationForm(container: HTMLElement) {

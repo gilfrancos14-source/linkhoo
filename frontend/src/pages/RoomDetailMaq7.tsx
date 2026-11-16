@@ -466,6 +466,10 @@ export default function RoomDetailMaq7() {
 
   const safeCur = photos.length > 0 ? Math.min(cur, photos.length - 1) : 0;
 
+  // Vignettes latérales : uniquement les photos réellement présentes (2 à 4
+  // max, la principale étant affichée à part). Aucune vignette vide.
+  const sidePhotos = photos.slice(1, 4);
+
   const isMonthly = room?.priceUnit === '/ mois';
   const unite: DureeUnite = isMonthly ? 'mois' : 'nuit';
   const dureeNombre = Number(duree);
@@ -690,7 +694,10 @@ export default function RoomDetailMaq7() {
         </nav>
 
         {/* Galerie */}
-        <section className="m7-gallery grid gap-3" aria-label="Galerie photos">
+        <section
+          className={`m7-gallery grid gap-3${sidePhotos.length === 0 ? ' m7-gallery--single' : ''}`}
+          aria-label="Galerie photos"
+        >
           <div className="m7-gallery__main relative overflow-hidden rounded-2xl bg-slate-200">
             {photos.length > 0 ? (
               <>
@@ -726,42 +733,35 @@ export default function RoomDetailMaq7() {
             )}
           </div>
 
-          <div className="m7-gallery__side relative gap-3">
-            {[1, 2, 3].map((photoIndex) => {
-              const photo = photos[photoIndex];
-              const showMore = photoIndex === 3 && photos.length > 4;
+          {sidePhotos.length > 0 && (
+            <div className="m7-gallery__side relative gap-3">
+              {sidePhotos.map((photo, offset) => {
+                const photoIndex = offset + 1;
+                const showMore = photoIndex === 3 && photos.length > 4;
 
-              if (!photo) {
                 return (
-                  <div
-                    key={`placeholder-${photoIndex}`}
-                    className="m7-gallery__thumb overflow-hidden rounded-xl bg-gradient-to-br from-slate-100 to-slate-300"
-                  />
+                  <button
+                    key={`${photo}-${photoIndex}`}
+                    type="button"
+                    onClick={() => showPhoto(photoIndex)}
+                    className="m7-gallery__thumb relative overflow-hidden rounded-xl bg-slate-200"
+                    aria-label={`Voir la photo ${photoIndex + 1}`}
+                  >
+                    <GalleryPhoto
+                      src={photo}
+                      alt={`${room.title} — aperçu ${photoIndex + 1}`}
+                      className="m7-gallery__img"
+                    />
+                    {showMore && (
+                      <span className="absolute inset-0 grid place-items-center bg-black/30 text-2xl font-bold text-white">
+                        +{photos.length - 4}
+                      </span>
+                    )}
+                  </button>
                 );
-              }
-
-              return (
-                <button
-                  key={`${photo}-${photoIndex}`}
-                  type="button"
-                  onClick={() => showPhoto(photoIndex)}
-                  className="m7-gallery__thumb relative overflow-hidden rounded-xl bg-slate-200"
-                  aria-label={`Voir la photo ${photoIndex + 1}`}
-                >
-                  <GalleryPhoto
-                    src={photo}
-                    alt={`${room.title} — aperçu ${photoIndex + 1}`}
-                    className="m7-gallery__img"
-                  />
-                  {showMore && (
-                    <span className="absolute inset-0 grid place-items-center bg-black/30 text-2xl font-bold text-white">
-                      +{photos.length - 4}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+              })}
+            </div>
+          )}
         </section>
 
         {/* Grille principale */}
