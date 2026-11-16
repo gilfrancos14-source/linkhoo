@@ -91,7 +91,7 @@ export default function AjouterChambreMaq3() {
         <main className="min-w-0 flex-1 px-4 py-4 lg:px-7">
           <header className="flex items-center gap-4">
             <MobileMenuButton onOpen={openMobile} />
-            <label className="hidden sm:flex hidden sm:flex card flex max-w-3xl flex-1 items-center gap-3 px-5 py-3 text-slate-400">
+            <label className="hidden sm:flex card flex max-w-3xl flex-1 items-center gap-3 px-5 py-3 text-slate-400">
               <Icon id="search" className="i h-5 w-5" />
               <input type="search" placeholder="Rechercher une chambre, une catégorie…" className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400" />
             </label>
