@@ -49,10 +49,10 @@ jobs:
       # (lecture seule). Sans secret, on saute proprement.
       - name: Pré-vol des migrations
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          if [ -z "$SUPABASE_DB_URL" ]; then
-            echo "SUPABASE_DB_URL absent — pré-vol ignoré"
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DATABASE_URL absent — pré-vol ignoré"
             exit 0
           fi
           npm run migrate:check

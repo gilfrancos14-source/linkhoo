@@ -1,4 +1,7 @@
-const CACHE_NAME = 'linkhoo-v1';
+// Bump CACHE_NAME à chaque release (ou injecter le hash de build) : sans ça,
+// les anciennes entrées ne sont jamais purgées et les données API peuvent
+// rester périmées. Voir docs/reports/ANALYSE_DYSFONCTIONNEMENTS.md § 8.
+const CACHE_NAME = 'linkhoo-v2';
 const PRECACHE = [
   '/',
   '/manifest.json',

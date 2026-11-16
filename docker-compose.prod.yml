@@ -21,8 +21,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-ilehya}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?mot de passe PostgreSQL requis}
       POSTGRES_DB: ${POSTGRES_DB:-ilehya}
-    # Aucun port exposé : PostgreSQL n'est joignable que depuis le réseau
-    # Docker. L'accès humain passe par `docker compose exec postgres psql`.
     volumes:
       - ilehya_pgdata:/var/lib/postgresql/data
       - ./deploy/backup:/backup
@@ -65,7 +63,10 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-ilehya}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ilehya}
       STORAGE_DIR: /app/storage
     volumes:
-      - ilehya_storage:/app/storage
+      # Bind mount : le stockage vit sur l'hôte, là où Nginx le sert
+      # (/var/lib/ilehya/storage) et là où backup.sh l'archive. Un volume
+      # Docker nommé serait invisible pour Nginx et les sauvegardes.
+      - /var/lib/ilehya/storage:/app/storage
       # Cache du modèle d'analyse d'images (CLIP) : évite de le retélécharger
       # à chaque redéploiement.
       - ilehya_clip_cache:/app/.cache
@@ -90,5 +91,4 @@ services:
 
 volumes:
   ilehya_pgdata:
-  ilehya_storage:
   ilehya_clip_cache:

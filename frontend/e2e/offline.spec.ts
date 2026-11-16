@@ -30,9 +30,9 @@ async function waitForCaches(page: Page): Promise<void> {
   await page.waitForFunction(
     async () => {
       try {
-        const api = await caches.open('linkhoo-api-v1');
+        const api = await caches.open('linkhoo-v2');
         const apiKeys = await api.keys();
-        const img = await caches.open('linkhoo-img-v1');
+        const img = await caches.open('linkhoo-v2');
         const imgKeys = await img.keys();
         return apiKeys.length > 0 && imgKeys.length > 0;
       } catch {

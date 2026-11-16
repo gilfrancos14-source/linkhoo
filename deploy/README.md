@@ -79,6 +79,25 @@ Le script vérifie la RAM, le disque, Docker, Nginx, les ports, le pare-feu, le
 DNS, et surtout que `backend/.env.prod` ne contient ni variable vide ni
 `PAWAPAY_ENV=sandbox`. Il sort avec 1 si un point est bloquant.
 
+## 3 ter. Compte administrateur et modèle d'images (une fois)
+
+Le déploiement ne crée **pas** de compte admin et ne télécharge **pas** le
+modèle d'analyse des photos. À faire juste après le premier `deploy.sh` :
+
+```bash
+# Compte superadmin (mot de passe dans backend/.env.prod)
+cd /opt/ilehya
+ALLOW_SEED=true docker compose -f docker-compose.prod.yml run --rm api \
+  node dist/seed.js
+
+# Modèle CLIP (~150 Mo, une fois par machine, nécessite l'internet)
+cd backend && npm run model:preload
+```
+
+> `npm run seed` insère aussi les catégories et chambres de démonstration
+> (idempotent : un second lancement ne les écrase pas). Mettre `ALLOW_SEED=true`
+> est obligatoire en production, sinon le seed refuse de tourner.
+
 ## 4. Nginx et TLS
 
 ```bash
@@ -166,6 +185,7 @@ curl -s https://<domaine>/api/admin/stats -b /tmp/admin.cookie
 - [ ] Sauvegarde + **restauration testée**
 - [ ] `docker compose ps` : tous les services `healthy`
 - [ ] Espace disque > 30 % libre
+- [ ] Tag Git `v1.0.0` créé et poussé (`git tag v1.0.0 && git push origin v1.0.0`)
 
 ---
 
