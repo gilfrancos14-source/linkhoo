@@ -2,7 +2,7 @@ import { Fragment, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMarket } from '../../contexts/MarketContext';
 import { useHomePath } from '../../hooks/useHomePath';
-import { createRoom, type Room } from '../../data/rooms';
+import { createRoom, updateRoom, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import { roomSubtitle } from '../../lib/roomDisplay';
 import { apiRooms, apiUpload } from '../../lib/api';
@@ -10,7 +10,9 @@ import { containsPhoneNumber, PHONE_IN_TEXT_ERROR } from '../../utils/validators
 import {
   MAX_PHOTOS,
   emptyForm,
+  formFromRoom,
   marketPays,
+  photosFromRoom,
   type FormData,
   type PhotoItem,
   type PreviewSnapshot,
@@ -30,22 +32,25 @@ const STEPS = [
   { number: 3, title: 'Photos', subtitle: 'Ajoutez vos photos' },
 ];
 
-export default function AjouterChambreMaq3Form({
-  onPreviewChange,
-}: {
+interface ChambreFormMaq3Props {
   onPreviewChange?: (snapshot: PreviewSnapshot) => void;
-}) {
+  /** Annonce existante : le formulaire passe en mode modification. */
+  room?: Room;
+}
+
+export default function ChambreFormMaq3({ onPreviewChange, room }: ChambreFormMaq3Props) {
   const { market } = useMarket();
   const navigate = useNavigate();
   const homePath = useHomePath();
   const gerantPath = `${homePath}/gerant`;
   const chambresPath = `${gerantPath}/chambres`;
+  const editing = Boolean(room);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState<FormData>({ ...emptyForm });
+  const [form, setForm] = useState<FormData>(() => (room ? formFromRoom(room) : { ...emptyForm }));
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+  const [photos, setPhotos] = useState<PhotoItem[]>(() => (room ? photosFromRoom(room) : []));
   const [mainPhotoIndex, setMainPhotoIndex] = useState(0);
   const [photoError, setPhotoError] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
@@ -131,7 +136,7 @@ export default function AjouterChambreMaq3Form({
 
   const removePhoto = (index: number) => {
     const removed = photos[index];
-    if (removed && typeof URL.revokeObjectURL === 'function') {
+    if (removed?.file && typeof URL.revokeObjectURL === 'function') {
       URL.revokeObjectURL(removed.preview);
     }
     setPhotos((prev) => prev.filter((_, i) => i !== index));
@@ -191,7 +196,15 @@ export default function AjouterChambreMaq3Form({
     try {
       const urls: string[] = [];
       for (let i = 0; i < photos.length; i += 1) {
-        const { url } = await apiUpload.upload(photos[i].file).catch((error: unknown) => {
+        const photo = photos[i];
+        // Photo déjà en ligne : son URL est réutilisée telle quelle, aucun
+        // ré-upload (et donc aucune perte si le stockage est indisponible).
+        if (photo.url) {
+          urls.push(photo.url);
+          continue;
+        }
+        if (!photo.file) continue;
+        const { url } = await apiUpload.upload(photo.file).catch((error: unknown) => {
           throw new Error(
             `Photo ${i + 1} refusée : ${error instanceof Error ? error.message : 'téléversement impossible'}`,
           );
@@ -199,7 +212,7 @@ export default function AjouterChambreMaq3Form({
         urls.push(url);
       }
 
-      const room: Omit<Room, 'id'> = {
+      const payload: Omit<Room, 'id'> = {
         title: form.title,
         subtitle: roomSubtitle({
           description: form.description,
@@ -227,7 +240,14 @@ export default function AjouterChambreMaq3Form({
         isPopular: form.isPopular,
       };
 
-      await createRoom(room);
+      if (room) {
+        // `disponible` est piloté par la bascule de la liste : une
+        // modification d'annonce ne doit pas remettre la chambre en ligne.
+        const { disponible: _ignoredDisponible, ...updates } = payload;
+        await updateRoom(room.id, updates);
+      } else {
+        await createRoom(payload);
+      }
       setSaved(true);
     } catch (error) {
       setSubmitError(
@@ -240,7 +260,9 @@ export default function AjouterChambreMaq3Form({
 
   const reset = () => {
     photos.forEach((photo) => {
-      if (typeof URL.revokeObjectURL === 'function') URL.revokeObjectURL(photo.preview);
+      if (photo.file && typeof URL.revokeObjectURL === 'function') {
+        URL.revokeObjectURL(photo.preview);
+      }
     });
     setForm({ ...emptyForm });
     setPhotos([]);
@@ -261,18 +283,24 @@ export default function AjouterChambreMaq3Form({
             <polyline points="22 4 12 14.01 9 11.01" />
           </svg>
         </div>
-        <h2 className="dash-page-head mt-4">Chambre enregistrée !</h2>
+        <h2 className="dash-page-head mt-4">
+          {editing ? 'Chambre modifiée !' : 'Chambre enregistrée !'}
+        </h2>
         <p className="mt-2 text-sm text-slate-500">
-          {form.title} a été ajoutée avec succès.
+          {editing
+            ? `${form.title} a été mise à jour avec succès.`
+            : `${form.title} a été ajoutée avec succès.`}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <button
-            type="button"
-            className="rounded-lg bg-dash-brand px-6 py-3 text-sm font-semibold text-white hover:bg-dash-brand-dark"
-            onClick={reset}
-          >
-            Ajouter une autre
-          </button>
+          {!editing && (
+            <button
+              type="button"
+              className="rounded-lg bg-dash-brand px-6 py-3 text-sm font-semibold text-white hover:bg-dash-brand-dark"
+              onClick={reset}
+            >
+              Ajouter une autre
+            </button>
+          )}
           <button
             type="button"
             className="rounded-lg border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
@@ -354,6 +382,9 @@ export default function AjouterChambreMaq3Form({
                     onChange={(event) => update('category', event.target.value)}
                   >
                     <option value="">Choisir une catégorie</option>
+                    {form.category && !categories.some((category) => category.id === form.category) && (
+                      <option value={form.category}>{form.category}</option>
+                    )}
                     {categories.map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.title}
@@ -709,7 +740,11 @@ export default function AjouterChambreMaq3Form({
               className="inline-flex items-center gap-3 rounded-lg bg-dash-brand px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-200 hover:bg-dash-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
               disabled={submitting}
             >
-              {submitting ? 'Enregistrement...' : 'Enregistrer la chambre'}
+              {submitting
+                ? 'Enregistrement...'
+                : editing
+                  ? 'Enregistrer les modifications'
+                  : 'Enregistrer la chambre'}
             </button>
           )}
         </div>

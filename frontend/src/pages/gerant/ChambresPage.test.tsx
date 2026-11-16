@@ -181,6 +181,16 @@ describe('ChambresPage', () => {
     );
   });
 
+  it('ouvre la modification d’une annonce depuis sa carte', async () => {
+    renderPage();
+
+    await screen.findByText('Appartement lumineux avec vue sur la lagune');
+    const editLinks = screen.getAllByRole('link', { name: /^Modifier / });
+    expect(editLinks).toHaveLength(2);
+    expect(editLinks[0]).toHaveAttribute('href', '/ci/gerant/chambres/room-1/modifier');
+    expect(editLinks[1]).toHaveAttribute('href', '/ci/gerant/chambres/room-2/modifier');
+  });
+
   it('affiche les données et les états des chambres de l’API', async () => {
     renderPage();
 

@@ -36,6 +36,7 @@ const DashboardPage = lazy(() => import('./pages/gerant/DashboardPage'));
 const ChambresPage = lazy(() => import('./pages/gerant/ChambresPage'));
 const ReservationsPage = lazy(() => import('./pages/gerant/ReservationsPage'));
 const AjouterChambre = lazy(() => import('./pages/gerant/AjouterChambreMaq3'));
+const ModifierChambre = lazy(() => import('./pages/gerant/ModifierChambreMaq3'));
 const DemandesReservationMaq4 = lazy(() => import('./pages/gerant/DemandesReservationMaq4'));
 const PremiumPage = lazy(() => import('./pages/gerant/PremiumPage'));
 const PremiumSuccessPage = lazy(() => import('./pages/gerant/PremiumSuccessPage'));
@@ -204,6 +205,7 @@ function MarketContent() {
           <Route index element={<DashboardPage />} />
           <Route path="chambres" element={<ChambresPage />} />
           <Route path="chambres/ajouter" element={<AjouterChambre />} />
+          <Route path="chambres/:id/modifier" element={<ModifierChambre />} />
           <Route path="reservations" element={<ReservationsPage />} />
           <Route path="reservations/demandes" element={<DemandesReservationMaq4 />} />
           <Route path="reservations/calendrier" element={<CalendrierMaq5 />} />

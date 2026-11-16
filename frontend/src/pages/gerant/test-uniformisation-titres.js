@@ -16,7 +16,9 @@ const filesToCheck = [
   'PremiumPage.tsx',
   'verification/VerificationStaticSection.tsx',
   'verification/SuiviVerificationSection.tsx',
-  'AjouterChambreMaq3Form.tsx'
+  'ChambreFormPage.tsx',
+  'ChambreFormMaq3.tsx',
+  'ModifierChambreMaq3.tsx'
 ];
 
 const gerantPath = path.join(__dirname, '..');

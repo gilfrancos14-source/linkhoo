@@ -1,6 +1,12 @@
+import type { Room } from '../../../data/rooms';
+
 export interface PhotoItem {
-  file: File;
+  /** Fichier choisi par le gérant (absent pour une photo déjà en ligne). */
+  file?: File;
+  /** Source affichable : URL distante ou `blob:` d'un fichier local. */
   preview: string;
+  /** URL d'une photo déjà enregistrée (mode modification). */
+  url?: string;
 }
 
 /** Nombre maximum de photos par appartement. */
@@ -44,4 +50,38 @@ export interface PreviewSnapshot {
   photos: PhotoItem[];
   mainPhotoIndex: number;
   categoryTitle: string;
+}
+
+/** Formulaire prérempli depuis une annonce existante. */
+export function formFromRoom(room: Room): FormData {
+  return {
+    title: room.title,
+    description: room.description,
+    ville: room.ville,
+    quartier: room.quartier,
+    priceNum: room.priceNum,
+    priceUnit: room.priceUnit === '/ nuit' ? '/ nuit' : '/ mois',
+    conditions: room.conditions,
+    chambres: room.chambres,
+    douches: room.douches,
+    category: room.category,
+    isPopular: Boolean(room.isPopular),
+  };
+}
+
+/**
+ * Photos existantes d'une annonce, prêtes pour l'étape 3.
+ *
+ * L'image principale (`room.img`) passe en tête : elle retrouve ainsi son
+ * rôle de photo principale dans le formulaire, même si `room.images` est
+ * dans un autre ordre. Les entrées gardent leur URL (`url`) pour ne pas être
+ * re-téléversées à l'enregistrement.
+ */
+export function photosFromRoom(room: Room): PhotoItem[] {
+  const urls: string[] = [];
+  if (room.img) urls.push(room.img);
+  room.images.forEach((url) => {
+    if (url && !urls.includes(url)) urls.push(url);
+  });
+  return urls.slice(0, MAX_PHOTOS).map((url) => ({ preview: url, url }));
 }

@@ -207,7 +207,7 @@ export default function ChambresPage() {
         <symbol id="mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></symbol>
         <symbol id="build" viewBox="0 0 24 24"><path d="M5 21V4h10v17M15 9h4v12M9 8h2M9 12h2M9 16h2M3 21h18" /></symbol>
         <symbol id="list" viewBox="0 0 24 24"><path d="M4 6h2M4 12h2M4 18h2M9 6h11M9 12h11M9 18h11" /></symbol>
-        <symbol id="dots" viewBox="0 0 24 24"><g fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></g></symbol>
+        <symbol id="pencil" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></symbol>
         <symbol id="pin" viewBox="0 0 24 24"><path d="M12 21s7-6 7-11a7 7 0 0 0-14 0c0 5 7 11 7 11z" /><circle cx="12" cy="10" r="2.5" /></symbol>
         <symbol id="heart" viewBox="0 0 24 24"><path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.5A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z" /></symbol>
         <symbol id="star" viewBox="0 0 24 24"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1 6.2-5.5-3-5.5 3 1-6.2L3 9.7l6.2-.9z" /></symbol>
@@ -322,7 +322,7 @@ export default function ChambresPage() {
                           <span className="sw" />{room.disponible ? 'Désactiver' : 'Activer'}
                         </label>
                         <button type="button" onClick={() => handlePopular(room)} disabled={busyId === room.id} className={`btn flex-1 ${room.isPopular ? 'bg-blue-50 text-blue-700' : 'text-blue-700'}`}><Icon id="star" className="i h-4 w-4" />Populaire</button>
-                        <button type="button" className="btn" aria-label="Plus d’actions"><Icon id="dots" className="i h-4 w-4" /></button>
+                        <Link to={`${chambresPath}/${room.id}/modifier`} className="btn" aria-label={`Modifier ${room.title}`} title="Modifier l’annonce"><Icon id="pencil" className="i h-4 w-4" /></Link>
                       </div>
                     </div>
                   </article>
