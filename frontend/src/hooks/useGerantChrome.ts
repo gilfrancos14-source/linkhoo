@@ -46,50 +46,40 @@ export function useGerantChrome(): GerantChrome {
     setIsLoading(true);
     setError(null);
 
-    // Fonction pour exécuter toutes les requêtes en parallèle
-    const fetchAllData = async () => {
-      try {
-        const [gerantData, reservationsData, messagesData] = await Promise.allSettled([
-          apiGerants.getMe(),
-          getReservations(),
-          apiMessages.gerantUnread(),
-        ]);
+    // Chaque source met à jour son état dès qu'elle répond : un appel lent
+    // (réservations, messages non lus…) ne doit pas retarder l'affichage du
+    // nom, des initiales ou des compteurs déjà disponibles.
+    const gerantTask = apiGerants
+      .getMe()
+      .then((data) => {
+        if (alive) setGerant(data);
+      })
+      .catch((reason: unknown) => {
+        console.error('Erreur lors du chargement des données du gérant:', reason);
+      });
 
-        if (!alive) return;
-
-        // Gérer les données du gérant
-        if (gerantData.status === 'fulfilled') {
-          setGerant(gerantData.value);
-        } else {
-          console.error('Erreur lors du chargement des données du gérant:', gerantData.reason);
-        }
-
-        // Gérer les réservations
-        if (reservationsData.status === 'fulfilled') {
-          setReservationsCount(
-            reservationsData.value.filter((item: any) => item.statut === 'en_attente').length
-          );
-        } else {
-          console.error('Erreur lors du chargement des réservations:', reservationsData.reason);
-        }
-
-        // Gérer les messages
-        if (messagesData.status === 'fulfilled') {
-          setMessagesUnread((messagesData.value as any).count);
-        } else {
-          console.error('Erreur lors du chargement des messages:', messagesData.reason);
-        }
-      } catch (err) {
-        console.error('Erreur lors du chargement des données:', err);
-        setError('Une erreur est survenue lors du chargement des données');
-      } finally {
+    const reservationsTask = getReservations()
+      .then((items) => {
         if (alive) {
-          setIsLoading(false);
+          setReservationsCount(items.filter((item) => item.statut === 'en_attente').length);
         }
-      }
-    };
+      })
+      .catch((reason: unknown) => {
+        console.error('Erreur lors du chargement des réservations:', reason);
+      });
 
-    fetchAllData();
+    const messagesTask = apiMessages
+      .gerantUnread()
+      .then(({ count }) => {
+        if (alive) setMessagesUnread(count);
+      })
+      .catch((reason: unknown) => {
+        console.error('Erreur lors du chargement des messages:', reason);
+      });
+
+    Promise.allSettled([gerantTask, reservationsTask, messagesTask]).finally(() => {
+      if (alive) setIsLoading(false);
+    });
 
     return () => {
       alive = false;

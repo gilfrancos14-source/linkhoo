@@ -19,6 +19,11 @@ vi.mock('../../lib/api', () => ({
   apiPremium: {
     confirm: mocks.confirm,
   },
+  // La page embarque la sidebar gérant : le hook useGerantChrome y charge le
+  // profil et les compteurs. Sans ces stubs, le mock partiel fait planter le
+  // rendu de la sidebar dans tous les tests de la page.
+  apiGerants: { getMe: vi.fn(async () => null) },
+  apiMessages: { gerantUnread: vi.fn(async () => ({ count: 0 })) },
 }));
 
 function renderSuccess(entry = '/ci/premium/success?reference=PAY-2026-ABC123') {

@@ -94,10 +94,9 @@ export default function DashboardPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reservationsError, setReservationsError] = useState('');
-  const [globalLoading, setGlobalLoading] = useState(true);
   const [payoutBalance, setPayoutBalance] = useState<PayoutBalanceData | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(true);
   const [balanceError, setBalanceError] = useState(false);
@@ -137,7 +136,6 @@ export default function DashboardPage() {
       .finally(() => {
         if (alive) {
           setLoading(false);
-          setGlobalLoading(false);
         }
       });
     
@@ -188,16 +186,8 @@ export default function DashboardPage() {
   const categoryTitle = (id: string): string =>
     categories.find((category) => category.id === id)?.title ?? id;
 
-  // Vérifier si toutes les données sont chargées avant de rendre le tableau
-  useEffect(() => {
-    if (chrome.isLoading || loading || !market || categories.length === 0 || rooms.length === 0) {
-      return;
-    }
-    if (chrome.gerant?.prenom && gerantPath && chambresPath && demandesPath) {
-      setGlobalLoading(false);
-    }
-  }, [chrome.isLoading, loading, market, categories, rooms, chrome.gerant?.prenom, gerantPath, chambresPath, demandesPath]);
-
+  // Chaque section gère son propre état de chargement : la page s'affiche
+  // immédiatement, même si les appels API sont lents (mobile, réseau instable).
   const categoryEntries = useMemo(() => {
     const map = new Map<string, { title: string; count: number }>();
     rooms.forEach((room) => {
@@ -224,19 +214,6 @@ export default function DashboardPage() {
     year: 'numeric',
   });
   const firstName = chrome.gerant?.prenom?.trim() || 'Gérant';
-
-  // Afficher un écran de chargement global si nécessaire
-  if (globalLoading) {
-    return (
-      <div className={`gerant-maq1 bg-[#f5f8fc] text-dash-navy antialiased flex items-center justify-center min-h-screen${themeClass}`}>
-        <div className="text-center">
-          <div className="inline-block h-16 w-16 animate-spin rounded-full border-4 border-dash-brand border-t-transparent"></div>
-          <p className="mt-4 text-lg font-medium text-dash-navy">Chargement de votre tableau de bord...</p>
-          <p className="mt-2 text-sm text-slate-500">Veuillez patienter pendant que nous récupérons vos données</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={`gerant-maq1 bg-[#f5f8fc] text-dash-navy antialiased${themeClass}`}>
@@ -321,15 +298,15 @@ export default function DashboardPage() {
               <div className="grid gap-5 sm:grid-cols-3">
                 <div className="card flex items-center gap-4 p-5">
                   <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-sky-100 text-sky-500"><Icon id="bed" className="i h-8 w-8" /></span>
-                  <div><p className="text-sm text-slate-600">Chambres enregistrées</p><p className="text-3xl font-bold">{totalRooms}</p><p className="mt-1 text-xs font-medium text-sky-500">{totalRooms > 0 ? 'Toutes vos annonces' : 'Aucune annonce'}</p></div>
+                  <div><p className="text-sm text-slate-600">Chambres enregistrées</p><p className="text-3xl font-bold">{loading ? '…' : totalRooms}</p><p className="mt-1 text-xs font-medium text-sky-500">{loading ? 'Chargement…' : totalRooms > 0 ? 'Toutes vos annonces' : 'Aucune annonce'}</p></div>
                 </div>
                 <div className="card flex items-center gap-4 p-5">
                   <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-emerald-100"><span className="grid h-9 w-9 place-items-center rounded-full bg-emerald-500 text-white"><Icon id="check" className="i h-5 w-5 !stroke-[2.5]" /></span></span>
-                  <div><p className="text-sm text-slate-600">Chambres disponibles</p><p className="text-3xl font-bold">{available}</p><p className="mt-1 text-xs font-medium text-emerald-500">{availableShare}% du parc</p></div>
+                  <div><p className="text-sm text-slate-600">Chambres disponibles</p><p className="text-3xl font-bold">{loading ? '…' : available}</p><p className="mt-1 text-xs font-medium text-emerald-500">{loading ? 'Chargement…' : `${availableShare}% du parc`}</p></div>
                 </div>
                 <div className="card flex items-center gap-4 p-5">
                   <span className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-orange-100 text-dash-brand"><Icon id="home" className="i h-8 w-8" /></span>
-                  <div><p className="text-sm text-slate-600">Chambres occupées</p><p className="text-3xl font-bold">{occupied}</p><p className="mt-1 text-xs font-medium text-dash-brand">{occupiedShare}% du parc</p></div>
+                  <div><p className="text-sm text-slate-600">Chambres occupées</p><p className="text-3xl font-bold">{loading ? '…' : occupied}</p><p className="mt-1 text-xs font-medium text-dash-brand">{loading ? 'Chargement…' : `${occupiedShare}% du parc`}</p></div>
                 </div>
               </div>
 

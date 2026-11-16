@@ -174,6 +174,34 @@ afterEach(() => {
 });
 
 describe('DashboardPage', () => {
+  it('affiche immédiatement la page quand les données métier tardent (pas d’écran bloquant)', async () => {
+    // Requêtes métier qui ne se terminent jamais : le squelette du tableau de
+    // bord doit rester visible et les indicateurs de section prendre le relais.
+    mocks.fetchMyRooms.mockReturnValue(new Promise<Room[]>(() => {}));
+    mocks.getReservations.mockReturnValue(new Promise<Reservation[]>(() => {}));
+
+    renderDashboard();
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /Bonjour Koffi/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Chargement de votre activité...')).toBeInTheDocument();
+    expect(screen.queryByText('Chargement de votre tableau de bord...')).not.toBeInTheDocument();
+  });
+
+  it('affiche le tableau de bord quand le gérant n’a aucune chambre', async () => {
+    mocks.fetchMyRooms.mockResolvedValue([]);
+    mocks.fetchCategoriesByMarket.mockResolvedValue([]);
+    mocks.getReservations.mockResolvedValue([]);
+
+    renderDashboard();
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /Bonjour Koffi/ }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('Aucune annonce')).toBeInTheDocument();
+  });
+
   it('affiche le tableau de bord avec les données de l’API', async () => {
     renderDashboard();
 
