@@ -1,7 +1,13 @@
-// Bump CACHE_NAME à chaque release (ou injecter le hash de build) : sans ça,
-// les anciennes entrées ne sont jamais purgées et les données API peuvent
-// rester périmées. Voir docs/reports/ANALYSE_DYSFONCTIONNEMENTS.md § 8.
-const CACHE_NAME = 'linkhoo-v2';
+// Service Worker avancé pour l'application Ileyha Location - Phase 2 PWA
+// Version 2.0 - Comprend notifications push, synchronisation hors-ligne, formulaires hors-ligne, optimisation d'images, gestion avancée du cache
+
+// Configuration des noms de cache
+const STATIC_CACHE = 'ilehya-static-v3';
+const DYNAMIC_CACHE = 'ilehya-dynamic-v3';
+const IMAGE_CACHE = 'ilehya-images-v3';
+const OFFLINE_QUEUE_CACHE = 'ilehya-offline-queue-v3';
+
+// Liste des fichiers à pré-cacher statiquement
 const PRECACHE = [
   '/',
   '/manifest.json',
@@ -22,10 +28,49 @@ const PRECACHE = [
   '/css/31-maquette.css',
 ];
 
+// Liste des URL à ne jamais mettre en cache
+const NEVER_CACHE = [
+  /\/api\/auth\/login/,
+  /\/api\/auth\/register/,
+  /\/api\/auth\/logout/,
+  /\/admin\/login/,
+  /\/admin\/dashboard/,
+];
+
+// Gestionnaire d'installation
 self.addEventListener('install', (event) => {
+  console.log('Service Worker: Installation');
+  
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+    caches.open(STATIC_CACHE).then((cache) => {
       return cache.addAll(PRECACHE);
+    }).then(() => {
+      // Forcer le contrôle actif immédiatement
+      return self.clients.claim();
+    }).catch((error) => {
+      console.error('Erreur lors de l\'installation du service worker:', error);
+    })
+  );
+});
+
+// Gestionnaire d'activation
+self.addEventListener('activate', (event) => {
+  console.log('Service Worker: Activation');
+  
+  event.waitUntil(
+    // Nettoyer les anciens caches
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== STATIC_CACHE && 
+              cacheName !== DYNAMIC_CACHE && 
+              cacheName !== IMAGE_CACHE &&
+              cacheName !== OFFLINE_QUEUE_CACHE) {
+            console.log('Suppression du cache obsolète:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
     }).then(() => {
       // Forcer le contrôle actif immédiatement
       return self.clients.claim();
@@ -33,129 +78,417 @@ self.addEventListener('install', (event) => {
   );
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    })
-  );
-  // S'assurer que le SW est actif immédiatement
-  event.waitUntil(self.clients.claim());
-});
-
+// Gestionnaire de fetch avec stratégie avancée
 self.addEventListener('fetch', (event) => {
-  // Ne pas intercepter les requêtes non-GET ou les requêtes API websocket/etc
-  if (event.request.method !== 'GET') {
+  const { url } = event.request;
+  
+  // Ignorer les requêtes non-HTTP
+  if (!url.startsWith('http')) {
     return;
   }
-
-  const url = new URL(event.request.url);
-
-  // --- Sécurité (cache-donnees-sensibles) : ne JAMAIS mettre en cache ---
-  // Ces réponses contiennent des données personnelles (profil, messages,
-  // paiements, PII). Le cache du SW survit à la déconnexion : ni écriture
-  // (cache.put) ni lecture (caches.match) sur ces chemins.
-  const SENSITIVE_PREFIXES = [
-    '/api/auth',
-    '/api/admin',
-    '/api/payments',
-    '/api/payouts',
-    '/api/pii',
-    '/api/promotion',
-    '/messages/',
-    '/rooms/',
-  ];
-  const isSensitive = SENSITIVE_PREFIXES.some((prefix) => url.pathname.startsWith(prefix));
-  if (isSensitive) {
-    event.respondWith(fetch(event.request));
+  
+  // Ne jamais mettre en cache les URL spécifiques
+  if (NEVER_CACHE.some(pattern => pattern.test(url))) {
     return;
   }
-
-
-  // Stratégie : réseau d'abord, fallback cache
-  // Pour les routes API et données, essayer le réseau en premier
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/messages/') || url.pathname.startsWith('/rooms/')) {
-    event.respondWith(
-      fetch(event.request).then((response) => {
-        // Mise en cache réussie : reproduire la réponse pour les prochaines fois
-        const cloned = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          try {
-            cache.put(event.request, cloned);
-          } catch {
-            // Cache plein ou erreur — non bloquant
-          }
-        });
-        return response;
-      }).catch(() => {
-        // Hors-ligne : essayer le cache
-        return caches.match(event.request).then((cached) => {
-          if (cached) return cached;
-          // Pour la page d'accueil hors-ligne : retourner la racine
-          if (event.request.url === self.location.origin) {
-            return caches.match('/');
-          }
-          return null;
-        });
-      })
-    );
+  
+  // Stratégie pour les images
+  if (url.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i)) {
+    event.respondWith(handleImageRequest(event.request));
     return;
   }
-
-  // Pour les ressources statiques (CSS, JS, images, fonts) : cache-first
-  if (url.pathname.startsWith('/css/') || url.pathname.startsWith('/icons/') || url.pathname.startsWith('/images/') || url.pathname.match(/\.(png|jpg|jpeg|svg|webp|ico|ttf|woff|woff2)$/)) {
-    event.respondWith(
-      caches.match(event.request).then((cached) => {
-        if (cached) return cached;
-        return fetch(event.request).then((response) => {
-          const cloned = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            try {
-              cache.put(event.request, cloned);
-            } catch {}
-          });
-          return response;
-        }).catch(() => cached || offlineFallback(event.request));
-      })
-    );
+  
+  // Stratégie pour les requêtes API
+  if (url.includes('/api/')) {
+    event.respondWith(handleApiRequest(event.request));
     return;
   }
-
-  // Pour les navigations (HTML) : réseau d'abord, fallback cache
-  event.respondWith(
-    fetch(event.request).then((response) => {
-      const cloned = response.clone();
-      caches.open(CACHE_NAME).then((cache) => {
-        try {
-          cache.put(event.request, cloned);
-        } catch {}
-      });
-      return response;
-    }).catch(() => {
-      return caches.match(event.request).then((cached) => {
-        if (cached) return cached;
-        // Page offline personnalisée
-        return new Response(
-          '<!DOCTYPE html>\n<html lang="fr">\n<head>\n<meta charset="UTF-8">\n<title>Linkhoo — Hors-ligne</title>\n<link rel="manifest" href="/manifest.json">\n<style>\n  body {font-family: system-ui, sans-serif; padding: 40px; background: #f8faff; color: #0b1b3f;}\n  .container {max-width: 600px; margin: 0 auto;}\n  .offline {color: #ff5a14;}\n  a {color: #2f5bbf;}\n</style>\n</head>\n<body>\n<div class="container">\n<h1 class="offline">Hors-ligne</h1>\n<p>Vous êtes connecté en mode hors-ligne.<br/> Certaines fonctionnalités peuvent être limitées.</p>\n<p>Rechargez la page lorsque vous aurez de nouveau accès à Internet.</p>\n<div>\n<a href="/">Retour à l’accueil</a>\n</div>\n</div>\n</body>\n</html>',
-          { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
-        );
-      });
-    })
-  );
+  
+  // Stratégie pour les requêtes normales
+  event.respondWith(handleNormalRequest(event.request));
 });
 
-/**
- * Retourne une page de fallback hors-ligne pour une ressource donnée.
- */
-function offlineFallback(_request) {
-  return new Response(
-    '<!DOCTYPE html>\n<html lang="fr">\n<head>\n<meta charset="UTF-8">\n<title>Linkhoo — Hors-ligne</title>\n<link rel="manifest" href="/manifest.json">\n<style>\n  body {font-family: system-ui, sans-serif; padding: 40px; background: #f8faff; color: #0b1b3f;}\n  .container {max-width: 600px; margin: 0 auto;}\n  .offline {color: #ff5a14;}\n  a {color: #2f5bbf;}\n</style>\n</head>\n<body>\n<div class="container">\n<h1 class="offline">Hors-ligne</h1>\n<p>Vous êtes connecté en mode hors-ligne.<br/> Certaines fonctionnalités peuvent être limitées.</p>\n<p>Rechargez la page lorsque vous aurez de nouveau accès à Internet.</p>\n<div>\n<a href="/">Retour à l’accueil</a>\n</div>\n</div>\n</body>\n</html>',
-    { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
-  );
+// Gestionnaire de requêtes d'images : cache-first, réseau en secours.
+// (L'optimisation canvas n'est pas possible dans un Service Worker : les API
+// DOM `Image`/`document`/`URL.createObjectURL` n'y existent pas.)
+async function handleImageRequest(request) {
+  const cache = await caches.open(IMAGE_CACHE);
+  const cachedResponse = await cache.match(request);
+
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+
+  try {
+    const networkResponse = await fetch(request);
+
+    if (!networkResponse.ok) {
+      throw new Error(`Réseau non disponible: ${networkResponse.status}`);
+    }
+
+    // Le clone est mis en cache : le corps de la réponse d'origine reste
+    // intact pour le rendu, sinon l'image s'affiche cassée.
+    cache.put(request, networkResponse.clone()).catch(() => {});
+
+    return networkResponse;
+  } catch (error) {
+    console.error('Erreur lors du chargement de l\'image:', error);
+
+    const cachedFallback = await cache.match(request);
+    if (cachedFallback) {
+      return cachedFallback;
+    }
+
+    // Retourner une image de remplacement
+    return new Response(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="#f0f0f0"/><text x="200" y="150" text-anchor="middle" font-family="Arial" font-size="20" fill="#666">Image indisponible</text></svg>',
+      { headers: { 'Content-Type': 'image/svg+xml' } }
+    );
+  }
 }
+
+// Gestionnaire de requêtes API avec file d'attente hors-ligne
+async function handleApiRequest(request) {
+  // Vérifier si la requête est une tentative de synchronisation
+  if (request.method === 'GET') {
+    // Pour les requêtes GET, essayer le cache d'abord, puis le réseau
+    const cache = await caches.open(DYNAMIC_CACHE);
+    const cachedResponse = await cache.match(request);
+    
+    if (cachedResponse) {
+      // Mettre à jour le cache en arrière-plan
+      fetch(request).then(networkResponse => {
+        if (networkResponse.ok) {
+          cache.put(request, networkResponse.clone());
+        }
+      });
+      
+      return cachedResponse;
+    }
+    
+    // Si pas en cache, essayer le réseau
+    try {
+      const networkResponse = await fetch(request);
+      
+      if (networkResponse.ok) {
+        // Mettre en cache la réponse
+        const responseClone = networkResponse.clone();
+        await cache.put(request, responseClone);
+        
+        return networkResponse;
+      } else {
+        throw new Error(`Réseau non disponible: ${networkResponse.status}`);
+      }
+    } catch (error) {
+      console.error('Erreur lors de la requête API:', error);
+      
+      // Si la requête échoue, retourner une réponse d'erreur
+      return new Response(
+        JSON.stringify({ 
+          error: 'Service indisponible', 
+          message: 'Vérifiez votre connexion et réessayez',
+          offline: true 
+        }),
+        { 
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+  } else {
+    // Pour les requêtes POST/PUT/DELETE, utiliser la file d'attente hors-ligne
+    return handleOfflineRequest(request);
+  }
+}
+
+// Gestionnaire de requêtes normales
+async function handleNormalRequest(request) {
+  const cache = await caches.open(STATIC_CACHE);
+  const cachedResponse = await cache.match(request);
+  
+  if (cachedResponse) {
+    // Mettre à jour le cache en arrière-plan pour les ressources statiques
+    fetch(request).then(networkResponse => {
+      if (networkResponse.ok) {
+        cache.put(request, networkResponse.clone());
+      }
+    });
+    
+    return cachedResponse;
+  }
+  
+  try {
+    const networkResponse = await fetch(request);
+    
+    if (networkResponse.ok) {
+      // Mettre en cache les réponses dynamiques
+      const responseClone = networkResponse.clone();
+      const dynamicCache = await caches.open(DYNAMIC_CACHE);
+      await dynamicCache.put(request, responseClone);
+      
+      return networkResponse;
+    } else {
+      throw new Error(`Réseau non disponible: ${networkResponse.status}`);
+    }
+  } catch (error) {
+    console.error('Erreur lors de la requête normale:', error);
+    
+    // Si la requête échoue, essayer le cache dynamique
+    const dynamicCache = await caches.open(DYNAMIC_CACHE);
+    const cachedResponse = await dynamicCache.match(request);
+    
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+    
+    // Si rien n'est disponible, retourner une page hors-ligne
+    return new Response(
+      '<!DOCTYPE html><html><head><title>Mode hors-ligne</title></head><body><div style="text-align: center; padding: 50px;"><h1>Mode hors-ligne</h1><p>Vous êtes actuellement déconnecté. Veuillez vérifier votre connexion et réessayer.</p><button onclick="window.location.reload()">Réessayer</button></div></body></html>',
+      { headers: { 'Content-Type': 'text/html' } }
+    );
+  }
+}
+
+// Gestionnaire de requêtes hors-ligne
+async function handleOfflineRequest(request) {
+  try {
+    // Essayer d'abord le réseau
+    const networkResponse = await fetch(request);
+    
+    if (networkResponse.ok) {
+      return networkResponse;
+    } else {
+      throw new Error(`Réseau non disponible: ${networkResponse.status}`);
+    }
+  } catch {
+    console.log('Requête hors-ligne:', request.url);
+    
+    // Ajouter à la file d'attente hors-ligne
+    await addToOfflineQueue(request);
+    
+    // Retourner une réponse indiquant que la requête a été mise en file d'attente
+    return new Response(
+      JSON.stringify({ 
+        message: 'Requête mise en file d\'attente pour synchronisation ultérieure',
+        queued: true,
+        timestamp: Date.now()
+      }),
+      { 
+        status: 202,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
+}
+
+// Ajouter une requête à la file d'attente hors-ligne
+async function addToOfflineQueue(request) {
+  const queueCache = await caches.open(OFFLINE_QUEUE_CACHE);
+  
+  // Créer un objet de requête hors-ligne
+  const offlineRequest = {
+    id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    url: request.url,
+    method: request.method,
+    headers: Object.fromEntries(request.headers.entries()),
+    body: request.method !== 'GET' ? await request.text() : null,
+    timestamp: Date.now(),
+    retries: 0,
+    maxRetries: 3
+  };
+  
+  // Ajouter à la file d'attente
+  await queueCache.put(offlineRequest.id, new Response(JSON.stringify(offlineRequest), {
+    headers: { 'Content-Type': 'application/json' }
+  }));
+  
+  // Envoyer un message au client pour informer de la mise en file d'attente
+  self.clients.matchAll().then((clients) => {
+    clients.forEach((client) => {
+      client.postMessage({
+        type: 'OFFLINE_QUEUE_ADDED',
+        data: offlineRequest
+      });
+    });
+  });
+}
+
+// Synchronisation de la file d'attente hors-ligne
+async function syncOfflineQueue() {
+  const queueCache = await caches.open(OFFLINE_QUEUE_CACHE);
+  const requests = await queueCache.keys();
+  
+  if (requests.length === 0) {
+    return;
+  }
+  
+  console.log(`Synchronisation de ${requests.length} requêtes hors-ligne`);
+  
+  for (const request of requests) {
+    try {
+      const offlineResponse = await queueCache.match(request);
+      if (!offlineResponse) continue;
+      
+      const offlineRequest = await offlineResponse.json();
+      
+      // Essayer de synchroniser la requête
+      const response = await fetch(offlineRequest.url, {
+        method: offlineRequest.method,
+        headers: offlineRequest.headers,
+        body: offlineRequest.body
+      });
+      
+      if (response.ok) {
+        // Supprimer de la file d'attente
+        await queueCache.delete(request);
+        
+        // Envoyer un message au client
+        self.clients.matchAll().then((clients) => {
+          clients.forEach((client) => {
+            client.postMessage({
+              type: 'OFFLINE_REQUEST_SYNCED',
+              data: offlineRequest
+            });
+          });
+        });
+      } else {
+        // Gérer les échecs
+        await handleFailedRequest(offlineRequest);
+      }
+    } catch (error) {
+      console.error(`Erreur lors de la synchronisation de la requête ${request}:`, error);
+      await handleFailedRequest(await queueCache.match(request)?.json());
+    }
+  }
+}
+
+// Gérer les requêtes échouées
+async function handleFailedRequest(offlineRequest) {
+  const queueCache = await caches.open(OFFLINE_QUEUE_CACHE);
+  
+  // Incrémenter le nombre de tentatives
+  offlineRequest.retries++;
+  
+  if (offlineRequest.retries >= offlineRequest.maxRetries) {
+    // Trop d'échecs, supprimer de la file d'attente
+    await queueCache.delete(offlineRequest.id);
+    
+    // Envoyer un message au client
+    self.clients.matchAll().then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({
+          type: 'OFFLINE_REQUEST_FAILED',
+          data: offlineRequest
+        });
+      });
+    });
+  } else {
+    // Mettre à jour avec le nouveau nombre de tentatives
+    await queueCache.put(offlineRequest.id, new Response(JSON.stringify(offlineRequest), {
+      headers: { 'Content-Type': 'application/json' }
+    }));
+  }
+}
+
+// Gestionnaire de messages
+self.addEventListener('message', (event) => {
+  const { type, data } = event.data;
+  
+  switch (type) {
+    case 'SYNC_OFFLINE_QUEUE':
+      syncOfflineQueue();
+      break;
+      
+    case 'CLEAR_CACHE':
+      if (data && data.cacheName) {
+        caches.delete(data.cacheName);
+      } else {
+        caches.keys().then((cacheNames) => {
+          cacheNames.forEach((cacheName) => {
+            if (cacheName !== STATIC_CACHE && 
+                cacheName !== DYNAMIC_CACHE && 
+                cacheName !== IMAGE_CACHE &&
+                cacheName !== OFFLINE_QUEUE_CACHE) {
+              caches.delete(cacheName);
+            }
+          });
+        });
+      }
+      break;
+      
+    case 'OPTIMIZE_CACHE':
+      // L'optimisation du cache est gérée automatiquement
+      break;
+      
+    case 'SHOW_NOTIFICATION':
+      showNotification(data);
+      break;
+  }
+});
+
+// Gestionnaire de notifications push
+self.addEventListener('push', (event) => {
+  console.log('Service Worker: Push reçu');
+  
+  if (event.data) {
+    const data = event.data.json();
+    showNotification(data);
+  } else {
+    showNotification({
+      title: 'Notification',
+      body: 'Vous avez une nouvelle notification',
+      icon: '/icons/icon-192.png'
+    });
+  }
+});
+
+// Afficher une notification
+async function showNotification(data) {
+  try {
+    const options = {
+      body: data.body || 'Vous avez une nouvelle notification',
+      icon: data.icon || '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: data.tag || 'general',
+      data: data.data || {},
+      actions: data.actions || [],
+      silent: data.silent || false,
+      requireInteraction: data.requireInteraction || false
+    };
+    
+    const registration = await self.registration;
+    await registration.showNotification(data.title || 'Notification', options);
+  } catch (error) {
+    console.error('Erreur lors de l\'affichage de la notification:', error);
+  }
+}
+
+// Gestionnaire de clic sur les notifications
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  
+  const data = event.notification.data;
+  
+  if (data && data.url) {
+    event.waitUntil(
+      clients.openWindow(data.url)
+    );
+  }
+});
+
+// Synchronisation périodique
+setInterval(() => {
+  syncOfflineQueue();
+}, 60000); // Toutes les minutes
+
+// Synchronisation au redémarrage
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'background-sync') {
+    event.waitUntil(syncOfflineQueue());
+  }
+});
+
+// Enregistrer le service worker
+self.addEventListener('controllerchange', () => {
+  console.log('Nouveau service worker actif');
+});

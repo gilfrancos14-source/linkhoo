@@ -34,7 +34,7 @@ async function unregisterAndPurge(): Promise<void> {
     if (typeof caches !== 'undefined') {
       const keys = await caches.keys();
       await Promise.all(
-        keys.filter((k) => k.startsWith('linkhoo-')).map((k) => caches.delete(k)),
+        keys.filter((k) => k.startsWith('linkhoo-') || k.startsWith('ilehya-')).map((k) => caches.delete(k)),
       );
     }
   } catch {
