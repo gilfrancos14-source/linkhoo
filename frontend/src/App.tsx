@@ -14,6 +14,9 @@ import RoleRouteGuard from './components/RoleRouteGuard';
 import AdminRouteGuard from './components/AdminRouteGuard';
 import LandingPage from './pages/LandingPage';
 import MaquettePage from './pages/MaquettePage';
+import './css/language-switcher.css';
+import './css/i18n-test.css';
+import './i18n/config'; // Initialise i18n au démarrage
 
 // Routes hors accueil : chargées à la demande pour ne pas embarquer Leaflet,
 // le back-office et l'espace gérant dans le premier chunk de la home.
@@ -30,6 +33,7 @@ const ClientMessagesPage = lazy(() => import('./pages/messages/ClientMessagesPag
 const LaisserAvisPage = lazy(() => import('./pages/LaisserAvisPage'));
 const ClientLogin = lazy(() => import('./pages/ClientLogin'));
 const RegisterRolePage = lazy(() => import('./pages/RegisterRolePage'));
+const I18nTestPage = lazy(() => import('./pages/I18nTestPage'));
 
 const AdminLayout = lazy(() => import('./pages/gerant/AdminLayout'));
 const DashboardPage = lazy(() => import('./pages/gerant/DashboardPage'));
@@ -269,6 +273,7 @@ function AppRoutes() {
             <Route path="/" element={<RootRedirect />} />
             <Route path="/a-propos" element={<AProposPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/i18n-test" element={<I18nTestPage />} />
             <Route path="/chambre/:id" element={<LegacyRoomRedirect />} />
             {adminSectionRoutes}
             <Route path="/:market/*" element={<MarketRoute />} />

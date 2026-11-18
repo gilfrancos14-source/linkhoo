@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from './icons';
 import type { Country } from './data';
+import LanguageSwitcher from '../LanguageSwitcher';
 
 export interface HeaderItem {
   readonly label: string;
@@ -97,6 +98,7 @@ export default function LandingHeader({
               <span>{account.label}</span>
             </Link>
           )}
+          <LanguageSwitcher compact />
           <button
             type="button"
             className="acc-icon-btn"

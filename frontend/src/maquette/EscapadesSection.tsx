@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { MarketCode } from '../config/markets';
 import type { EscapadeCard } from './viewModel';
 
@@ -8,6 +9,7 @@ interface EscapadesSectionProps {
 }
 
 export default function EscapadesSection({ market, cards }: EscapadesSectionProps) {
+  const { t } = useTranslation();
   if (cards.length === 0) return null;
 
   const search = (query: string) =>
@@ -21,10 +23,10 @@ export default function EscapadesSection({ market, cards }: EscapadesSectionProp
             <span className="text-orange-500">
               <i className="fa-solid fa-suitcase-rolling"></i>
             </span>
-            Escapades weekend
+            {t('escapades.title')}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Des idées de séjours pour vous évader le temps d'un week-end.
+            {t('escapades.subtitle')}
           </p>
         </div>
       </div>
@@ -38,14 +40,14 @@ export default function EscapadesSection({ market, cards }: EscapadesSectionProp
             >
               <div className="relative h-28 overflow-hidden">
                 <img
-                  alt={`Week-end à ${card.lieu}`}
+                  alt={t('escapades.weekendAt', { place: card.lieu })}
                   className="w-full h-full object-cover group-hover:scale-105 transition"
                   src={card.cover}
                   loading="lazy"
                 />
               </div>
               <div className="p-3">
-                <h4 className="text-xs font-bold text-slate-900">Week-end à {card.lieu}</h4>
+                <h4 className="text-xs font-bold text-slate-900">{t('escapades.weekendAt', { place: card.lieu })}</h4>
                 <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">{card.text}</p>
               </div>
             </Link>

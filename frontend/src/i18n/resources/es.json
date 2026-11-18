@@ -1,0 +1,237 @@
+{
+  "navigation": {
+    "home": "Inicio",
+    "services": "Servicios",
+    "contact": "Contacto",
+    "reservations": "Reservas",
+    "about": "Acerca de"
+  },
+  "categories": {
+    "title": "Apartamentos",
+    "sectionTitle": "Categorías",
+    "subtitle": "Encuentra fácilmente el tipo de alojamiento que te conviene.",
+    "property_one": "propiedad",
+    "property_other": "propiedades"
+  },
+  "events": {
+    "title": "Eventos",
+    "subtitle": "No te pierdas los eventos imprescindibles de tu región.",
+    "event_one": "evento",
+    "event_other": "eventos",
+    "close": "Cerrar evento",
+    "viewProperties": "Ver propiedades para este evento",
+    "prev": "Evento anterior",
+    "next": "Evento siguiente"
+  },
+  "tourism": {
+    "title": "Turismo",
+    "subtitle": "Descubre los tesoros de {{countryOf}}: naturaleza, cultura, historia y mucho más.",
+    "bannerAlt": "Playa y aventura en {{countryAt}}",
+    "badge": "Experiencias Únicas",
+    "headingStart": "Explora {{countryWithArticle}},",
+    "headingEnd": "una tierra de cultura y aventura.",
+    "description": "Playas paradisíacas, sitios históricos y una cultura rica te esperan para una estancia inolvidable.",
+    "sentence": "¡{{countrySentence}} te inspira!",
+    "beach": "Playas paradisíacas y naturaleza preservada",
+    "culture": "Cultura e historia excepcionales",
+    "gastronomy": "Gastronomía local deliciosa",
+    "featuredRegion": "Destinos destacados",
+    "slides": "Diapositivas",
+    "destination": "Destino {{index}}"
+  },
+  "reviews": {
+    "title": "Reseñas",
+    "subtitle": "Lo que nuestros viajeros dicen de su experiencia.",
+    "stayAt": "Estancia en {{city}}"
+  },
+  "home": {
+    "title": "Bienvenido a Ileyha Location",
+    "subtitle": "Alquiler de vehículos de lujo",
+    "searchPlaceholder": "Buscar un vehículo...",
+    "viewMore": "Ver más",
+    "featured": "Vehículos destacados",
+    "noResults": "No se encontraron resultados"
+  },
+  "promos": {
+    "title": "Ofertas promocionales",
+    "subtitle": "Descuentos increíbles en una selección de propiedades.",
+    "discountBanner": "Hasta -30% en algunos alojamientos",
+    "dontMiss": "¡No te pierdas esta oportunidad!",
+    "viewProperties": "Ver propiedades",
+    "noOffer": "Sin oferta",
+    "closeSelection": "Cerrar selección",
+    "noPromo": "Sin promoción activa",
+    "noProperty": "No hay propiedad disponible para esta oferta por el momento.",
+    "perNight": "/noche"
+  },
+  "popular": {
+    "title": "Nuestras propiedades más solicitadas",
+    "subtitle": "Los alojamientos más reservados por nuestros viajeros esta semana.",
+    "badge": "Popular",
+    "prev": "Propiedades anteriores",
+    "next": "Propiedades siguientes",
+    "removeFavorite": "Quitar {{title}} de favoritos",
+    "saveFavorite": "Guardar {{title}}"
+  },
+  "hero": {
+    "chooseDate": "Elige una fecha",
+    "countryView": "Vista de {{country}}",
+    "title": "Encuentra el lugar ideal para tu",
+    "titleHighlight": "próxima estancia",
+    "subtitle": "Apartamentos, casas, villas y mucho más. Descubre las mejores ofertas de alquiler {{countryPhrase}} y reserva con confianza.",
+    "emotion": "una tierra de emociones",
+    "tabStay": "Estancia",
+    "tabCar": "Alquiler de coche",
+    "whereTo": "¿A dónde quieres ir?",
+    "destinationPlaceholder": "Ciudad, barrio, hotel, etc.",
+    "arrival": "Llegada",
+    "departure": "Salida",
+    "search": "Buscar"
+  },
+  "services": {
+    "title": "Nuestros Servicios",
+    "subtitle": "Descubre nuestra oferta completa",
+    "carRental": "Alquiler de coches",
+    "luxuryCars": "Coches de lujo",
+    "suvRental": "SUV y 4x4",
+    "commercialVehicles": "Vehículos comerciales",
+    "description": "Descripción"
+  },
+  "contact": {
+    "title": "Contáctanos",
+    "subtitle": "Estamos aquí para ayudarte",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "message": "Mensaje",
+    "send": "Enviar",
+    "success": "¡Mensaje enviado con éxito!",
+    "error": "Ocurrió un error, por favor inténtalo de nuevo."
+  },
+  "reservations": {
+    "title": "Mis Reservas",
+    "subtitle": "Gestiona tus reservas",
+    "upcoming": "Reservas próximas",
+    "past": "Reservas pasadas",
+    "details": "Detalles",
+    "modify": "Modificar",
+    "cancel": "Cancelar"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Ocurrió un error",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "login": "Iniciar sesión",
+    "mySpace": "Mi espacio"
+  },
+  "pwa": {
+    "installPrompt": "Instalar la aplicación",
+    "offlineMode": "Modo sin conexión",
+    "syncData": "Sincronizar datos",
+    "notifications": "Notificaciones",
+    "cacheCleared": "Caché borrada"
+  },
+  "footer": {
+    "about": "Acerca de nosotros",
+    "services": "Servicios",
+    "contact": "Contacto",
+    "privacy": "Política de privacidad",
+    "terms": "Términos de uso",
+    "copyright": "© 2026 Ileyha Location. Todos los derechos reservados.",
+    "aboutText": "Habitaciones de hotel para tus escalas, apartamentos sin amueblar para tu día a día. Alquila y hospédate directamente, sin intermediarios.",
+    "email": "Correo:",
+    "pressTitle": "Hablan de nosotros",
+    "downloadApp": "Descargar la aplicación",
+    "downloadAppText": "Alquila, reserva e intercambia directamente. Nuestra app móvil llegará pronto.",
+    "comingSoon": "Próximamente en Google Play",
+    "newsletter": "Suscripción al boletín",
+    "newsletterLabel": "Tu dirección de correo",
+    "newsletterPlaceholder": "Tu dirección de correo electrónico",
+    "newsletterSubscribe": "Suscribirse al boletín",
+    "newsletterSending": "Enviando…",
+    "newsletterNote": "Nuevas propiedades y ofertas de estancia, una vez al mes.",
+    "newsletterQueued": "Suscripción guardada: se enviará al volver la conexión.",
+    "newsletterSuccess": "¡Gracias! Recibirás nuestras próximas ofertas.",
+    "newsletterEmailRequired": "Por favor, introduce tu dirección de correo.",
+    "newsletterEmailInvalid": "Dirección de correo inválida.",
+    "newsletterError": "Ocurrió un error. Por favor, inténtalo de nuevo.",
+    "trackReservation": "Seguir mi reserva",
+    "login": "Iniciar sesión",
+    "signup": "Registrarse",
+    "mySpace": "Mi espacio",
+    "legal": "Información legal",
+    "account": "Cuenta",
+    "aboutLink": "Acerca de",
+    "contactLink": "Contacto",
+    "legalNotice": "Aviso legal",
+    "privacyLink": "Política de privacidad",
+    "legal": "Información legal",
+    "landing": {
+      "platformDescription": "Linkhoo es la plataforma de alquiler directo en África Occidental. Miles de alojamientos para todas tus estancias.",
+      "mobileAppTitle": "Aplicación móvil",
+      "mobileAppDescription": "Descarga nuestra aplicación para una mejor experiencia.",
+      "appStore": "App Store",
+      "googlePlay": "Google Play",
+      "newsletterTitle": "Boletín",
+      "newsletterDescription": "Mantente informado sobre nuestras novedades y ofertas exclusivas.",
+      "legalLinksTitle": "Enlaces legales",
+      "cookies": "Cookies",
+      "accountTitle": "Cuenta",
+      "becomeHost": "Convertirse en anfitrión",
+      "help": "Ayuda",
+      "copyright": "© 2025 Linkhoo. Todos los derechos reservados."
+    },
+    "aria": {
+      "logo": "Linkhoo — volver al inicio",
+      "navigationMain": "Navegación principal",
+      "mobileMenu": "Menú móvil",
+      "socialMedia": "Redes sociales",
+      "facebook": "Linkhoo en Facebook",
+      "x": "Linkhoo en X",
+      "linkedin": "Linkhoo en LinkedIn",
+      "instagram": "Linkhoo en Instagram"
+    },
+    "logo": {
+      "alt": "Logo de Linkhoo"
+    },
+    "contact": {
+      "email": "contact@linkhoo.com"
+    },
+    "social": {
+      "facebook": "https://www.facebook.com/",
+      "x": "https://x.com/",
+      "linkedin": "https://www.linkedin.com/",
+      "instagram": "https://www.instagram.com/"
+    },
+    "press": {
+      "lancement-ci": {
+        "title": "Linkhoo acelera el alquiler directo en Costa de Marfil",
+        "date": "12 de marzo de 2026",
+        "source": "actu-abidjan.ci"
+      },
+      "levee-fonds": {
+        "title": "El proptech marfileño atrae a los inversores",
+        "date": "28 de enero de 2026",
+        "source": "techafrica.news"
+      },
+      "benin": {
+        "title": "En Benín, el alquiler sin intermediarios se democratiza",
+        "date": "5 de diciembre de 2025",
+        "source": "lanouvelletribune.bj"
+      }
+    }
+  },
+  "escapades": {
+    "title": "Escapadas de fin de semana",
+    "subtitle": "Ideas de viaje para escaparte un fin de semana.",
+    "weekendAt": "Fin de semana en {{place}}"
+  }
+}

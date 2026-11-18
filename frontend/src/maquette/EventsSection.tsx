@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { MarketCode } from '../config/markets';
 import MaquetteBannerCarousel from './MaquetteBannerCarousel';
 import type { BannerSlide, CityEventCard, FeaturedEvent } from './viewModel';
@@ -21,6 +22,7 @@ const CITY_BADGES = [
 export default function EventsSection({ market, cities, featuredEvents, banners }: EventsSectionProps) {
   const [index, setIndex] = useState(0);
   const [dismissed, setDismissed] = useState(false);
+  const { t } = useTranslation();
 
   if (cities.length === 0 && featuredEvents.length === 0 && banners.length === 0) return null;
 
@@ -69,10 +71,10 @@ export default function EventsSection({ market, cities, featuredEvents, banners 
             <span className="text-orange-500">
               <i className="fa-regular fa-calendar"></i>
             </span>
-            Événements
+            {t('events.title')}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Ne manquez pas les événements incontournables de votre région.
+            {t('events.subtitle')}
           </p>
         </div>
         <MaquetteBannerCarousel banners={banners} />
@@ -106,7 +108,7 @@ export default function EventsSection({ market, cities, featuredEvents, banners 
                 </div>
                 <p className="text-xs font-bold text-slate-900">{city.city}</p>
                 <p className="text-[10px] text-slate-400">
-                  {city.count} événement{city.count > 1 ? 's' : ''}
+                  {city.count} {t('events.event', { count: city.count })}
                 </p>
               </div>
             );
@@ -136,7 +138,7 @@ export default function EventsSection({ market, cities, featuredEvents, banners 
                   </span>
                   <button
                     type="button"
-                    aria-label="Fermer l'événement"
+                    aria-label={t('events.close')}
                     className="text-slate-400 hover:text-slate-600"
                     onClick={() => setDismissed(true)}
                   >
@@ -154,13 +156,13 @@ export default function EventsSection({ market, cities, featuredEvents, banners 
                   className="px-3 py-1.5 bg-[#0E1A2D] hover:bg-[#FF5E1E] !text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition"
                   to={search(featured.city)}
                 >
-                  <span>Voir les biens pour cet événement</span>
+                  <span>{t('events.viewProperties')}</span>
                   <i className="fa-solid fa-arrow-right text-[10px]"></i>
                 </Link>
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
                   <button
                     type="button"
-                    aria-label="Événement précédent"
+                    aria-label={t('events.prev')}
                     className="text-slate-300 hover:text-slate-600 disabled:opacity-50"
                     disabled={safeIndex <= 0}
                     onClick={() => setIndex(Math.max(0, safeIndex - 1))}
@@ -173,7 +175,7 @@ export default function EventsSection({ market, cities, featuredEvents, banners 
                   </span>
                   <button
                     type="button"
-                    aria-label="Événement suivant"
+                    aria-label={t('events.next')}
                     className="text-slate-600 hover:text-slate-900 disabled:opacity-50"
                     disabled={safeIndex >= featuredEvents.length - 1}
                     onClick={() =>

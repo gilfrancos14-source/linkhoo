@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import SectionHeading from './SectionHeading';
 import type { ReviewCard } from './viewModel';
 
@@ -6,14 +7,15 @@ interface ReviewsSectionProps {
 }
 
 export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
+  const { t } = useTranslation();
   if (reviews.length === 0) return null;
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" data-purpose="testimonials">
       <SectionHeading
         icon="fa-solid fa-star"
-        title="Avis"
-        subtitle="Ce que nos voyageurs disent de leur expérience."
+        title={t('reviews.title')}
+        subtitle={t('reviews.subtitle')}
       />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {reviews.map((review) => (
@@ -34,7 +36,7 @@ export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
               <div className="mt-3">
                 <h5 className="text-xs font-bold text-slate-900 leading-none">{review.name}</h5>
                 {review.city && (
-                  <span className="text-[10px] text-slate-400">Séjour à {review.city}</span>
+                  <span className="text-[10px] text-slate-400">{t('reviews.stayAt', { city: review.city })}</span>
                 )}
               </div>
             </div>

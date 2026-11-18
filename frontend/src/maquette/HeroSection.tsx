@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { COUNTRIES } from '../components/landing/data';
 import type { MarketCode } from '../config/markets';
 
@@ -7,11 +8,11 @@ interface HeroSectionProps {
   market: MarketCode;
 }
 
-function dateLabel(value: string): string {
-  if (!value) return 'Choisir une date';
+function dateLabel(value: string, emptyLabel: string, locale: string): string {
+  if (!value) return emptyLabel;
   const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return 'Choisir une date';
-  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  if (Number.isNaN(date.getTime())) return emptyLabel;
+  return date.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function openDatePicker(input: HTMLInputElement | null) {
@@ -30,10 +31,15 @@ function openDatePicker(input: HTMLInputElement | null) {
 
 export default function HeroSection({ market }: HeroSectionProps) {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const country = COUNTRIES.find((item) => item.code === market) ?? COUNTRIES[0];
-  const countryPhrase = ['CI', 'GN', 'CD'].includes(market)
-    ? `en ${country.label}`
-    : `au ${country.label}`;
+  const lang = (i18n.language || 'fr').split('-')[0];
+  const countryPhrase = lang === 'fr'
+    ? (['CI', 'GN', 'CD'].includes(market) ? `en ${country.label}` : `au ${country.label}`)
+    : lang === 'es'
+      ? `en ${country.label}`
+      : `in ${country.label}`;
+  const locale = lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR';
   const [destination, setDestination] = useState('');
   const [arrivee, setArrivee] = useState('');
   const [depart, setDepart] = useState('');
@@ -57,7 +63,7 @@ export default function HeroSection({ market }: HeroSectionProps) {
     >
       <div className="absolute inset-0 z-0">
         <img
-          alt={`Vue de ${country.label}`}
+          alt={t('hero.countryView', { country: country.label })}
           className="w-full h-full object-cover object-center filter brightness-[0.78]"
           src="/images/hero-city.webp"
           srcSet="/images/hero-city-800.webp 800w, /images/hero-city.webp 1280w"
@@ -76,18 +82,17 @@ export default function HeroSection({ market }: HeroSectionProps) {
             <span>{country.label}</span>
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-[2.6rem] font-extrabold leading-[1.15] tracking-tight">
-            Trouvez le lieu idéal pour votre <span className="text-[#FF7A00]">prochain séjour</span>
+            {t('hero.title')} <span className="text-[#FF7A00]">{t('hero.titleHighlight')}</span>
           </h1>
           <p className="mt-4 text-base sm:text-lg text-slate-200 font-normal leading-relaxed max-w-2xl">
-            Appartements, maisons, villas et bien plus encore. Découvrez les meilleures offres de
-            location {countryPhrase} et réservez en toute confiance.
+            {t('hero.subtitle', { countryPhrase })}
           </p>
         </div>
         <div className="absolute right-8 top-16 hidden lg:block text-right select-none pointer-events-none transform -rotate-6">
           <p className="font-handwriting text-3xl sm:text-4xl text-white font-bold drop-shadow-lg tracking-wide">
             {country.label},
             <br />
-            <span className="text-2xl text-amber-200">une terre d'émotions</span>
+            <span className="text-2xl text-amber-200">{t('hero.emotion')}</span>
           </p>
         </div>
         <div className="mt-5" data-purpose="hero-search-tabs">
@@ -97,14 +102,14 @@ export default function HeroSection({ market }: HeroSectionProps) {
               className="bg-[#FF5E1E] text-white px-6 py-2.5 min-h-[44px] text-xs sm:text-sm font-bold flex items-center gap-2"
             >
               <i className="fa-solid fa-umbrella-beach"></i>
-              <span>Séjour</span>
+              <span>{t('hero.tabStay')}</span>
             </button>
             <button
               type="button"
               className="bg-white/95 hover:bg-white text-slate-700 px-6 py-2.5 min-h-[44px] text-xs sm:text-sm font-semibold flex items-center gap-2 transition backdrop-blur-sm"
             >
               <i className="fa-solid fa-car"></i>
-              <span>Voiture de location</span>
+              <span>{t('hero.tabCar')}</span>
             </button>
           </div>
           <form
@@ -118,12 +123,12 @@ export default function HeroSection({ market }: HeroSectionProps) {
                   className="block text-xs font-bold text-slate-800 leading-none mb-1"
                   htmlFor="maquette-destination"
                 >
-                  Où voulez-vous aller ?
+                  {t('hero.whereTo')}
                 </label>
                 <input
                   id="maquette-destination"
                   className="w-full p-0 text-base text-slate-600 font-medium placeholder-slate-400 border-none focus:ring-0"
-                  placeholder="Ville, quartier, hôtel, etc."
+                  placeholder={t('hero.destinationPlaceholder')}
                   type="text"
                   value={destination}
                   onChange={(event) => setDestination(event.target.value)}
@@ -134,7 +139,7 @@ export default function HeroSection({ market }: HeroSectionProps) {
               <i className="fa-regular fa-calendar-days text-slate-400 text-lg"></i>
               <div className="w-full">
                 <label className="block text-xs font-bold text-slate-800 leading-none mb-1" htmlFor="maquette-arrivee">
-                  Arrivée
+                  {t('hero.arrival')}
                 </label>
                 <button
                   type="button"
@@ -142,7 +147,7 @@ export default function HeroSection({ market }: HeroSectionProps) {
                   className="block min-h-[44px] inline-flex items-center text-xs text-slate-500 font-medium cursor-pointer text-left"
                   onClick={() => openDatePicker(arriveeRef.current)}
                 >
-                  {dateLabel(arrivee)}
+                  {dateLabel(arrivee, t('hero.chooseDate'), locale)}
                 </button>
                 <input
                   ref={arriveeRef}
@@ -158,7 +163,7 @@ export default function HeroSection({ market }: HeroSectionProps) {
               <i className="fa-regular fa-calendar-days text-slate-400 text-lg"></i>
               <div className="w-full">
                 <label className="block text-xs font-bold text-slate-800 leading-none mb-1" htmlFor="maquette-depart">
-                  Départ
+                  {t('hero.departure')}
                 </label>
                 <button
                   type="button"
@@ -166,7 +171,7 @@ export default function HeroSection({ market }: HeroSectionProps) {
                   className="block min-h-[44px] inline-flex items-center text-xs text-slate-500 font-medium cursor-pointer text-left"
                   onClick={() => openDatePicker(departRef.current)}
                 >
-                  {dateLabel(depart)}
+                  {dateLabel(depart, t('hero.chooseDate'), locale)}
                 </button>
                 <input
                   ref={departRef}
@@ -184,7 +189,7 @@ export default function HeroSection({ market }: HeroSectionProps) {
                 className="w-full h-12 bg-[#FF5E1E] hover:bg-[#ea4f11] text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm shadow-md shadow-orange-500/30 transition"
               >
                 <i className="fa-solid fa-magnifying-glass"></i>
-                <span>Rechercher</span>
+                <span>{t('hero.search')}</span>
               </button>
             </div>
           </form>

@@ -1,4 +1,5 @@
 import MaquetteBannerCarousel from './MaquetteBannerCarousel';
+import { useTranslation } from 'react-i18next';
 import type { BannerSlide, CategoryCard } from './viewModel';
 
 interface CategoriesSectionProps {
@@ -24,6 +25,7 @@ const GRID_BY_COUNT: Record<number, string> = {
 };
 
 export default function CategoriesSection({ cards, banners }: CategoriesSectionProps) {
+  const { t } = useTranslation();
   if (cards.length === 0 && banners.length === 0) return null;
 
   const gridCols = GRID_BY_COUNT[cards.length] ?? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6';
@@ -36,10 +38,10 @@ export default function CategoriesSection({ cards, banners }: CategoriesSectionP
             <span className="text-orange-500">
               <i className="fa-solid fa-shapes"></i>
             </span>
-            Catégories
+            {t('categories.sectionTitle')}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Trouvez facilement le type de logement qui vous correspond.
+            {t('categories.subtitle')}
           </p>
         </div>
         <MaquetteBannerCarousel banners={banners} />
@@ -70,7 +72,7 @@ export default function CategoriesSection({ cards, banners }: CategoriesSectionP
                 </div>
                 <p className="text-xs font-bold text-slate-900">{card.title}</p>
                 <p className="text-[10px] text-slate-400">
-                  {card.count} bien{card.count > 1 ? 's' : ''}
+                  {card.count} {t('categories.property', { count: card.count })}
                 </p>
               </div>
             );

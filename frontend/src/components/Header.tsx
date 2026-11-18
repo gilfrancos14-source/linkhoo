@@ -5,6 +5,8 @@ import { isRootPath, useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
 import { useEspace } from '../hooks/useEspace';
 import MarketSelector from './MarketSelector';
+import LanguageSwitcher from './LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkConfigured = Boolean(clerkKey && clerkKey.startsWith('pk_'));
@@ -27,28 +29,30 @@ interface NavItem {
 }
 
 const NAV_ITEMS: readonly NavItem[] = [
-  { id: 'accueil', label: 'Accueil' },
-  { id: 'categories', label: 'Appartements' },
-  { id: 'evenements', label: 'Événements' },
-  { id: 'tourisme', label: 'Tourisme' },
-  { id: 'avis', label: 'Avis' },
+  { id: 'accueil', label: 'navigation.home' },
+  { id: 'categories', label: 'categories.title' },
+  { id: 'evenements', label: 'events.title' },
+  { id: 'tourisme', label: 'tourism.title' },
+  { id: 'avis', label: 'reviews.title' },
 ];
 
 const LANDING_NAV_ITEMS: readonly NavItem[] = [
-  { id: 'accueil', label: 'Accueil' },
-  { id: 'a-propos', label: 'À propos', route: '/a-propos' },
-  { id: 'contact', label: 'Contact', route: '/contact' },
+  { id: 'accueil', label: 'navigation.home' },
+  { id: 'a-propos', label: 'navigation.about', route: '/a-propos' },
+  { id: 'contact', label: 'navigation.contact', route: '/contact' },
 ];
 
 function LoginButton({ market }: { market: string }) {
+  const { t } = useTranslation();
+  
   return (
     <Link
       to={`/${market.toLowerCase()}/login`}
       className="header-btn header-btn--login"
-      aria-label="Se connecter"
+      aria-label={t('common.login')}
     >
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      <span className="header-btn__label">Se connecter</span>
+      <span className="header-btn__label">{t('common.login')}</span>
     </Link>
   );
 }
@@ -56,6 +60,7 @@ function LoginButton({ market }: { market: string }) {
 function HeaderAuthActions({ market }: { market: string }) {
   const { isLoaded, isSignedIn } = useAuth();
   const { resolve, loading } = useEspace();
+  const { t } = useTranslation();
 
   if (!isLoaded) return null;
   if (!isSignedIn) return <LoginButton market={market} />;
@@ -64,12 +69,12 @@ function HeaderAuthActions({ market }: { market: string }) {
     <button
       type="button"
       className="header-btn header-btn--espace"
-      aria-label="Mon espace"
+      aria-label={t('common.mySpace')}
       disabled={loading}
       onClick={() => void resolve()}
     >
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      <span className="header-btn__label">Mon espace</span>
+      <span className="header-btn__label">{t('common.mySpace')}</span>
     </button>
   );
 }
@@ -81,6 +86,7 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const menuRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
 
   // Pages racine : navigation réduite, pas de bouton de connexion.
   // Pages de marché : navigation complète + « Se connecter » dans la barre.
@@ -183,7 +189,7 @@ export default function Header() {
           location.pathname === item.route ? 'page' : undefined
         }
       >
-        {item.label}
+        {t(item.label)}
       </Link>
     ) : (
       <button
@@ -191,7 +197,7 @@ export default function Header() {
         className={className}
         onClick={() => handleNav(item.id)}
       >
-        {item.label}
+        {t(item.label)}
       </button>
     );
 
@@ -201,12 +207,12 @@ export default function Header() {
         <Link
           to={isLanding ? '/' : homePath}
           className="logo"
-          aria-label="Linkhoo — retour à l'accueil"
+          aria-label={t('footer.aria.logo')}
         >
-          <img className="logo__mark logo__img" src="/logo.jpg" alt="Logo Linkhoo" width="64" height="64" loading="eager" fetchPriority="high" />
+          <img className="logo__mark logo__img" src="/logo.jpg" alt={t('logo.alt')} width="64" height="64" loading="eager" fetchPriority="high" />
         </Link>
 
-        <nav className="header-nav" aria-label="Navigation principale">
+        <nav className="header-nav" aria-label={t('footer.aria.navigationMain')}>
           <ul className="header-nav__list">
             {navItems.map((item) => (
               <li key={item.id}>{renderNavItem(item, 'header-nav__link')}</li>
@@ -216,6 +222,7 @@ export default function Header() {
 
         <div className="header-actions">
           <MarketSelector />
+          <LanguageSwitcher />
           {!isLanding &&
             (clerkConfigured ? (
               <HeaderAuthActions market={market} />
@@ -247,9 +254,9 @@ export default function Header() {
         id="mobile-menu"
         aria-hidden={!menuOpen}
         role="dialog"
-        aria-label="Menu de navigation"
+        aria-label={t('footer.aria.mobileMenu')}
       >
-        <nav className="mobile-menu__nav" aria-label="Menu mobile">
+        <nav className="mobile-menu__nav" aria-label={t('footer.aria.mobileMenu')}>
           <ul className="mobile-menu__list">
             {navItems.map((item) => (
               <li key={item.id}>{renderNavItem(item, 'mobile-menu__link')}</li>

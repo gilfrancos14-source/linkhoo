@@ -1,13 +1,14 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from './icons';
+import PWAControlPanel from '../PWAControlPanel';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useMarket } from '../../contexts/MarketContext';
 import { apiNewsletter } from '../../lib/api';
 import { isValidEmail } from '../../utils/validators';
+import { useTranslation } from 'react-i18next';
 
-const DEFAULT_NOTE =
-  'Nouveaux biens disponibles et offres de séjour, une fois par mois.';
+
 
 const SOCIALS = [
   { name: 'facebook' as const, label: 'Facebook' },
@@ -18,10 +19,11 @@ const SOCIALS = [
 ];
 
 export default function LandingFooter() {
+  const { t } = useTranslation();
   const homePath = useHomePath();
   const { market } = useMarket();
   const [email, setEmail] = useState('');
-  const [note, setNote] = useState(DEFAULT_NOTE);
+  const [note, setNote] = useState(t('footer.newsletterNote'));
   const [emailError, setEmailError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -31,11 +33,11 @@ export default function LandingFooter() {
     const value = email.trim();
 
     if (!value) {
-      setEmailError('Veuillez entrer votre adresse email.');
+      setEmailError(t('footer.newsletterEmailRequired'));
       return;
     }
     if (!isValidEmail(value)) {
-      setEmailError('Adresse email invalide.');
+      setEmailError(t('footer.newsletterEmailInvalid'));
       return;
     }
 
@@ -45,10 +47,10 @@ export default function LandingFooter() {
     try {
       await apiNewsletter.subscribe({ email: value, market });
       setEmail('');
-      setNote('Merci ! Vous recevrez nos prochaines offres.');
+      setNote(t('footer.newsletterSuccess'));
     } catch (err) {
       setSubmitError(
-        err instanceof Error ? err.message : 'Une erreur est survenue. Veuillez réessayer.',
+        err instanceof Error ? err.message : t('footer.newsletterError'),
       );
     } finally {
       setSubmitting(false);
@@ -67,8 +69,7 @@ export default function LandingFooter() {
               <span className="acc-footer__name">Linkhoo</span>
             </div>
             <p className="acc-footer__desc">
-              Linkhoo est la plateforme de location directe en Afrique de l&apos;Ouest. Des milliers
-              de logements pour tous vos séjours.
+              {t('footer.landing.platformDescription')}
             </p>
             <div className="acc-footer__socials">
               {SOCIALS.map((social) => (
@@ -83,26 +84,26 @@ export default function LandingFooter() {
           </div>
 
           <div>
-            <h3>Application mobile</h3>
+            <h3>{t('footer.landing.mobileAppTitle')}</h3>
             <p className="acc-footer__text">
-              Téléchargez notre application pour une meilleure expérience.
+              {t('footer.landing.mobileAppDescription')}
             </p>
             <div className="acc-store">
               <span className="acc-store__btn">
                 <Icon name="apple" size={14} />
-                App Store
+                {t('footer.landing.appStore')}
               </span>
               <span className="acc-store__btn">
                 <Icon name="play" size={12} className="acc-play" />
-                Google Play
+                {t('footer.landing.googlePlay')}
               </span>
             </div>
           </div>
 
           <div>
-            <h3>Newsletter</h3>
+            <h3>{t('footer.landing.newsletterTitle')}</h3>
             <p className="acc-footer__text">
-              Restez informé de nos nouveautés et offres exclusives.
+              {t('footer.landing.newsletterDescription')}
             </p>
             <form
               id="newsletter-form"
@@ -114,8 +115,8 @@ export default function LandingFooter() {
                 id="newsletter-email"
                 name="newsletter-email"
                 type="email"
-                placeholder="Votre adresse e-mail"
-                aria-label="Votre adresse e-mail"
+                placeholder={t('footer.newsletterPlaceholder')}
+                aria-label={t('footer.newsletterLabel')}
                 aria-describedby={
                   emailError || submitError ? 'newsletter-error' : undefined
                 }
@@ -127,7 +128,7 @@ export default function LandingFooter() {
               />
               <button
                 type="submit"
-                aria-label="S'abonner à la newsletter"
+                aria-label={t('footer.newsletterSubscribe')}
                 disabled={submitting}
               >
                 <Icon name="send" size={12} />
@@ -144,47 +145,50 @@ export default function LandingFooter() {
           </div>
 
           <div>
-            <nav className="acc-footer__legal" aria-label="Informations légales">
-              <h3>Liens légaux</h3>
+            <nav className="acc-footer__legal" aria-label={t('footer.aria.navigationMain')}>
+              <h3>{t('footer.landing.legalLinksTitle')}</h3>
               <ul className="acc-footer__list">
                 <li>
-                  <Link to="/a-propos">À propos</Link>
+                  <Link to="/a-propos">{t('footer.aboutLink')}</Link>
                 </li>
                 <li>
-                  <Link to="/contact">Contact</Link>
+                  <Link to="/contact">{t('footer.contactLink')}</Link>
                 </li>
-                <li>Conditions d&apos;utilisation</li>
+                <li>{t('footer.terms')}</li>
                 <li>
                   <Link to={`${homePath}/politique-de-confidentialite`}>
-                    Politique de confidentialité
+                    {t('footer.privacyLink')}
                   </Link>
                 </li>
                 <li>
-                  <Link to={`${homePath}/mentions-legales`}>Mentions légales</Link>
+                  <Link to={`${homePath}/mentions-legales`}>{t('footer.legalNotice')}</Link>
                 </li>
-                <li>Cookies</li>
+                <li>{t('footer.landing.cookies')}</li>
               </ul>
             </nav>
           </div>
 
           <div>
-            <h3>Compte</h3>
+            <h3>{t('footer.landing.accountTitle')}</h3>
             <ul className="acc-footer__list">
               <li>
-                <Link to="/ci/login">Se connecter</Link>
+                <Link to="/ci/login">{t('footer.login')}</Link>
               </li>
               <li>
-                <Link to="/ci/inscription">S&apos;inscrire</Link>
+                <Link to="/ci/inscription">{t('footer.signup')}</Link>
               </li>
               <li>
-                <Link to="/ci/inscription/gerant">Devenir hôte</Link>
+                <Link to="/ci/inscription/gerant">{t('footer.landing.becomeHost')}</Link>
               </li>
-              <li>Aide</li>
+              <li>{t('footer.landing.help')}</li>
             </ul>
           </div>
         </div>
 
-        <p className="acc-footer__copy">© 2025 Linkhoo. Tous droits réservés.</p>
+        <div className="acc-footer__bottom">
+          <p className="acc-footer__copy">{t('footer.landing.copyright')}</p>
+          <PWAControlPanel variant="inline" autoShow={false} />
+        </div>
       </div>
     </footer>
   );

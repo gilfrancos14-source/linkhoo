@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { MarketCode } from '../config/markets';
 import { useFavorites } from '../contexts/FavoritesContext';
 import MaquetteBannerCarousel from './MaquetteBannerCarousel';
@@ -12,6 +13,7 @@ interface PopularSectionProps {
 
 export default function PopularSection({ market, cards, banners }: PopularSectionProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { isFavorite, toggle, signedIn } = useFavorites();
 
   const toggleFavorite = (id: string) => {
@@ -34,10 +36,10 @@ export default function PopularSection({ market, cards, banners }: PopularSectio
             <span className="text-orange-500">
               <i className="fa-solid fa-fire"></i>
             </span>
-            Nos biens les plus demandés
+            {t('popular.title')}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Les logements les plus réservés par nos voyageurs cette semaine.
+            {t('popular.subtitle')}
           </p>
         </div>
         {banners.length > 0 && <MaquetteBannerCarousel banners={banners} />}
@@ -46,7 +48,7 @@ export default function PopularSection({ market, cards, banners }: PopularSectio
         <div className="relative">
         <button
           type="button"
-          aria-label="Biens précédents"
+          aria-label={t('popular.prev')}
           className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white shadow-md border border-slate-200 hidden md:flex items-center justify-center text-slate-600 hover:bg-slate-50"
         >
           <i className="fa-solid fa-chevron-left text-xs"></i>
@@ -76,11 +78,11 @@ export default function PopularSection({ market, cards, banners }: PopularSectio
                   />
                 )}
                 <span className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                  Populaire
+                  {t('popular.badge')}
                 </span>
                 <button
                   type="button"
-                  aria-label={isFavorite(card.id) ? `Retirer ${card.title} des favoris` : `Sauvegarder ${card.title}`}
+                  aria-label={isFavorite(card.id) ? t('popular.removeFavorite', { title: card.title }) : t('popular.saveFavorite', { title: card.title })}
                   aria-pressed={isFavorite(card.id)}
                   className={`absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/80 hover:bg-white text-slate-700 flex items-center justify-center transition ${isFavorite(card.id) ? 'text-red-500' : ''}`}
                   onClick={(event) => {
@@ -120,7 +122,7 @@ export default function PopularSection({ market, cards, banners }: PopularSectio
         </div>
         <button
           type="button"
-          aria-label="Biens suivants"
+          aria-label={t('popular.next')}
           className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white shadow-md border border-slate-200 hidden md:flex items-center justify-center text-slate-600 hover:bg-slate-50"
         >
           <i className="fa-solid fa-chevron-right text-xs"></i>

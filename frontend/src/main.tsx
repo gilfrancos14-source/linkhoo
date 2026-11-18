@@ -11,6 +11,8 @@ import '@fontsource/poppins/700.css';
 import '@fontsource/poppins/800.css';
 import './index.css';
 import App from './App.tsx'
+import { I18nextProvider } from 'react-i18next'
+import i18n from './i18n/config'
 import { prefetchCommonRouteChunks } from './lib/prefetchRoutes'
 import { registerServiceWorker } from './lib/swRegister'
 
@@ -49,7 +51,9 @@ function Root() {
     <MotionConfig reducedMotion="user">
       <BrowserRouter>
         <ClerkShell>
-          <App />
+          <I18nextProvider i18n={i18n}>
+            <App />
+          </I18nextProvider>
         </ClerkShell>
       </BrowserRouter>
     </MotionConfig>

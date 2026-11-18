@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { COUNTRIES } from '../components/landing/data';
 import type { MarketCode } from '../config/markets';
 import type { TourismCard, TourismView } from './viewModel';
@@ -9,14 +10,28 @@ interface TourismSectionProps {
 }
 
 export default function TourismSection({ market, view }: TourismSectionProps) {
+  const { t, i18n } = useTranslation();
   if (!view) return null;
 
   const country = COUNTRIES.find((item) => item.code === market) ?? COUNTRIES[0];
+  const lang = (i18n.language || 'fr').split('-')[0];
   const feminine = ['CI', 'GN', 'CD'].includes(market);
-  const countryOf = feminine ? `de la ${country.label}` : `du ${country.label}`;
-  const countryWithArticle = feminine ? `la ${country.label}` : `le ${country.label}`;
-  const countryAt = feminine ? `en ${country.label}` : `au ${country.label}`;
-  const countrySentence = `${feminine ? 'La' : 'Le'} ${country.label}`;
+  const countryOf = lang === 'fr'
+    ? (feminine ? `de la ${country.label}` : `du ${country.label}`)
+    : lang === 'es'
+      ? `de ${country.label}`
+      : `of ${country.label}`;
+  const countryWithArticle = lang === 'fr'
+    ? (feminine ? `la ${country.label}` : `le ${country.label}`)
+    : country.label;
+  const countryAt = lang === 'fr'
+    ? (feminine ? `en ${country.label}` : `au ${country.label}`)
+    : lang === 'es'
+      ? `en ${country.label}`
+      : `in ${country.label}`;
+  const countrySentence = lang === 'fr'
+    ? `${feminine ? 'La' : 'Le'} ${country.label}`
+    : country.label;
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" data-purpose="tourism-section">
@@ -26,10 +41,10 @@ export default function TourismSection({ market, view }: TourismSectionProps) {
             <span className="text-orange-500">
               <i className="fa-solid fa-compass"></i>
             </span>
-            Tourisme
+            {t('tourism.title')}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Découvrez les trésors {countryOf} : nature, culture, histoire et bien plus encore.
+            {t('tourism.subtitle', { countryOf })}
           </p>
         </div>
       </div>
@@ -37,7 +52,7 @@ export default function TourismSection({ market, view }: TourismSectionProps) {
         <div className="lg:col-span-7 rounded-3xl overflow-hidden relative shadow-lg min-h-[300px] flex flex-col justify-end p-6 sm:p-8 text-white">
           {view.bannerImage && (
             <img
-              alt={`Plage et aventure ${countryAt}`}
+              alt={t('tourism.bannerAlt', { countryAt })}
               className="absolute inset-0 w-full h-full object-cover"
               src={view.bannerImage}
               loading="lazy"
@@ -46,37 +61,36 @@ export default function TourismSection({ market, view }: TourismSectionProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/40 to-transparent"></div>
           <div className="relative z-10 max-w-xl">
             <span className="inline-block px-2.5 py-0.5 bg-[#FF5E1E] text-white text-[10px] font-bold uppercase tracking-wider rounded-md mb-2">
-              Expériences Uniques
+              {t('tourism.badge')}
             </span>
             <h3 className="text-2xl sm:text-3xl font-extrabold leading-tight">
-              Explorez {countryWithArticle},
+              {t('tourism.headingStart', { countryWithArticle })}
               <br />
-              une terre de culture et d'aventure.
+              {t('tourism.headingEnd')}
             </h3>
             <p className="text-xs sm:text-sm text-slate-200 mt-2">
-              Des plages paradisiaques, des sites historiques et une culture riche vous attendent
-              pour un séjour inoubliable.
+              {t('tourism.description')}
             </p>
             <p className="font-handwriting text-xl text-amber-300 mt-1">
-              {countrySentence} vous inspire !
+              {t('tourism.sentence', { countrySentence })}
             </p>
             <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/20 text-center sm:text-left">
               <div className="flex items-center gap-2">
                 <i className="fa-solid fa-umbrella-beach text-[#FF5E1E] text-lg"></i>
                 <span className="text-[10px] font-medium text-slate-200">
-                  Plages paradisiaques et nature préservée
+                  {t('tourism.beach')}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <i className="fa-solid fa-monument text-[#FF5E1E] text-lg"></i>
                 <span className="text-[10px] font-medium text-slate-200">
-                  Culture et histoire exceptionnelles
+                  {t('tourism.culture')}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <i className="fa-solid fa-utensils text-[#FF5E1E] text-lg"></i>
                 <span className="text-[10px] font-medium text-slate-200">
-                  Gastronomie locale savoureuse
+                  {t('tourism.gastronomy')}
                 </span>
               </div>
             </div>
@@ -90,6 +104,7 @@ export default function TourismSection({ market, view }: TourismSectionProps) {
 
 function TourismHighlights({ view }: { view: TourismView }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     setSelectedId(null);
@@ -105,7 +120,7 @@ function TourismHighlights({ view }: { view: TourismView }) {
         <div
           className="flex flex-1 flex-col min-h-[176px] bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
           role="region"
-          aria-label="Destinations mises en avant"
+          aria-label={t('tourism.featuredRegion')}
         >
           <TourismFeaturedCard card={selectedCard} />
         </div>
@@ -139,7 +154,7 @@ function TourismHighlights({ view }: { view: TourismView }) {
                 )}
                 <p className="text-[11px] font-bold text-slate-900">{card.title}</p>
                 <p className="text-[9px] text-slate-400">
-                  {card.count} bien{card.count > 1 ? 's' : ''}
+                  {card.count} {t('categories.property', { count: card.count })}
                 </p>
               </button>
             );
@@ -151,6 +166,7 @@ function TourismHighlights({ view }: { view: TourismView }) {
 }
 
 function TourismFeaturedCard({ card }: { card: TourismCard }) {
+  const { t } = useTranslation();
   return (
     <div className="w-full flex-1 p-3 flex items-center gap-4">
       {card.image && (
@@ -164,7 +180,7 @@ function TourismFeaturedCard({ card }: { card: TourismCard }) {
       <div className="flex-1">
         <h4 className="text-sm font-bold text-slate-900">{card.title}</h4>
         <p className="text-xs text-slate-400">
-          {card.count} bien{card.count > 1 ? 's' : ''}
+          {card.count} {t('categories.property', { count: card.count })}
         </p>
         <p className="text-[11px] text-slate-500 mt-1 leading-snug">{card.text}</p>
       </div>
@@ -179,6 +195,7 @@ function TourismCarousel({ cards }: { cards: TourismCard[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [active, setActive] = useState(0);
+  const { t } = useTranslation();
 
   const total = cards.length;
 
@@ -250,7 +267,7 @@ function TourismCarousel({ cards }: { cards: TourismCard[] }) {
     <div
       className="relative flex flex-1 flex-col min-h-[176px] bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"
       role="region"
-      aria-label="Destinations mises en avant"
+      aria-label={t('tourism.featuredRegion')}
       onMouseEnter={stopAuto}
       onMouseLeave={startAuto}
       onTouchStart={stopAuto}
@@ -272,7 +289,7 @@ function TourismCarousel({ cards }: { cards: TourismCard[] }) {
         <div
           className="absolute bottom-2 right-3 flex items-center gap-1.5"
           role="tablist"
-          aria-label="Diapositives"
+          aria-label={t('tourism.slides')}
         >
           {cards.map((card, index) => (
             <button
@@ -281,7 +298,7 @@ function TourismCarousel({ cards }: { cards: TourismCard[] }) {
               className={`w-1.5 h-1.5 rounded-full transition ${
                 index === active ? 'bg-slate-800 scale-125' : 'bg-slate-300'
               }`}
-              aria-label={`Destination ${index + 1}`}
+              aria-label={t('tourism.destination', { index: index + 1 })}
               aria-selected={index === active}
               role="tab"
               onClick={() => {

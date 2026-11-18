@@ -1,0 +1,237 @@
+{
+  "navigation": {
+    "home": "Home",
+    "services": "Services",
+    "contact": "Contact",
+    "reservations": "Reservations",
+    "about": "About"
+  },
+  "categories": {
+    "title": "Apartments",
+    "sectionTitle": "Categories",
+    "subtitle": "Easily find the type of accommodation that suits you.",
+    "property_one": "property",
+    "property_other": "properties"
+  },
+  "events": {
+    "title": "Events",
+    "subtitle": "Don't miss the must-see events in your region.",
+    "event_one": "event",
+    "event_other": "events",
+    "close": "Close event",
+    "viewProperties": "View properties for this event",
+    "prev": "Previous event",
+    "next": "Next event"
+  },
+  "escapades": {
+    "title": "Weekend getaways",
+    "subtitle": "Trip ideas to escape for a weekend.",
+    "weekendAt": "Weekend in {{place}}"
+  },
+  "tourism": {
+    "title": "Tourism",
+    "subtitle": "Discover the treasures of {{countryOf}}: nature, culture, history and much more.",
+    "bannerAlt": "Beach and adventure in {{countryAt}}",
+    "badge": "Unique Experiences",
+    "headingStart": "Explore {{countryWithArticle}},",
+    "headingEnd": "a land of culture and adventure.",
+    "description": "Paradise beaches, historical sites and a rich culture await you for an unforgettable stay.",
+    "sentence": "{{countrySentence}} will inspire you!",
+    "beach": "Paradise beaches and preserved nature",
+    "culture": "Exceptional culture and history",
+    "gastronomy": "Delicious local gastronomy",
+    "featuredRegion": "Featured destinations",
+    "slides": "Slides",
+    "destination": "Destination {{index}}"
+  },
+  "reviews": {
+    "title": "Reviews",
+    "subtitle": "What our travelers say about their experience.",
+    "stayAt": "Stay in {{city}}"
+  },
+  "home": {
+    "title": "Welcome to Ileyha Location",
+    "subtitle": "Luxury Vehicle Rentals",
+    "searchPlaceholder": "Search for a vehicle...",
+    "viewMore": "View More",
+    "featured": "Featured Vehicles",
+    "noResults": "No results found"
+  },
+  "promos": {
+    "title": "Promotional offers",
+    "subtitle": "Amazing discounts on a selection of properties.",
+    "discountBanner": "Up to -30% on some accommodations",
+    "dontMiss": "Don't miss this opportunity!",
+    "viewProperties": "View properties",
+    "noOffer": "No offer",
+    "closeSelection": "Close selection",
+    "noPromo": "No active promotion",
+    "noProperty": "No property available for this offer at the moment.",
+    "perNight": "/night"
+  },
+  "popular": {
+    "title": "Our most requested properties",
+    "subtitle": "The accommodations most booked by our travelers this week.",
+    "badge": "Popular",
+    "prev": "Previous properties",
+    "next": "Next properties",
+    "removeFavorite": "Remove {{title}} from favorites",
+    "saveFavorite": "Save {{title}}"
+  },
+  "hero": {
+    "chooseDate": "Choose a date",
+    "countryView": "View of {{country}}",
+    "title": "Find the ideal place for your",
+    "titleHighlight": "next stay",
+    "subtitle": "Apartments, houses, villas and much more. Discover the best rental offers {{countryPhrase}} and book with confidence.",
+    "emotion": "a land of emotions",
+    "tabStay": "Stay",
+    "tabCar": "Car rental",
+    "whereTo": "Where do you want to go?",
+    "destinationPlaceholder": "City, neighborhood, hotel, etc.",
+    "arrival": "Arrival",
+    "departure": "Departure",
+    "search": "Search"
+  },
+  "services": {
+    "title": "Our Services",
+    "subtitle": "Discover our complete offering",
+    "carRental": "Car Rental",
+    "luxuryCars": "Luxury Cars",
+    "suvRental": "SUV and 4x4",
+    "commercialVehicles": "Commercial Vehicles",
+    "description": "Description"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "We're here to help you",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "message": "Message",
+    "send": "Send",
+    "success": "Message sent successfully!",
+    "error": "An error occurred, please try again."
+  },
+  "reservations": {
+    "title": "My Reservations",
+    "subtitle": "Manage your reservations",
+    "upcoming": "Upcoming Reservations",
+    "past": "Past Reservations",
+    "details": "Details",
+    "modify": "Modify",
+    "cancel": "Cancel"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "filter": "Filter",
+    "login": "Login",
+    "mySpace": "My Space"
+  },
+  "pwa": {
+    "installPrompt": "Install App",
+    "offlineMode": "Offline Mode",
+    "syncData": "Sync Data",
+    "notifications": "Notifications",
+    "cacheCleared": "Cache Cleared"
+  },
+  "footer": {
+    "about": "About Us",
+    "services": "Services",
+    "contact": "Contact",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "copyright": "© 2026 Ileyha Location. All rights reserved.",
+    "aboutText": "Hotel rooms for your stopovers, unfurnished apartments for your everyday life. Rent and stay directly, with no middleman.",
+    "email": "Email:",
+    "pressTitle": "Press coverage",
+    "downloadApp": "Download the app",
+    "downloadAppText": "Rent, book and exchange directly. Our mobile app is coming soon.",
+    "comingSoon": "Coming soon on Google Play",
+    "newsletter": "Newsletter signup",
+    "newsletterLabel": "Your email address",
+    "newsletterPlaceholder": "Your email address",
+    "newsletterSubscribe": "Subscribe to newsletter",
+    "newsletterSending": "Sending…",
+    "newsletterNote": "New properties and stay offers, once a month.",
+    "newsletterQueued": "Signup saved: it will be sent when you're back online.",
+    "newsletterSuccess": "Thank you! You'll receive our next offers.",
+    "newsletterEmailRequired": "Please enter your email address.",
+    "newsletterEmailInvalid": "Invalid email address.",
+    "newsletterError": "An error occurred. Please try again.",
+    "trackReservation": "Track my reservation",
+    "login": "Login",
+    "signup": "Sign up",
+    "mySpace": "My space",
+    "legal": "Legal information",
+    "account": "Account",
+    "aboutLink": "About",
+    "contactLink": "Contact",
+    "legalNotice": "Legal notice",
+    "privacyLink": "Privacy policy",
+    "legal": "Legal information",
+    "landing": {
+      "platformDescription": "Linkhoo is the direct rental platform in West Africa. Thousands of accommodations for all your stays.",
+      "mobileAppTitle": "Mobile App",
+      "mobileAppDescription": "Download our app for a better experience.",
+      "appStore": "App Store",
+      "googlePlay": "Google Play",
+      "newsletterTitle": "Newsletter",
+      "newsletterDescription": "Stay informed about our news and exclusive offers.",
+      "legalLinksTitle": "Legal Links",
+      "cookies": "Cookies",
+      "accountTitle": "Account",
+      "becomeHost": "Become a Host",
+      "help": "Help",
+      "copyright": "© 2025 Linkhoo. All rights reserved."
+    },
+    "aria": {
+      "logo": "Linkhoo — back to home",
+      "navigationMain": "Main navigation",
+      "mobileMenu": "Mobile menu",
+      "socialMedia": "Social networks",
+      "facebook": "Linkhoo on Facebook",
+      "x": "Linkhoo on X",
+      "linkedin": "Linkhoo on LinkedIn",
+      "instagram": "Linkhoo on Instagram"
+    },
+    "logo": {
+      "alt": "Linkhoo logo"
+    },
+    "contact": {
+      "email": "contact@linkhoo.com"
+    },
+    "social": {
+      "facebook": "https://www.facebook.com/",
+      "x": "https://x.com/",
+      "linkedin": "https://www.linkedin.com/",
+      "instagram": "https://www.instagram.com/"
+    },
+    "press": {
+      "lancement-ci": {
+        "title": "Linkhoo accelerates direct rental in Ivory Coast",
+        "date": "March 12, 2026",
+        "source": "actu-abidjan.ci"
+      },
+      "levee-fonds": {
+        "title": "Ivorian proptech attracts investors",
+        "date": "January 28, 2026",
+        "source": "techafrica.news"
+      },
+      "benin": {
+        "title": "In Benin, rental without intermediates is democratizing",
+        "date": "December 5, 2025",
+        "source": "lanouvelletribune.bj"
+      }
+    }
+  }
+}
