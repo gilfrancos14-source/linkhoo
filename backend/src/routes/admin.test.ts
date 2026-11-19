@@ -8,6 +8,7 @@ import {
   adminToken,
   buildTestApp,
   fakeChain,
+  SIGNED_TEST_URL,
   supabaseStorage,
   useSupabaseTables,
   type FakeChain,
@@ -399,7 +400,7 @@ describe('GET /api/admin/gerants/:id/documents', () => {
       'user_1/front.webp',
       3600,
     );
-    expect(res.body[0].file_url).toBe('https://storage.test/signed/fichier-test');
+    expect(res.body[0].file_url).toBe(SIGNED_TEST_URL);
   });
 
   it('200 : ne signe pas un chemin appartenant à un autre gérant', async () => {

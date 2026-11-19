@@ -129,6 +129,13 @@ export interface FakeStorageBucket {
 let storageBucket: FakeStorageBucket | null = null;
 
 /**
+ * URL signée renvoyée par le mock (même forme que `db/storage.ts` en local).
+ * Exportée pour que les tests l'utilisent au lieu de recopier le jeton.
+ */
+export const SIGNED_TEST_URL =
+  'http://localhost:3001/api/media/verification-docs/user_1/fichier-test?exp=1794642991&sig=d227eba48ffdcedeb339e7f1f13bdf7ff7dbbf3e7aeca3895f6f3674a2d4453a';
+
+/**
  * Forme du module `../config/supabase` une fois mocké :
  *   vi.mock('../config/supabase', async () => {
  *     const helper = await import('../testHelpers/supertestApp');
@@ -142,7 +149,7 @@ export function createSupabaseMock(): Record<string, unknown> {
       data: { publicUrl: 'http://localhost:3001/api/media/images/fichier-test.webp' },
     })),
     createSignedUrl: vi.fn(async () => ({
-      data: { signedUrl: 'http://localhost:3001/api/media/verification-docs/user_1/fichier-test?exp=1794642991&sig=d227eba48ffdcedeb339e7f1f13bdf7ff7dbbf3e7aeca3895f6f3674a2d4453a' },
+      data: { signedUrl: SIGNED_TEST_URL },
       error: null,
     })),
     remove: vi.fn(async () => ({ data: [], error: null })),

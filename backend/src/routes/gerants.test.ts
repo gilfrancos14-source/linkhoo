@@ -10,6 +10,7 @@ import {
   clerkBearer,
   defaultVerifyToken,
   fakeChain,
+  SIGNED_TEST_URL,
   supabaseStorage,
   useSupabaseTables,
   type FakeChain,
@@ -377,7 +378,7 @@ describe('POST /api/gerants/:id/documents', () => {
       }),
     );
     expect(supabaseStorage().createSignedUrl).toHaveBeenCalledWith('user_1/front.webp', 3600);
-    expect(res.body.file_url).toBe('https://storage.test/signed/fichier-test');
+    expect(res.body.file_url).toBe(SIGNED_TEST_URL);
   });
 
   it('201 : remplace un document existant quand replace=true', async () => {
@@ -446,7 +447,7 @@ describe('GET /api/gerants/:id/documents', () => {
       'user_1/front.webp',
       3600,
     );
-    expect(res.body[0].file_url).toBe('https://storage.test/signed/fichier-test');
+    expect(res.body[0].file_url).toBe(SIGNED_TEST_URL);
   });
 
   it("ne signe pas un chemin hérité appartenant à un autre gérant", async () => {
@@ -483,7 +484,7 @@ describe('GET /api/gerants/:id/documents', () => {
       '0f8fad5b-d9cb-469f-a165-70867728950e.webp',
       3600,
     );
-    expect(res.body[0].file_url).toBe('https://storage.test/signed/fichier-test');
+    expect(res.body[0].file_url).toBe(SIGNED_TEST_URL);
   });
 
   it('ne retombe jamais sur file_url quand la signature échoue', async () => {
