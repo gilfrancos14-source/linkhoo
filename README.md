@@ -130,16 +130,20 @@ personne visible. Aucune API externe, coût 0 € à l'usage.
 
 ```bash
 cd backend
-npm run model:preload                  # une fois par machine : télécharge le modèle
+npm run model:preload                  # dev hors Docker : télécharge le modèle
 npm run clip:bench                     # latence/ mémoire sur le VPS
 npm run clip:calibrate -- <dossier>    # scores CLIP sur des photos réelles
 ```
+
+> En production Docker, le modèle est embarqué dans l'image au build
+> (`/app/clip-model`) : aucun accès réseau ni volume à prévoir au démarrage.
 
 Variables (voir `backend/.env.example`) : `IMAGE_CHECK_MODE`
 (`strict` bloquant en production, `lenient` ailleurs, `off`), `IMAGE_CHECK_THRESHOLD`,
 `CLIP_CACHE_DIR`, `CLIP_DTYPE`. En `strict`, un worker indisponible répond 503
 (et 429 si la file d'attente est pleine) ; en `lenient`, l'image passe et
-l'incident est journalisé.
+l'incident est journalisé. En production, `off` et `lenient` **empêchent le
+démarrage** du serveur (fail-fast).
 
 ## Base de données
 

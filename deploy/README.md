@@ -90,7 +90,9 @@ cd /opt/ilehya
 ALLOW_SEED=true docker compose -f docker-compose.prod.yml run --rm api \
   node dist/seed.js
 
-# Modèle CLIP (~150 Mo, une fois par machine, nécessite l'internet)
+# Modèle CLIP : préchargé DANS l'image Docker au build (CLIP_CACHE_DIR=/app/clip-model)
+# — rien à faire sur le serveur. Ce préchargement manuel ne sert qu'à faire
+# tourner le backend hors Docker sur la machine de build.
 cd backend && npm run model:preload
 ```
 

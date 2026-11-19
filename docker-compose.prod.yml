@@ -67,9 +67,8 @@ services:
       # (/var/lib/ilehya/storage) et là où backup.sh l'archive. Un volume
       # Docker nommé serait invisible pour Nginx et les sauvegardes.
       - /var/lib/ilehya/storage:/app/storage
-      # Cache du modèle d'analyse d'images (CLIP) : évite de le retélécharger
-      # à chaque redéploiement.
-      - ilehya_clip_cache:/app/.cache
+      # Le modèle CLIP est préchargé DANS l'image (/app/clip-model) : plus de
+      # volume à initialiser, aucun téléchargement au démarrage.
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,4 +90,3 @@ services:
 
 volumes:
   ilehya_pgdata:
-  ilehya_clip_cache:

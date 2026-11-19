@@ -41,6 +41,23 @@ COPY supabase ./supabase
 RUN mkdir -p /app/storage && chown -R node:node /app/storage
 VOLUME ["/app/storage"]
 
+# Le worker CLIP vit dans `scripts/` (hors `src/`, donc non compilé par tsc) :
+# sans cette copie, `fork('/app/scripts/clipWorker.mjs')` échoue et TOUS les
+# uploads d'images gérant répondent 503 en mode strict.
+COPY scripts ./scripts
+
+# Le modèle est préchargé dans l'image : aucune dépendance réseau au runtime,
+# aucun volume à initialiser, pas de 503 pendant le premier téléversement.
+ARG CLIP_MODEL_ID=Xenova/clip-vit-base-patch32
+ARG CLIP_DTYPE=q8
+ENV CLIP_CACHE_DIR=/app/clip-model
+RUN mkdir -p /app/clip-model \
+ && CLIP_MODEL_ID="${CLIP_MODEL_ID}" \
+    CLIP_DTYPE="${CLIP_DTYPE}" \
+    CLIP_CACHE_DIR=/app/clip-model \
+    node scripts/modelPreload.mjs \
+ && chown -R node:node /app/clip-model
+
 USER node
 EXPOSE 3001
 
