@@ -39,6 +39,7 @@ import { shutdownPool } from './db/pool';
 import { warmUpImageCheck, productionImageCheckModeError } from './services/apartmentImageCheck';
 import { startPaymentJobs } from './payments/jobs';
 import { startContactRetryJobs } from './services/contactRetry';
+import { startScheduledJobs } from './config/jobs';
 import pawapayWebhookRouter from './routes/pawapayWebhook';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -367,6 +368,7 @@ const server = app.listen(port, () => {
   if (process.env.NODE_ENV !== 'test') {
     startPaymentJobs();
     startContactRetryJobs();
+    startScheduledJobs();
   }
   if (process.env.NODE_ENV !== 'test') void warmUpImageCheck();
 });

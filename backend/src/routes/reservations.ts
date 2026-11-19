@@ -350,6 +350,12 @@ router.post('/', requireClerkAuth, reserveLimiter, async (req: Request, res: Res
       if (msg.includes('ROOM_NOT_FOUND')) {
         return res.status(404).json({ error: 'Chambre introuvable' });
       }
+      if (msg.includes('TOO_MANY_PENDING_PER_CLIENT_PER_ROOM')) {
+        return res.status(409).json({ error: 'Vous avez déjà trop de demandes en attente pour cette chambre' });
+      }
+      if (msg.includes('TOO_MANY_PENDING_PER_ROOM')) {
+        return res.status(409).json({ error: 'Trop de demandes en attente pour cette chambre, veuillez réessayer plus tard' });
+      }
       if (clientKey && msg.includes('duplicate key') && msg.includes('client_key')) {
         const { data: winner } = await supabaseAdmin
           .from('reservations')
@@ -454,6 +460,12 @@ router.patch('/:id', requireClerkAuth, async (req: Request, res: Response, next:
         }
         if (msg.includes('NOT_FOUND')) {
           return res.status(404).json({ error: 'Réservation introuvable' });
+        }
+        if (msg.includes('TOO_MANY_PENDING_PER_CLIENT_PER_ROOM')) {
+          return res.status(409).json({ error: 'Vous avez déjà trop de demandes en attente pour cette chambre' });
+        }
+        if (msg.includes('TOO_MANY_PENDING_PER_ROOM')) {
+          return res.status(409).json({ error: 'Trop de demandes en attente pour cette chambre, veuillez réessayer plus tard' });
         }
         throw rpcError;
       }

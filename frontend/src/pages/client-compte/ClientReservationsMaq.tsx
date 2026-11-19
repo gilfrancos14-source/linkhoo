@@ -543,7 +543,7 @@ export default function ClientReservationsMaq({
                     ? paymentLabels[reservation.payment_status]
                     : null;
                   const canReview = !reviewsError && reviewable.some((x) => x.id === reservation.id);
-                  const canPay = !!onPay && canPayReservation(reservation.payment_status);
+                  const canPay = !!onPay && canPayReservation(reservation.payment_status, reservation.statut);
                   const showSuivi = statut === 'en_cours';
                   const showPay = !showSuivi && canPay;
                   // Annulation possible jusqu'à 24 h avant l'arrivée (règle
@@ -608,6 +608,14 @@ export default function ClientReservationsMaq({
                           </span>
                           <Icon id="dots" className="!h-5 !w-5 text-[#1d3f8f]" />
                         </div>
+                        
+                        {/* Message pour les réservations confirmées mais non payées */}
+                        {reservation.statut === 'confirmee' && !reservation.payment_status && (
+                          <p className="mt-2 text-[11.5px] text-[#ff5a14] bg-[#fff1e8] px-2 py-1 rounded">
+                            <Icon id="info" className="!h-3.5 !w-3.5 mr-1" />
+                            Cette réservation est confirmée mais attend votre paiement. Vous avez 24h pour payer.
+                          </p>
+                        )}
                         {reservation.montant ? (
                           <p className="pr"><b>{formatPrice(reservation.montant)}</b> FCFA / nuit</p>
                         ) : (
@@ -796,7 +804,7 @@ export default function ClientReservationsMaq({
                     {nextThree.slice(0, 2).map((reservation) => {
                       const nights = nightsOf(reservation);
                       const total = reservation.montant ? reservation.montant * nights : null;
-                      const canPay = !!onPay && canPayReservation(reservation.payment_status);
+                      const canPay = !!onPay && canPayReservation(reservation.payment_status, reservation.statut);
                       
                       if (canPay && total !== null) {
                         return (

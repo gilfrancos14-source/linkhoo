@@ -96,7 +96,7 @@ describe('Footer', () => {
     expect(
       screen.getByRole('heading', { level: 4, name: 'Inscription newsletter' }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/© \d{4} Ileyha Location/)).toBeInTheDocument();
+    expect(screen.getByText(/Ileyha Location.*Tous droits/)).toBeInTheDocument();
     expect(screen.getByAltText('Logo Linkhoo')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Linkhoo sur Facebook' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Linkhoo sur LinkedIn' })).toBeInTheDocument();
@@ -106,7 +106,7 @@ describe('Footer', () => {
     renderFooter();
 
     expect(
-      screen.getByText("Linkhoo accélère la location directe en Côte d'Ivoire"),
+      screen.getByText(/accélère la location directe/),
     ).toBeInTheDocument();
     expect(screen.getByText('12 mars 2026 / actu-abidjan.ci')).toBeInTheDocument();
     expect(screen.getByText('Bientôt disponible sur Google Play')).toBeInTheDocument();

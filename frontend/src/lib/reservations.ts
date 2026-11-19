@@ -61,8 +61,13 @@ export const paymentLabels: Record<ReservationPaymentStatus, string> = {
   failed: 'Paiement échoué',
 };
 
-/** Un bouton « Payer » n'a de sens que tant que rien n'est encaissé. */
-export function canPayReservation(status: ReservationPaymentStatus | undefined): boolean {
+/** Un bouton « Payer » n'a de sens que si la réservation est confirmée et que le paiement n'est pas encore effectué. */
+export function canPayReservation(status: ReservationPaymentStatus | undefined, reservationStatut?: 'en_attente' | 'confirmee' | 'annulee'): boolean {
+  // Le paiement n'est autorisé que si la réservation est confirmée
+  if (reservationStatut !== 'confirmee') {
+    return false;
+  }
+  // Et tant que rien n'est encaissé
   return status === 'unpaid' || status === 'failed' || status === 'deposit_paid' || status === 'pending';
 }
 
