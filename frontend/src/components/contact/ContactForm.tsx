@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useLocation } from 'react-router-dom';
 import Icon from '../landing/icons';
+import { MARKETS } from '../../config/markets';
+import { apiContact, type ContactPayload } from '../../lib/api';
 import { CONTACT_SUBJECTS } from './data';
 
 interface FormValues {
@@ -25,15 +28,31 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const LABELS = {
   idle: 'Envoyer le message',
+  sending: 'Envoi en cours…',
   error: 'Veuillez remplir les champs obligatoires',
   sent: 'Message envoyé ✓',
+  apiError: 'Envoi impossible, veuillez réessayer.',
 } as const;
 
+/** Libellés de la maquette → valeurs acceptées par l'API. */
+const SUJET_PAR_OBJET: Record<(typeof CONTACT_SUBJECTS)[number], ContactPayload['sujet']> = {
+  'Question générale': 'autre',
+  'Publier une annonce': 'compte-gerant',
+  'Problème technique': 'autre',
+  Paiement: 'reservation',
+  Suggestion: 'autre',
+};
+
 export default function ContactForm() {
+  const { pathname } = useLocation();
   const [values, setValues] = useState<FormValues>(EMPTY_FORM);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [status, setStatus] = useState<keyof typeof LABELS>('idle');
   const timer = useRef<number | null>(null);
+
+  // La page /contact est à la racine : on retombe sur le marché par défaut.
+  const slug = pathname.split('/')[1];
+  const market = MARKETS.find((item) => item.slug === slug) ?? MARKETS[0];
 
   useEffect(
     () => () => {
@@ -54,14 +73,15 @@ export default function ContactForm() {
     }
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (status === 'sending') return;
 
     const nextErrors: FieldErrors = {
       nom: values.nom.trim() === '',
       email: !EMAIL_RE.test(values.email.trim()),
       objet: values.objet === '',
-      message: values.message.trim() === '',
+      message: values.message.trim().length < 10,
     };
 
     if (Object.values(nextErrors).some(Boolean)) {
@@ -72,9 +92,26 @@ export default function ContactForm() {
     }
 
     setErrors({});
-    setStatus('sent');
-    setValues(EMPTY_FORM);
-    resetStatusLater(2500);
+    setStatus('sending');
+    try {
+      await apiContact.send({
+        nom: values.nom.trim(),
+        email: values.email.trim(),
+        telephone: values.tel.trim(),
+        pays: market.pays,
+        sujet: SUJET_PAR_OBJET[values.objet as (typeof CONTACT_SUBJECTS)[number]] ?? 'autre',
+        message: values.message.trim(),
+        market: market.code,
+        // Pot de miel : plus tard rempli par les robots, jamais par un humain.
+        website: '',
+      });
+      setValues(EMPTY_FORM);
+      setStatus('sent');
+      resetStatusLater(2500);
+    } catch {
+      setStatus('apiError');
+      resetStatusLater(4000);
+    }
   };
 
   const inputClass = (invalid: boolean) => `ct-input${invalid ? ' ct-input--error' : ''}`;
@@ -177,7 +214,7 @@ export default function ContactForm() {
           />
         </div>
 
-        <button type="submit" className="ct-submit">
+        <button type="submit" className="ct-submit" disabled={status === 'sending'}>
           <Icon name="send" size={13} />
           <span aria-live="polite">{LABELS[status]}</span>
         </button>

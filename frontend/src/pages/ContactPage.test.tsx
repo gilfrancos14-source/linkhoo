@@ -1,8 +1,14 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import ContactPage from './ContactPage';
+
+const mocks = vi.hoisted(() => ({
+  send: vi.fn<(payload: unknown) => Promise<{ message: string }>>(),
+}));
+
+vi.mock('../lib/api', () => ({ apiContact: { send: mocks.send } }));
 
 function renderContact() {
   return render(
@@ -29,6 +35,11 @@ async function fillValidForm() {
     'Bonjour, je souhaite avoir plus d’informations.',
   );
 }
+
+beforeEach(() => {
+  mocks.send.mockReset();
+  mocks.send.mockResolvedValue({ message: 'Message enregistré.' });
+});
 
 afterEach(() => {
   cleanup();
@@ -111,7 +122,33 @@ describe('ContactPage', () => {
     expect(await screen.findByRole('button', { name: 'Message envoyé ✓' })).toBeInTheDocument();
     expect(nom()).toHaveValue('');
     expect(screen.getByLabelText(/Votre message/)).toHaveValue('');
+    expect(mocks.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nom: 'Awa Kouassi',
+        email: 'awa@example.com',
+        pays: "Côte d'Ivoire",
+        sujet: 'autre',
+        market: 'CI',
+        website: '',
+      }),
+    );
   }, 15000);
+
+  it('signale une erreur API sans effacer le formulaire', async () => {
+    mocks.send.mockRejectedValueOnce(new Error('réseau indisponible'));
+    renderContact();
+
+    await fillValidForm();
+    await userEvent.click(screen.getByRole('button', { name: 'Envoyer le message' }));
+
+    expect(
+      await screen.findByRole('button', { name: 'Envoi impossible, veuillez réessayer.' }),
+    ).toBeInTheDocument();
+    expect(nom()).toHaveValue('Awa Kouassi');
+    expect(screen.getByLabelText(/Votre message/)).toHaveValue(
+      'Bonjour, je souhaite avoir plus d’informations.',
+    );
+  });
 
   it('change de pays depuis le sélecteur', async () => {
     renderContact();
