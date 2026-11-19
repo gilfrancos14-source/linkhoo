@@ -38,6 +38,7 @@ import { startNotificationPurge } from './utils/notificationPurge';
 import { shutdownPool } from './db/pool';
 import { warmUpImageCheck, productionImageCheckModeError } from './services/apartmentImageCheck';
 import { startPaymentJobs } from './payments/jobs';
+import { startContactRetryJobs } from './services/contactRetry';
 import pawapayWebhookRouter from './routes/pawapayWebhook';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -363,7 +364,10 @@ const server = app.listen(port, () => {
 
   // Réconciliation pawaPay, expiration des checkouts et remboursement à 48 h.
   // Inactif en test : les suites pilotent explicitement chaque job.
-  if (process.env.NODE_ENV !== 'test') startPaymentJobs();
+  if (process.env.NODE_ENV !== 'test') {
+    startPaymentJobs();
+    startContactRetryJobs();
+  }
   if (process.env.NODE_ENV !== 'test') void warmUpImageCheck();
 });
 

@@ -4,6 +4,7 @@ import { supabaseAdmin } from '../config/supabase';
 import { createClientLimiter } from '../utils/rateLimiters';
 import { contactMessageSchema } from '../validations/contact';
 import { sendContactEmail } from '../services/mailer';
+import { nextRetryDelay } from '../services/contactRetry';
 
 const router = Router();
 
@@ -50,7 +51,12 @@ router.post('/', contactLimiter, async (req: Request, res: Response, next: NextF
       const reason = err instanceof Error ? err.message : 'Erreur inconnue';
       const { error: failError } = await supabaseAdmin
         .from('contact_messages')
-        .update({ status: 'failed', error: reason })
+        .update({
+          status: 'failed',
+          error: reason,
+          attempts: 1,
+          next_retry_at: new Date(Date.now() + nextRetryDelay(1)).toISOString(),
+        })
         .eq('id', id);
       if (failError) {
         console.error(`[contact] marquage failed impossible (${id}) :`, failError.message);
