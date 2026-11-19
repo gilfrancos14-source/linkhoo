@@ -26,7 +26,6 @@
     "@clerk/backend": "^3.27.0",
     "@huggingface/transformers": "^4.3.1",
     "@supabase/supabase-js": "^2.49.1",
-    "axios": "^0.28.0",
     "bcrypt": "^6.0.0",
     "compression": "^1.8.2",
     "cors": "^2.8.5",
