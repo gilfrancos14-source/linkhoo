@@ -9,6 +9,11 @@ const allTypes = [
   'verification_approved',
   'verification_rejected',
   'reservation_cancelled',
+  'payout_scheduled',
+  'payout_details_required',
+  'payout_details_verified',
+  'payout_paid',
+  'payout_failed',
 ] as const;
 
 const validNotification = {
@@ -38,7 +43,7 @@ describe('notificationCreateSchema', () => {
     expect(parsed.data).toEqual(validNotification);
   });
 
-  it('accepte les 7 types de notification', () => {
+  it('accepte tous les types de notification déclarés', () => {
     for (const type of allTypes) {
       const parsed = notificationCreateSchema.safeParse({ ...validNotification, type });
       expect(parsed.success).toBe(true);

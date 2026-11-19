@@ -37,6 +37,7 @@ import { fetchAllRows } from '../../utils/fetchAll';
 import { getPaymentPolicy } from '../policies';
 import { commissionPercentFor, commissionTierFor, COMMISSION_PERCENT_BY_TIER, type CommissionTier } from '../commissions';
 import { isPawapayProvider } from '../provider';
+import { publishNotificationChanged } from '../../utils/realtime';
 import type { PayoutMethod, TransferStatus } from '../types';
 import type { PawapayCurrency } from '../pawapay/types';
 
@@ -257,7 +258,12 @@ async function notifyGerant(
   });
   if (error) {
     console.error('[payout] notification impossible :', error.message);
+    return;
   }
+  // Réveille le canal Realtime du gérant : sans cela, la notification est
+  // bien enregistrée mais le badge/compteur du frontend reste figé jusqu'à un
+  // rechargement (comportement « statique »). Même logique que reservations.ts.
+  void publishNotificationChanged('gerant');
 }
 
 async function fetchSettingsFor(

@@ -1,7 +1,21 @@
 import { z } from 'zod';
 import { emailSchema, idSchema, optionalText } from './common';
 
-const notificationTypeSchema = z.enum(['reservation', 'reservation_confirmed', 'reservation_rejected', 'verification_submitted', 'verification_approved', 'verification_rejected', 'reservation_cancelled']);
+const notificationTypeSchema = z.enum([
+  'reservation',
+  'reservation_confirmed',
+  'reservation_rejected',
+  'verification_submitted',
+  'verification_approved',
+  'verification_rejected',
+  'reservation_cancelled',
+  // Notifications de reversement versées au gérant (payout.ts).
+  'payout_scheduled',
+  'payout_details_required',
+  'payout_details_verified',
+  'payout_paid',
+  'payout_failed',
+]);
 
 export const notificationCreateSchema = z
   .object({

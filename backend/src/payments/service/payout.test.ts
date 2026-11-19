@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { supabaseAdmin } from '../../config/supabase';
 import { fakeChain, useSupabaseTables } from '../../testHelpers/supertestApp';
+import { publishNotificationChanged } from '../../utils/realtime';
 import { PawapayApiError } from '../pawapay/client';
 import { createPayout } from '../pawapay/payouts';
 import {
@@ -26,6 +27,10 @@ vi.mock('../../config/supabase', async () => {
 vi.mock('../pawapay/payouts', () => ({
   createPayout: vi.fn(),
   getPayout: vi.fn(),
+}));
+
+vi.mock('../../utils/realtime', () => ({
+  publishNotificationChanged: vi.fn(async () => {}),
 }));
 
 const PAWAPAY_ENV: Record<string, string> = {
@@ -239,6 +244,9 @@ describe('scheduleDuePayoutsPawapay', () => {
         failure_code: null,
       }),
     );
+    // La notification doit réveiller le canal Realtime du gérant, sinon le
+    // frontend reste « statique » jusqu'au prochain polling.
+    expect(publishNotificationChanged).toHaveBeenCalledWith('gerant');
   });
 
   it('bloque le payout et notifie quand les coordonnées ne sont pas valides', async () => {
