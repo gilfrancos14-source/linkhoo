@@ -36,7 +36,7 @@ import promotionRouter from './routes/promotionRoutes';
 import piiRouter from './routes/piiRoutes';
 import { startNotificationPurge } from './utils/notificationPurge';
 import { shutdownPool } from './db/pool';
-import { warmUpImageCheck } from './services/apartmentImageCheck';
+import { warmUpImageCheck, productionImageCheckModeError } from './services/apartmentImageCheck';
 import { startPaymentJobs } from './payments/jobs';
 import pawapayWebhookRouter from './routes/pawapayWebhook';
 
@@ -129,6 +129,27 @@ if (isProduction && allowedOrigins.length === 0) {
 // gérant. Fail-fast identique à ALLOWED_ORIGINS plutôt qu'un échec muet.
 if (isProduction && !process.env.APP_PUBLIC_URL?.trim()) {
   console.error('[FATAL] APP_PUBLIC_URL manquant en production : le retour pawaPay pointerait sur localhost (paiement jamais confirmé côté gérant).');
+  process.exit(1);
+}
+
+// p0 : le contrôle de pertinence des photos est le seul rempart contre une
+// annonce illustrée par n'importe quelle image. Un `IMAGE_CHECK_MODE=off`
+// (ou `lenient`) en production le désactiverait silencieusement — on refuse
+// de démarrer plutôt que de servir des annonces non vérifiées.
+const imageCheckModeError = productionImageCheckModeError();
+if (imageCheckModeError) {
+  console.error(`[FATAL] ${imageCheckModeError}`);
+  process.exit(1);
+}
+
+// Sans base publique explicite, les URLs renvoyées par l'upload pointeraient
+// sur http://localhost:3001 : les photos ne s'afficheraient pas et la
+// validation des URLs d'annonces serait incohérente avec Nginx.
+if (isProduction && !process.env.STORAGE_PUBLIC_BASE_URL?.trim()) {
+  console.error(
+    '[FATAL] STORAGE_PUBLIC_BASE_URL manquant en production : ' +
+      'définissez la base publique des photos (ex. https://le-domaine.fr/media).',
+  );
   process.exit(1);
 }
 

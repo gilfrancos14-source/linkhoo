@@ -7,6 +7,7 @@ import {
   ImageCheckQueueFullError,
   ImageCheckUnavailableError,
   isImageCheckEnabled,
+  productionImageCheckModeError,
   resetImageCheckForTests,
   warmUpImageCheck,
 } from './apartmentImageCheck';
@@ -172,6 +173,45 @@ describe('isImageCheckEnabled', () => {
   it('strict active le contrôle', () => {
     process.env.IMAGE_CHECK_MODE = 'strict';
     expect(isImageCheckEnabled()).toBe(true);
+  });
+});
+
+describe('productionImageCheckModeError', () => {
+  const PREVIOUS_NODE_ENV = process.env.NODE_ENV;
+
+  afterEach(() => {
+    if (PREVIOUS_NODE_ENV === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = PREVIOUS_NODE_ENV;
+  });
+
+  it('ne dit rien hors production', () => {
+    process.env.NODE_ENV = 'development';
+    process.env.IMAGE_CHECK_MODE = 'off';
+    expect(productionImageCheckModeError()).toBeNull();
+  });
+
+  it('accepte strict en production', () => {
+    process.env.NODE_ENV = 'production';
+    process.env.IMAGE_CHECK_MODE = 'strict';
+    expect(productionImageCheckModeError()).toBeNull();
+  });
+
+  it('accepte une variable absente en production (défaut strict)', () => {
+    process.env.NODE_ENV = 'production';
+    delete process.env.IMAGE_CHECK_MODE;
+    expect(productionImageCheckModeError()).toBeNull();
+  });
+
+  it('refuse off en production', () => {
+    process.env.NODE_ENV = 'production';
+    process.env.IMAGE_CHECK_MODE = 'off';
+    expect(productionImageCheckModeError()).toContain('off');
+  });
+
+  it('refuse lenient en production', () => {
+    process.env.NODE_ENV = 'production';
+    process.env.IMAGE_CHECK_MODE = 'lenient';
+    expect(productionImageCheckModeError()).toContain('lenient');
   });
 });
 

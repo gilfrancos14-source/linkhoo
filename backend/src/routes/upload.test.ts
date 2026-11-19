@@ -38,8 +38,10 @@ vi.mock('@clerk/backend', () => ({
 vi.mock('sharp', () => ({
   default: vi.fn(() => {
     const pipeline = {
+      metadata: vi.fn(async () => ({ width: 1200, height: 900 })),
       resize: vi.fn(() => pipeline),
       webp: vi.fn(() => pipeline),
+      jpeg: vi.fn(() => pipeline),
       toBuffer: vi.fn(async () => Buffer.from('donnees-webp')),
     };
     return pipeline;
@@ -216,7 +218,7 @@ describe('POST /api/upload — mise en ligne', () => {
     expect(vi.mocked(sharp)).toHaveBeenCalled();
   });
 
-  it('200 : un PDF est téléversé tel quel', async () => {
+  it('400 : un PDF ne peut pas être publié comme photo d’annonce', async () => {
     gerants = fakeChain({ data: { id: 'g1' }, error: null });
     useSupabaseTables(supabaseAdmin.from, { gerants });
 
@@ -225,9 +227,23 @@ describe('POST /api/upload — mise en ligne', () => {
       .set('Authorization', clerkBearer('user_1'))
       .attach('file', PDF_HEADER, { filename: 'justificatif.pdf', contentType: 'application/pdf' });
 
-    expect(res.status).toBe(200);
-    expect(res.body.path).toMatch(/\.pdf$/);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('Seules les photos');
     expect(vi.mocked(sharp)).not.toHaveBeenCalled();
+  });
+
+  it('400 : un PDF sur le bucket images explicite est refusé', async () => {
+    gerants = fakeChain({ data: { id: 'g1' }, error: null });
+    useSupabaseTables(supabaseAdmin.from, { gerants });
+
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', clerkBearer('user_1'))
+      .field('bucket', 'images')
+      .attach('file', PDF_HEADER, { filename: 'justificatif.pdf', contentType: 'application/pdf' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('Seules les photos');
   });
 
   it('200 : le bucket verification-docs renvoie une URL signée', async () => {
@@ -419,7 +435,7 @@ describe('POST /api/upload — vérification des images', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe(IMAGE_CHECK_REJECT_MESSAGE);
     expect(res.body.motif).toBe('sujet_inconnu');
-    expect(vi.mocked(sharp)).not.toHaveBeenCalled();
+    // sharp lit les dimensions avant l'analyse, mais ne compresse ni ne stocke.
     expect(supabaseStorage().upload).not.toHaveBeenCalled();
   });
 
@@ -466,6 +482,45 @@ describe('POST /api/upload — vérification des images', () => {
 
     expect(res.status).toBe(503);
     expect(res.body.error).toContain('indisponible');
+  });
+
+  it('400 : refuse une image au-delà du plafond de pixels (bombe de décompression)', async () => {
+    vi.mocked(sharp).mockReturnValueOnce({
+      metadata: vi.fn(async () => ({ width: 10_000, height: 5_000 })), // 50 Mpx > 40 Mpx
+      resize: vi.fn(),
+      webp: vi.fn(),
+      toBuffer: vi.fn(),
+    } as never);
+
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', clerkBearer('user_1'))
+      .attach('file', PNG_HEADER, { filename: 'enorme.png', contentType: 'image/png' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('mégapixels');
+    expect(checkApartmentImage).not.toHaveBeenCalled();
+    expect(supabaseStorage().upload).not.toHaveBeenCalled();
+  });
+
+  it('400 : refuse une image dont les dimensions sont illisibles', async () => {
+    vi.mocked(sharp).mockReturnValueOnce({
+      metadata: vi.fn(async () => {
+        throw new Error('en-tête corrompu');
+      }),
+      resize: vi.fn(),
+      webp: vi.fn(),
+      toBuffer: vi.fn(),
+    } as never);
+
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', clerkBearer('user_1'))
+      .attach('file', PNG_HEADER, { filename: 'casse.png', contentType: 'image/png' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('illisible');
+    expect(supabaseStorage().upload).not.toHaveBeenCalled();
   });
 });
 

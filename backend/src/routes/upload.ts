@@ -12,6 +12,7 @@ import {
   ImageCheckQueueFullError,
 } from '../services/apartmentImageCheck';
 import { localStorage } from '../db/storage';
+import { MAX_IMAGE_PIXELS } from '../config/imageLimits';
 
 const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'] as const;
 const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'pdf'] as const;
@@ -31,15 +32,30 @@ function hasValidImageSignature(buffer: Buffer, mimeType: string): boolean {
 }
 
 async function compressToWebP(buffer: Buffer): Promise<Buffer> {
-  return sharp(buffer)
+  return sharp(buffer, { limitInputPixels: MAX_IMAGE_PIXELS })
     .resize(MAX_WIDTH, MAX_HEIGHT, { fit: 'inside', withoutEnlargement: true })
     .webp({ quality: WEBP_QUALITY })
     .toBuffer();
 }
 
+/**
+ * Lit les dimensions depuis l'en-tête (sans décoder les pixels) et refuse les
+ * images illisibles ou gigantesques. `limitInputPixels` est aussi appliqué au
+ * décodage réel dans `compressToWebP` et dans le service CLIP.
+ */
+async function readImageSize(buffer: Buffer): Promise<{ width: number; height: number } | null> {
+  try {
+    const { width, height } = await sharp(buffer, { limitInputPixels: MAX_IMAGE_PIXELS }).metadata();
+    if (!width || !height) return null;
+    return { width, height };
+  } catch {
+    return null;
+  }
+}
+
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024, files: 1, fields: 5, parts: 10 },
   fileFilter: (_req, file, callback) => {
     const extension = extname(file.originalname).slice(1).toLowerCase();
     if (!allowedMimeTypes.includes(file.mimetype as typeof allowedMimeTypes[number]) || !allowedExtensions.includes(extension as typeof allowedExtensions[number])) {
@@ -82,7 +98,31 @@ router.post('/', requireClerkOrAdminAuth, requireAdminOrGerant, handleUpload, as
       return res.status(400).json({ error: 'Bucket invalide' });
     }
 
-    if (!req.admin && bucket === 'images' && imageMimeTypes.includes(file.mimetype)) {
+    const isImage = imageMimeTypes.includes(file.mimetype as typeof imageMimeTypes[number]);
+
+    // Le bucket public ne contient QUE des photos d'annonces. Un PDF y était
+    // accepté et échappait entièrement à la vérification de pertinence, tout en
+    // étant servi publiquement sous notre domaine. Il reste autorisé pour les
+    // justificatifs (bucket privé, URL signée) uniquement.
+    if (bucket === 'images' && !isImage) {
+      return res.status(400).json({
+        error: 'Seules les photos (JPEG, PNG, WebP, GIF) sont acceptées pour les annonces',
+      });
+    }
+
+    if (isImage) {
+      const size = await readImageSize(file.buffer);
+      if (!size) {
+        return res.status(400).json({ error: "L'image est illisible ou corrompue" });
+      }
+      if (size.width * size.height > MAX_IMAGE_PIXELS) {
+        return res.status(400).json({
+          error: `Image trop grande : ${MAX_IMAGE_PIXELS / 1_000_000} mégapixels maximum`,
+        });
+      }
+    }
+
+    if (!req.admin && bucket === 'images') {
       try {
         const verdict = await checkApartmentImage(file.buffer);
         if (!verdict.accepte) {
@@ -105,8 +145,12 @@ router.post('/', requireClerkOrAdminAuth, requireAdminOrGerant, handleUpload, as
     let uploadContentType: string;
     let uploadExtension: string;
 
-    if (imageMimeTypes.includes(file.mimetype as typeof imageMimeTypes[number])) {
-      uploadBuffer = await compressToWebP(file.buffer);
+    if (isImage) {
+      try {
+        uploadBuffer = await compressToWebP(file.buffer);
+      } catch {
+        return res.status(400).json({ error: "L'image n'a pas pu être traitée" });
+      }
       uploadContentType = 'image/webp';
       uploadExtension = 'webp';
     } else {

@@ -3,6 +3,7 @@ import { createHash } from 'crypto';
 import path from 'path';
 import sharp from 'sharp';
 import clipLabels from '../config/clipLabels.json';
+import { MAX_IMAGE_PIXELS } from '../config/imageLimits';
 
 export type ImageCheckMode = 'strict' | 'lenient' | 'off';
 export type ImageCategorie = 'interieur' | 'facade' | 'autre';
@@ -79,6 +80,31 @@ function readNumber(name: string, fallback: number, min: number, max: number): n
 
 export function isImageCheckEnabled(): boolean {
   return readMode() !== 'off';
+}
+
+/**
+ * Garde-fou de production : le contrôle de pertinence ne doit jamais être
+ * silencieusement désactivé (`off`) ni en mode permissif (`lenient`, qui
+ * accepte une image quand le modèle est en panne). Retourne un message
+ * d'erreur à afficher, ou `null` si la configuration est sûre.
+ *
+ * Variable absente ⇒ `strict` par défaut (voir `readMode`), donc accepté.
+ */
+export function productionImageCheckModeError(): string | null {
+  if (process.env.NODE_ENV !== 'production') return null;
+
+  const raw = process.env.IMAGE_CHECK_MODE?.trim().toLowerCase();
+  if (!raw || raw === 'strict') return null;
+
+  if (raw === 'off' || raw === 'lenient') {
+    return (
+      `IMAGE_CHECK_MODE=${raw} interdit en production : la vérification des photos ` +
+      "d'annonces doit rester en mode strict (fail-closed)."
+    );
+  }
+
+  // Valeur inconnue : `readMode()` retombe déjà sur strict, donc rien à signaler.
+  return null;
 }
 
 export function decideVerdict(scores: Score[]): ImageCheckVerdict {
@@ -260,7 +286,7 @@ function cacheSet(key: string, verdict: ImageCheckVerdict): void {
 }
 
 async function toSmallJpeg(buffer: Buffer): Promise<Buffer> {
-  return sharp(buffer)
+  return sharp(buffer, { limitInputPixels: MAX_IMAGE_PIXELS })
     .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
     .jpeg({ quality: 80 })
     .toBuffer();

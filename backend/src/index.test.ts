@@ -31,6 +31,8 @@ const envGuard = vi.hoisted(() => {
     'SUPABASE_ANON_KEY',
     'SUPABASE_SERVICE_KEY',
     'PORT',
+    'STORAGE_PUBLIC_BASE_URL',
+    'IMAGE_CHECK_MODE',
   ] as const;
   const savedEnv: Record<string, string | undefined> = {};
   for (const key of keys) {
@@ -362,10 +364,37 @@ describe('montage de src/index.ts', () => {
 describe('montage de src/index.ts en production', () => {
   let prodApp: Express;
 
+  /**
+   * Importe `src/index.ts` en s'attendant à un refus de démarrage.
+   * `process.exit` lève pour interrompre l'import, comme un vrai arrêt.
+   */
+  async function expectStartupRefused(): Promise<void> {
+    const exitSpy = vi.spyOn(process, 'exit');
+    exitSpy.mockImplementation(() => {
+      throw new Error('process.exit intercepté');
+    });
+    vi.resetModules();
+
+    let importFailed = false;
+    try {
+      await importIndex();
+    } catch {
+      importFailed = true;
+    }
+
+    expect(importFailed).toBe(true);
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    exitSpy.mockRestore();
+  }
+
   beforeAll(async () => {
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('ALLOWED_ORIGINS', 'https://app.ilehya.com');
     vi.stubEnv('APP_PUBLIC_URL', 'https://app.ilehya.com');
+    // La validation des photos exige une base publique connue et le contrôle
+    // de pertinence ne doit jamais être désactivé en production.
+    vi.stubEnv('STORAGE_PUBLIC_BASE_URL', 'https://app.ilehya.com/media');
+    vi.stubEnv('IMAGE_CHECK_MODE', 'strict');
     // resetModules : sans ça, `import('./index')` est servi depuis le cache et
     // le second montage garderait la configuration CORS du premier.
     vi.resetModules();
@@ -393,23 +422,39 @@ describe('montage de src/index.ts en production', () => {
   });
 
   it('interrompt le démarrage si APP_PUBLIC_URL manquant en production', async () => {
-    const exitSpy = vi.spyOn(process, 'exit');
-    exitSpy.mockImplementation(() => {
-      throw new Error('process.exit intercepté');
-    });
     vi.stubEnv('APP_PUBLIC_URL', '');
-    vi.resetModules();
-
-    let importFailed = false;
     try {
-      await importIndex();
-    } catch {
-      importFailed = true;
+      await expectStartupRefused();
+    } finally {
+      vi.stubEnv('APP_PUBLIC_URL', 'https://app.ilehya.com');
     }
+  });
 
-    expect(importFailed).toBe(true);
-    expect(exitSpy).toHaveBeenCalledWith(1);
-    exitSpy.mockRestore();
+  it('interrompt le démarrage si STORAGE_PUBLIC_BASE_URL manquant en production', async () => {
+    vi.stubEnv('STORAGE_PUBLIC_BASE_URL', '');
+    try {
+      await expectStartupRefused();
+    } finally {
+      vi.stubEnv('STORAGE_PUBLIC_BASE_URL', 'https://app.ilehya.com/media');
+    }
+  });
+
+  it('interrompt le démarrage si IMAGE_CHECK_MODE=off en production', async () => {
+    vi.stubEnv('IMAGE_CHECK_MODE', 'off');
+    try {
+      await expectStartupRefused();
+    } finally {
+      vi.stubEnv('IMAGE_CHECK_MODE', 'strict');
+    }
+  });
+
+  it('interrompt le démarrage si IMAGE_CHECK_MODE=lenient en production', async () => {
+    vi.stubEnv('IMAGE_CHECK_MODE', 'lenient');
+    try {
+      await expectStartupRefused();
+    } finally {
+      vi.stubEnv('IMAGE_CHECK_MODE', 'strict');
+    }
   });
 });
 
