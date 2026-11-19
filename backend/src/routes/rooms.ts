@@ -11,6 +11,7 @@ import {
   roomListQuerySchema,
   roomUpdateSchema,
 } from '../validations/room';
+import { isPlatformImageUrl } from '../validations/imageUrl';
 import { fetchAllRows } from '../utils/fetchAll';
 import { normalizeCity } from '../utils/city';
 import { isPremiumActive } from '../utils/premium';
@@ -478,7 +479,7 @@ router.put('/:id', requireClerkAuth, async (req: Request, res: Response, next: N
 
     const { data: existingRoom, error: fetchError } = await supabaseAdmin
       .from('rooms')
-      .select('market, gerant_id')
+      .select('market, gerant_id, img, images')
       .eq('id', parsedParams.data.id)
       .maybeSingle();
     if (fetchError) throw fetchError;
@@ -498,6 +499,32 @@ router.put('/:id', requireClerkAuth, async (req: Request, res: Response, next: N
     } = parsedBody.data as Record<string, unknown>;
     if (Object.keys(patch).length === 0) {
       return res.status(400).json({ error: 'Données de chambre invalides' });
+    }
+
+    // Les images historiques déjà enregistrées peuvent être renvoyées telles
+    // quelles (le formulaire les réutilise), mais aucune **nouvelle** URL
+    // hors stockage plateforme ne peut être injectée par ce chemin : sinon le
+    // contrôle de pertinence serait contournable en modifiant l'annonce.
+    const submittedImages: string[] = [
+      ...(Array.isArray(patch.images) ? (patch.images as string[]) : []),
+      ...(typeof patch.img === 'string' ? [patch.img as string] : []),
+    ];
+    if (submittedImages.length > 0) {
+      const room = existingRoom as { img?: unknown; images?: unknown };
+      const alreadyStored = new Set<string>(
+        [room.img, ...(Array.isArray(room.images) ? room.images : [])].filter(
+          (url): url is string => typeof url === 'string',
+        ),
+      );
+      const rejected = submittedImages.filter(
+        (url) => !isPlatformImageUrl(url) && !alreadyStored.has(url),
+      );
+      if (rejected.length > 0) {
+        return res.status(400).json({
+          error:
+            "URL d'image invalide : seules les photos téléversées dans le stockage de la plateforme sont acceptées",
+        });
+      }
     }
 
     const { data, error } = await supabaseAdmin

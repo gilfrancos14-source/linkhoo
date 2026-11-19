@@ -34,11 +34,21 @@ function storageRoot(): string {
   return path.resolve(process.env.STORAGE_DIR ?? path.join(process.cwd(), 'storage'));
 }
 
-function publicBaseUrl(): string {
+/**
+ * Base publique des photos d'annonces (ex. `https://le-domaine.fr/media` ou
+ * `http://localhost:3001/api/media`). Exportée pour que la validation d'URL
+ * (`validations/imageUrl.ts`) accepte **exactement** ce stockage et rien
+ * d'autre : c'est l'unique source de vérité.
+ */
+export function getPublicBaseUrl(): string {
   const configured = process.env.STORAGE_PUBLIC_BASE_URL;
   if (configured) return configured.replace(/\/+$/, '');
   const port = process.env.PORT ?? '3001';
   return `http://localhost:${port}/api/media`;
+}
+
+function publicBaseUrl(): string {
+  return getPublicBaseUrl();
 }
 
 /**

@@ -1,5 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { roomCreateSchema, roomUpdateSchema, roomAvailableQuerySchema } from './room';
+
+// Le schéma de création n'accepte que des photos téléversées dans NOTRE
+// stockage : on fixe la base publique pour des assertions stables.
+vi.hoisted(() => {
+  process.env.STORAGE_PUBLIC_BASE_URL = 'https://ilehya.test/media';
+});
+
+const MEDIA = 'https://ilehya.test/media/images';
 
 const validRoom = {
   title: 'Studio meublé Cocody',
@@ -8,9 +16,9 @@ const validRoom = {
   price: '250 000 FCFA',
   price_num: 250000,
   price_unit: '/ mois' as const,
-  img: 'https://ilehya.supabase.co/storage/v1/object/public/images/studio.webp',
+  img: `${MEDIA}/studio.webp`,
   alt: 'Salon du studio',
-  images: ['https://ilehya.supabase.co/storage/v1/object/public/images/studio-1.webp'],
+  images: [`${MEDIA}/studio-1.webp`],
   description: 'Un studio confortable au cœur de Cocody.',
   capacity: '2 personnes',
   category: 'Studio',
@@ -27,26 +35,46 @@ const validRoom = {
 
 describe('roomCreateSchema', () => {
   it('accepte au maximum trois images', () => {
-    const images = ['a', 'b', 'c'].map((n) => `https://ilehya.supabase.co/storage/v1/object/public/images/${n}.webp`);
+    const images = ['a', 'b', 'c'].map((n) => `${MEDIA}/${n}.webp`);
     expect(roomCreateSchema.safeParse({ ...validRoom, images }).success).toBe(true);
   });
 
   it('refuse plus de trois images', () => {
-    const images = ['a', 'b', 'c', 'd'].map((n) => `https://ilehya.supabase.co/storage/v1/object/public/images/${n}.webp`);
+    const images = ['a', 'b', 'c', 'd'].map((n) => `${MEDIA}/${n}.webp`);
     expect(roomCreateSchema.safeParse({ ...validRoom, images }).success).toBe(false);
   });
 
-  it('accepte un chemin local /images/', () => {
+  it('refuse un chemin local /images/ à la création (photo stock non vérifiée)', () => {
     const parsed = roomCreateSchema.safeParse({
       ...validRoom,
       img: '/images/pexels-123.jpg',
       images: ['/images/pexels-123.jpg'],
     });
-    expect(parsed.success).toBe(true);
+    expect(parsed.success).toBe(false);
+  });
+
+  it('refuse une URL Supabase historique à la création (nouvelle annonce)', () => {
+    const parsed = roomCreateSchema.safeParse({
+      ...validRoom,
+      img: 'https://ilehya.supabase.co/storage/v1/object/public/images/studio.webp',
+      images: ['https://ilehya.supabase.co/storage/v1/object/public/images/studio.webp'],
+    });
+    expect(parsed.success).toBe(false);
   });
 
   it('refuse une URL image hors du stockage de la plateforme', () => {
-    expect(roomCreateSchema.safeParse({ ...validRoom, img: 'https://evil.example.com/photo.webp' }).success).toBe(false);
+    expect(
+      roomCreateSchema.safeParse({ ...validRoom, img: 'https://evil.example.com/media/images/photo.webp' }).success,
+    ).toBe(false);
+    expect(
+      roomCreateSchema.safeParse({ ...validRoom, img: 'https://evil.example.com/photo.webp' }).success,
+    ).toBe(false);
+    expect(
+      roomCreateSchema.safeParse({
+        ...validRoom,
+        img: 'https://attacker.supabase.co/storage/v1/object/public/images/x.webp',
+      }).success,
+    ).toBe(false);
     expect(
       roomCreateSchema.safeParse({
         ...validRoom,
@@ -54,6 +82,16 @@ describe('roomCreateSchema', () => {
       }).success,
     ).toBe(false);
     expect(roomCreateSchema.safeParse({ ...validRoom, img: 'data:image/png;base64,AAAA' }).success).toBe(false);
+  });
+
+  it('refuse un PDF comme photo de chambre', () => {
+    const parsed = roomCreateSchema.safeParse({ ...validRoom, img: `${MEDIA}/document.pdf` });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('refuse une URL avec query string ou fragment (contournement)', () => {
+    expect(roomCreateSchema.safeParse({ ...validRoom, img: `${MEDIA}/photo.webp?x=.pdf` }).success).toBe(false);
+    expect(roomCreateSchema.safeParse({ ...validRoom, img: `${MEDIA}/photo.webp#frag` }).success).toBe(false);
   });
 
   it('accepte une chambre complète', () => {
@@ -177,6 +215,23 @@ describe('roomUpdateSchema', () => {
   it('refuse un prix invalide même partiel', () => {
     const parsed = roomUpdateSchema.safeParse({ price_num: -1 });
     expect(parsed.success).toBe(false);
+  });
+
+  it('accepte les URLs historiques déjà en base (compatibilité de modification)', () => {
+    expect(roomUpdateSchema.safeParse({ img: '/images/pexels-123.jpg' }).success).toBe(true);
+    expect(roomUpdateSchema.safeParse({ images: ['/images/pexels-123.jpg'] }).success).toBe(true);
+    expect(
+      roomUpdateSchema.safeParse({
+        images: ['https://ilehya.supabase.co/storage/v1/object/public/images/studio.webp'],
+      }).success,
+    ).toBe(true);
+  });
+
+  it('refuse les hôtes arbitraires et les PDF même en mise à jour', () => {
+    expect(
+      roomUpdateSchema.safeParse({ img: 'https://evil.example.com/media/images/photo.webp' }).success,
+    ).toBe(false);
+    expect(roomUpdateSchema.safeParse({ img: '/images/document.pdf' }).success).toBe(false);
   });
 });
 

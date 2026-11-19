@@ -22,15 +22,23 @@ vi.mock('@clerk/backend', () => ({
   createClerkClient: vi.fn(),
 }));
 
+// Les photos d'annonces doivent appartenir à NOTRE stockage : base fixée pour
+// que le schéma de création soit déterministe.
+vi.hoisted(() => {
+  process.env.STORAGE_PUBLIC_BASE_URL = 'https://ilehya.test/media';
+});
+
 const app = buildTestApp('/api/rooms', roomsRouter);
+
+const MEDIA = 'https://ilehya.test/media/images';
 
 const validRoom = {
   title: 'Studio cocooning',
   price: '25 000 FCFA',
   price_num: 25000,
   price_unit: '/ nuit',
-  img: 'https://ilehya.supabase.co/storage/v1/object/public/images/studio.webp',
-  images: ['https://ilehya.supabase.co/storage/v1/object/public/images/studio.webp'],
+  img: `${MEDIA}/studio.webp`,
+  images: [`${MEDIA}/studio.webp`],
   description: 'Un studio confortable au cœur d’Abidjan',
   category: 'Studio',
   market: 'CI',
@@ -607,6 +615,26 @@ describe('POST /api/rooms', () => {
     expect(res.status).toBe(400);
   });
 
+  it('400 : refuse une photo stock /images/ non téléversée', async () => {
+    const res = await request(app)
+      .post('/api/rooms')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ ...validRoom, img: '/images/pexels-123.jpg', images: ['/images/pexels-123.jpg'] });
+    expect(res.status).toBe(400);
+  });
+
+  it('400 : refuse une image hébergée sur un autre domaine', async () => {
+    const res = await request(app)
+      .post('/api/rooms')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({
+        ...validRoom,
+        img: 'https://evil.example.com/media/images/photo.jpg',
+        images: ['https://evil.example.com/media/images/photo.jpg'],
+      });
+    expect(res.status).toBe(400);
+  });
+
   it('403 si le compte n’est pas gérant', async () => {
     stubTables({ gerants: fakeChain({ data: null, error: null }) });
 
@@ -694,6 +722,77 @@ describe('PUT /api/rooms/:id', () => {
       expect.objectContaining({ title: 'X' }),
     );
     expect(res.body).toEqual({ id: 'r1', title: 'X' });
+  });
+
+  it('200 : une annonce existante peut conserver ses URLs historiques', async () => {
+    const updated = fakeChain({ data: { id: 'r1' }, error: null });
+    stubTables({
+      rooms: [
+        fakeChain({
+          data: {
+            market: 'CI',
+            gerant_id: 'user_1',
+            img: '/images/ancienne.jpg',
+            images: ['/images/ancienne.jpg'],
+          },
+          error: null,
+        }),
+        updated,
+      ],
+    });
+
+    const res = await request(app)
+      .put('/api/rooms/r1')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ img: '/images/ancienne.jpg', images: ['/images/ancienne.jpg'] });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('200 : accepte une nouvelle photo issue du stockage plateforme', async () => {
+    const updated = fakeChain({ data: { id: 'r1' }, error: null });
+    stubTables({
+      rooms: [
+        fakeChain({
+          data: { market: 'CI', gerant_id: 'user_1', img: '/images/ancienne.jpg', images: ['/images/ancienne.jpg'] },
+          error: null,
+        }),
+        updated,
+      ],
+    });
+
+    const res = await request(app)
+      .put('/api/rooms/r1')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ images: [`${MEDIA}/nouvelle.webp`] });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('400 : refuse une URL historique qui n’appartient pas à l’annonce', async () => {
+    stubTables({
+      rooms: fakeChain({
+        data: { market: 'CI', gerant_id: 'user_1', img: '/images/ancienne.jpg', images: ['/images/ancienne.jpg'] },
+        error: null,
+      }),
+    });
+
+    const res = await request(app)
+      .put('/api/rooms/r1')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ images: ['/images/autre-annonce.jpg'] });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('URL d\'image invalide');
+  });
+
+  it('400 : refuse une image hébergée sur un autre domaine', async () => {
+    const res = await request(app)
+      .put('/api/rooms/r1')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ img: 'https://evil.example.com/media/images/photo.jpg' });
+
+    expect(res.status).toBe(400);
   });
 });
 
