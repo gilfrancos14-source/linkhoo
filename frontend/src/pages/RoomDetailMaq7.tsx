@@ -6,6 +6,7 @@ import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
 import { useFavorites } from '../contexts/FavoritesContext';
 import LandingHeader from '../components/landing/LandingHeader';
+import LandingFooter from '../components/landing/LandingFooter';
 import { COUNTRIES } from '../components/landing/data';
 import { MAQUETTE_NAV_ITEMS } from '../maquette/nav';
 import { fetchCategoriesByMarket, type Category } from '../data/categories';
@@ -1380,6 +1381,12 @@ export default function RoomDetailMaq7() {
           </section>
         </div>
       </motion.main>
+
+      {/* Pied de page éditorial, comme sur l'accueil et la recherche. Le scope
+          fournit les variables CSS --acc-* dont LandingFooter dépend. */}
+      <div className="room-detail-footer-scope">
+        <LandingFooter />
+      </div>
     </motion.div>
   );
 }

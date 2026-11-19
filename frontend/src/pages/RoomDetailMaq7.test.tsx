@@ -177,6 +177,13 @@ describe('RoomDetailMaq7 — états', () => {
     expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
   });
 
+  it('affiche le pied de page éditorial à la fin de la fiche', async () => {
+    await renderLoaded();
+
+    expect(screen.getByRole('contentinfo')).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Navigation du pied de page' })).toBeInTheDocument();
+  });
+
   it('affiche la barre de navigation de l’accueil du marché', async () => {
     await renderLoaded();
 

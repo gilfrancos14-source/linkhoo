@@ -145,7 +145,7 @@ export default function LandingFooter() {
           </div>
 
           <div>
-            <nav className="acc-footer__legal" aria-label={t('footer.aria.navigationMain')}>
+            <nav className="acc-footer__legal" aria-label={t('footer.aria.navigationFooter')}>
               <h3>{t('footer.landing.legalLinksTitle')}</h3>
               <ul className="acc-footer__list">
                 <li>
