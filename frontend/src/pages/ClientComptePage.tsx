@@ -108,7 +108,7 @@ export default function ClientComptePage() {
   const handleCancel = async (id: string) => {
     if (
       !window.confirm(
-        "Annuler cette réservation ? Le remboursement vous sera versé à 98 % du montant (frais d'annulation de 2 %).",
+        "Annuler cette réservation ? Le remboursement vous sera versé à 97 % du montant (frais d'annulation de 3 %).",
       )
     )
       return;

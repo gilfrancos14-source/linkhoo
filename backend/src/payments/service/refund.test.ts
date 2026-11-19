@@ -53,6 +53,8 @@ const PAYMENT = {
   amount: 150_000,
   currency: 'XOF',
   provider_payment_id: 'dep_pawapay',
+  gerant_clerk_user_id: 'user_gerant_1',
+  market: 'CI',
 };
 
 function refundEvent(
@@ -180,18 +182,20 @@ describe('requestReservationRefund', () => {
 
     expect(supabaseAdmin.rpc).toHaveBeenCalledWith(
       'payment_request_refund',
-      // Annulation : la plateforme retient 2 % (3 000), le client reçoit 147 000.
+      // Annulation : retenue 3 % (4 500) partagée 2 250 / 2 250,
+      // le client reçoit 145 500 (97 %).
       expect.objectContaining({
         p_payment_id: 'pay-1',
-        p_amount: 147_000,
-        p_platform_fee: 3_000,
+        p_amount: 145_500,
+        p_platform_fee: 2_250,
+        p_gerant_fee: 2_250,
       }),
     );
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toContain('/v2/refunds');
     expect(JSON.parse(String(init.body))).toMatchObject({
       depositId: 'dep_pawapay',
-      amount: '147000',
+      amount: '145500',
       currency: 'XOF',
     });
     expect(JSON.parse(String(init.body)).refundId).toEqual(expect.any(String));
@@ -205,9 +209,70 @@ describe('requestReservationRefund', () => {
       requested: true,
       status: 'processing',
       refundId: 'refund-db-1',
-      platformFee: 3_000,
-      clientAmount: 147_000,
+      platformFee: 2_250,
+      gerantFee: 2_250,
+      clientAmount: 145_500,
     });
+  });
+
+  it('crée un payout dédié pour la part du gérant lors d’une annulation', async () => {
+    const payoutChain = fakeChain({ data: null, error: null });
+    const gerantChain = fakeChain({
+      data: {
+        clerk_user_id: 'user_gerant_1',
+        market: 'CI',
+        payout_method: 'mobile_money',
+        payout_phone: '+2250700000000',
+        payout_provider: 'ORANGE_CIV',
+        payout_holder_name: 'Awa Koné',
+        payout_verified_at: '2026-10-01T00:00:00.000Z',
+        is_verified: true,
+        is_premium: false,
+        premium_expires_at: null,
+      },
+      error: null,
+    });
+    useSupabaseTables(supabaseAdmin.from, {
+      reservations: fakeChain({ data: RESERVATION, error: null }),
+      payments: fakeChain({ data: PAYMENT, error: null }),
+      payment_refunds: [
+        fakeChain({ data: [], error: null }),
+        fakeChain({ data: null, error: null }),
+      ],
+      gerants: gerantChain,
+      payment_payouts: payoutChain,
+    });
+    vi.mocked(supabaseAdmin.rpc).mockResolvedValue({
+      data: [{ refund_id: 'refund-db-1', already_refunded: 0, remaining: 0 }],
+      error: null,
+    } as never);
+    stubFetch({
+      refundId: 'refund-pawa-1',
+      status: 'ACCEPTED',
+      amount: '145500',
+      currency: 'XOF',
+      created: '2026-10-27T10:00:00.000Z',
+    });
+
+    await requestReservationRefund({
+      reservationId: 'resa-1',
+      reason: 'client_cancellation',
+      requestedBy: 'client:user_1',
+    });
+
+    expect(payoutChain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'cancellation_fee',
+        reservation_id: 'resa-1',
+        gerant_clerk_user_id: 'user_gerant_1',
+        net_amount: 2_250,
+        gross_amount: 2_250,
+        commission_amount: 0,
+        refunded_amount: 0,
+        currency: 'XOF',
+        status: 'scheduled',
+      }),
+    );
   });
 
   it('rembourse la totalité hors annulation client (pas de frais)', async () => {
@@ -237,7 +302,7 @@ describe('requestReservationRefund', () => {
 
     expect(supabaseAdmin.rpc).toHaveBeenCalledWith(
       'payment_request_refund',
-      expect.objectContaining({ p_amount: 150_000, p_platform_fee: 0 }),
+      expect.objectContaining({ p_amount: 150_000, p_platform_fee: 0, p_gerant_fee: 0 }),
     );
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(JSON.parse(String(init.body)).amount).toBe('150000');
@@ -270,7 +335,7 @@ describe('requestReservationRefund', () => {
 
     expect(supabaseAdmin.rpc).toHaveBeenCalledWith(
       'payment_request_refund',
-      expect.objectContaining({ p_amount: 150_000, p_platform_fee: 0 }),
+      expect.objectContaining({ p_amount: 150_000, p_platform_fee: 0, p_gerant_fee: 0 }),
     );
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(JSON.parse(String(init.body)).amount).toBe('150000');

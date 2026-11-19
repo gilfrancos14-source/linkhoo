@@ -1,8 +1,9 @@
 /**
  * Remboursements pawaPay (phase 3).
  *
- * Règle produit : un remboursement est TOTAL, sauf en cas d'annulation : la
- * plateforme y retient 2 % (frais d'encaissement) et le client reçoit 98 %.
+ * Règle produit : un remboursement est TOTAL, sauf en cas d'annulation : une
+ * retenue de 3 % est partagée moitié-moitié (1,5 % plateforme, 1,5 % gérant)
+ * et le client reçoit 97 %.
  *
  * Séquence :
  *   1. `payment_request_refund` réserve le montant SOUS VERROU et met à jour
@@ -24,6 +25,7 @@ import type { PawapayCurrency } from '../pawapay/types';
 import type { RefundStatus } from '../types';
 import { splitCancellationFee } from '../cancellation';
 import { reconcileReservationRefundState } from './refundReconcile';
+import { scheduleCancellationFeePayout } from './payout';
 
 export type RefundReason =
   | 'client_cancellation'
@@ -47,9 +49,11 @@ export interface RefundOutcome {
   readonly refundId: string | null;
   readonly reason?: RefundMissReason;
   readonly details?: string;
-  /** Frais d'annulation conservés par la plateforme (2 %). */
+  /** Frais d'annulation conservés par la plateforme (1,5 %). */
   readonly platformFee?: number;
-  /** Montant effectivement renvoyé au client. */
+  /** Part de la retenue reversée au gérant (1,5 %). */
+  readonly gerantFee?: number;
+  /** Montant effectivement renvoyé au client (97 %). */
   readonly clientAmount?: number;
 }
 
@@ -65,6 +69,8 @@ interface RefundablePayment {
   amount: number;
   currency: string;
   provider_payment_id: string | null;
+  gerant_clerk_user_id: string | null;
+  market: string;
 }
 
 const REASON_DETAILS: Record<RefundReason, string> = {
@@ -81,7 +87,7 @@ const REASON_DETAILS: Record<RefundReason, string> = {
 const ALIVE_REFUND_STATUSES = ['requested', 'processing', 'succeeded', 'manual_required'] as const;
 
 /**
- * Motifs qui déclenchent les frais d'annulation (2 %).
+ * Motifs qui déclenchent la retenue d'annulation (3 %).
  *
  * Uniquement l'annulation par le CLIENT : c'est lui qui a réservé et
  * annulé. Un refus ou une annulation du gérant, une décision de la
@@ -108,7 +114,8 @@ async function fetchReservation(reservationId: string): Promise<ReservationRefun
 async function fetchRefundablePayment(
   reservation: ReservationRefundRow,
 ): Promise<RefundablePayment | null> {
-  const columns = 'id, status, amount, currency, provider_payment_id';
+  const columns =
+    'id, status, amount, currency, provider_payment_id, gerant_clerk_user_id, market';
 
   if (reservation.payment_id) {
     const { data, error } = await supabaseAdmin
@@ -140,8 +147,8 @@ async function alreadyRefundedAmount(paymentId: string): Promise<number> {
     .in('status', [...ALIVE_REFUND_STATUSES]);
 
   if (error) throw error;
-  // Les frais d'annulation (2 %) sont conservés par la plateforme : ils
-  // comptent comme déjà remboursés, sinon un second appel les reverserait.
+  // Les retenues d'annulation (part plateforme + part gérant) sont conservées
+  // : elles comptent comme déjà remboursées, sinon un second appel les reverserait.
   return (
     (data as { amount: number | string; policy_snapshot?: { platform_fee?: number } | null }[] | null) ??
     []
@@ -251,15 +258,15 @@ export async function requestReservationRefund(input: {
   // son API — donc on le garde exploitable en base).
   const details = input.reasonDetails?.trim() || REASON_DETAILS[input.reason];
 
-  // Frais d'annulation : quand c'est le CLIENT qui annule, la plateforme
-  // conserve 2 % du montant (frais d'encaissement) et le client reçoit le
-  // reste. Un refus ou une annulation du gérant n'est pas pénalisé.
+  // Retenue d'annulation : quand c'est le CLIENT qui annule, 3 % sont retenus
+  // et partagés moitié-moitié entre la plateforme et le gérant ; le client
+  // reçoit 97 %. Un refus ou une annulation du gérant n'est pas pénalisé.
   // Sur une annulation, la commission habituelle (5/10/15 %) n'est pas
   // prélevée : elle ne s'applique qu'aux séjours réellement effectués.
   const cancellation = CANCELLATION_REFUND_REASONS.has(input.reason);
-  const { fee, clientAmount } = cancellation
+  const { platformFee, gerantFee, clientAmount } = cancellation
     ? splitCancellationFee(remaining)
-    : { fee: 0, clientAmount: remaining };
+    : { platformFee: 0, gerantFee: 0, clientAmount: remaining };
 
   if (clientAmount <= 0) {
     return { requested: false, status: null, refundId: null, reason: 'already_refunded' };
@@ -276,7 +283,8 @@ export async function requestReservationRefund(input: {
       commission_percent: 0,
       deposit_percent: 100,
     },
-    p_platform_fee: fee,
+    p_platform_fee: platformFee,
+    p_gerant_fee: gerantFee,
   });
 
   if (error) {
@@ -354,11 +362,40 @@ export async function requestReservationRefund(input: {
       provider_status: response.status ?? 'ACCEPTED',
     });
 
+    // La part du gérant lui est reversée immédiatement via un payout dédié.
+    // Elle n'est créée QUE sur le chemin de succès : si le prestataire refuse
+    // (4xx), `payment_cancel_refund` annule la retenue et aucun payout ne part.
+    if (cancellation && gerantFee > 0) {
+      if (!payment.gerant_clerk_user_id) {
+        console.warn('[refund] part gérant non reversée : gérant inconnu', {
+          refundId,
+          reservationId: reservation.id,
+        });
+      } else {
+        try {
+          await scheduleCancellationFeePayout({
+            refundId,
+            reservationId: reservation.id,
+            paymentId: payment.id,
+            gerantClerkUserId: payment.gerant_clerk_user_id,
+            market: payment.market as Parameters<typeof scheduleCancellationFeePayout>[0]['market'],
+            currency: payment.currency,
+            amount: gerantFee,
+          });
+        } catch (payoutError) {
+          // Le remboursement client a réussi : un échec du payout gérant ne doit
+          // pas le faire échouer. La ligne sera reprise par la réconciliation.
+          console.error('[refund] payout part gérant impossible :', payoutError);
+        }
+      }
+    }
+
     return {
       requested: true,
       status: 'processing',
       refundId,
-      platformFee: fee,
+      platformFee,
+      gerantFee,
       clientAmount,
     };
   } catch (error) {

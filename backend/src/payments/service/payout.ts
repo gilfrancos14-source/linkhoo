@@ -475,6 +475,74 @@ export async function scheduleDuePayoutsPawapay(now: Date = new Date()): Promise
   return { skipped: false, checked: reservations.length, created, blocked };
 }
 
+/**
+ * Crée le reversement dédié de la part du gérant sur la retenue d'annulation.
+ *
+ * Appelé après qu'un remboursement CLIENT a été accepté par le prestataire :
+ * la part gérant (1,5 % du montant, cf. cancellation.ts) lui est versée
+ * immédiatement via le même circuit pawaPay sécurisé que les autres payouts.
+ *
+ * Idempotence : la référence `OUT-CF-<refundId>` est unique, et l'index partiel
+ * `uq_payment_payouts_reservation` empêche un second payout actif sur la même
+ * réservation. Deux passages concurrents ne produisent donc qu'une seule ligne.
+ */
+export async function scheduleCancellationFeePayout(input: {
+  refundId: string;
+  reservationId: string;
+  paymentId: string;
+  gerantClerkUserId: string;
+  market: MarketCode;
+  currency: string;
+  amount: number;
+}): Promise<boolean> {
+  if (!isPawapayProvider()) return false;
+  if (input.amount <= 0) return false;
+
+  const amount = Math.trunc(input.amount);
+  const settings = await getPayoutSettings(input.gerantClerkUserId);
+  const verified = settings ? hasValidPawapayDestination(settings) : false;
+  const destinationType: PayoutMethod = settings?.payout_method ?? 'mobile_money';
+
+  const { error } = await supabaseAdmin.from('payment_payouts').insert({
+    // Préfixe distinct des payouts de séjour, dérivé du refund : stable et unique.
+    reference: `OUT-CF-${input.refundId.replace(/-/g, '').toUpperCase()}`,
+    reservation_id: input.reservationId,
+    gerant_clerk_user_id: input.gerantClerkUserId,
+    market: input.market,
+    gross_amount: amount,
+    commission_amount: 0,
+    refunded_amount: 0,
+    net_amount: amount,
+    currency: input.currency,
+    destination_type: destinationType,
+    destination_phone: settings?.payout_phone ?? null,
+    destination_provider: settings?.payout_provider ?? null,
+    destination_holder_name: settings?.payout_holder_name ?? null,
+    status: 'scheduled',
+    scheduled_for: new Date().toISOString(),
+    kind: 'cancellation_fee',
+    failure_code: verified && settings ? null : 'payout_details_missing',
+    failure_message:
+      verified && settings ? null : 'Coordonnées de reversement à compléter et vérifier.',
+  });
+
+  if (error) {
+    // 23505 = doublon (référence ou réservation) : le payout existe déjà.
+    if (error.code === '23505') return false;
+    throw error;
+  }
+
+  await notifyGerant(
+    input.gerantClerkUserId,
+    verified && settings ? 'payout_scheduled' : 'payout_details_required',
+    verified && settings
+      ? `Un reversement de ${amount} ${input.currency} (part de l'annulation) est programmé.`
+      : 'Un reversement vous attend suite à une annulation : renseignez et faites vérifier vos coordonnées.',
+    input.reservationId,
+  );
+  return true;
+}
+
 export interface ProcessResult {
   readonly skipped: boolean;
   readonly checked: number;

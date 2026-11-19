@@ -144,7 +144,7 @@ pas le droit d'annuler la réservation d'un client :
 
 | Acteur | Peut confirmer | Peut refuser une demande | Peut annuler une réservation confirmée |
 |---|---|---|---|
-| Le client | — | — | ✅ oui (frais de 2 %) |
+| Le client | — | — | ✅ oui (retenue de 3 %) |
 | Le gérant | ✅ | ✅ (demande en attente) | ❌ **403** |
 | L'administrateur | ✅ | ✅ (demande en attente, chambre indisponible) | ❌ |
 
@@ -152,15 +152,20 @@ Le gérant qui tente d'annuler un séjour confirmé reçoit un 403
 (`RESERVATION_CANCELLATION_BY_GERANT_FORBIDDEN`) : le client a réservé, la
 chambre est retenue, et seule l'annulation du client libère le séjour.
 
-**Frais d'annulation** — quand le **client** annule, il est remboursé, mais la
-plateforme retient **2 %** du montant (frais d'encaissement) : le client
-reçoit 98 %. La taxe ne concerne que l'annulation par le client : un refus ou
-une annulation du gérant, une décision de la plateforme ne sont pas
-pénalisés (le montant remboursé reste celui décidé). Le frais est un paramètre explicite de la RPC
-`payment_request_refund` (`p_platform_fee`) : la réservation est soldée sur le
-montant total (part client + frais), sinon le back-office proposerait de
-rembourser les 2 % restants. Il est conservé dans `policy_snapshot` et compte
-comme « déjà remboursé », pour qu'une seconde demande ne le reverse pas.
+**Retenue d'annulation** — quand le **client** annule, il est remboursé, mais
+une retenue de **3 %** est appliquée : le client reçoit **97 %**. Cette retenue
+est partagée moitié-moitié entre la plateforme (**1,5 %**, frais d'encaissement)
+et le gérant (**1,5 %**, dédommagement des dates bloquées). La taxe ne concerne
+que l'annulation par le client : un refus ou une annulation du gérant, une
+décision de la plateforme ne sont pas pénalisés (le montant remboursé reste
+celui décidé). Les deux parts sont des paramètres explicites de la RPC
+`payment_request_refund` (`p_platform_fee` et `p_gerant_fee`) : la réservation
+est soldée sur le montant total (part client + retenues), sinon le back-office
+proposerait de rembourser les 3 % restants. Elles sont conservées dans
+`policy_snapshot` et comptent comme « déjà remboursées », pour qu'une seconde
+demande ne les reverse pas. La part du gérant fait l'objet d'un payout dédié
+immédiat (`kind = 'cancellation_fee'`) versé via pawaPay sur ses coordonnées
+vérifiées.
 
 Ces frais ne s'appliquent pas aux décisions du back-office (litige, geste
 commercial) : le montant remboursé reste celui choisi par l'administrateur.
