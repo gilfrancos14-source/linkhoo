@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { verifyToken } from '@clerk/backend';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import reservationsRouter from './reservations';
+import reservationsRouter, { PENDING_TTL_MS } from './reservations';
 import { supabaseAdmin } from '../config/supabase';
 import { publishNotificationChanged } from '../utils/realtime';
 import {
@@ -737,6 +737,12 @@ describe('POST /api/reservations/:id/cancel', () => {
       expect.objectContaining({ type: 'reservation_cancelled', gerant_id: 'user_1' }),
     );
     expect(publishNotificationChanged).toHaveBeenCalledWith('admin', 'gerant');
+  });
+});
+
+describe('expiration des demandes en attente', () => {
+  it('utilise un délai de 24 h aligné sur le job et la migration 0042', () => {
+    expect(PENDING_TTL_MS).toBe(24 * 60 * 60 * 1000);
   });
 });
 

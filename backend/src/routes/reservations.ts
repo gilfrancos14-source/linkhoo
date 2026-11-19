@@ -148,7 +148,11 @@ async function resolveClientEmail(clerkUserId: string): Promise<string | null> {
   return data?.email ?? null;
 }
 
-const PENDING_TTL_MS = 48 * 60 * 60 * 1000;
+// Aligné sur expire_stale_pending_reservations (migration 0042) et le job
+// expireStalePending : une demande en attente non traitée expire après 24 h.
+// (Ne pas confondre avec PAID_PENDING_TTL_MS = 48 h, réservé aux demandes
+// payées mais non confirmées, cf. expirePaidPending.ts.)
+export const PENDING_TTL_MS = 24 * 60 * 60 * 1000;
 
 async function expireStalePending(roomId: string): Promise<void> {
   const cutoff = new Date(Date.now() - PENDING_TTL_MS).toISOString();
