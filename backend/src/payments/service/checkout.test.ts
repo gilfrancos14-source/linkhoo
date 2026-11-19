@@ -94,7 +94,7 @@ afterEach(() => {
 describe('buildPaymentReference', () => {
   it('respecte le format attendu par la base', () => {
     expect(buildPaymentReference(new Date('2026-10-27T10:00:00Z'))).toMatch(
-      /^PAY-2026-[A-F0-9]{12}$/,
+      /^PAY-2026-[A-F0-9]{24}$/,
     );
   });
 
@@ -161,7 +161,7 @@ describe('createCheckout', () => {
       amountXof: 5_000,
       fxRate: 1,
     });
-    expect(session.reference).toMatch(/^PAY-2026-[A-F0-9]{12}$/);
+    expect(session.reference).toMatch(/^PAY-2026-[A-F0-9]{24}$/);
 
     expect(insert.insert).toHaveBeenCalledWith(
       expect.objectContaining({

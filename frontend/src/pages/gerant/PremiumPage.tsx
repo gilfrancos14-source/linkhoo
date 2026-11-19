@@ -12,6 +12,7 @@ import GerantThemeToggle from '../../components/gerant/GerantThemeToggle';
 import MobileMenuButton from '../../components/gerant/MobileMenuButton';
 import { apiPremium, type PremiumPlanId } from '../../lib/api';
 import { isPremiumActive } from '../../lib/premium';
+import { redirectTo } from '../../lib/navigation';
 import '../../styles/26-premium.css';
 const ICONS: Record<string, ReactNode> = {
   home: (
@@ -279,7 +280,7 @@ export default function PremiumPage() {
     try {
       const { checkout_url } = await apiPremium.initiate(market, plan);
       if (!checkout_url) throw new Error('URL de paiement indisponible');
-      window.location.href = checkout_url;
+      redirectTo(checkout_url);
     } catch (err: any) {
       setError(err?.message || "Erreur lors de l'initiation du paiement");
       setProcessing(false);

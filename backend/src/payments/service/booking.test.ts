@@ -4,6 +4,7 @@ import { fakeChain, useSupabaseTables } from '../../testHelpers/supertestApp';
 import { startBookingPayment, confirmBookingPayment } from './booking';
 import { createCheckout } from './checkout';
 import { lookupProviderPayment } from './providerStatus';
+import { createBookingReturnToken } from '../returnToken';
 
 vi.mock('../../config/supabase', async () => {
   const helper = await import('../../testHelpers/supertestApp');
@@ -98,6 +99,21 @@ describe('startBookingPayment', () => {
     expect(createCheckout).not.toHaveBeenCalled();
   });
 
+  it('refuse de rouvrir un checkout pour une réservation remboursée', async () => {
+    stubTables({
+      reservations: fakeChain({
+        data: { ...RESERVATION, payment_status: 'refunded' },
+        error: null,
+      }),
+      rooms: fakeChain({ data: ROOM, error: null }),
+    });
+
+    await expect(
+      startBookingPayment('11111111-1111-4111-8111-111111111111'),
+    ).rejects.toMatchObject({ code: 'PAYMENT_NOT_PAYABLE', status: 409 });
+    expect(createCheckout).not.toHaveBeenCalled();
+  });
+
   it('laisse le circuit direct quand le marché a le paiement en ligne fermé', async () => {
     stubTables({
       reservations: fakeChain({ data: RESERVATION, error: null }),
@@ -130,7 +146,8 @@ describe('startBookingPayment', () => {
         amountXof: RESERVATION.montant,
         reservationId: RESERVATION.id,
         gerantClerkUserId: 'user_1',
-        returnPath: '/ci/reservation/paiement',
+        returnPath: expect.stringMatching(/^\/ci\/reservation\/paiement\/[\w.-]+$/),
+        failurePath: expect.stringMatching(/^\/ci\/reservation\/paiement\/[\w.-]+$/),
         reusePendingPayment: true,
       }),
     );
@@ -195,6 +212,30 @@ describe('confirmBookingPayment', () => {
       code: 'PAYMENT_NOT_BOOKING',
       status: 400,
     });
+  });
+
+  it('403 quand le jeton de retour ne correspond pas à la réservation', async () => {
+    stubTables({ payments: fakeChain({ data: PAYMENT, error: null }) });
+
+    await expect(
+      confirmBookingPayment('PAY-2026-ABC123', 'jeton-invalide'),
+    ).rejects.toMatchObject({ code: 'PAYMENT_FORBIDDEN', status: 403 });
+    expect(lookupProviderPayment).not.toHaveBeenCalled();
+  });
+
+  it('accepte un jeton signé pour la bonne réservation', async () => {
+    stubTables({
+      payments: fakeChain({
+        data: { ...PAYMENT, status: 'succeeded', fulfilled_at: '2026-10-27T10:00:00.000Z' },
+        error: null,
+      }),
+      reservations: fakeChain({ data: CONFIRMED, error: null }),
+    });
+
+    const token = createBookingReturnToken(PAYMENT.reservation_id);
+    const result = await confirmBookingPayment('PAY-2026-ABC123', token);
+
+    expect(result).toMatchObject({ alreadyPaid: true, paymentStatus: 'paid' });
   });
 
   it('ne rappelle pas pawaPay quand le webhook a déjà tout traité', async () => {

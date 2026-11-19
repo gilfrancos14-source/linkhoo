@@ -7,6 +7,7 @@ import { marketByCode, type MarketCode } from '../../config/markets';
 import type { ClientMineReservationData, ReviewData } from '../../lib/api';
 import { canPayReservation, paymentLabels } from '../../lib/reservations';
 import { formatPrice } from '../../lib/roomDisplay';
+import { clearSessionCaches } from '../../lib/pwaCleanup';
 import ReviewForm from './ReviewForm';
 import type { ReviewFormState } from './types';
 import ClientReservationsCalendar from './ClientReservationsCalendar';
@@ -191,6 +192,7 @@ export default function ClientReservationsMaq({
   const todayIso = new Date().toISOString().slice(0, 10);
 
   const handleSignOut = async () => {
+    void clearSessionCaches();
     await signOut();
     navigate(homePath);
   };

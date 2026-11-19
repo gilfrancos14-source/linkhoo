@@ -82,7 +82,7 @@ describe('ReservationPaymentPage', () => {
       screen.getByRole('heading', { name: 'Confirmation en cours...' }),
     ).toBeInTheDocument();
     expect(screen.getByText('Vérification de votre paiement...')).toBeInTheDocument();
-    expect(mocks.confirm).toHaveBeenCalledWith('pay-1');
+    expect(mocks.confirm).toHaveBeenCalledWith('pay-1', undefined);
   });
 
   it('confirme le paiement et affiche le récapitulatif de la réservation', async () => {
@@ -176,8 +176,8 @@ describe('ReservationPaymentPage', () => {
 
     expect(await screen.findByText('Paiement confirmé')).toBeInTheDocument();
     expect(mocks.confirm).toHaveBeenCalledTimes(2);
-    expect(mocks.confirm).toHaveBeenNthCalledWith(1, 'pay-1');
-    expect(mocks.confirm).toHaveBeenNthCalledWith(2, 'pay-1');
+    expect(mocks.confirm).toHaveBeenNthCalledWith(1, 'pay-1', undefined);
+    expect(mocks.confirm).toHaveBeenNthCalledWith(2, 'pay-1', undefined);
     expect(
       screen.queryByRole('button', { name: 'Revérifier le paiement' }),
     ).not.toBeInTheDocument();

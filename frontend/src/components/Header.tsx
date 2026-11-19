@@ -209,7 +209,7 @@ export default function Header() {
           className="logo"
           aria-label={t('footer.aria.logo')}
         >
-          <img className="logo__mark logo__img" src="/logo.jpg" alt={t('logo.alt')} width="64" height="64" loading="eager" fetchPriority="high" />
+          <img className="logo__mark logo__img" src="/logo.jpg" alt={t('footer.logo.alt')} width="64" height="64" loading="eager" fetchPriority="high" />
         </Link>
 
         <nav className="header-nav" aria-label={t('footer.aria.navigationMain')}>

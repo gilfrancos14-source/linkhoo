@@ -8,6 +8,7 @@ import { apiMessages, type ClientMineReservationData, type Conversation, type Fa
 import { statutLabels } from '../../lib/reservations';
 import { formatPrice, priceWithCurrency } from '../../lib/roomDisplay';
 import { AnimatedSection } from '../../lib/animations';
+import { clearSessionCaches } from '../../lib/pwaCleanup';
 import ClientSidebar from '../../components/client/ClientSidebar';
 import ClientSidebarToggle from '../../components/client/ClientSidebarToggle';
 
@@ -278,6 +279,7 @@ export default function ClientDashboardMaq({
   const favoriteRooms = favorites.slice(0, 3);
 
   const handleSignOut = async () => {
+    void clearSessionCaches();
     await signOut();
     navigate(homePath);
   };

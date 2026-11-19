@@ -1,9 +1,12 @@
 import request from 'supertest';
+import { verifyToken } from '@clerk/backend';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import reservationsRouter from './reservations';
 import { supabaseAdmin } from '../config/supabase';
 import {
   buildTestApp,
+  clerkBearer,
+  defaultVerifyToken,
   fakeChain,
   useSupabaseTables,
 } from '../testHelpers/supertestApp';
@@ -37,6 +40,7 @@ const payloadValide = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(verifyToken).mockImplementation(defaultVerifyToken);
   const rooms = fakeChain({
     data: {
       id: 'room-1',
@@ -50,6 +54,7 @@ beforeEach(() => {
   });
   useSupabaseTables(supabaseAdmin.from, {
     rooms,
+    clients: fakeChain({ data: { email: 'jean@example.ci' }, error: null }),
     reservations: fakeChain({ data: null, error: null }),
     notifications: fakeChain({ data: null, error: null }),
   });
@@ -63,7 +68,10 @@ describe('POST /api/reservations — limite de débit', () => {
   it('429 une fois la limite de 10 créations par tranche atteinte', async () => {
     let dernier = 0;
     for (let tentative = 0; tentative < 12; tentative += 1) {
-      const res = await request(app).post('/api/reservations').send(payloadValide);
+      const res = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', clerkBearer('user_1'))
+        .send(payloadValide);
       dernier = res.status;
       if (res.status === 429) break;
     }

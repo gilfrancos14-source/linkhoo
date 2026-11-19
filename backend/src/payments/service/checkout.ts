@@ -32,7 +32,7 @@ export interface CreateCheckoutInput {
 }
 
 export function buildPaymentReference(now: Date = new Date()): string {
-  const suffix = randomBytes(6).toString('hex').toUpperCase();
+  const suffix = randomBytes(12).toString('hex').toUpperCase();
   return `PAY-${now.getUTCFullYear()}-${suffix}`;
 }
 

@@ -79,7 +79,11 @@ export function readQueue(): OfflineQueueItem[] {
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isQueueItem);
+    const fresh = parsed.filter(isQueueItem).filter(
+      (item) => Date.now() - Date.parse(item.createdAt) <= MAX_AGE_MS,
+    );
+    if (fresh.length !== parsed.length) writeQueue(fresh);
+    return fresh;
   } catch {
     return [];
   }
@@ -98,8 +102,14 @@ function writeQueue(items: OfflineQueueItem[]): void {
 }
 
 export function enqueue(item: OfflineQueueItemInput): OfflineQueueItem {
+  // Le serveur dérive désormais l'email du profil Clerk : on ne persiste pas
+  // l'email saisi dans le formulaire dans le localStorage.
+  const sanitized: OfflineQueueItemInput =
+    item.type === 'reservation'
+      ? { ...item, payload: { ...item.payload, clientEmail: 'client@local.invalid' } }
+      : item;
   const entry: OfflineQueueItem = {
-    ...item,
+    ...sanitized,
     id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     createdAt: new Date().toISOString(),
   } as OfflineQueueItem;

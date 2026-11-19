@@ -159,6 +159,11 @@ export async function request<T>(path: string, options?: RequestOptions): Promis
     ...(extraHeaders as Record<string, string> | undefined),
   };
 
+  // Marqueur lu par le service worker : seuls les GET portant ce header peuvent
+  // être mis en cache. Sans lui, aucune réponse utilisateur ne doit être
+  // persistée (la clé du Cache API est l'URL, pas l'en-tête Authorization).
+  if (isPublic) headers['X-Public-Api'] = '1';
+
   if (!isPublic) {
     const token = await resolveAuthToken();
     if (token) {
@@ -552,10 +557,10 @@ export const apiReservations = {
   startPayment: (id: string) =>
     request<ReservationPaymentStart>(`/reservations/${id}/payment`, { method: 'POST' }),
   /** Confirme le retour de checkout ; le webhook reste le chemin nominal. */
-  confirmPayment: (reference: string) =>
+  confirmPayment: (reference: string, token?: string) =>
     request<ReservationPaymentConfirmation>('/reservations/payment/confirm', {
       method: 'POST',
-      body: JSON.stringify({ reference }),
+      body: JSON.stringify({ reference, confirm_token: token }),
     }),
   checkConflict: (roomId: string, dateDebut: string, dateFin: string, excludeId?: string) =>
     request<{ hasConflict: boolean }>(`/reservations/check?room_id=${roomId}&date_debut=${dateDebut}&date_fin=${dateFin}${excludeId ? `&exclude_id=${excludeId}` : ''}`),

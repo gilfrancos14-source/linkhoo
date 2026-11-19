@@ -10,6 +10,28 @@ interface OfflineRequest {
   maxRetries?: number;
 }
 
+const OFFLINE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+// Les écritures financières / d'authentification ne sont jamais mises en file :
+// un rejeu tardif pourrait créer un doublon ou utiliser un jeton expiré.
+const UNSAFE_OFFLINE_PATHS = [
+  /\/api\/reservations(?:\/|$)/,
+  /\/api\/premium(?:\/|$)/,
+  /\/api\/payments(?:\/|$)/,
+  /\/api\/auth(?:\/|$)/,
+  /\/api\/admin(?:\/|$)/,
+];
+
+function isSafeOfflineRequest(url: string, method: string): boolean {
+  if (method.toUpperCase() !== 'POST') return false;
+  try {
+    const { pathname } = new URL(url, window.location.href);
+    return !UNSAFE_OFFLINE_PATHS.some((pattern) => pattern.test(pathname));
+  } catch {
+    return false;
+  }
+}
+
 interface SyncStatus {
   isSyncing: boolean;
   lastSync: Date | null;
@@ -61,9 +83,16 @@ export const useOfflineQueue = (): OfflineQueueReturn => {
   const loadOfflineRequests = useCallback(async () => {
     try {
       const requests = await getIndexedDBRequests();
+      const usable = requests.filter((request) =>
+        Date.now() - request.timestamp <= OFFLINE_MAX_AGE_MS &&
+        isSafeOfflineRequest(request.url, request.method),
+      );
+      requests.filter((request) => !usable.includes(request)).forEach((request) => {
+        void deleteIndexedDBRequest(request.id);
+      });
       setStatus(prev => ({
         ...prev,
-        pendingRequests: requests
+        pendingRequests: usable
       }));
     } catch (error) {
       console.error('Erreur lors du chargement des requêtes hors-ligne:', error);
@@ -71,6 +100,7 @@ export const useOfflineQueue = (): OfflineQueueReturn => {
   }, []);
 
   const addRequest = useCallback((request: Omit<OfflineRequest, 'id' | 'timestamp' | 'retries'>): string => {
+    if (!isSafeOfflineRequest(request.url, request.method)) return '';
     const id = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const newRequest: OfflineRequest = {
       ...request,
@@ -109,6 +139,17 @@ export const useOfflineQueue = (): OfflineQueueReturn => {
   }, []);
 
   const syncSingleRequest = useCallback(async (request: OfflineRequest) => {
+    if (
+      Date.now() - request.timestamp > OFFLINE_MAX_AGE_MS ||
+      !isSafeOfflineRequest(request.url, request.method)
+    ) {
+      await deleteIndexedDBRequest(request.id);
+      setStatus(prev => ({
+        ...prev,
+        pendingRequests: prev.pendingRequests.filter((item) => item.id !== request.id),
+      }));
+      return;
+    }
     try {
       const response = await fetch(request.url, {
         method: request.method,

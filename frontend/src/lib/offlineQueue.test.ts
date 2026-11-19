@@ -61,7 +61,10 @@ describe('offlineQueue', () => {
     const stored = readQueue();
     expect(stored).toHaveLength(1);
     expect(stored[0]?.type).toBe('reservation');
-    expect(stored[0]?.payload).toEqual(reservationPayload);
+    expect(stored[0]?.payload).toEqual({
+      ...reservationPayload,
+      clientEmail: 'client@local.invalid',
+    });
   });
 
   it('conserve les éléments dans leur ordre d’ajout et borne la file à 20', () => {
@@ -105,7 +108,10 @@ describe('offlineQueue', () => {
     const result = await flushQueue({ reservation, newsletter });
 
     expect(result).toEqual({ sent: 2, failed: 0, remaining: 0 });
-    expect(reservation).toHaveBeenCalledWith(reservationPayload);
+    expect(reservation).toHaveBeenCalledWith({
+      ...reservationPayload,
+      clientEmail: 'client@local.invalid',
+    });
     expect(newsletter).toHaveBeenCalledWith({ email: 'awa@example.com' });
     expect(readQueue()).toEqual([]);
   });
@@ -149,7 +155,10 @@ describe('offlineQueue', () => {
     const result = await flushQueue();
 
     expect(result).toEqual({ sent: 2, failed: 0, remaining: 0 });
-    expect(vi.mocked(addReservation)).toHaveBeenCalledWith(reservationPayload);
+    expect(vi.mocked(addReservation)).toHaveBeenCalledWith({
+      ...reservationPayload,
+      clientEmail: 'client@local.invalid',
+    });
     expect(vi.mocked(apiNewsletter.subscribe)).toHaveBeenCalledWith({ email: 'awa@example.com' });
   });
 
@@ -238,7 +247,9 @@ describe('offlineQueue', () => {
       const result = await flushQueue({ reservation });
 
       expect(reservation).not.toHaveBeenCalled();
-      expect(result).toEqual({ sent: 0, failed: 1, remaining: 0 });
+      // readQueue() purge désormais les entrées périmées avant le flush :
+      // elles ne sont plus comptées comme « failed ».
+      expect(result).toEqual({ sent: 0, failed: 0, remaining: 0 });
       expect(readQueue()).toEqual([]);
     });
   });

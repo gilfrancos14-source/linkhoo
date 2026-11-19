@@ -137,6 +137,17 @@ function sendPaymentError(res: Response, err: unknown): boolean {
   return false;
 }
 
+/** Email du profil client authentifié : source de vérité pour les réservations. */
+async function resolveClientEmail(clerkUserId: string): Promise<string | null> {
+  const { data, error } = await supabaseAdmin
+    .from('clients')
+    .select('email')
+    .eq('clerk_user_id', clerkUserId)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.email ?? null;
+}
+
 const PENDING_TTL_MS = 48 * 60 * 60 * 1000;
 
 async function expireStalePending(roomId: string): Promise<void> {
@@ -259,12 +270,26 @@ router.get('/client', requireClerkAuth, clientLimiter, async (req: Request, res:
   }
 });
 
-router.post('/', reserveLimiter, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', requireClerkAuth, reserveLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedBody = reservationCreateSchema.safeParse(req.body);
     if (!parsedBody.success) {
       return res.status(400).json({ error: 'Données de réservation invalides' });
     }
+
+    const authUserId = req.auth?.userId;
+    if (!authUserId) return res.status(401).json({ error: 'Non autorisé' });
+
+    // Le client est identifié par son compte Clerk, jamais par le champ
+    // `client_email` du formulaire (sinon n'importe qui réserverait au nom d'un
+    // tiers et polluerait son compte / bloquerait son calendrier).
+    const clientEmail = await resolveClientEmail(authUserId);
+    if (!clientEmail) {
+      return res.status(403).json({ error: 'Profil client introuvable' });
+    }
+    parsedBody.data.client_email = clientEmail.toLowerCase();
+    const isOwnReservation = (row: { client_email?: unknown } | null | undefined): boolean =>
+      String(row?.client_email ?? '').toLowerCase() === clientEmail.toLowerCase();
 
     await expireStalePending(parsedBody.data.room_id);
 
@@ -277,6 +302,11 @@ router.post('/', reserveLimiter, async (req: Request, res: Response, next: NextF
         .maybeSingle();
       if (replayError) throw replayError;
       if (replayed) {
+        // `client_key` ne doit jamais servir à lire la réservation d'un tiers :
+        // même réponse qu'une clé inconnue si le propriétaire diffère.
+        if (!isOwnReservation(replayed as { client_email?: unknown })) {
+          return res.status(404).json({ error: 'Réservation introuvable' });
+        }
         return res.status(200).json(await withBookingPayment(replayed as { id: string }));
       }
     }
@@ -327,6 +357,9 @@ router.post('/', reserveLimiter, async (req: Request, res: Response, next: NextF
           .eq('client_key', clientKey)
           .maybeSingle();
         if (winner) {
+          if (!isOwnReservation(winner as { client_email?: unknown })) {
+            return res.status(404).json({ error: 'Réservation introuvable' });
+          }
           return res.status(200).json(await withBookingPayment(winner as { id: string }));
         }
       }
@@ -336,6 +369,9 @@ router.post('/', reserveLimiter, async (req: Request, res: Response, next: NextF
     if (!data) throw new Error('Création de réservation échouée');
 
     const isReplay = Boolean(clientKey) && data.id !== reservationId;
+    if (isReplay && !isOwnReservation(data as { client_email?: unknown })) {
+      return res.status(404).json({ error: 'Réservation introuvable' });
+    }
 
     if (!isReplay) {
       const { error: notifError } = await supabaseAdmin.from('notifications').insert({
@@ -536,11 +572,34 @@ router.post('/:id/cancel', requireClerkAuth, async (req: Request, res: Response,
   }
 });
 
-router.post('/:id/payment', paymentLimiter, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/payment', requireClerkAuth, paymentLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     if (!parsedParams.success) {
       return res.status(400).json({ error: 'Identifiant invalide' });
+    }
+
+    const authUserId = req.auth?.userId;
+    if (!authUserId) return res.status(401).json({ error: 'Non autorisé' });
+
+    // On n'ouvre un checkout que pour une réservation appartenant au client
+    // connecté. Sans ce contrôle, n'importe qui connaissant un UUID pouvait
+    // générer des sessions pawaPay et passer la réservation en `pending`.
+    const [clientEmail, { data: reservation, error: fetchError }] = await Promise.all([
+      resolveClientEmail(authUserId),
+      supabaseAdmin
+        .from('reservations')
+        .select('client_email')
+        .eq('id', parsedParams.data.id)
+        .maybeSingle(),
+    ]);
+    if (fetchError) throw fetchError;
+    if (!clientEmail) return res.status(403).json({ error: 'Profil client introuvable' });
+    if (!reservation) {
+      return res.status(404).json({ error: 'Réservation introuvable', code: 'PAYMENT_NOT_FOUND' });
+    }
+    if (String(reservation.client_email ?? '').toLowerCase() !== clientEmail.toLowerCase()) {
+      return res.status(403).json({ error: 'Cette réservation ne vous appartient pas' });
     }
 
     const start = await startBookingPayment(parsedParams.data.id);
@@ -578,7 +637,10 @@ router.post('/payment/confirm', paymentLimiter, async (req: Request, res: Respon
       return res.status(400).json({ error: 'Référence de paiement invalide' });
     }
 
-    const confirmation = await confirmBookingPayment(parsedBody.data.reference);
+    const confirmation = await confirmBookingPayment(
+      parsedBody.data.reference,
+      parsedBody.data.confirm_token,
+    );
     return res.json({
       success: true,
       already_paid: confirmation.alreadyPaid,

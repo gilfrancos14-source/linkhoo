@@ -4,6 +4,7 @@ import { useClerk } from '@clerk/clerk-react';
 import { isMarketCode, marketByCode } from '../../config/markets';
 import { apiMessages, apiReviews, apiRooms, type Conversation, type Message, type RoomData } from '../../lib/api';
 import { formatPrice } from '../../lib/roomDisplay';
+import { clearSessionCaches } from '../../lib/pwaCleanup';
 import ClientSidebar from '../../components/client/ClientSidebar';
 import ClientSidebarToggle from '../../components/client/ClientSidebarToggle';
 
@@ -152,6 +153,7 @@ export default function ClientMessagesMaq({
   const fullName = [profileFirstName, profileLastName].filter(Boolean).join(' ') || displayName || 'Client';
 
   const handleSignOut = async () => {
+    void clearSessionCaches();
     await signOut();
     navigate(homePath);
   };

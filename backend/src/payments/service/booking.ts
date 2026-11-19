@@ -14,6 +14,7 @@ import { PaymentServiceError } from '../errors';
 import type { PawapayCurrency } from '../types';
 import { createCheckout } from './checkout';
 import { lookupProviderPayment } from './providerStatus';
+import { createBookingReturnToken, verifyBookingReturnToken } from '../returnToken';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REFERENCE_RE = /^PAY-\d{4}-[A-Z0-9]+$/;
@@ -144,6 +145,17 @@ export async function startBookingPayment(reservationId: string): Promise<Bookin
     return { state: 'paid', reference: (data as { reference?: string } | null)?.reference ?? null };
   }
 
+  // Un séjour déjà remboursé (totalement ou partiellement) ne doit pas pouvoir
+  // rouvrir un checkout : ce serait un second encaissement sur la même
+  // réservation, avec un remboursement déjà versé.
+  if (['refund_pending', 'partially_refunded', 'refunded'].includes(reservation.payment_status)) {
+    throw new PaymentServiceError(
+      'PAYMENT_NOT_PAYABLE',
+      'Cette réservation a déjà été remboursée.',
+      409,
+    );
+  }
+
   const room = await fetchRoom(reservation.room_id);
   if (!room) {
     throw new PaymentServiceError('PAYMENT_NOT_FOUND', 'Chambre introuvable.', 404);
@@ -153,6 +165,12 @@ export async function startBookingPayment(reservationId: string): Promise<Bookin
     return { state: 'unavailable', reason: 'online_payment_disabled' };
   }
 
+  // Le chemin de retour porte un jeton signé lié à la réservation : le retour
+  // navigateur ne peut confirmer un paiement que s'il provient bien de ce
+  // checkout (le webhook reste le chemin nominal, lui est signé par pawaPay).
+  const returnToken = createBookingReturnToken(reservation.id);
+  const returnPath = `/${room.market.toLowerCase()}/reservation/paiement/${returnToken}`;
+
   const session = await createCheckout({
     purpose: 'booking',
     market: room.market,
@@ -161,8 +179,8 @@ export async function startBookingPayment(reservationId: string): Promise<Bookin
     gerantClerkUserId: room.gerant_id,
     reservationId: reservation.id,
     description: `Séjour — ${room.title}`,
-    returnPath: `/${room.market.toLowerCase()}/reservation/paiement`,
-    failurePath: `/${room.market.toLowerCase()}/reservation/paiement`,
+    returnPath,
+    failurePath: returnPath,
     metadata: { reservation_id: reservation.id },
     reusePendingPayment: true,
   });
@@ -252,7 +270,10 @@ function rpcError(error: { message?: string; code?: string }): PaymentServiceErr
   return new PaymentServiceError('PAYMENT_NOT_SUCCEEDED', message, 500);
 }
 
-export async function confirmBookingPayment(reference: string): Promise<BookingConfirmation> {
+export async function confirmBookingPayment(
+  reference: string,
+  confirmToken?: string,
+): Promise<BookingConfirmation> {
   if (!REFERENCE_RE.test(reference)) {
     throw new PaymentServiceError('PAYMENT_NOT_FOUND', 'Paiement introuvable.', 404);
   }
@@ -267,6 +288,20 @@ export async function confirmBookingPayment(reference: string): Promise<BookingC
       "Ce paiement n'est pas une réservation.",
       400,
     );
+  }
+
+  // Le jeton du retour navigateur doit correspondre à la réservation du
+  // paiement. Sans lui (webhook, réconciliation), le chemin serveur reste
+  // utilisable ; c'est pourquoi il reste optionnel ici.
+  if (confirmToken !== undefined) {
+    const tokenReservationId = verifyBookingReturnToken(confirmToken);
+    if (!tokenReservationId || tokenReservationId !== payment.reservation_id) {
+      throw new PaymentServiceError(
+        'PAYMENT_FORBIDDEN',
+        'Lien de confirmation de paiement invalide.',
+        403,
+      );
+    }
   }
 
   if (payment.status === 'succeeded' && payment.fulfilled_at) {

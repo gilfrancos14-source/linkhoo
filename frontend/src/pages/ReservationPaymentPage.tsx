@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useHomePath } from '../hooks/useHomePath';
 import { ApiError, type ReservationData } from '../lib/api';
 import { confirmReservationPayment } from '../lib/reservations';
@@ -28,6 +28,7 @@ function formatDate(value: string | null | undefined): string {
  */
 export default function ReservationPaymentPage() {
   const homePath = useHomePath();
+  const { token } = useParams<{ token?: string }>();
   const [status, setStatus] = useState<Status>('loading');
   const [message, setMessage] = useState('');
   const [reservation, setReservation] = useState<ReservationData | null>(null);
@@ -46,7 +47,7 @@ export default function ReservationPaymentPage() {
     }
 
     try {
-      const result = await confirmReservationPayment(reference);
+      const result = await confirmReservationPayment(reference, token);
       setReservation(result.reservation);
       setStatus('success');
       setMessage('Votre réservation est payée. Le gérant va la confirmer.');
@@ -66,7 +67,7 @@ export default function ReservationPaymentPage() {
         err instanceof Error ? err.message : 'Erreur lors de la confirmation du paiement.',
       );
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     void verify();

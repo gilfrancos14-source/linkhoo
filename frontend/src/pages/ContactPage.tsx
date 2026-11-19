@@ -2,7 +2,7 @@ import ContactCta from '../components/contact/ContactCta';
 import ContactDetails from '../components/contact/ContactDetails';
 import ContactFaq from '../components/contact/ContactFaq';
 import ContactFooter from '../components/contact/ContactFooter';
-import ContactFormPWA from '../components/contact/ContactFormPWA';
+import ContactForm from '../components/contact/ContactForm';
 import ContactHeader from '../components/contact/ContactHeader';
 import ContactHero from '../components/contact/ContactHero';
 import ContactLocation from '../components/contact/ContactLocation';
@@ -25,7 +25,7 @@ export default function ContactPage() {
         <section className="ct-contact">
           <div className="ct-contact__inner">
             <AnimatedSection>
-              <ContactFormPWA />
+              <ContactForm />
             </AnimatedSection>
             <AnimatedSection>
               <ContactDetails />

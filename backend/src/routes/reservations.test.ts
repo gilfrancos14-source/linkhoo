@@ -109,23 +109,63 @@ beforeEach(() => {
 });
 
 describe('POST /api/reservations', () => {
-  it('400 sur un email invalide', async () => {
+  beforeEach(() => {
+    clients = fakeChain({ data: { email: 'jean@example.ci' }, error: null });
+    stubTables({});
+  });
+
+  it('401 sans authentification', async () => {
+    const res = await request(app).post('/api/reservations').send(validReservation);
+    expect(res.status).toBe(401);
+    expect(supabaseAdmin.rpc).not.toHaveBeenCalled();
+  });
+
+  it('403 sans profil client', async () => {
+    clients = fakeChain({ data: null, error: null });
+    stubTables({});
+
     const res = await request(app)
       .post('/api/reservations')
+      .set('Authorization', clerkBearer('user_1'))
+      .send(validReservation);
+    expect(res.status).toBe(403);
+  });
+
+  it('ignore le client_email du formulaire au profit du profil connecté', async () => {
+    rooms = fakeChain({ data: availableRoom, error: null });
+    reservations = fakeChain({ data: [{ id: 'resa-1' }], error: null });
+    stubTables({});
+    mockRpc([{ data: [{ id: 'resa-1', statut: 'en_attente' }], error: null }]);
+
+    const res = await request(app)
+      .post('/api/reservations')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ ...validReservation, client_email: 'victime@example.ci' });
+
+    expect(res.status).toBe(201);
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith(
+      'create_reservation_checked',
+      expect.objectContaining({ p_client_email: 'jean@example.ci' }),
+    );
+  });
+
+  it('400 sur un email invalide', async () => {
+    const res = await request(app)
+      .post('/api/reservations').set('Authorization', clerkBearer('user_1'))
       .send({ ...validReservation, client_email: 'pas-un-email' });
     expect(res.status).toBe(400);
   });
 
   it('400 si la date de fin n’est pas après la date de début', async () => {
     const res = await request(app)
-      .post('/api/reservations')
+      .post('/api/reservations').set('Authorization', clerkBearer('user_1'))
       .send({ ...validReservation, date_fin: '2026-05-01' });
     expect(res.status).toBe(400);
   });
 
   it('400 si la date de fin ne correspond pas à la durée', async () => {
     const res = await request(app)
-      .post('/api/reservations')
+      .post('/api/reservations').set('Authorization', clerkBearer('user_1'))
       .send({ ...validReservation, date_fin: '2026-05-08' });
     expect(res.status).toBe(400);
   });
@@ -134,7 +174,7 @@ describe('POST /api/reservations', () => {
     rooms = fakeChain({ data: availableRoom, error: null });
     stubTables({});
 
-    const res = await request(app).post('/api/reservations').send({
+    const res = await request(app).post('/api/reservations').set('Authorization', clerkBearer('user_1')).send({
       ...validReservation,
       date_debut: '2026-05-01',
       date_fin: '2026-06-01',
@@ -147,7 +187,7 @@ describe('POST /api/reservations', () => {
   });
 
   it('404 si la chambre n’existe pas', async () => {
-    const res = await request(app).post('/api/reservations').send(validReservation);
+    const res = await request(app).post('/api/reservations').set('Authorization', clerkBearer('user_1')).send(validReservation);
     expect(res.status).toBe(404);
   });
 
@@ -155,7 +195,7 @@ describe('POST /api/reservations', () => {
     rooms = fakeChain({ data: { ...availableRoom, disponible: false }, error: null });
     stubTables({});
 
-    const res = await request(app).post('/api/reservations').send(validReservation);
+    const res = await request(app).post('/api/reservations').set('Authorization', clerkBearer('user_1')).send(validReservation);
     expect(res.status).toBe(409);
   });
 
@@ -164,7 +204,7 @@ describe('POST /api/reservations', () => {
     stubTables({});
     mockRpc([{ data: [{ id: 'resa-1', statut: 'en_attente' }], error: null }]);
 
-    const res = await request(app).post('/api/reservations').send(validReservation);
+    const res = await request(app).post('/api/reservations').set('Authorization', clerkBearer('user_1')).send(validReservation);
 
     expect(res.status).toBe(201);
     expect(res.body).toEqual({ id: 'resa-1', statut: 'en_attente', payment: null });
@@ -200,7 +240,7 @@ describe('POST /api/reservations', () => {
     stubTables({});
     mockRpc([{ data: [{ id: 'resa-2', statut: 'en_attente' }], error: null }]);
 
-    const res = await request(app).post('/api/reservations').send({
+    const res = await request(app).post('/api/reservations').set('Authorization', clerkBearer('user_1')).send({
       ...validReservation,
       date_debut: '2026-05-01',
       date_fin: '2026-07-01',
@@ -221,7 +261,7 @@ describe('POST /api/reservations', () => {
     stubTables({});
     mockRpc([{ data: null, error: { message: 'DATE_CONFLICT: chevauchement' } }]);
 
-    const res = await request(app).post('/api/reservations').send(validReservation);
+    const res = await request(app).post('/api/reservations').set('Authorization', clerkBearer('user_1')).send(validReservation);
     expect(res.status).toBe(409);
   });
 
@@ -231,7 +271,7 @@ describe('POST /api/reservations', () => {
     mockRpc((args) => ({ data: [{ id: args.p_id, statut: 'en_attente' }], error: null }));
 
     const res = await request(app)
-      .post('/api/reservations')
+      .post('/api/reservations').set('Authorization', clerkBearer('user_1'))
       .send({ ...validReservation, client_key: 'ck-idem-12345678' });
 
     expect(res.status).toBe(201);
@@ -243,12 +283,12 @@ describe('POST /api/reservations', () => {
   });
 
   it('200 : rejeu d’une soumission déjà acceptée (pas de doublon, pas de 2e notification)', async () => {
-    const existing = { id: 'resa-1', client_key: 'ck-idem-12345678', statut: 'en_attente' };
+    const existing = { id: 'resa-1', client_key: 'ck-idem-12345678', statut: 'en_attente', client_email: 'jean@example.ci' };
     reservations = fakeChain({ data: existing, error: null });
     stubTables({});
 
     const res = await request(app)
-      .post('/api/reservations')
+      .post('/api/reservations').set('Authorization', clerkBearer('user_1'))
       .send({ ...validReservation, client_key: 'ck-idem-12345678' });
 
     expect(res.status).toBe(200);
@@ -258,25 +298,42 @@ describe('POST /api/reservations', () => {
     expect(publishNotificationChanged).not.toHaveBeenCalled();
   });
 
+  it('404 sur un rejeu de client_key appartenant à un autre client', async () => {
+    reservations = fakeChain({
+      data: { id: 'resa-etrangere', client_key: 'ck-idem-12345678', client_email: 'victime@example.ci' },
+      error: null,
+    });
+    stubTables({});
+
+    const res = await request(app)
+      .post('/api/reservations')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ ...validReservation, client_key: 'ck-idem-12345678' });
+
+    expect(res.status).toBe(404);
+    expect(res.body).not.toHaveProperty('client_name');
+    expect(supabaseAdmin.rpc).not.toHaveBeenCalled();
+  });
+
   it('200 : course entre deux rejeux → la RPC renvoie la ligne gagnante, sans notification', async () => {
     rooms = fakeChain({ data: availableRoom, error: null });
     stubTables({});
     // La RPC détecte (dans la fonction SQL) qu'une requête concurrente a
     // déjà créé la réservation avec la même clé et renvoie cette ligne-là.
-    mockRpc([{ data: [{ id: 'resa-concurrente', statut: 'en_attente' }], error: null }]);
+    mockRpc([{ data: [{ id: 'resa-concurrente', statut: 'en_attente', client_email: 'jean@example.ci' }], error: null }]);
 
     const res = await request(app)
-      .post('/api/reservations')
+      .post('/api/reservations').set('Authorization', clerkBearer('user_1'))
       .send({ ...validReservation, client_key: 'ck-idem-12345678' });
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ id: 'resa-concurrente', statut: 'en_attente', payment: null });
+    expect(res.body).toEqual({ id: 'resa-concurrente', statut: 'en_attente', client_email: 'jean@example.ci', payment: null });
     expect(notifications.insert).not.toHaveBeenCalled();
   });
 
   it('200 : le cas unique sur client_key renvoie la ligne gagnante, sans notification', async () => {
     rooms = fakeChain({ data: availableRoom, error: null });
-    const winner = { id: 'resa-gagnante', client_key: 'ck-idem-12345678', statut: 'en_attente' };
+    const winner = { id: 'resa-gagnante', client_key: 'ck-idem-12345678', statut: 'en_attente', client_email: 'jean@example.ci' };
     // 1er appel : pré-vérification (rien encore) ; 2e : récupération du gagnant.
     reservations = fakeChain({ data: null, error: null });
     stubTables({ reservations: [reservations, fakeChain({ data: winner, error: null })] });
@@ -285,7 +342,7 @@ describe('POST /api/reservations', () => {
     ]);
 
     const res = await request(app)
-      .post('/api/reservations')
+      .post('/api/reservations').set('Authorization', clerkBearer('user_1'))
       .send({ ...validReservation, client_key: 'ck-idem-12345678' });
 
     expect(res.status).toBe(200);

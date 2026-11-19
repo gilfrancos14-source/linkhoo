@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth, useUser } from '@clerk/clerk-react';
@@ -24,6 +24,7 @@ import { formatDate } from '../lib/formatDate';
 import { redirectTo } from '../lib/navigation';
 import { isPremiumActive } from '../lib/premium';
 import { addReservation } from '../lib/reservations';
+import { newClientKey } from '../lib/offlineQueue';
 import { conditionIcon, conditionLabel } from '../lib/roomConditions';
 import { formatCapacity, priceWithCurrency } from '../lib/roomDisplay';
 import { initialDuree, validateForm, type FormErrors } from './room-detail/roomForm';
@@ -280,7 +281,13 @@ function GalleryPhoto({
   );
 }
 
-function reservationPayloadData(room: Room, form: FormState, dureeNombre: number, unite: DureeUnite) {
+function reservationPayloadData(
+  room: Room,
+  form: FormState,
+  dureeNombre: number,
+  unite: DureeUnite,
+  clientKey: string,
+) {
   return {
     clientName: form.name,
     clientEmail: form.email,
@@ -292,6 +299,7 @@ function reservationPayloadData(room: Room, form: FormState, dureeNombre: number
     dureeNombre,
     dureeUnite: unite,
     montant: room.priceNum * dureeNombre,
+    clientKey,
   };
 }
 
@@ -338,6 +346,12 @@ export default function RoomDetailMaq7() {
   const [shareFeedback, setShareFeedback] = useState(false);
   const [msgLoading, setMsgLoading] = useState(false);
   const [msgError, setMsgError] = useState('');
+
+  // Clé d'idempotence stable pendant la vie du formulaire : un double clic,
+  // un timeout réseau ou une file hors-ligne rejouée renverront la même
+  // réservation au lieu d'en créer une seconde.
+  const clientKeyRef = useRef<string | null>(null);
+  if (clientKeyRef.current === null) clientKeyRef.current = newClientKey();
 
   const [form, setForm] = useState<FormState>(() => ({
     name: '',
@@ -581,7 +595,9 @@ export default function RoomDetailMaq7() {
     setSubmitting(true);
     setSubmitError('');
     try {
-      const created = await addReservation(reservationPayloadData(room, form, dureeNombre, unite));
+      const created = await addReservation(
+        reservationPayloadData(room, form, dureeNombre, unite, clientKeyRef.current as string),
+      );
       // Paiement en ligne disponible : on emmène le client sur le checkout
       // hébergé pawaPay. La réservation est déjà enregistrée et reste
       // consultable depuis son compte si le paiement est abandonné.

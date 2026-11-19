@@ -9,6 +9,7 @@ import GerantNotifications from '../../components/gerant/GerantNotifications';
 import { apiGerants, apiMessages, type GerantData } from '../../lib/api';
 import { GerantSessionProvider } from '../../contexts/GerantSessionContext';
 import { isPremiumActive } from '../../lib/premium';
+import { clearSessionCaches } from '../../lib/pwaCleanup';
 import '../../styles/18-admin.css';
 import '../../styles/33-gerant-blank.css';
 import '../../styles/gerant-dark.css';
@@ -93,6 +94,7 @@ export default function AdminLayout() {
   }, [pathname]);
 
   const handleSignOut = useCallback(() => {
+    void clearSessionCaches();
     if (clerkConfigured) {
       void signOut({ redirectUrl: `/${market.toLowerCase()}/login` });
     } else {

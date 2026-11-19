@@ -162,7 +162,7 @@ function MarketContent() {
         <Route path="/chambre/:id" element={<RoomDetailMaq7 />} />
         <Route path="/recherche" element={<SearchResultsPage />} />
         <Route path="/suivi-reservation" element={<ClientReservationPage />} />
-        <Route path="/reservation/paiement" element={<ReservationPaymentPage />} />
+        <Route path="/reservation/paiement/:token?" element={<ReservationPaymentPage />} />
         <Route path="/compte" element={
           <RoleRouteGuard role="client">
             <MarketProvider>

@@ -146,8 +146,8 @@ export async function startReservationPayment(id: string) {
 }
 
 /** Confirme le retour de checkout (le webhook reste le chemin nominal). */
-export async function confirmReservationPayment(reference: string) {
-  return apiReservations.confirmPayment(reference);
+export async function confirmReservationPayment(reference: string, token?: string) {
+  return apiReservations.confirmPayment(reference, token);
 }
 
 export async function updateReservationStatut(id: string, statut: 'confirmee' | 'annulee'): Promise<void> {

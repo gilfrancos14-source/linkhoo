@@ -77,7 +77,13 @@ docker compose -f docker-compose.prod.yml run --rm api node dist/db/migrateCli.j
 
 Le script vérifie la RAM, le disque, Docker, Nginx, les ports, le pare-feu, le
 DNS, et surtout que `backend/.env.prod` ne contient ni variable vide ni
-`PAWAPAY_ENV=sandbox`. Il sort avec 1 si un point est bloquant.
+`PAWAPAY_ENV=sandbox`. Il vérifie aussi que `PAYMENTS_APPLY_EVENTS=true` est
+présent (sinon les webhooks pawaPay sont ignorés et la confirmation ne repose
+que sur le retour navigateur). Il sort avec 1 si un point est bloquant.
+
+Le CSP de `deploy/nginx/ilehya.conf` autorise le script inline de prefetch par
+son hash SHA-256. **Si vous modifiez le `<script>` de `frontend/index.html`,
+recalculez le hash** et mettez-le à jour dans la directive `script-src`.
 
 ## 3 ter. Compte administrateur et modèle d'images (une fois)
 

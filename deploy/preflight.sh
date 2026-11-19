@@ -82,6 +82,7 @@ if [ -f "$ENV_FILE" ]; then
   done
   if [ -z "$MISSING" ]; then ok "Variables sensibles renseignées"; else ko "Variables vides ou à remplacer :$MISSING"; fi
   if grep -qE "^PAWAPAY_ENV=sandbox" "$ENV_FILE"; then ko "PAWAPAY_ENV=sandbox — la production exige live"; fi
+  if ! grep -qE "^PAYMENTS_APPLY_EVENTS=true" "$ENV_FILE"; then ko "PAYMENTS_APPLY_EVENTS=true absent — les webhooks pawaPay seraient ignorés"; fi
   if grep -qE "^NODE_ENV=development" "$ENV_FILE"; then ko "NODE_ENV=development dans .env.prod"; fi
 else
   ko "backend/.env.prod manquant — cp backend/.env.prod.example backend/.env.prod"

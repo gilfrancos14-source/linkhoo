@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useLocation, Navigate } from 'react-router-dom';
 import { useAuth, useClerk } from '@clerk/clerk-react';
 import { apiAuth, setAuthTokenGetter, ApiError, type AuthRole } from '../lib/api';
+import { clearSessionCaches } from '../lib/pwaCleanup';
 
 const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const clerkConfigured = Boolean(clerkKey && clerkKey.startsWith('pk_'));
@@ -260,6 +261,7 @@ function AuthenticatedGuard({
   };
 
   const handleSignOut = () => {
+    void clearSessionCaches();
     void signOut();
   };
 

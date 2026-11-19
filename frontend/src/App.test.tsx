@@ -339,7 +339,12 @@ describe('App — racine et marché', () => {
 
     // La barre de navigation reste celle de la landing page, avec le menu du marché.
     expect(screen.getByRole('banner')).toBeInTheDocument();
-    const nav = screen.getByRole('navigation', { name: 'Navigation principale' });
+    // La maquette et le header posent chacun une nav « Navigation principale » :
+    // on cible celle qui contient le menu du marché.
+    const nav = screen
+      .getAllByRole('navigation', { name: 'Navigation principale' })
+      .find((candidate) => within(candidate).queryByRole('button', { name: 'Appartements' }));
+    if (!nav) throw new Error('Navigation principale du marché introuvable');
     expect(within(nav).getByRole('button', { name: 'Appartements' })).toBeInTheDocument();
     expect(within(nav).getByRole('button', { name: 'Événements' })).toBeInTheDocument();
     expect(within(nav).getByRole('button', { name: 'Tourisme' })).toBeInTheDocument();

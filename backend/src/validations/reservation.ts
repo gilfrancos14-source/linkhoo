@@ -88,6 +88,8 @@ export const reservationStatusSchema = z
 export const reservationPaymentConfirmSchema = z
   .object({
     reference: paymentReferenceSchema,
+    /** Jeton signé extrait de l'URL de retour (chemin `/paiement/:token`). */
+    confirm_token: z.string().trim().min(10).max(2000),
   })
   .strict();
 

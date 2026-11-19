@@ -363,7 +363,7 @@ describe('appels délégués à apiReservations', () => {
     mocks.confirmPayment.mockResolvedValue(confirmation);
 
     await expect(confirmReservationPayment('pay-1')).resolves.toEqual(confirmation);
-    expect(mocks.confirmPayment).toHaveBeenCalledWith('pay-1');
+    expect(mocks.confirmPayment).toHaveBeenCalledWith('pay-1', undefined);
   });
 
   it('checkDateConflict avec excludeId', async () => {

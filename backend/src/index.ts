@@ -253,6 +253,15 @@ app.use((req, res, next) => {
   next();
 });
 
+// Défense en profondeur : les proxys/CDN et le Cache API du navigateur doivent
+// varier par jeton, et aucune réponse authentifiée ne doit être stockée.
+// Les endpoints publics sans Authorization gardent leur Cache-Control above.
+app.use('/api', (req, res, next) => {
+  res.vary('Authorization');
+  if (req.headers.authorization) res.set('Cache-Control', 'no-store');
+  next();
+});
+
 // ---------------------------------------------------------------------------
 // PARSEURS DÉDIÉS — TOUS AVANT le parser global `express.json()`
 // ---------------------------------------------------------------------------
@@ -343,6 +352,15 @@ const server = app.listen(port, () => {
   // P1 #8 : purge quotidienne des notifications de plus de 30 jours
   // (timers unref, jamais bloquant pour l'arrêt du process).
   startNotificationPurge();
+  // Les webhooks sont IGNORÉS par défaut (config.ts). En production, leur
+  // désactivation laisse le retour navigateur comme seul chemin de
+  // confirmation : on le signale explicitement au démarrage.
+  if (process.env.NODE_ENV === 'production' && process.env.PAYMENTS_APPLY_EVENTS !== 'true') {
+    console.warn(
+      '[paiements] PAYMENTS_APPLY_EVENTS n’est pas activé : les webhooks pawaPay sont ignorés.',
+    );
+  }
+
   // Réconciliation pawaPay, expiration des checkouts et remboursement à 48 h.
   // Inactif en test : les suites pilotent explicitement chaque job.
   if (process.env.NODE_ENV !== 'test') startPaymentJobs();

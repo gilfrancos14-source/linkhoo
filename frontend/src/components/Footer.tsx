@@ -114,7 +114,7 @@ export default function Footer() {
         <div className="site-footer__grid site-footer__grid--4">
           <div className="site-footer__col site-footer__brand">
             <Link to={homePath} className="logo logo--light" aria-label={t('footer.aria.logo')}>
-              <img className="logo__mark logo__img" src="/logo.jpg" alt={t('logo.alt')} width="64" height="64" loading="lazy" />
+              <img className="logo__mark logo__img" src="/logo.jpg" alt={t('footer.logo.alt')} width="64" height="64" loading="lazy" />
             </Link>
             <p className="site-footer__about">{t('footer.aboutText')}</p>
             <p className="site-footer__email">
@@ -150,9 +150,9 @@ export default function Footer() {
             <ul className="site-footer__press" role="list">
               {PRESS_ITEMS.map((item) => (
                 <li key={item.id} className="site-footer__press-item">
-                  <span className="site-footer__press-title">{t(`press.${item.id}.title`)}</span>
+                  <span className="site-footer__press-title">{t(`footer.press.${item.id}.title`)}</span>
                   <span className="site-footer__press-meta">
-                    {t(`press.${item.id}.date`)} / {t(`press.${item.id}.source`)}
+                    {t(`footer.press.${item.id}.date`)} / {t(`footer.press.${item.id}.source`)}
                   </span>
                 </li>
               ))}

@@ -7,6 +7,7 @@ import { marketByCode, type MarketCode } from '../../config/markets';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import { type FavoriteRoomData } from '../../lib/api';
 import { priceWithCurrency } from '../../lib/roomDisplay';
+import { clearSessionCaches } from '../../lib/pwaCleanup';
 import { useFavorites } from '../../contexts/FavoritesContext';
 import ClientSidebar from '../../components/client/ClientSidebar';
 import ClientSidebarToggle from '../../components/client/ClientSidebarToggle';
@@ -147,6 +148,7 @@ export default function ClientFavoritesPage({
   }, [favorites]);
 
   const handleSignOut = async () => {
+    void clearSessionCaches();
     await signOut();
     navigate(homePath);
   };

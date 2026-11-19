@@ -46,6 +46,8 @@ vi.mock('../payments/service/refund', () => ({
 
 const app = buildTestApp('/api/reservations', reservationsRouter);
 
+const CONFIRM_TOKEN = 'jeton-de-retour-de-test-1234567890';
+
 const SESSION = {
   reference: 'PAY-2026-ABC123',
   checkoutUrl: 'https://checkout.pawapay.io/pay-1',
@@ -90,7 +92,11 @@ const paidReservation = {
 };
 
 function stubTables(tables: Record<string, FakeChain | FakeChain[]> = {}): void {
-  useSupabaseTables(supabaseAdmin.from, tables);
+  useSupabaseTables(supabaseAdmin.from, {
+    clients: fakeChain({ data: { email: 'jean@example.ci' }, error: null }),
+    reservations: fakeChain({ data: { client_email: 'jean@example.ci' }, error: null }),
+    ...tables,
+  });
 }
 
 beforeEach(() => {
@@ -100,13 +106,32 @@ beforeEach(() => {
 });
 
 describe('POST /api/reservations/:id/payment', () => {
+  it('401 sans authentification', async () => {
+    const res = await request(app).post('/api/reservations/r1/payment');
+    expect(res.status).toBe(401);
+    expect(startBookingPayment).not.toHaveBeenCalled();
+  });
+
+  it('403 pour une réservation qui n’appartient pas au client connecté', async () => {
+    stubTables({
+      reservations: fakeChain({ data: { client_email: 'autre@example.ci' }, error: null }),
+    });
+
+    const res = await request(app)
+      .post('/api/reservations/r1/payment')
+      .set('Authorization', clerkBearer('user_1'));
+
+    expect(res.status).toBe(403);
+    expect(startBookingPayment).not.toHaveBeenCalled();
+  });
+
   it('422 quand le marché n’a pas le paiement en ligne', async () => {
     vi.mocked(startBookingPayment).mockResolvedValue({
       state: 'unavailable',
       reason: 'online_payment_disabled',
     });
 
-    const res = await request(app).post('/api/reservations/r1/payment');
+    const res = await request(app).post('/api/reservations/r1/payment').set('Authorization', clerkBearer('user_1'));
 
     expect(res.status).toBe(422);
     expect(res.body).toMatchObject({ code: 'ONLINE_PAYMENT_DISABLED' });
@@ -115,7 +140,7 @@ describe('POST /api/reservations/:id/payment', () => {
   it('200 : renvoie le lien de checkout', async () => {
     vi.mocked(startBookingPayment).mockResolvedValue({ state: 'checkout', session: SESSION });
 
-    const res = await request(app).post('/api/reservations/r1/payment');
+    const res = await request(app).post('/api/reservations/r1/payment').set('Authorization', clerkBearer('user_1'));
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
@@ -137,7 +162,7 @@ describe('POST /api/reservations/:id/payment', () => {
       reference: SESSION.reference,
     });
 
-    const res = await request(app).post('/api/reservations/r1/payment');
+    const res = await request(app).post('/api/reservations/r1/payment').set('Authorization', clerkBearer('user_1'));
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ state: 'paid', reference: SESSION.reference });
@@ -148,7 +173,7 @@ describe('POST /api/reservations/:id/payment', () => {
       new PaymentServiceError('PAYMENT_NOT_FOUND', 'Réservation introuvable.', 404),
     );
 
-    const res = await request(app).post('/api/reservations/r1/payment');
+    const res = await request(app).post('/api/reservations/r1/payment').set('Authorization', clerkBearer('user_1'));
 
     expect(res.status).toBe(404);
     expect(res.body).toMatchObject({ code: 'PAYMENT_NOT_FOUND' });
@@ -159,7 +184,7 @@ describe('POST /api/reservations/:id/payment', () => {
       new PawapayApiError('réseau', 0),
     );
 
-    const res = await request(app).post('/api/reservations/r1/payment');
+    const res = await request(app).post('/api/reservations/r1/payment').set('Authorization', clerkBearer('user_1'));
 
     expect(res.status).toBe(502);
     expect(res.body).toMatchObject({ code: 'PAWAPAY_ERROR' });
@@ -169,6 +194,15 @@ describe('POST /api/reservations/:id/payment', () => {
 describe('POST /api/reservations/payment/confirm', () => {
   it('400 sur une référence absente', async () => {
     const res = await request(app).post('/api/reservations/payment/confirm').send({});
+
+    expect(res.status).toBe(400);
+    expect(confirmBookingPayment).not.toHaveBeenCalled();
+  });
+
+  it('400 sans jeton de confirmation', async () => {
+    const res = await request(app)
+      .post('/api/reservations/payment/confirm')
+      .send({ reference: 'PAY-2026-ABC123' });
 
     expect(res.status).toBe(400);
     expect(confirmBookingPayment).not.toHaveBeenCalled();
@@ -184,10 +218,10 @@ describe('POST /api/reservations/payment/confirm', () => {
 
     const res = await request(app)
       .post('/api/reservations/payment/confirm')
-      .send({ reference: 'PAY-2026-ABC123' });
+      .send({ reference: 'PAY-2026-ABC123', confirm_token: CONFIRM_TOKEN });
 
     expect(res.status).toBe(200);
-    expect(confirmBookingPayment).toHaveBeenCalledWith('PAY-2026-ABC123');
+    expect(confirmBookingPayment).toHaveBeenCalledWith('PAY-2026-ABC123', CONFIRM_TOKEN);
     expect(res.body).toMatchObject({
       success: true,
       already_paid: false,
@@ -203,7 +237,7 @@ describe('POST /api/reservations/payment/confirm', () => {
 
     const res = await request(app)
       .post('/api/reservations/payment/confirm')
-      .send({ reference: 'PAY-2026-ABC123' });
+      .send({ reference: 'PAY-2026-ABC123', confirm_token: CONFIRM_TOKEN });
 
     expect(res.status).toBe(503);
     expect(res.body).toMatchObject({ code: 'PAWAPAY_NOT_CONFIGURED' });
@@ -231,7 +265,7 @@ describe('création avec paiement', () => {
     } as never);
     vi.mocked(startBookingPayment).mockResolvedValue({ state: 'checkout', session: SESSION });
 
-    const res = await request(app).post('/api/reservations').send(validReservation);
+    const res = await request(app).post('/api/reservations').set('Authorization', clerkBearer('user_1')).send(validReservation);
 
     expect(res.status).toBe(201);
     expect(startBookingPayment).toHaveBeenCalledWith('resa-1');
@@ -261,7 +295,7 @@ describe('création avec paiement', () => {
     } as never);
     vi.mocked(startBookingPayment).mockRejectedValue(new PawapayApiError('panne', 0));
 
-    const res = await request(app).post('/api/reservations').send(validReservation);
+    const res = await request(app).post('/api/reservations').set('Authorization', clerkBearer('user_1')).send(validReservation);
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ id: 'resa-1', payment: null });

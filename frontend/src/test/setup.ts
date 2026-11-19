@@ -1,5 +1,29 @@
 import '@testing-library/jest-dom/vitest';
+import * as matchers from '@testing-library/jest-dom/matchers';
 import { configure } from '@testing-library/react';
+// Les tests rendent souvent des composants isolément (Footer, Header…) sans
+// passer par App.tsx : on initialise i18next une fois pour toutes ici, sinon
+// les clés de traduction s'affichent à la place du texte français.
+import i18n from '../i18n/config';
+import { afterEach, beforeEach, expect } from 'vitest';
+
+// Plusieurs suites appellent `vi.resetModules()` (souvent dans un afterEach)
+// pour recharger un module avec un env différent. Cela invalide aussi le module
+// `chai` sur lequel jest-dom avait enregistré ses matchers : les tests suivants
+// échouent alors avec « Invalid Chai property: toBeInTheDocument ». On les
+// ré-applique avant ET après chaque test pour être indépendant de l'ordre des
+// hooks des fichiers de test.
+beforeEach(async () => {
+  expect.extend(matchers);
+  // LanguageDetector lit navigator.language (en-US sous jsdom) avant le
+  // fallback : on force le français pour que les assertions portent sur le
+  // même texte que l'application en production.
+  if (typeof window !== 'undefined') window.localStorage.setItem('i18nextLng', 'fr');
+  await i18n.changeLanguage('fr');
+});
+afterEach(() => {
+  expect.extend(matchers);
+});
 
 // Les routes lazy mettent parfois plus d'une seconde à se résoudre quand toute
 // la suite tourne en parallèle (transformation Vite + jsdom). Le défaut de

@@ -73,12 +73,14 @@ export const useCacheManager = (): CacheManagerReturn => {
         // Supprimer un cache spécifique
         await caches.delete(cacheName);
       } else {
-        // Supprimer tous les caches sauf ceux qui sont nécessaires
+        // Le service worker utilise le préfixe `ilehya-`. On ne garde que les
+        // caches purement statiques : le cache dynamique peut contenir des
+        // réponses API publiques mises en cache pour un autre compte.
+        const keep = ['ilehya-static-v4', 'ilehya-images-v4'];
         const cacheNames = await caches.keys();
-        
+
         for (const name of cacheNames) {
-          // Ne pas supprimer les caches système importants
-          if (!name.startsWith('linkhoo-')) {
+          if (!keep.includes(name)) {
             await caches.delete(name);
           }
         }
