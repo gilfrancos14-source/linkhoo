@@ -30,4 +30,4 @@ if [ -f "$SOURCE/storage.tar.gz" ]; then
 fi
 
 echo "[$(date -Is)] Restauration terminée. Redémarrer l'API :"
-echo "  docker compose -f docker-compose.prod.yml restart api"
+echo "  docker compose -f docker-compose.prod.yml restart api1 api2 api3 api4"

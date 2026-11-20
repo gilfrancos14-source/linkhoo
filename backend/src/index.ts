@@ -40,6 +40,7 @@ import { warmUpImageCheck, productionImageCheckModeError } from './services/apar
 import { startPaymentJobs } from './payments/jobs';
 import { startContactRetryJobs } from './services/contactRetry';
 import { startScheduledJobs } from './config/jobs';
+import { tryAcquireLeadership, startLeadershipRenewal } from './utils/leaderElection';
 import pawapayWebhookRouter from './routes/pawapayWebhook';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -365,10 +366,24 @@ const server = app.listen(port, () => {
 
   // Réconciliation pawaPay, expiration des checkouts et remboursement à 48 h.
   // Inactif en test : les suites pilotent explicitement chaque job.
+  // En cluster (plusieurs instances), un seul leader exécute les jobs : on
+  // évite que 4 processus appellent pawaPay et envoient les notifications.
   if (process.env.NODE_ENV !== 'test') {
-    startPaymentJobs();
-    startContactRetryJobs();
-    startScheduledJobs();
+    void (async () => {
+      const token = `${process.env.HOSTNAME ?? 'local'}-${process.pid}-${Date.now()}`;
+      const leader = await tryAcquireLeadership(token);
+      if (!leader) {
+        console.log('[jobs] Instance non-leader : jobs planifiés désactivés sur ce processus.');
+        return;
+      }
+      const stopRenewal = startLeadershipRenewal(token);
+      startPaymentJobs();
+      startContactRetryJobs();
+      startScheduledJobs();
+      // Arrêt propre du renouvellement du verrou.
+      process.once('SIGTERM', stopRenewal);
+      process.once('SIGINT', stopRenewal);
+    })();
   }
   if (process.env.NODE_ENV !== 'test') void warmUpImageCheck();
 });

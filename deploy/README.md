@@ -55,7 +55,7 @@ nano backend/.env.prod      # secrets, clés Clerk/pawaPay, domaine, ALLOWED_ORI
 # Frontend
 cd frontend && npm ci && npm run build && sudo cp -r dist/* /var/www/ilehya/ && cd ..
 
-# Images, base, migrations et redémarrage — en une commande
+# Images, base, Redis, migrations et redémarrage — en une commande
 ./deploy/deploy.sh
 ```
 
@@ -63,10 +63,30 @@ cd frontend && npm ci && npm run build && sudo cp -r dist/* /var/www/ilehya/ && 
 → vérification de `/api/health`. Il est idempotent : le relancer est sans
 risque, et une migration qui échoue laisse la version précédente en ligne.
 
+### Architecture : 4 instances de l'API sur un seul serveur
+
+La pile tourne **4 instances de l'API** (`api1`…`api4`, ports 3001–3004 en
+local) derrière Nginx (`upstream ilehya_api`, répartition `least_conn`). Cela
+utilise les 4 cœurs du VPS au lieu d'un seul, sans coût supplémentaire.
+
+Deux mécanismes évitent les doublons entre instances :
+- **Redis local** (`REDIS_URL=redis://redis:6379`, injecté par le compose) :
+  compteurs de rate-limit **partagés** entre les 4 instances ;
+- **Élection du leader** (`utils/leaderElection.ts`) : un seul processus
+  exécute les jobs périodiques (paiements, contact, expiration). Les autres
+  instances attendent et prennent le relais si le leader tombe.
+
+Sans `REDIS_URL` (dev mono-instance), on retombe sur le comportement
+historique : compteurs en mémoire, une instance = leader.
+
+> Limite réaliste : une machine 4 vCPU / 8 Go tient ~1 000–3 000 utilisateurs
+> simultanés. Les 100 000 simultanés demanderaient plusieurs machines — ce
+> n'est pas attainable sur un seul VPS, aussi bien optimisé soit-il.
+
 Pour vérifier l'état des migrations à tout moment :
 
 ```bash
-docker compose -f docker-compose.prod.yml run --rm api node dist/db/migrateCli.js --status
+docker compose -f docker-compose.prod.yml run --rm api1 node dist/db/migrateCli.js --status
 ```
 
 ## 3 bis. Pré-vol (à lancer juste avant)
@@ -93,7 +113,7 @@ modèle d'analyse des photos. À faire juste après le premier `deploy.sh` :
 ```bash
 # Compte superadmin (mot de passe dans backend/.env.prod)
 cd /opt/ilehya
-ALLOW_SEED=true docker compose -f docker-compose.prod.yml run --rm api \
+ALLOW_SEED=true docker compose -f docker-compose.prod.yml run --rm api1 \
   node dist/seed.js
 
 # Modèle CLIP : préchargé DANS l'image Docker au build (CLIP_CACHE_DIR=/app/clip-model)
@@ -128,7 +148,7 @@ STORAGE_SIGNED_BASE_URL=https://le-domaine.fr/api/media
 Et relancer l'API pour qu'elle reprenne les nouvelles URLs :
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --force-recreate api
+docker compose -f docker-compose.prod.yml up -d --force-recreate api1 api2 api3 api4
 ```
 
 ## 5. Sauvegardes (cron)

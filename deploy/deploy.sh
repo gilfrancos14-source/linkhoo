@@ -31,12 +31,13 @@ fi
 echo "Fichier d'environnement : $ENV_FILE"
 
 step "2/5 Construction de l'image de l'API"
-$COMPOSE build api
+$COMPOSE build api1
 
 step "3/5 Migrations"
-# Les migrations sont appliquées dans le conteneur, avant le remplacement de
+# Les migrations sont appliquées dans UNE instance, avant le remplacement de
 # l'API : une migration qui échoue n'arrête pas la version précédente.
-$COMPOSE run --rm api node dist/db/migrateCli.js --yes
+# Les 3 autres instances partagent la même image (une seule build nécessaire).
+$COMPOSE run --rm api1 node dist/db/migrateCli.js --yes
 
 step "4/5 Démarrage des services"
 $COMPOSE up -d
@@ -54,7 +55,7 @@ done
 
 if [ "$OK" = "0" ]; then
   echo "ERREUR : l'API ne répond pas sur http://127.0.0.1:3001/api/health"
-  echo "Consulte les journaux : $COMPOSE logs --tail=50 api"
+  echo "Consulte les journaux : $COMPOSE logs --tail=50 api1"
   exit 1
 fi
 

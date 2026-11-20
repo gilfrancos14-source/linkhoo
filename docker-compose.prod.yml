@@ -2,15 +2,55 @@
 #
 # Nginx et Certbot sont installés sur l'hôte (apt) : le renouvellement des
 # certificats et le montage de /var/www sont plus simples hors conteneur.
-# Ici : PostgreSQL 16 + l'API.
+# Ici : PostgreSQL 16 + Redis (jobs/rate-limit) + 4 instances de l'API.
 #
 #   docker compose -f docker-compose.prod.yml up -d
-#   docker compose -f docker-compose.prod.yml run --rm api \
+#   docker compose -f docker-compose.prod.yml run --rm api1 \
 #     node dist/db/migrateCli.js --yes
 #
 # Fichier d'environnement : backend/.env.prod (hors dépôt).
 
 name: ilehya
+
+# Configuration commune aux 4 instances de l'API (ancre YAML).
+x-api-common: &api-common
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+  image: ilehya-backend:${IMAGE_TAG:-latest}
+  restart: unless-stopped
+  env_file:
+    - ./backend/.env.prod
+  environment: &api-env
+    NODE_ENV: production
+    PORT: 3001
+    # La base est dans le réseau Docker : on parle au nom du service.
+    DATABASE_URL: postgresql://${POSTGRES_USER:-ilehya}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ilehya}
+    # Redis local partagé : compteurs de rate-limit + élection du leader
+    # pour que les jobs périodiques ne tournent que sur UNE instance.
+    REDIS_URL: redis://redis:6379
+    STORAGE_DIR: /app/storage
+  volumes:
+    # Bind mount : le stockage vit sur l'hôte, là où Nginx le sert
+    # (/var/lib/ilehya/storage) et là où backup.sh l'archive.
+    - /var/lib/ilehya/storage:/app/storage
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  healthcheck:
+    test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3001/api/health"]
+    interval: 30s
+    timeout: 5s
+    start_period: 40s
+    retries: 3
+  stop_grace_period: 30s
+  logging:
+    driver: json-file
+    options:
+      max-size: "20m"
+      max-file: "5"
 
 services:
   postgres:
@@ -29,13 +69,13 @@ services:
       - -c
       - max_connections=100
       - -c
-      - shared_buffers=512MB
+      - shared_buffers=2GB
       - -c
-      - effective_cache_size=2GB
+      - effective_cache_size=4GB
       - -c
       - work_mem=8MB
       - -c
-      - maintenance_work_mem=128MB
+      - maintenance_work_mem=256MB
       - -c
       - wal_compression=on
       - -c
@@ -47,46 +87,44 @@ services:
       retries: 10
     stop_grace_period: 30s
 
-  api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    image: ilehya-backend:${IMAGE_TAG:-latest}
-    container_name: ilehya-api
+  redis:
+    image: redis:7-alpine
+    container_name: ilehya-redis
     restart: unless-stopped
-    env_file:
-      - ./backend/.env.prod
-    environment:
-      NODE_ENV: production
-      PORT: 3001
-      # La base est dans le réseau Docker : on parle au nom du service.
-      DATABASE_URL: postgresql://${POSTGRES_USER:-ilehya}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ilehya}
-      STORAGE_DIR: /app/storage
-    volumes:
-      # Bind mount : le stockage vit sur l'hôte, là où Nginx le sert
-      # (/var/lib/ilehya/storage) et là où backup.sh l'archive. Un volume
-      # Docker nommé serait invisible pour Nginx et les sauvegardes.
-      - /var/lib/ilehya/storage:/app/storage
-      # Le modèle CLIP est préchargé DANS l'image (/app/clip-model) : plus de
-      # volume à initialiser, aucun téléchargement au démarrage.
-    depends_on:
-      postgres:
-        condition: service_healthy
-    # Nginx (hôte) relaie /api vers le port publié sur 127.0.0.1.
+    # Pas de persistence : le rate-limit et le verrou de leader peuvent
+    # redémarrer à zéro, ce n'est pas de la donnée métier.
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # 4 instances sur 4 ports hôte : Nginx répartit avec un upstream.
+  # On ne publie que sur 127.0.0.1 : Nginx (hôte) est le seul client.
+  api1:
+    <<: *api-common
+    container_name: ilehya-api-1
     ports:
       - "127.0.0.1:3001:3001"
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3001/api/health"]
-      interval: 30s
-      timeout: 5s
-      start_period: 40s
-      retries: 3
-    stop_grace_period: 30s
-    logging:
-      driver: json-file
-      options:
-        max-size: "20m"
-        max-file: "5"
+
+  api2:
+    <<: *api-common
+    container_name: ilehya-api-2
+    ports:
+      - "127.0.0.1:3002:3001"
+
+  api3:
+    <<: *api-common
+    container_name: ilehya-api-3
+    ports:
+      - "127.0.0.1:3003:3001"
+
+  api4:
+    <<: *api-common
+    container_name: ilehya-api-4
+    ports:
+      - "127.0.0.1:3004:3001"
 
 volumes:
   ilehya_pgdata:

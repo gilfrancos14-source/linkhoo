@@ -23,9 +23,9 @@ COMPOSE="docker compose -f docker-compose.prod.yml"
 
 if [ "${1:-}" = "--code-only" ]; then
   echo "=== Repli code seul ==="
-  echo "Vérifie la version currently déployée :"
-  $COMPOSE images api
-  echo "Puis : $COMPOSE up -d --force-recreate api"
+  echo "Vérifie la version actuellement déployée :"
+  $COMPOSE images api1
+  echo "Puis : $COMPOSE up -d --force-recreate api1 api2 api3 api4"
   exit 0
 fi
 
@@ -42,8 +42,8 @@ echo "1. Sauvegarde de l'état courant (par sécurité)"
 echo "2. Restauration de la base"
 ./deploy/backup/restore.sh "$SOURCE"
 
-echo "3. Redéploiement de l'API"
-$COMPOSE up -d --force-recreate api
+echo "3. Redéploiement de l'API (4 instances)"
+$COMPOSE up -d --force-recreate api1 api2 api3 api4
 
 echo "4. Vérification"
 sleep 10
