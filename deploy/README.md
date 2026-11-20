@@ -33,6 +33,9 @@ usermod -aG docker deploy
 # Arborescence applicative
 mkdir -p /var/www/ilehya /var/lib/ilehya/storage/images /var/lib/ilehya/storage/verification-docs \
          /var/backups/ilehya /opt/ilehya
+# Cache Nginx des réponses API (www-data doit pouvoir y écrire)
+mkdir -p /var/cache/nginx/ilehya_api
+chown -R www-data:www-data /var/cache/nginx/ilehya_api
 chown -R deploy:deploy /var/lib/ilehya /var/www/ilehya /opt/ilehya
 ```
 
@@ -78,6 +81,27 @@ Deux mécanismes évitent les doublons entre instances :
 
 Sans `REDIS_URL` (dev mono-instance), on retombe sur le comportement
 historique : compteurs en mémoire, une instance = leader.
+
+### Cache des réponses API publiques
+
+Nginx met en cache pour **30 secondes** les GET publics et non personnalisés :
+`/api/health`, `/api/categories`, `/api/events`, `/api/tourism`,
+`/api/escapades`, `/api/banners`, `/api/rooms` (liste/filtres/détail) et
+`/api/reviews` (liste/featured).
+
+Tout le reste (auth, admin, réservations, notifications, `/api/rooms/mine`,
+gérants, payouts, upload…) est **exclu par défaut** via la map `$api_no_cache`
+→ aucun risque de servir des données personnelles à un autre utilisateur.
+
+- Clé de cache = URI complète (query string incluse) : chaque combinaison de
+  filtres a son propre entrée.
+- `proxy_cache_use_stale` : si les 4 instances tombent, Nginx sert la dernière
+  version en cache plutôt qu'une 502 (meilleure disponibilité).
+- `proxy_cache_lock` : une seule requête en amont par clé (anti-dogpile).
+
+**Compromis** : après modification d'une annonce, le changement peut mettre
+jusqu'à 30 s à apparaître sur la fiche publique. C'est le prix du cache — à
+ajuster si besoin (directive `proxy_cache_valid 200 30s;`).
 
 > Limite réaliste : une machine 4 vCPU / 8 Go tient ~1 000–3 000 utilisateurs
 > simultanés. Les 100 000 simultanés demanderaient plusieurs machines — ce
