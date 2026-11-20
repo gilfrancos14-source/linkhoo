@@ -40,7 +40,7 @@ import { warmUpImageCheck, productionImageCheckModeError } from './services/apar
 import { startPaymentJobs } from './payments/jobs';
 import { startContactRetryJobs } from './services/contactRetry';
 import { startScheduledJobs } from './config/jobs';
-import { tryAcquireLeadership, startLeadershipRenewal } from './utils/leaderElection';
+import { startLeaderElection } from './utils/leaderElection';
 import pawapayWebhookRouter from './routes/pawapayWebhook';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -366,24 +366,35 @@ const server = app.listen(port, () => {
 
   // Réconciliation pawaPay, expiration des checkouts et remboursement à 48 h.
   // Inactif en test : les suites pilotent explicitement chaque job.
-  // En cluster (plusieurs instances), un seul leader exécute les jobs : on
-  // évite que 4 processus appellent pawaPay et envoient les notifications.
+  // En cluster, une élection Redis désigne un SEUL leader ; les autres
+  // instances attendent et prennent automatiquement le relais si le leader
+  // tombe. Les hooks démarrent/arrêtent les jobs aux changements de rôle.
   if (process.env.NODE_ENV !== 'test') {
-    void (async () => {
-      const token = `${process.env.HOSTNAME ?? 'local'}-${process.pid}-${Date.now()}`;
-      const leader = await tryAcquireLeadership(token);
-      if (!leader) {
-        console.log('[jobs] Instance non-leader : jobs planifiés désactivés sur ce processus.');
-        return;
-      }
-      const stopRenewal = startLeadershipRenewal(token);
-      startPaymentJobs();
-      startContactRetryJobs();
-      startScheduledJobs();
-      // Arrêt propre du renouvellement du verrou.
-      process.once('SIGTERM', stopRenewal);
-      process.once('SIGINT', stopRenewal);
-    })();
+    const token = `${process.env.HOSTNAME ?? 'local'}-${process.pid}-${Date.now()}`;
+    let stopJobs: Array<() => void> = [];
+
+    const stopElection = startLeaderElection(token, {
+      onBecomeLeader: () => {
+        if (stopJobs.length > 0) return; // déjà leader
+        console.log('[jobs] Cette instance devient leader : démarrage des jobs planifiés.');
+        stopJobs = [startPaymentJobs(), startContactRetryJobs(), startScheduledJobs()];
+      },
+      onLoseLeadership: () => {
+        if (stopJobs.length === 0) return;
+        console.log('[jobs] Verrou perdu : arrêt des jobs sur cette instance.');
+        stopJobs.forEach((stop) => stop());
+        stopJobs = [];
+      },
+    });
+
+    process.once('SIGTERM', () => {
+      stopElection();
+      stopJobs.forEach((stop) => stop());
+    });
+    process.once('SIGINT', () => {
+      stopElection();
+      stopJobs.forEach((stop) => stop());
+    });
   }
   if (process.env.NODE_ENV !== 'test') void warmUpImageCheck();
 });

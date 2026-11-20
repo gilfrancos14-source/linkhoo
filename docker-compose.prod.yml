@@ -29,6 +29,9 @@ x-api-common: &api-common
     # Redis local partagé : compteurs de rate-limit + élection du leader
     # pour que les jobs périodiques ne tournent que sur UNE instance.
     REDIS_URL: redis://redis:6379
+    # En cluster, Redis indisponible = on ne devient PAS leader (évite 4× les
+    # jobs). Sans ce flag, un Redis down ferait tourner les jobs partout.
+    CLUSTER_MODE: "true"
     STORAGE_DIR: /app/storage
   volumes:
     # Bind mount : le stockage vit sur l'hôte, là où Nginx le sert

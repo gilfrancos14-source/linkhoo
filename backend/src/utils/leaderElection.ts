@@ -1,25 +1,36 @@
 import { createClient, type RedisClientType } from 'redis';
 
 /**
- * Leader election légère pour les tâches planifiées (jobs).
+ * Leader election pour les tâches planifiées (jobs) en cluster.
  *
- * Quand plusieurs instances de l'API tournent (cluster sur un seul serveur),
- * un seul processus doit exécuter les jobs périodiques — sinon l'API appelle
- * pawaPay 4 fois, envoie 4 fois les notifications, etc.
+ * Plusieurs instances de l'API tournent (cluster sur un seul serveur) : un
+ * SEUL processus doit exécuter les jobs périodiques, sinon pawaPay est appelé
+ * 4 fois, les notifications partent 4 fois, etc.
  *
- * Mécanisme : un verrou Redis `SET key token NX PX ttl`. Le leader renouvelle
- * le verrou régulièrement ; les autres instances attendent et retentent. Si
- * Redis est absent (dev / petite installation mono-instance), la fonction
- * retourne `true` : on retombe sur le comportement historique (une instance
- * = un leader), sans casser quoi que ce soit.
+ * Mécanisme : verrou Redis `SET key token NX PX ttl`, renouvelé tant qu'on est
+ * leader. Les non-leaders RETENTENT périodiquement (reprise automatique si le
+ * leader tombe).
+ *
+ * Modes :
+ *  - `REDIS_URL` absent (dev mono-instance) → toujours leader (comportement
+ *    historique).
+ *  - `CLUSTER_MODE !== 'true'` → Redis indisponible = repli leader (une seule
+ *    instance en production non-cluster).
+ *  - `CLUSTER_MODE === 'true'` → Redis indisponible = ON NE DEVIENT PAS leader
+ *    (mieux vaut aucun job que 4× les jobs). On retentera quand Redis revient.
  */
 
 const LOCK_KEY = 'ilehya:jobs:leader';
 const LOCK_TTL_MS = 30_000;
 const RENEW_INTERVAL_MS = 10_000;
+const RETRY_INTERVAL_MS = 15_000;
 
 let client: RedisClientType | null = null;
 let connected = false;
+
+function isCluster(): boolean {
+  return process.env.CLUSTER_MODE === 'true';
+}
 
 function getClient(): RedisClientType | null {
   const url = process.env.REDIS_URL?.trim();
@@ -27,16 +38,20 @@ function getClient(): RedisClientType | null {
   if (!client) {
     client = createClient({ url }) as RedisClientType;
     client.on('error', () => {
-      // Le repli est géré par tryAcquire : on logge une seule fois.
+      // Les erreurs sont gérées par les try/catch des opérations ci-dessous.
     });
   }
   return client;
 }
 
 async function ensureConnected(c: RedisClientType): Promise<boolean> {
-  if (connected) return true;
+  if (connected) {
+    // Le client peut avoir été déconnecté ; on vérifie l'état réel.
+    if (c.isOpen) return true;
+    connected = false;
+  }
   try {
-    await c.connect();
+    if (!c.isOpen) await c.connect();
     connected = true;
     return true;
   } catch {
@@ -46,41 +61,83 @@ async function ensureConnected(c: RedisClientType): Promise<boolean> {
 
 /**
  * Tente d'acquérir le rôle de leader.
- * - Sans REDIS_URL → true (mode mono-instance historique).
- * - Avec Redis → true si le verrou a été pris OU appartient déjà à ce token.
+ * Retourne `true` si verrou pris ou déjà détenu, `false` sinon.
+ * En mode non-cluster sans Redis, retourne `true` (repli historique).
  */
 export async function tryAcquireLeadership(token: string): Promise<boolean> {
   const c = getClient();
-  if (!c) return true;
-  if (!(await ensureConnected(c))) return true; // repli mono-instance
+  if (!c) return true; // pas de Redis configuré → mono-instance
+
+  const ok = await ensureConnected(c);
+  if (!ok) return !isCluster(); // Redis down : leader seulement si mono-instance
 
   try {
-    // Ne pas écraser un verrou détenu par une autre instance.
     const acquired = await c.set(LOCK_KEY, token, { NX: true, PX: LOCK_TTL_MS });
     if (acquired === 'OK') return true;
     const holder = await c.get(LOCK_KEY);
-    return holder === token; // déjà leader (renew)
+    return holder === token;
   } catch {
-    return true; // Redis en panne → on accepte le rôle (dégradation contrôlée)
+    return !isCluster();
   }
 }
 
-/** Renouvelle périodiquement le verrou tant que ce token en est le propriétaire. */
-export function startLeadershipRenewal(token: string): () => void {
+/** Vrai si `token` est toujours propriétaire du verrou (et le renouvelle). */
+export async function renewLeadership(token: string): Promise<boolean> {
   const c = getClient();
-  if (!c) return () => undefined;
+  if (!c || !connected) return true; // pas de Redis → on reste leader
+  try {
+    const holder = await c.get(LOCK_KEY);
+    if (holder !== token) return false; // verrou perdu → arrêter les jobs
+    await c.pExpire(LOCK_KEY, LOCK_TTL_MS);
+    return true;
+  } catch {
+    // Redis momentanément down : on garde le rôle jusqu'à expiration du verrou.
+    return true;
+  }
+}
 
-  const timer = setInterval(async () => {
+/**
+ * Démarre l'élection et appelle `onBecomeLeader` / `onLoseLeadership`
+ * aux changements de rôle. Retourne une fonction d'arrêt.
+ *
+ * - Le leader renouvelle le verrou et surveille qu'il ne l'a pas perdu.
+ * - Les non-leaders retentent régulièrement (reprise automatique).
+ */
+export function startLeaderElection(
+  token: string,
+  hooks: { onBecomeLeader: () => void; onLoseLeadership: () => void },
+): () => void {
+  let stopped = false;
+  let isLeader = false;
+
+  const tick = async () => {
+    if (stopped) return;
     try {
-      const holder = await c.get(LOCK_KEY);
-      if (holder === token) {
-        await c.pExpire(LOCK_KEY, LOCK_TTL_MS);
+      if (isLeader) {
+        const stillLeader = await renewLeadership(token);
+        if (!stillLeader) {
+          isLeader = false;
+          hooks.onLoseLeadership();
+        }
+      } else {
+        const acquired = await tryAcquireLeadership(token);
+        if (acquired) {
+          isLeader = true;
+          hooks.onBecomeLeader();
+        }
       }
     } catch {
-      // Redis en panne : le verrou expirera et une autre instance reprendra.
+      // Ne jamais laisser le timer mourir : on retentera au prochain tick.
     }
-  }, RENEW_INTERVAL_MS);
+  };
+
+  // Premier essai immédiat, puis surveillance régulière.
+  void tick();
+  const timer = setInterval(() => void tick(), RETRY_INTERVAL_MS);
   timer.unref();
 
-  return () => clearInterval(timer);
+  return () => {
+    stopped = true;
+    clearInterval(timer);
+  };
 }
