@@ -191,9 +191,10 @@
   50% { opacity: 0.5; transform: translate(-50%, -50%) scale(1.1); }
 }
 
-/* Fallback du <Suspense> : pendant le chargement d'un chunk de route */
+/* Fallback du <Suspense> : pendant le chargement d'un chunk de route.
+   Plein écran pour centrer le spinner au milieu de la page. */
 .route-loading {
-  min-height: 60vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;

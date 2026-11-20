@@ -56,16 +56,16 @@
 
   /* Onglets / filtres */
   .res-maq .tab {
-    @apply flex h-[50px] items-center gap-3 px-8 text-[13px] font-medium text-[#1d3f8f] border-b-[3px] border-transparent;
+    @apply flex h-[50px] items-center gap-3 px-8 text-[13px] font-medium text-[#5a6b8c] bg-transparent border-b-[3px] border-transparent;
   }
   .res-maq .tab.on {
     @apply text-[#ff5a14] border-[#ff5a14];
   }
   .res-maq .tab b {
-    @apply grid h-[22px] w-[22px] place-items-center rounded-full border border-[#e6ebf5] bg-[#eef3fc] text-[11px] font-semibold;
+    @apply text-[11px] font-semibold text-[#5a6b8c];
   }
   .res-maq .tab.on b {
-    @apply border-orange-200 bg-[#fff1e8] text-[#ff5a14];
+    @apply text-[#ff5a14];
   }
   .res-maq .flt {
     @apply flex h-[38px] items-center gap-2.5 rounded-lg border border-[#e6ebf5] bg-white px-3.5 text-[12px] text-[#1d3f8f];

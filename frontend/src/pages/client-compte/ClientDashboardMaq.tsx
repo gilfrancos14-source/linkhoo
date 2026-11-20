@@ -353,7 +353,7 @@ export default function ClientDashboardMaq({
               onSubmit={handleSearch}
               className="flex h-9 w-full max-w-[520px] items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 text-slate-400"
             >
-              <Icon id="search" className="h-4 w-4 text-blue-700" />
+              <Icon id="search" className="h-4 w-4 text-slate-500" />
               <input
                 type="search"
                 value={query}
@@ -365,7 +365,7 @@ export default function ClientDashboardMaq({
 
             <Link
               to={messagesPath}
-              className="relative ml-auto shrink-0 text-blue-700"
+              className="relative ml-auto shrink-0 text-slate-500"
               aria-label="Notifications"
             >
               <Icon id="bell" className="h-6 w-6" />
@@ -457,7 +457,7 @@ export default function ClientDashboardMaq({
                   className="relative m-6 mt-6 flex flex-wrap items-center gap-2 rounded-xl bg-white p-2 pl-5 text-slate-800"
                 >
                   <div className="flex min-w-[170px] flex-1 items-center gap-3 py-1">
-                    <Icon id="pin" className="text-habi" />
+                    <Icon id="pin" className="text-slate-500" />
                     <div className="min-w-0 flex-1">
                       <label
                         htmlFor="cdash-destination"
@@ -476,7 +476,7 @@ export default function ClientDashboardMaq({
                     </div>
                   </div>
                   <div className="flex min-w-[170px] flex-1 items-center gap-3 border-slate-200 py-1 md:border-l md:pl-4">
-                    <Icon id="cal" className="text-blue-700" />
+                    <Icon id="cal" className="text-slate-500" />
                     <div className="min-w-0 flex-1">
                       <label
                         htmlFor="cdash-arrivee"
@@ -508,7 +508,7 @@ export default function ClientDashboardMaq({
                     </div>
                   </div>
                   <div className="flex min-w-[170px] flex-1 items-center gap-3 border-slate-200 py-1 md:border-l md:pl-4">
-                    <Icon id="cal" className="text-blue-700" />
+                    <Icon id="cal" className="text-slate-500" />
                     <div className="min-w-0 flex-1">
                       <label
                         htmlFor="cdash-depart"
@@ -540,7 +540,7 @@ export default function ClientDashboardMaq({
                     </div>
                   </div>
                   <div className="flex min-w-[170px] flex-1 items-center gap-3 border-slate-200 py-1 md:border-l md:pl-4">
-                    <Icon id="bed" className="text-blue-700" />
+                    <Icon id="bed" className="text-slate-500" />
                     <div className="min-w-0 flex-1">
                       <label
                         htmlFor="cdash-category"
@@ -583,44 +583,44 @@ export default function ClientDashboardMaq({
               <AnimatedSection>
                 <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <div className="card p-4">
-                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-orange-500 text-white">
-                    <Icon id="bed" />
+                  <span className="text-slate-500">
+                    <Icon id="bed" className="!h-7 !w-7" />
                   </span>
                   <p className="mt-2 text-2xl font-bold text-navy">{totalReservations}</p>
                   <p className="text-xs text-slate-600">Réservations totales</p>
-                  <p className="mt-2 flex items-center gap-1 text-[11px] text-emerald-600">
+                  <p className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
                     <Icon id="up" className="!h-3 !w-3" />+{totalThisMonth} ce mois-ci
                   </p>
                 </div>
                 <div className="card p-4">
-                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-emerald-500 text-white">
-                    <Icon id="cal" />
+                  <span className="text-slate-500">
+                    <Icon id="cal" className="!h-7 !w-7" />
                   </span>
                   <p className="mt-2 text-2xl font-bold text-navy">{upcoming.length}</p>
                   <p className="text-xs text-slate-600">Séjours à venir</p>
-                  <p className="mt-2 flex items-center gap-1 text-[11px] text-emerald-600">
+                  <p className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
                     <Icon id="up" className="!h-3 !w-3" />+{upcomingThisMonth} ce mois-ci
                   </p>
                 </div>
                 <div className="card p-4">
-                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-blue-500 text-white">
-                    <Icon id="heart" className="f" />
+                  <span className="text-slate-500">
+                    <Icon id="heart" className="!h-7 !w-7" />
                   </span>
                   <p className="mt-2 text-2xl font-bold text-navy">{favoriteCount}</p>
                   <p className="text-xs text-slate-600">Chambres favorites</p>
-                  <p className="mt-2 flex items-center gap-1 text-[11px] text-emerald-600">
+                  <p className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
                     <Icon id="up" className="!h-3 !w-3" />+{favoritesThisMonth} ce mois-ci
                   </p>
                 </div>
                 <div className="card p-4">
-                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-violet-500 text-white">
-                    <Icon id="star" className="f" />
+                  <span className="text-slate-500">
+                    <Icon id="star" className="!h-7 !w-7" />
                   </span>
                   <p className="mt-2 text-2xl font-bold text-navy">
                     {averageRating !== null ? averageRating.toFixed(1) : '—'}
                   </p>
                   <p className="text-xs text-slate-600">Note moyenne</p>
-                  <p className="mt-2 text-[11px] text-slate-400">
+                  <p className="mt-2 text-[11px] text-slate-500">
                     {reviews.length > 0
                       ? `Basée sur ${reviews.length} avis`
                       : 'Aucun avis pour le moment'}
@@ -634,7 +634,7 @@ export default function ClientDashboardMaq({
                 <section className="card p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="flex items-center gap-3 text-base font-semibold text-navy">
-                    <Icon id="cal" className="text-blue-700" />Vos prochaines réservations
+                    <Icon id="cal" className="text-slate-500" />Vos prochaines réservations
                   </h2>
                   <Link to={staysPath} className="link">
                     Voir toutes mes réservations<Icon id="arrow" className="!h-3.5 !w-3.5" />
@@ -661,11 +661,11 @@ export default function ClientDashboardMaq({
                         </div>
                         <h3 className="mt-3 text-sm font-semibold text-navy">{reservation.room_title}</h3>
                         <p className="mt-1 flex items-center gap-1.5 text-[11px] text-white">
-                          <Icon id="pin" className="!h-3.5 !w-3.5 text-blue-700" />
+                          <Icon id="pin" className="!h-3.5 !w-3.5 text-slate-500" />
                           {locationOf(reservation, cityLabel)}
                         </p>
                         <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-white">
-                          <Icon id="cal" className="!h-3.5 !w-3.5 text-blue-700" />
+                          <Icon id="cal" className="!h-3.5 !w-3.5 text-slate-500" />
                           {stayDates(reservation)}
                         </p>
                         <p className="mb-3 mt-2.5 text-sm font-bold text-navy">
@@ -683,7 +683,7 @@ export default function ClientDashboardMaq({
                   </div>
                 ) : (
                   <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-5 py-8 text-center">
-                    <Icon id="cal" className="mx-auto h-8 w-8 text-slate-300" />
+                    <Icon id="cal" className="mx-auto h-8 w-8 text-slate-500" />
                     <p className="mt-2 text-sm font-semibold text-navy">
                       {loading ? 'Chargement de vos réservations…' : 'Aucune réservation à venir'}
                     </p>
@@ -706,7 +706,7 @@ export default function ClientDashboardMaq({
                 <section className="card p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="flex items-center gap-3 text-base font-semibold text-navy">
-                    <Icon id="cal" className="text-blue-700" />Chambres récemment consultées
+                    <Icon id="cal" className="text-slate-500" />Chambres récemment consultées
                   </h2>
                   <Link to={searchPath} className="link">
                     Voir toutes les chambres<Icon id="arrow" className="!h-3.5 !w-3.5" />
@@ -730,13 +730,13 @@ export default function ClientDashboardMaq({
                               />
                             )}
                             <span className="heart">
-                              <Icon id="heart" className="!h-3.5 !w-3.5 text-slate-400" />
+                              <Icon id="heart" className="!h-3.5 !w-3.5 text-slate-500" />
                             </span>
                           </div>
                           <h3 className="mt-2 text-[11px] font-semibold text-navy">{titleOf(reservation)}</h3>
                           <p className="text-[10px] text-white">{locationOf(reservation, cityLabel)}</p>
                           <p className="mt-1 flex items-center gap-1 text-[10px] text-white">
-                            <Icon id="star" className="f !h-3 !w-3 text-orange-400" />
+                            <Icon id="star" className="f !h-3 !w-3 text-slate-500" />
                             <b className="font-semibold text-orange-500">
                               {rating ? rating.average.toFixed(1) : '—'}
                             </b>
@@ -791,17 +791,17 @@ export default function ClientDashboardMaq({
                   </Link>
                   <dl className="mt-4 space-y-3 text-[11px]">
                     <div className="flex items-center gap-3">
-                      <Icon id="mail" className="!h-4 !w-4 text-blue-700" />
+                      <Icon id="mail" className="!h-4 !w-4 text-slate-500" />
                       <dt className="w-24 text-white">Email</dt>
                       <dd className="min-w-0 truncate text-slate-700">{email || '—'}</dd>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Icon id="phone" className="!h-4 !w-4 text-blue-700" />
+                      <Icon id="phone" className="!h-4 !w-4 text-slate-500" />
                       <dt className="w-24 text-white">Téléphone</dt>
                       <dd className="text-slate-700">{phone || '—'}</dd>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Icon id="pin" className="!h-4 !w-4 text-blue-700" />
+                      <Icon id="pin" className="!h-4 !w-4 text-slate-500" />
                       <dt className="w-24 text-white">Ville</dt>
                       <dd className="text-slate-700">{cityLabel}</dd>
                     </div>
@@ -812,22 +812,19 @@ export default function ClientDashboardMaq({
 
               {/* Premium */}
               <AnimatedSection>
-                <section className="flex gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4">
-                <Icon id="crown" className="f h-10 w-10 text-habi" />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold leading-snug text-habi">
+                <section className="rounded-xl border border-slate-200 bg-white p-5">
+                  <p className="text-sm font-semibold leading-snug text-navy">
                     Réservation protégée
                   </p>
-                  <p className="mt-3 text-[11px] leading-snug text-slate-600">
+                  <p className="mt-2 text-[11px] leading-snug text-slate-500">
                     Accédez à des offres exclusives, des réductions et bien plus encore.
                   </p>
-                  <div className="mt-3 rounded-lg bg-white/70 p-3 text-[11px] leading-snug text-slate-700">
+                  <div className="mt-4 border-l-2 border-slate-300 pl-3 text-[11px] leading-snug text-slate-600">
                     En payant les frais de séjour via la plateforme, vous activez la
                     protection : en cas d’annulation, le remboursement est géré par la
                     plateforme.
                   </div>
-                </div>
-              </section>
+                </section>
               </AnimatedSection>
 
               {/* Messages récents */}
@@ -835,7 +832,7 @@ export default function ClientDashboardMaq({
                 <section className="card p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="flex items-center gap-3 text-sm font-semibold text-navy">
-                    <Icon id="msg" className="text-blue-700" />Messages récents
+                    <Icon id="msg" className="text-slate-500" />Messages récents
                   </h2>
                   <Link to={messagesPath} className="link">
                     Voir tout<Icon id="arrow" className="!h-3.5 !w-3.5" />
@@ -891,13 +888,15 @@ export default function ClientDashboardMaq({
                     </li>
                   )}
                 </ul>
-              </section>
+                </section>
+              </AnimatedSection>
 
               {/* Favoris */}
+              <AnimatedSection>
               <section className="card p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="flex items-center gap-3 text-sm font-semibold text-navy">
-                    <Icon id="heart" className="text-blue-700" />Mes favoris
+                    <Icon id="heart" className="text-slate-500" />Mes favoris
                   </h2>
                   <Link to={favoritesPath} className="link">
                     Voir tout<Icon id="arrow" className="!h-3.5 !w-3.5" />
@@ -938,18 +937,18 @@ export default function ClientDashboardMaq({
 
               {/* Support */}
               <AnimatedSection>
-                <section className="flex gap-4 rounded-xl border border-blue-100 bg-blue-50/50 p-4">
-                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-blue-100 text-blue-700">
+                <section className="flex gap-4 rounded-xl border border-slate-900 bg-slate-900 p-4">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/10 text-white">
                   <Icon id="help" className="h-6 w-6" />
                 </span>
                 <div>
-                  <p className="text-xs font-semibold text-navy">Votre satisfaction est notre priorité</p>
-                  <p className="mt-2 text-[11px] leading-snug text-white">
+                  <p className="text-xs font-semibold text-white">Votre satisfaction est notre priorité</p>
+                  <p className="mt-2 text-[11px] leading-snug text-slate-300">
                     Une question, une suggestion ? Notre équipe est là pour vous aider.
                   </p>
                   <Link
                     to="/contact"
-                    className="btn-o mt-3 !inline-block !w-auto bg-white px-5"
+                    className="btn-o mt-3 !inline-block !w-auto bg-white px-5 text-slate-900"
                   >
                     Contacter le support
                   </Link>

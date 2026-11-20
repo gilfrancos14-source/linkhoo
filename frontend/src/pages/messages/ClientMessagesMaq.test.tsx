@@ -250,15 +250,14 @@ describe('ClientMessagesMaq — boîte de réception', () => {
     await waitFor(() => expect(mocks.inbox).toHaveBeenCalledTimes(2));
   });
 
-  it('affiche un état vide dédié à l’onglet Linkhoo', async () => {
+  it('ne propose que les filtres Tous et Non lus', async () => {
     renderMessages();
     await screen.findByText('Suite vue mer');
 
-    fireEvent.click(screen.getByRole('button', { name: /Linkhoo/ }));
-
-    expect(
-      screen.getByText(/Aucune conversation avec le support/),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Tous/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Non lus/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Linkhoo/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Propriétaires/ })).not.toBeInTheDocument();
   });
 });
 

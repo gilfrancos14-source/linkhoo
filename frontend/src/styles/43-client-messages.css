@@ -52,16 +52,16 @@
 
   /* Liste de conversations */
   .msg-maq .tb {
-    @apply flex h-[54px] items-center gap-2.5 border-b-[3px] border-transparent px-3 text-[12.5px] font-medium text-[#1d3f8f];
+    @apply flex h-[54px] items-center gap-2.5 border-b-[3px] border-transparent bg-transparent px-3 text-[12.5px] font-medium text-[#5a6b8c];
   }
   .msg-maq .tb.on {
     @apply border-[#ff5a14] text-[#ff5a14];
   }
   .msg-maq .tb b {
-    @apply grid h-5 w-5 place-items-center rounded-full bg-[#e5eefc] text-[11px] font-semibold text-[#2f5bbf];
+    @apply text-[11px] font-semibold text-[#1d3f8f];
   }
   .msg-maq .tb.on b {
-    @apply bg-[#fff1e8] text-[#ff5a14];
+    @apply text-[#ff5a14];
   }
   .msg-maq .cv {
     @apply flex items-start gap-3.5 border-b border-[#e6ebf5]/70 px-4 py-[15px];

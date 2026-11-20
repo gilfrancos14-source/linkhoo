@@ -79,7 +79,7 @@ function marketLabelOf(code: string | null | undefined): string | null {
   return marketByCode(code).label;
 }
 
-type BoxTab = 'tous' | 'nonlus' | 'proprietaires' | 'habici';
+type BoxTab = 'tous' | 'nonlus';
 
 export interface ClientMessagesMaqProps {
   /** Préfixe des liens de fil, ex. /ci/messages. */
@@ -363,7 +363,6 @@ export default function ClientMessagesMaq({
     const needle = conversationQuery.trim().toLowerCase();
     return conversations.filter((item) => {
       if (tab === 'nonlus' && (item.unread_count ?? 0) === 0) return false;
-      if (tab === 'habici') return false;
       if (!needle) return true;
       const haystack = [item.room?.title ?? '', item.last_message?.body ?? '']
         .join(' ')
@@ -413,8 +412,6 @@ export default function ClientMessagesMaq({
   const tabs: { id: BoxTab; label: string; count: number | null }[] = [
     { id: 'tous', label: 'Tous', count: conversations.length },
     { id: 'nonlus', label: 'Non lus', count: unreadCount },
-    { id: 'proprietaires', label: 'Propriétaires', count: null },
-    { id: 'habici', label: 'Linkhoo', count: null },
   ];
 
   return (
@@ -670,11 +667,9 @@ export default function ClientMessagesMaq({
 
               {!listLoading && !listError && visibleConversations.length === 0 && (
                 <p className="px-5 py-4 text-[11.5px] leading-[1.6] text-[#5f86d1]">
-                  {tab === 'habici'
-                    ? 'Aucune conversation avec le support pour le moment. Contactez-nous depuis la page d’aide.'
-                    : conversations.length === 0
-                      ? 'Aucune conversation pour le moment. Ouvrez-en une depuis la fiche d’une chambre qui vous intéresse.'
-                      : 'Aucune conversation ne correspond à votre recherche.'}
+                  {conversations.length === 0
+                    ? 'Aucune conversation pour le moment. Ouvrez-en une depuis la fiche d’une chambre qui vous intéresse.'
+                    : 'Aucune conversation ne correspond à votre recherche.'}
                 </p>
               )}
 
