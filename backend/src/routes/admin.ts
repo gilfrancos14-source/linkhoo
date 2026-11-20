@@ -377,34 +377,82 @@ router.get('/gerants', requireAdminAuth, requirePermission('gerants'), async (re
   }
 });
 
+/**
+ * Approbation d'une vérification — logique partagée entre l'endpoint historique
+ * `/verify` et `/approve-verification`.
+ *
+ * L'update est CONDITIONNEL sur le statut (anti-TOCTOU) : deux admins ne peuvent
+ * pas approuver la même demande en parallèle, et une approbation ne peut pas
+ * écraser une demande revenue à `none` entre la lecture et l'écriture.
+ *
+ * Retourne :
+ *   - { status: 404 } si le gérant n'existe pas ;
+ *   - { status: 400 } si aucune demande n'est en cours (ou déjà traitée) ;
+ *   - { status: 200, gerant } sinon.
+ */
+async function performApproval(
+  id: string,
+): Promise<
+  | { status: 404; gerant?: undefined }
+  | { status: 400; gerant?: undefined }
+  | { status: 200; gerant: Record<string, unknown> }
+> {
+  const { data: gerant, error: fetchError } = await supabaseAdmin
+    .from('gerants')
+    .select('id, clerk_user_id, verification_status')
+    .eq('id', id)
+    .maybeSingle();
+  if (fetchError) throw fetchError;
+  if (!gerant) return { status: 404 };
+
+  const now = new Date().toISOString();
+  // Condition portée par l'UPDATE : l'état est vérifié atomiquement en base.
+  const { data, error } = await supabaseAdmin
+    .from('gerants')
+    .update({
+      is_verified: true,
+      verified_at: now,
+      verification_status: 'approved',
+      verification_rejection_reason: null,
+      verification_reviewed_at: now,
+      updated_at: now,
+    })
+    .eq('id', id)
+    .in('verification_status', ['pending', 'under_review'])
+    .select(GERANT_COLUMNS)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return { status: 400 }; // statut changé entre la lecture et l'écriture
+
+  await supabaseAdmin.from('notifications').insert({
+    id: randomUUID(),
+    type: 'verification_approved',
+    room_title: null,
+    room_id: null,
+    client_name: null,
+    client_email: null,
+    client_phone: null,
+    message: 'Votre compte a été vérifié avec succès',
+    gerant_id: gerant.clerk_user_id,
+  });
+  void publishNotificationChanged('admin', 'gerant');
+
+  return { status: 200, gerant: data as Record<string, unknown> };
+}
+
+// Endpoint historique conservé pour compatibilité : il délègue désormais au
+// même workflow complet que `/approve-verification` (statut cohérent + notification).
 router.patch('/gerants/:id/verify', requireAdminAuth, requirePermission('gerants'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     if (!parsedParams.success) {
       return res.status(400).json({ error: 'Identifiant invalide' });
     }
-    const { id } = parsedParams.data;
-
-    const { data: gerant, error: fetchError } = await supabaseAdmin
-      .from('gerants')
-      .select('id')
-      .eq('id', id)
-      .maybeSingle();
-    if (fetchError) throw fetchError;
-    if (!gerant) return res.status(404).json({ error: 'Gérant introuvable' });
-
-    const { data, error } = await supabaseAdmin
-      .from('gerants')
-      .update({
-        is_verified: true,
-        verified_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select(GERANT_COLUMNS)
-      .single();
-    if (error) throw error;
-    res.json(data);
+    const result = await performApproval(parsedParams.data.id);
+    if (result.status === 404) return res.status(404).json({ error: 'Gérant introuvable' });
+    if (result.status === 400) return res.status(400).json({ error: 'Aucune demande de vérification en cours' });
+    res.json(result.gerant);
+    return;
   } catch (err) {
     next(err);
   }
@@ -417,6 +465,16 @@ router.patch('/gerants/:id/revoke-verification', requireAdminAuth, requirePermis
       return res.status(400).json({ error: 'Identifiant invalide' });
     }
     const { id } = parsedParams.data;
+
+    // Récupérer le propriétaire pour la notification (le gérant doit savoir
+    // pourquoi il perd l'accès, plutôt que d'être déconnecté sans explication).
+    const { data: current, error: fetchError } = await supabaseAdmin
+      .from('gerants')
+      .select('clerk_user_id, is_verified')
+      .eq('id', id)
+      .maybeSingle();
+    if (fetchError) throw fetchError;
+    if (!current) return res.status(404).json({ error: 'Gérant introuvable' });
 
     const { data, error } = await supabaseAdmin
       .from('gerants')
@@ -433,6 +491,35 @@ router.patch('/gerants/:id/revoke-verification', requireAdminAuth, requirePermis
       .select(GERANT_COLUMNS)
       .single();
     if (error) throw error;
+
+    // Remettre les pièces en file d'attente pour une éventuelle nouvelle
+    // soumission : un document `approved` sinon resterait marqué approuvé
+    // alors que le compte vérifié vient d'être révoqué.
+    await supabaseAdmin
+      .from('verification_documents')
+      .update({
+        status: 'pending',
+        rejection_reason: null,
+        reviewed_by: null,
+        reviewed_at: null,
+      })
+      .eq('gerant_id', id);
+
+    if (current.is_verified) {
+      await supabaseAdmin.from('notifications').insert({
+        id: randomUUID(),
+        type: 'verification_rejected',
+        room_title: null,
+        room_id: null,
+        client_name: null,
+        client_email: null,
+        client_phone: null,
+        message: 'La vérification de votre compte a été révoquée. Contactez le support pour en savoir plus.',
+        gerant_id: current.clerk_user_id,
+      });
+      void publishNotificationChanged('admin', 'gerant');
+    }
+
     res.json(data);
   } catch (err) {
     next(err);
@@ -550,9 +637,12 @@ router.patch('/gerants/:id/start-review', requireAdminAuth, requirePermission('g
         updated_at: new Date().toISOString(),
       })
       .eq('id', parsedParams.data.id)
+      // Condition atomique : deux admins ne peuvent pas lancer la même revue.
+      .eq('verification_status', 'pending')
       .select(GERANT_COLUMNS)
-      .single();
+      .maybeSingle();
     if (error) throw error;
+    if (!data) return res.status(400).json({ error: 'La demande n’est plus en attente' });
     res.json(data);
   } catch (err) {
     next(err);
@@ -565,49 +655,11 @@ router.patch('/gerants/:id/approve-verification', requireAdminAuth, requirePermi
     if (!parsedParams.success) {
       return res.status(400).json({ error: 'Identifiant invalide' });
     }
-
-    const { data: gerant, error: fetchError } = await supabaseAdmin
-      .from('gerants')
-      .select('id, clerk_user_id, verification_status')
-      .eq('id', parsedParams.data.id)
-      .maybeSingle();
-    if (fetchError) throw fetchError;
-    if (!gerant) return res.status(404).json({ error: 'Gérant introuvable' });
-
-    if (gerant.verification_status !== 'pending' && gerant.verification_status !== 'under_review') {
-      return res.status(400).json({ error: 'Aucune demande de vérification en cours' });
-    }
-
-    const now = new Date().toISOString();
-    const { data, error } = await supabaseAdmin
-      .from('gerants')
-      .update({
-        is_verified: true,
-        verified_at: now,
-        verification_status: 'approved',
-        verification_rejection_reason: null,
-        verification_reviewed_at: now,
-        updated_at: now,
-      })
-      .eq('id', parsedParams.data.id)
-      .select(GERANT_COLUMNS)
-      .single();
-    if (error) throw error;
-
-    await supabaseAdmin.from('notifications').insert({
-      id: randomUUID(),
-      type: 'verification_approved',
-      room_title: null,
-      room_id: null,
-      client_name: null,
-      client_email: null,
-      client_phone: null,
-      message: 'Votre compte a été vérifié avec succès',
-      gerant_id: gerant.clerk_user_id,
-    });
-    void publishNotificationChanged('admin', 'gerant');
-
-    res.json(data);
+    const result = await performApproval(parsedParams.data.id);
+    if (result.status === 404) return res.status(404).json({ error: 'Gérant introuvable' });
+    if (result.status === 400) return res.status(400).json({ error: 'Aucune demande de vérification en cours' });
+    res.json(result.gerant);
+    return;
   } catch (err) {
     next(err);
   }
@@ -641,15 +693,21 @@ router.patch('/gerants/:id/reject-verification', requireAdminAuth, requirePermis
     const { data, error } = await supabaseAdmin
       .from('gerants')
       .update({
+        is_verified: false,
+        verified_at: null,
         verification_status: 'rejected',
         verification_rejection_reason: parsedBody.data.rejection_reason,
         verification_reviewed_at: now,
         updated_at: now,
       })
       .eq('id', parsedParams.data.id)
+      // Condition atomique : ne pas écraser une décision prise entre la
+      // lecture et l'écriture (anti-TOCTOU).
+      .in('verification_status', ['pending', 'under_review'])
       .select(GERANT_COLUMNS)
-      .single();
+      .maybeSingle();
     if (error) throw error;
+    if (!data) return res.status(400).json({ error: 'Aucune demande de vérification en cours' });
 
     await supabaseAdmin.from('notifications').insert({
       id: randomUUID(),

@@ -345,9 +345,15 @@ describe('PATCH /api/admin/gerants/:id/verify', () => {
     expect(res.status).toBe(404);
   });
 
-  it('200 : marque le profil comme vérifié', async () => {
-    const fetched = fakeChain({ data: { id: 'g1' }, error: null });
-    const updated = fakeChain({ data: { id: 'g1', is_verified: true }, error: null });
+  it('200 : approuve via le workflow complet (statut cohérent + notification)', async () => {
+    const fetched = fakeChain({
+      data: { id: 'g1', clerk_user_id: 'user_1', verification_status: 'pending' },
+      error: null,
+    });
+    const updated = fakeChain({
+      data: { id: 'g1', is_verified: true, verification_status: 'approved' },
+      error: null,
+    });
     stubTables({ gerants: [fetched, updated] });
 
     const res = await request(app)
@@ -355,14 +361,26 @@ describe('PATCH /api/admin/gerants/:id/verify', () => {
       .set(auth(adminToken()));
 
     expect(res.status).toBe(200);
-    expect(updated.update).toHaveBeenCalledWith(expect.objectContaining({ is_verified: true }));
+    // L'endpoint legacy ne laisse plus d'état incohérent : is_verified ET
+    // verification_status sont positionnés ensemble, comme approve-verification.
+    expect(updated.update).toHaveBeenCalledWith(
+      expect.objectContaining({ is_verified: true, verification_status: 'approved' }),
+    );
+    expect(notifications.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'verification_approved', gerant_id: 'user_1' }),
+    );
   });
 });
 
 describe('PATCH /api/admin/gerants/:id/revoke-verification', () => {
-  it('200 : réinitialise la vérification', async () => {
+  it('200 : réinitialise la vérification, les pièces et notifie', async () => {
+    const fetched = fakeChain({
+      data: { id: 'g1', clerk_user_id: 'user_1', is_verified: true },
+      error: null,
+    });
     const updated = fakeChain({ data: { id: 'g1', is_verified: false }, error: null });
-    stubTables({ gerants: updated });
+    const docs = fakeChain({ data: null, error: null });
+    stubTables({ gerants: [fetched, updated], verification_documents: docs });
 
     const res = await request(app)
       .patch('/api/admin/gerants/g1/revoke-verification')
@@ -371,6 +389,14 @@ describe('PATCH /api/admin/gerants/:id/revoke-verification', () => {
     expect(res.status).toBe(200);
     expect(updated.update).toHaveBeenCalledWith(
       expect.objectContaining({ is_verified: false, verification_status: 'none' }),
+    );
+    // Les documents approuvés repassent en attente pour une nouvelle soumission.
+    expect(docs.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'pending', reviewed_by: null }),
+    );
+    // Le gérant est prévenu de la révocation.
+    expect(notifications.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ gerant_id: 'user_1' }),
     );
   });
 });
@@ -488,11 +514,14 @@ describe('PATCH /api/admin/gerants/:id/start-review', () => {
 
 describe('PATCH /api/admin/gerants/:id/approve-verification', () => {
   it('400 sans demande en cours', async () => {
-    gerants = fakeChain({
+    const fetched = fakeChain({
       data: { id: 'g1', clerk_user_id: 'user_1', verification_status: 'none' },
       error: null,
     });
-    stubTables();
+    // L'update conditionnel (WHERE verification_status IN pending/under_review)
+    // ne correspond à aucune ligne : le mock renvoie null, comme la base.
+    const conditionalUpdate = fakeChain({ data: null, error: null });
+    stubTables({ gerants: [fetched, conditionalUpdate] });
 
     const res = await request(app)
       .patch('/api/admin/gerants/g1/approve-verification')
