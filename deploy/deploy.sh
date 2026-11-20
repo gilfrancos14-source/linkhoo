@@ -40,7 +40,10 @@ step "3/5 Migrations"
 $COMPOSE run --rm api1 node dist/db/migrateCli.js --yes
 
 step "4/5 Démarrage des services"
-$COMPOSE up -d
+# --force-recreate est ESSENTIEL : les 4 instances partagent le tag
+# ilehya-backend:latest. Sans cela, Compose garde api2/api3/api4 avec
+# l'ancien image ID (le tag est inchangé) et seul api1 tournerait en neuf.
+$COMPOSE up -d --force-recreate api1 api2 api3 api4 postgres redis
 
 step "5/5 Vérification"
 echo "Attente de l'API (30 s maximum)…"
