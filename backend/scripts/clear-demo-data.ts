@@ -5,6 +5,10 @@
  *     escapades) nécessaires au paiement/commission ;
  *   - à l'historique des migrations (schema_migrations).
  *
+ * Les escapades sont aussi vidées : bien que déclarées « source de vérité
+ * admin », ce sont des données éditoriales de démo, pas des références
+ * techniques (contrairement à pawapay_markets / payment_policies / fx_rates).
+ *
  * Idempotent : peut être relancé sans risque.
  *
  * Usage : npm run db:clear-demo   (ou npx tsx scripts/clear-demo-data.ts)
@@ -40,6 +44,7 @@ const DEMO_TABLES = [
   'categories',
   'events',
   'tourism_destinations',
+  'escapades',
   // Comptes de test
   'clients',
   'admins',

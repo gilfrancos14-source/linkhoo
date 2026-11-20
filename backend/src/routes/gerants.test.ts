@@ -31,6 +31,11 @@ vi.mock('../utils/realtime', () => ({
   publishNotificationChanged: vi.fn(async () => {}),
 }));
 
+// Rate limiters neutralisés : le comportement de quota est testé ailleurs.
+vi.mock('../utils/rateLimiters', () => ({
+  createClientLimiter: () => (_req: unknown, _res: unknown, next: () => void) => next(),
+}));
+
 const app = buildTestApp('/api/gerants', gerantsRouter, {
   middlewares: [requireClerkAuth],
 });

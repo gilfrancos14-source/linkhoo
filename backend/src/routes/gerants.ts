@@ -11,8 +11,17 @@ import {
 } from '../utils/verificationStorage';
 import { GERANT_COLUMNS, VERIFICATION_DOCUMENT_COLUMNS } from '../utils/gerantSelect';
 import { requireProfile } from '../middleware/requireProfile';
+import { createClientLimiter } from '../utils/rateLimiters';
 
 const router = Router();
+
+// Une soumission de dossier est un acte rare : 5 tentatives par utilisateur et
+// par fenêtre de 15 min suffisent largement, tout en empêchant le spam de
+// notifications admin (un gérant qui soumet/annule en boucle).
+const verificationSubmitLimiter = createClientLimiter({
+  limit: 5,
+  prefix: 'verification-submit',
+});
 
 const VERIFICATION_REQUIRED_DOCS = [
   'national_id',
@@ -429,7 +438,7 @@ router.patch('/:id/property-address', async (req: Request, res: Response, next: 
 
 // ── Vérification : Soumission gratuite (revue admin) ──
 
-router.post('/:id/submit-verification', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/submit-verification', verificationSubmitLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedParams = idParamsSchema.safeParse(req.params);
     if (!parsedParams.success) {
