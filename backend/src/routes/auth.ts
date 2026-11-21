@@ -188,6 +188,7 @@ router.post('/bootstrap', async (req: Request, res: Response, next: NextFunction
         prenom: identity.prenom,
         market,
         phone,
+        signup_ip: req.ip ?? null,
       });
       if (error) throw error;
     } else if (existing.market !== market) {

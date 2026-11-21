@@ -28,6 +28,10 @@ vi.mock('../utils/realtime', () => ({
   publishNotificationChanged: vi.fn(async () => {}),
 }));
 
+// GéoIP neutralisée : pas d'appel réseau dans les tests.
+const countryOfIpMock = vi.hoisted(() => vi.fn());
+vi.mock('../utils/geoIp', () => ({ countryOfIp: countryOfIpMock }));
+
 const app = buildTestApp('/api/admin', adminRouter);
 
 const ADMIN_HASH = bcrypt.hashSync('Admin123!', 4);
@@ -71,6 +75,7 @@ function auth(token?: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  countryOfIpMock.mockResolvedValue(null);
   process.env.ADMIN_JWT_SECRET = 'secret-de-test';
   gerants = fakeChain({ data: null, error: null });
   rooms = fakeChain({ data: null, error: null });
@@ -623,6 +628,26 @@ describe('GET /api/admin/verification/pending', () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
     expect(gerants.in).toHaveBeenCalledWith('verification_status', ['pending', 'under_review']);
+  });
+
+  it('200 : signale un pays IP différent du marché déclaré', async () => {
+    gerants = fakeChain({
+      data: [{ id: 'g2', market: 'CI', signup_ip: '197.1.2.3', verification_status: 'pending', verification_submitted_at: FUTURE }],
+      error: null,
+    });
+    stubTables();
+    countryOfIpMock.mockResolvedValue({ countryCode: 'BJ', country: 'Bénin' });
+
+    const res = await request(app)
+      .get('/api/admin/verification/pending')
+      .set(auth(adminToken()));
+
+    expect(res.status).toBe(200);
+    expect(res.body[0]).toMatchObject({
+      signup_country: 'BJ',
+      signup_country_name: 'Bénin',
+      ip_market_mismatch: true,
+    });
   });
 });
 

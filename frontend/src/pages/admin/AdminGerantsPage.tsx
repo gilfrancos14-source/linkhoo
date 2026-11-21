@@ -196,6 +196,7 @@ export default function AdminGerantsPage() {
                     <th>Gérant</th>
                     <th>Email</th>
                     <th>Marché</th>
+                    <th>Pays IP</th>
                     <th>Inscrit le</th>
                     <th>Statut</th>
                     <th>Soumis le</th>
@@ -231,6 +232,19 @@ export default function AdminGerantsPage() {
                           <span className={`admin-badge ${gerant.market === 'CI' ? 'admin-badge--info' : 'admin-badge--success'}`}>
                             {gerant.market}
                           </span>
+                        </td>
+                        <td style={{ fontSize: '12px' }}>
+                          {gerant.signup_country ? (
+                            <span
+                              className={`admin-badge ${gerant.ip_market_mismatch ? 'admin-badge--warning' : 'admin-badge--success'}`}
+                              title={gerant.signup_country_name ?? gerant.signup_country}
+                            >
+                              {gerant.signup_country}
+                              {gerant.ip_market_mismatch ? ' ⚠' : ''}
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--admin-ink-soft)' }}>—</span>
+                          )}
                         </td>
                         <td style={{ fontSize: '13px', color: 'var(--admin-ink-soft)' }}>
                           {formatDate(gerant.created_at)}

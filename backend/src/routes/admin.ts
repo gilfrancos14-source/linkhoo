@@ -19,6 +19,7 @@ import { isQualifiedGerant } from '../utils/gerantQualification';
 import { fetchAllRows } from '../utils/fetchAll';
 import { isMarketCode } from '../config/markets';
 import { isAccessibleVerificationPath } from '../utils/verificationStorage';
+import { countryOfIp } from '../utils/geoIp';
 import { GERANT_COLUMNS, VERIFICATION_DOCUMENT_COLUMNS } from '../utils/gerantSelect';
 import { NOTIFICATION_COLUMNS, ROOM_COLUMNS } from '../utils/selects';
 import {
@@ -774,15 +775,28 @@ router.patch('/gerants/:id/payout-verification', requireAdminAuth, requirePermis
 
 router.get('/verification/pending', requireAdminAuth, requirePermission('gerants'), async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = await fetchAllRows<any>((from, to) =>
+    const rows = await fetchAllRows<any>((from, to) =>
       supabaseAdmin
         .from('gerants')
-        .select('id, email, nom, prenom, phone, market, verification_status, verification_submitted_at, property_maps_url, property_lat, property_lng')
+        .select('id, email, nom, prenom, phone, market, signup_ip, verification_status, verification_submitted_at, property_maps_url, property_lat, property_lng')
         .in('verification_status', ['pending', 'under_review'])
         .order('verification_submitted_at', { ascending: true })
         .order('id', { ascending: true })
         .range(from, to));
-    res.json(data);
+
+    // Indice géographique : pays estimé à partir de l'IP d'inscription.
+    // Non bloquant (geoIp retourne null silencieusement si indisponible).
+    const enriched = await Promise.all(rows.map(async (row) => {
+      const geo = await countryOfIp(row.signup_ip);
+      return {
+        ...row,
+        signup_country: geo?.countryCode ?? null,
+        signup_country_name: geo?.country ?? null,
+        // Vrai si l'IP est dans un pays DIFFÉRENT du marché déclaré.
+        ip_market_mismatch: Boolean(geo && geo.countryCode !== row.market),
+      };
+    }));
+    res.json(enriched);
   } catch (err) {
     next(err);
   }

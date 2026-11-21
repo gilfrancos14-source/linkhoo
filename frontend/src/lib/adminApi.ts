@@ -197,6 +197,11 @@ export interface AdminGerant {
   property_maps_url: string | null;
   property_lat: number | null;
   property_lng: number | null;
+  /** Indice géographique (IP d'inscription), non bloquant. */
+  signup_ip?: string | null;
+  signup_country?: string | null;
+  signup_country_name?: string | null;
+  ip_market_mismatch?: boolean;
   is_premium: boolean;
   premium_expires_at: string | null;
   /** Coordonnées de reversement déclarées par le gérant (phase 4). */
