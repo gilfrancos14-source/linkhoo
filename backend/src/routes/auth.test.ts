@@ -35,6 +35,8 @@ const app = buildTestApp('/api/auth', authRouter, {
 const clerkUser = {
   primaryEmailAddress: { emailAddress: 'jean@example.ci' },
   emailAddresses: [],
+  // Numéro de téléphone CI (cohérent avec le marché 'CI' des tests).
+  phoneNumbers: [{ phoneNumber: '+2250700000000' }],
   firstName: 'Jean',
   lastName: 'Kouassi',
   publicMetadata: {},
@@ -245,7 +247,11 @@ describe('POST /api/auth/bootstrap', () => {
     expect(res.status).toBe(201);
     expect(res.body).toEqual({ role: 'gerant', profile_role: 'gerant', clerk_role: 'gerant', market: 'CI' });
     expect(inserted.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ clerk_user_id: 'user_1', market: 'CI' }),
+      expect.objectContaining({
+        clerk_user_id: 'user_1',
+        market: 'CI',
+        phone: '+2250700000000',
+      }),
     );
     expect(clerkUsers.updateUser).toHaveBeenCalledWith('user_1', {
       publicMetadata: { role: 'gerant' },
@@ -258,6 +264,34 @@ describe('POST /api/auth/bootstrap', () => {
       .set('Authorization', clerkBearer('user_1'))
       .send({ role: 'gerant', market: 'XX' });
     expect(res.status).toBe(400);
+  });
+
+  it('403 si le téléphone Clerk ne correspond pas au marché déclaré', async () => {
+    // Numéro du Bénin alors que le gérant s'inscrit sur le marché CI.
+    clerkUsers.getUser.mockResolvedValue({
+      ...clerkUser,
+      phoneNumbers: [{ phoneNumber: '+22996000000' }],
+    });
+    stubTables({ gerants: [fakeChain({ data: null, error: null })] });
+
+    const res = await request(app)
+      .post('/api/auth/bootstrap')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ role: 'gerant', market: 'CI' });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('GERANT_PHONE_MARKET_MISMATCH');
+  });
+
+  it('400 si le gérant na aucun numéro de téléphone', async () => {
+    clerkUsers.getUser.mockResolvedValue({ ...clerkUser, phoneNumbers: [] });
+    stubTables({ gerants: [fakeChain({ data: null, error: null })] });
+
+    const res = await request(app)
+      .post('/api/auth/bootstrap')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ role: 'gerant', market: 'CI' });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('GERANT_PHONE_REQUIRED');
   });
 
   it('201 : profil gérant existant mais rôle absent de Clerk', async () => {

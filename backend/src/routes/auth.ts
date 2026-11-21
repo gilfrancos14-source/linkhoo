@@ -3,6 +3,7 @@ import { createClerkClient } from '@clerk/backend';
 import { supabaseAdmin } from '../config/supabase';
 import { bootstrapSchema, type AuthRole } from '../validations/auth';
 import { emailSchema } from '../validations/common';
+import { phoneMatchesMarket } from '../utils/phoneMarket';
 
 const router = Router();
 
@@ -33,12 +34,15 @@ async function resolveClerkIdentity(userId: string) {
     throw Object.assign(new Error('Adresse email manquante sur le compte Clerk'), { status: 400 });
   }
 
+  const phone = user.phoneNumbers?.find((p) => p.phoneNumber)?.phoneNumber ?? null;
+
   return {
     clerk,
     user,
     email: emailSchema.parse(email),
     nom: user.lastName || '',
     prenom: user.firstName || '',
+    phone,
   };
 }
 
@@ -159,12 +163,31 @@ router.post('/bootstrap', async (req: Request, res: Response, next: NextFunction
       .maybeSingle();
 
     if (!existing) {
+      // Nouvelle inscription : le gérant DOIT fournir un numéro cohérent avec
+      // son marché — premier signal qu'il est bien présent dans ce pays
+      // (contrôle renforcé ensuite par la vérification KYC/admin).
+      // Source de vérité : numéro du compte Clerk ; repli sur le body.
+      const phone = (identity.phone ?? parsed.data.phone ?? '').trim();
+      if (!phone) {
+        return res.status(400).json({
+          error: 'Un numéro de téléphone est requis pour un compte gérant',
+          code: 'GERANT_PHONE_REQUIRED',
+        });
+      }
+      if (!phoneMatchesMarket(phone, market)) {
+        return res.status(403).json({
+          error: `Ce numéro de téléphone ne correspond pas au marché ${market}. Utilisez un numéro de ce pays.`,
+          code: 'GERANT_PHONE_MARKET_MISMATCH',
+        });
+      }
+
       const { error } = await supabaseAdmin.from('gerants').insert({
         clerk_user_id: authUserId,
         email: identity.email,
         nom: identity.nom,
         prenom: identity.prenom,
         market,
+        phone,
       });
       if (error) throw error;
     } else if (existing.market !== market) {

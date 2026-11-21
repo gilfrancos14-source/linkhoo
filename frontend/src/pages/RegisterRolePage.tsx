@@ -184,6 +184,13 @@ export default function RegisterRolePage() {
               signInUrl={`/${currentMarket}/login`}
               fallbackRedirectUrl={clerkPath}
               unsafeMetadata={{ role }}
+              // Pour les gérants, Clerk demande le numéro de téléphone : il
+              // sert au backend à vérifier que le gérant appartient au marché.
+              requiredFields={
+                role === 'gerant'
+                  ? ['phoneNumber', 'emailAddress', 'password']
+                  : ['emailAddress', 'password']
+              }
               appearance={{
                 variables: {
                   colorBackground: 'transparent',
