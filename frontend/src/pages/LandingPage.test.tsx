@@ -58,14 +58,14 @@ afterEach(() => {
 });
 
 describe('LandingPage — maquette accueil', () => {
-  it("affiche le bandeau, l'en-tête et le hero", async () => {
+  it("affiche l'en-tête et le hero sans bandeau hors ligne quand la connexion est disponible", async () => {
     renderLanding();
 
     expect(
-      screen.getByText(
+      screen.queryByText(
         'Vous êtes actuellement hors ligne. Certaines fonctionnalités peuvent être limitées.',
       ),
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
     expect(screen.getAllByText('Linkhoo').length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', { name: 'Accueil' }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', { name: 'À propos' }).length).toBeGreaterThan(0);
