@@ -244,3 +244,39 @@
     color: #d1d5db;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Fallback <Suspense> de App.tsx : affiché sur TOUTES les routes pendant le
+   chargement d'un chunk. Ces règles doivent rester dans la feuille globale :
+   `20-auth.css` (où elles vivaient avant) n'est importé que par certaines pages
+   lazy, donc le texte « Chargement... » s'affichait avant son CSS, en haut à
+   gauche. Ici il est centré verticalement ET horizontalement partout.
+   -------------------------------------------------------------------------- */
+.route-loading,
+.auth-loading {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  text-align: center;
+  color: var(--ink-soft, #1d1732);
+  font-size: 0.9rem;
+}
+
+.auth-loading__spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(59, 130, 246, 0.1);
+  border-top-color: rgb(59, 130, 246);
+  border-radius: 50%;
+  animation: auth-spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes auth-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

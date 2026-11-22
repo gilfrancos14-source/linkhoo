@@ -1647,8 +1647,13 @@
    ========================================================================== */
 
 .search-page__loading {
-  padding-top: 1.5rem;
-  padding-bottom: 4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  padding: 2rem 0 4rem;
+  text-align: center;
 }
 
 .search-page__loading-text {
@@ -1656,6 +1661,12 @@
   color: var(--sp-outline);
   font-size: 13px;
   font-weight: 600;
+}
+
+/* Les os de chargement gardent leur largeur : seul le bloc est centré. */
+.search-page__loading-hero,
+.search-page__loading-grid {
+  width: 100%;
 }
 
 .search-page__loading-hero {
