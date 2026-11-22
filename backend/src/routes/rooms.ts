@@ -22,6 +22,16 @@ const router = Router();
 
 type RoomListFilters = z.infer<typeof roomListQuerySchema>;
 
+/**
+ * Met la requête dans la même forme que `rooms.search_text` (minuscules,
+ * accents retirés) : « Bouaké », « bouake » et « BOUAKÉ » donnent le même
+ * motif. Le texte des annonces est normalisé à l'écriture par la migration
+ * `20261122120000_rooms_search_text.sql`.
+ */
+function normalizeSearchTerm(value: string): string {
+  return value.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '');
+}
+
 function applyRoomFilters(query: any, filters: RoomListFilters): any {
   let q = query;
   if (filters.market) q = q.eq('market', filters.market);
@@ -36,8 +46,20 @@ function applyRoomFilters(query: any, filters: RoomListFilters): any {
   if (filters.disponible !== undefined) q = q.eq('disponible', filters.disponible === 'true');
   if (filters.promo_group) q = q.eq('promo_group', filters.promo_group);
   if (filters.q) {
-    const pattern = `%${filters.q.replace(/[%_,()"\\]/g, ' ')}%`;
-    q = q.or(`title.ilike.${pattern},subtitle.ilike.${pattern},ville.ilike.${pattern},quartier.ilike.${pattern},category.ilike.${pattern}`);
+    // Même sémantique que la recherche côté client : chaque mot doit matcher,
+    // sans tenir compte des accents ni de la casse. `search_text` contient déjà
+    // tous les champs pertinents (titre, description, ville, catégorie…).
+    const words = normalizeSearchTerm(filters.q).trim().split(/\s+/).filter(Boolean);
+    for (const word of words) {
+      const pattern = `%${word.replace(/[%_,()"\\]/g, ' ').trim()}%`;
+      // Un mot ne contenant que des caractères réservés ne peut rien
+      // correspondre : on force un résultat vide au lieu de tout renvoyer.
+      if (pattern === '%%') {
+        q = q.eq('id', '');
+        continue;
+      }
+      q = q.or(`search_text.ilike.${pattern}`);
+    }
   }
   return q;
 }
@@ -243,7 +265,7 @@ router.get('/available', async (req: Request, res: Response, next: NextFunction)
       return res.status(400).json({ error: 'Paramètres de disponibilité invalides' });
     }
 
-    const { market, arrivee, depart, ville } = parsedQuery.data;
+    const { market, arrivee, depart, ville, quartier, category, prix_min, prix_max, q } = parsedQuery.data;
     const normalizedVille = ville ? normalizeCity(ville) : null;
 
     const overlapping = await fetchAllRows<{ room_id: string | null }>((from, to) =>
@@ -261,15 +283,18 @@ router.get('/available', async (req: Request, res: Response, next: NextFunction)
     );
 
     const roomsPromise = fetchAllRows<any>((from, to) => {
-      let query = supabasePublic
-        .from('rooms')
-        .select(ROOM_COLUMNS)
-        .eq('disponible', true)
-        .order('created_at', { ascending: false })
-        .order('id', { ascending: true });
-      if (market) {
-        query = query.eq('market', market);
-      }
+      // Filtres exacts poussés au serveur : la page ne télécharge plus les
+      // annonces qu'elle va écarter. La ville est exclue volontairement : le
+      // rapprochement normalisé (accents/casse) est fait plus bas.
+      const query = applyRoomFilters(
+        supabasePublic
+          .from('rooms')
+          .select(ROOM_COLUMNS)
+          .eq('disponible', true)
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: true }),
+        { market, quartier, category, prix_min, prix_max, q },
+      );
       return query.range(from, to);
     });
     const premiumPromise = loadGerantSignals();

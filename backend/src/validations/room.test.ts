@@ -274,4 +274,30 @@ describe('roomAvailableQuerySchema', () => {
     const parsed = roomAvailableQuerySchema.safeParse({ ...validQuery, market: 'XX' });
     expect(parsed.success).toBe(false);
   });
+
+  it('accepte les filtres serveur quartier/catégorie/budget', () => {
+    const parsed = roomAvailableQuerySchema.safeParse({
+      ...validQuery,
+      quartier: 'Cocody',
+      category: 'ci-appartements',
+      prix_min: 10000,
+      prix_max: 50000,
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('refuse un budget dont le minimum dépasse le maximum', () => {
+    const parsed = roomAvailableQuerySchema.safeParse({
+      ...validQuery,
+      prix_min: 50000,
+      prix_max: 10000,
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it('accepte une requête textuelle sur les disponibilités', () => {
+    const parsed = roomAvailableQuerySchema.safeParse({ ...validQuery, q: 'Bouaké' });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.q).toBe('Bouaké');
+  });
 });

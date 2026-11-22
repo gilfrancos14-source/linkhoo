@@ -182,34 +182,53 @@ describe('GET /api/rooms', () => {
     expect((await request(app).get('/api/rooms?promo_group=promo_20')).status).toBe(400);
   });
 
-  it('200 : q construit un or() ilike sur 5 champs et échappe les caractères spéciaux', async () => {
+  it('200 : q échappe les caractères réservés de PostgREST', async () => {
     publicRooms = fakeChain({ data: [], error: null });
     stubPublic(publicRooms);
 
     const res = await request(app).get('/api/rooms?q=villa%22%5C(%2C%25');
 
     expect(res.status).toBe(200);
-    // " \ ( , % remplacés par des espaces — jamais de " ni \ dans le pattern.
+    expect(publicRooms.or).toHaveBeenCalledTimes(1);
     const orArg = (publicRooms.or as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as string;
-    expect(orArg).toContain('title.ilike.%villa     %');
+    expect(orArg).toBe('search_text.ilike.%villa%');
     expect(orArg).not.toContain('"');
     expect(orArg).not.toContain('\\');
-    expect(orArg).toContain('subtitle.ilike.');
-    expect(orArg).toContain('ville.ilike.');
-    expect(orArg).toContain('quartier.ilike.');
-    expect(orArg).toContain('category.ilike.');
   });
 
-  it('200 : q sans caractères spéciaux garde le pattern brut', async () => {
+  it('200 : q porte sur la colonne normalisée search_text', async () => {
     publicRooms = fakeChain({ data: [], error: null });
     stubPublic(publicRooms);
 
     const res = await request(app).get('/api/rooms?q=villa');
 
     expect(res.status).toBe(200);
-    expect(publicRooms.or).toHaveBeenCalledWith(
-      'title.ilike.%villa%,subtitle.ilike.%villa%,ville.ilike.%villa%,quartier.ilike.%villa%,category.ilike.%villa%',
-    );
+    expect(publicRooms.or).toHaveBeenCalledWith('search_text.ilike.%villa%');
+  });
+
+  it('200 : q ignore les accents et la casse (Bouaké = bouake = BOUAKÉ)', async () => {
+    publicRooms = fakeChain({ data: [], error: null });
+    stubPublic(publicRooms);
+
+    expect((await request(app).get('/api/rooms?q=Bouak%C3%A9')).status).toBe(200);
+    expect(publicRooms.or).toHaveBeenCalledWith('search_text.ilike.%bouake%');
+
+    publicRooms = fakeChain({ data: [], error: null });
+    stubPublic(publicRooms);
+    expect((await request(app).get('/api/rooms?q=%C3%89L%C3%89GANT')).status).toBe(200);
+    expect(publicRooms.or).toHaveBeenCalledWith('search_text.ilike.%elegant%');
+  });
+
+  it('200 : q à plusieurs mots exige chaque mot', async () => {
+    publicRooms = fakeChain({ data: [], error: null });
+    stubPublic(publicRooms);
+
+    const res = await request(app).get('/api/rooms?q=appartement%20plateau');
+
+    expect(res.status).toBe(200);
+    expect(publicRooms.or).toHaveBeenCalledTimes(2);
+    expect(publicRooms.or).toHaveBeenNthCalledWith(1, 'search_text.ilike.%appartement%');
+    expect(publicRooms.or).toHaveBeenNthCalledWith(2, 'search_text.ilike.%plateau%');
   });
 
   it('400 : q vide ou trop long', async () => {
@@ -439,6 +458,36 @@ describe('GET /api/rooms/available', () => {
     expect(res.status).toBe(200);
     expect(res.body.map((r: { id: string }) => r.id)).toEqual(['r2']);
     expect(reservations.neq).toHaveBeenCalledWith('statut', 'annulee');
+  });
+
+  it('200 : pousse quartier/catégorie/budget dans la requête rooms', async () => {
+    const res = await request(app).get(
+      '/api/rooms/available?market=CI&arrivee=2026-05-01&depart=2026-05-05' +
+        '&quartier=Cocody&category=Studio&prix_min=10000&prix_max=50000',
+    );
+
+    expect(res.status).toBe(200);
+    expect(publicRooms.eq).toHaveBeenCalledWith('market', 'CI');
+    expect(publicRooms.eq).toHaveBeenCalledWith('quartier', 'Cocody');
+    expect(publicRooms.eq).toHaveBeenCalledWith('category', 'Studio');
+    expect(publicRooms.gte).toHaveBeenCalledWith('price_num', 10000);
+    expect(publicRooms.lte).toHaveBeenCalledWith('price_num', 50000);
+  });
+
+  it('200 : q filtre aussi les disponibilités, sans tenir compte des accents', async () => {
+    const res = await request(app).get(
+      '/api/rooms/available?arrivee=2026-05-01&depart=2026-05-05&q=Bouak%C3%A9',
+    );
+
+    expect(res.status).toBe(200);
+    expect(publicRooms.or).toHaveBeenCalledWith('search_text.ilike.%bouake%');
+  });
+
+  it('400 si prix_min dépasse prix_max', async () => {
+    const res = await request(app).get(
+      '/api/rooms/available?arrivee=2026-05-01&depart=2026-05-05&prix_min=50000&prix_max=10000',
+    );
+    expect(res.status).toBe(400);
   });
 
   it('200 : classe premium, puis vérifiés, puis non vérifiés', async () => {

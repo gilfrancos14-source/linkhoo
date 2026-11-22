@@ -53,16 +53,32 @@ export const roomCreateSchema = z
 
 export const roomUpdateSchema = z.object(roomFields).partial().strict();
 
+/**
+ * Filtres acceptés par `/api/rooms/available`. En plus des dates, on peut
+ * filtrer côté serveur (quartier, catégorie, budget) pour ne pas télécharger
+ * tout le catalogue quand la page de recherche applique ses filtres.
+ * La ville reste traitée à part : le routeur fait une correspondance
+ * normalisée (accents/casse) avec repli par préfixe.
+ */
 export const roomAvailableQuerySchema = z
   .object({
     market: marketSchema.optional(),
     arrivee: dateStringSchema,
     depart: dateStringSchema,
     ville: z.string().trim().min(1).max(150).optional(),
+    quartier: z.string().trim().min(1).max(200).optional(),
+    category: z.string().trim().min(1).max(200).optional(),
+    prix_min: z.coerce.number().min(0).max(1000000000).optional(),
+    prix_max: z.coerce.number().min(0).max(1000000000).optional(),
+    q: z.string().trim().min(1).max(100).optional(),
   })
   .refine((data) => data.depart > data.arrivee, {
     message: "La date de départ doit être ultérieure à la date d'arrivée",
     path: ['depart'],
+  })
+  .refine((data) => data.prix_min === undefined || data.prix_max === undefined || data.prix_min <= data.prix_max, {
+    message: 'prix_min doit être inférieur ou égal à prix_max',
+    path: ['prix_min'],
   });
 
 /**

@@ -42,9 +42,9 @@ const normalize = (value: string) =>
 
 /** Filtre client — n'agit que sur les critères réellement présents dans le bien. */
 function matchesQuery(room: Room, query: string): boolean {
-  if (!query) return true;
-  const q = normalize(query);
-  return normalize(
+  const words = normalize(query).split(/\s+/).filter(Boolean);
+  if (words.length === 0) return true;
+  const haystack = normalize(
     [
       room.title,
       room.subtitle,
@@ -55,7 +55,12 @@ function matchesQuery(room: Room, query: string): boolean {
       room.info,
       room.conditions,
     ].join(' '),
-  ).includes(q);
+  );
+  // Chaque mot doit apparaître quelque part : « appartement plateau » trouve
+  // une annonce dont le titre contient les deux mots, mais aussi celle dont le
+  // titre dit « appartement » et la ville « Plateau ». Une recherche en phrase
+  // exacte (`includes(q)`) renvoyait 0 résultat dès le deuxième mot.
+  return words.every((word) => haystack.includes(word));
 }
 
 /** Pastilles factuelles : chambres, salles d'eau, condition d'annulation. */
@@ -259,7 +264,9 @@ export default function SearchResultsPage() {
   const [selectedVille, setSelectedVille] = useState('');
   const [selectedQuartier, setSelectedQuartier] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(categorieParam);
-  const [priceMax, setPriceMax] = useState(PRICE_CEILING);
+  // `null` = aucun budget maximum : les biens les plus chers ne sont pas
+  // masqués par défaut. Le curseur n'est un filtre qu'après action de l'user.
+  const [priceMax, setPriceMax] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState<SortKey>('recommended');
@@ -370,8 +377,17 @@ export default function SearchResultsPage() {
     });
   };
 
+  // Le plafond du curseur suit le catalogue : un bien à 1,2 M FCFA doit pouvoir
+  // être affiché, pas être invisible parce qu'un ancien plafond fixe à 500 k
+  // l'excluait dès l'arrivée sur la page.
+  const priceCeiling = useMemo(() => {
+    const highest = rooms.reduce((max, room) => Math.max(max, Number(room.priceNum) || 0), 0);
+    return Math.max(PRICE_CEILING, Math.ceil(highest / 1000) * 1000);
+  }, [rooms]);
+
   // Mode dates : filtre client sur la liste disponible (sous-ensemble).
   const filteredRooms = useMemo(() => {
+    const withinBudget = (room: Room) => priceMax === null || room.priceNum <= priceMax;
     if (!hasDates) {
       return rooms.filter(
         (room) =>
@@ -379,7 +395,7 @@ export default function SearchResultsPage() {
           (!selectedVille || room.ville === selectedVille) &&
           (!selectedQuartier || room.quartier === selectedQuartier) &&
           (!selectedCategory || room.category === selectedCategory) &&
-          room.priceNum <= priceMax,
+          withinBudget(room),
       );
     }
     return rooms.filter((room) => {
@@ -387,8 +403,7 @@ export default function SearchResultsPage() {
       if (selectedVille && room.ville !== selectedVille) return false;
       if (selectedQuartier && room.quartier !== selectedQuartier) return false;
       if (selectedCategory && room.category !== selectedCategory) return false;
-      if (room.priceNum > priceMax) return false;
-      return true;
+      return withinBudget(room);
     });
   }, [hasDates, rooms, query, selectedVille, selectedQuartier, selectedCategory, priceMax]);
 
@@ -413,23 +428,25 @@ export default function SearchResultsPage() {
     return [...firstByGerant.values(), ...rest].slice(0, PREMIUM_SHOWCASE_LIMIT);
   }, [rooms]);
 
+  // Le tri s'applique AVANT la pagination : sinon « Prix croissant » ne trie
+  // que les 6 biens de la page courante et le moins cher peut rester en page 2.
+  const sortedRooms = useMemo(() => {
+    if (sortBy === 'recommended') return rankedRooms;
+    return [...rankedRooms].sort((a, b) =>
+      sortBy === 'price-asc' ? a.priceNum - b.priceNum : b.priceNum - a.priceNum,
+    );
+  }, [rankedRooms, sortBy]);
+
   // Sans dates : total vient du serveur ; avec dates : découpage local.
   const totalPages = hasDates
-    ? Math.ceil(rankedRooms.length / ITEMS_PER_PAGE)
+    ? Math.ceil(sortedRooms.length / ITEMS_PER_PAGE)
     : Math.ceil(total / ITEMS_PER_PAGE);
   const paginatedRooms = hasDates
-    ? rankedRooms.slice(
+    ? sortedRooms.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
         currentPage * ITEMS_PER_PAGE,
       )
-    : rankedRooms;
-
-  const sortedRooms = useMemo(() => {
-    if (sortBy === 'recommended') return paginatedRooms;
-    return [...paginatedRooms].sort((a, b) =>
-      sortBy === 'price-asc' ? a.priceNum - b.priceNum : b.priceNum - a.priceNum,
-    );
-  }, [paginatedRooms, sortBy]);
+    : sortedRooms;
 
   const resultCount = hasDates ? filteredRooms.length : total;
   const displayQuery = query.trim() || 'Tous les biens';
@@ -438,14 +455,14 @@ export default function SearchResultsPage() {
     selectedVille,
     selectedQuartier,
     selectedCategory,
-    priceMax < PRICE_CEILING ? 'price' : '',
+    priceMax !== null ? 'price' : '',
   ].filter(Boolean).length;
 
   const resetFilters = () => {
     setSelectedVille('');
     setSelectedQuartier('');
     setSelectedCategory('');
-    setPriceMax(PRICE_CEILING);
+    setPriceMax(null);
     setCurrentPage(1);
   };
 
@@ -892,16 +909,16 @@ export default function SearchResultsPage() {
               <div className="search-page__filter-section search-page__filter-section--price">
                 <div className="search-page__price-head">
                   <label htmlFor="sp-prix">Budget par nuit</label>
-                  <output htmlFor="sp-prix">{priceWithCurrency(priceMax)}</output>
+                  <output htmlFor="sp-prix">{priceWithCurrency(priceMax ?? priceCeiling)}</output>
                 </div>
                 <input
                   type="range"
                   id="sp-prix"
                   aria-label="Prix max"
                   min={0}
-                  max={PRICE_CEILING}
+                  max={priceCeiling}
                   step={1000}
-                  value={priceMax}
+                  value={priceMax ?? priceCeiling}
                   onChange={(e) => {
                     setPriceMax(Number(e.target.value));
                     setCurrentPage(1);
@@ -909,7 +926,7 @@ export default function SearchResultsPage() {
                 />
                 <div className="search-page__price-scale" aria-hidden="true">
                   <span>0 FCFA</span>
-                  <span>500 000 FCFA</span>
+                  <span>{priceWithCurrency(priceCeiling)}</span>
                 </div>
               </div>
 
@@ -941,7 +958,7 @@ export default function SearchResultsPage() {
                 Hôtes premium en tête, puis hôtes vérifiés.
               </p>
 
-              {sortedRooms.length === 0 ? (
+              {paginatedRooms.length === 0 ? (
                 <div className="search-page__empty">
                   <span className="search-page__empty-icon" aria-hidden="true">
                     <Icon name="search" size={32} />
@@ -980,7 +997,7 @@ export default function SearchResultsPage() {
                       viewMode === 'list' ? ' search-page__grid--list' : ''
                     }`}
                   >
-                    {sortedRooms.map((room, index) => (
+                    {paginatedRooms.map((room, index) => (
                       <motion.div
                         key={room.id}
                         initial={{ opacity: 0, y: 20 }}

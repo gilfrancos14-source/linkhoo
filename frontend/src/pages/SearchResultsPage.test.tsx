@@ -429,6 +429,55 @@ describe('SearchResultsPage — requête libre et pagination', () => {
     expect(screen.getByText('1 bien trouvé')).toBeInTheDocument();
   });
 
+  it('trouve un bien quand tous les mots de la requête sont présents', async () => {
+    mocks.fetchAvailableRooms.mockResolvedValue([
+      makeRoom({ id: 'r1', title: 'Appartement Moderne', ville: 'Plateau' }),
+      makeRoom({ id: 'r2', title: 'Villa bord de mer', ville: 'Cocody' }),
+    ]);
+
+    renderPage('/ci/recherche?q=appartement%20plateau&arrivee=2026-03-01&depart=2026-03-04');
+
+    expect(await screen.findByText('1 bien trouvé')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Appartement Moderne' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 3, name: 'Villa bord de mer' })).not.toBeInTheDocument();
+  });
+
+  it('affiche les biens au-dessus de 500 000 FCFA et étend le curseur', async () => {
+    mocks.fetchAvailableRooms.mockResolvedValue([
+      makeRoom({ id: 'r1', title: 'Prestige', priceNum: 1_200_000, price: '1 200 000' }),
+    ]);
+
+    renderPage(DATED);
+
+    expect(await screen.findByText('1 bien trouvé')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Prestige' })).toBeInTheDocument();
+    const range = screen.getByLabelText<HTMLInputElement>(/Prix max/);
+    expect(range.max).toBe('1200000');
+    expect(range.value).toBe('1200000');
+  });
+
+  it('trie tous les résultats avant de paginer', async () => {
+    mocks.fetchAvailableRooms.mockResolvedValue(
+      Array.from({ length: 7 }, (_, i) =>
+        makeRoom({
+          id: `r${i + 1}`,
+          title: `Bien ${i + 1}`,
+          priceNum: (7 - i) * 1000,
+          price: String((7 - i) * 1000),
+        }),
+      ),
+    );
+
+    const { container } = renderPage(DATED);
+    await screen.findByRole('navigation', { name: 'Pagination' });
+
+    await userEvent.selectOptions(screen.getByLabelText('Trier par'), 'price-asc');
+
+    // Bien 7 est le moins cher et se trouvait en page 2 avant le tri.
+    expect(screen.getByRole('heading', { level: 3, name: 'Bien 7' })).toBeInTheDocument();
+    expect(container.querySelectorAll('.stay-card')).toHaveLength(6);
+  });
+
   it('pagine au-delà de six résultats', async () => {
     mocks.fetchAvailableRooms.mockResolvedValue(
       Array.from({ length: 7 }, (_, i) => makeRoom({ id: `r${i + 1}`, title: `Bien ${i + 1}` })),
