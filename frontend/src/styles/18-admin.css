@@ -4938,7 +4938,9 @@
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 999;
+  /* Enfant du panneau : en dessous de .banner-slide-panel__content (z-index 10)
+     pour ne pas masquer les champs du formulaire. */
+  z-index: 1;
   opacity: 0;
   visibility: hidden;
   transition: all 0.3s ease;
