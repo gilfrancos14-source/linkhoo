@@ -1,0 +1,352 @@
+/* ==========================================================================
+   ADMIN — Formulaires d'ajout (panneaux coulissants)
+   Style premium partagé par les pages Bannières, Destinations, Événements,
+   Escapades, Équipe… Uniquement des tokens admin : l'accent suit le thème
+   du marché (bleu par défaut, orange CI, jaune BJ, vert SN, …).
+   ========================================================================== */
+
+.banner-slide-panel {
+  border-left: 1px solid var(--admin-border);
+  box-shadow: -18px 0 50px -24px rgba(15, 23, 42, 0.35);
+}
+
+.banner-slide-panel .banner-slide-panel__content {
+  background: var(--admin-surface);
+}
+
+/* ---------- En-tête ---------- */
+.banner-slide-panel--open .banner-slide-panel__header {
+  position: relative;
+  padding: 22px 26px 18px;
+  background: var(--admin-surface);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.banner-slide-panel--open .banner-slide-panel__header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--gradient-primary);
+}
+
+.banner-slide-panel--open .banner-slide-panel__header h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--admin-ink);
+}
+
+.banner-slide-panel--open .banner-slide-panel__header h2::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 3px;
+  background: var(--gradient-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--sky-500) 12%, transparent);
+}
+
+.banner-slide-panel--open .banner-slide-panel__close {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--admin-surface-alt);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-ink-soft);
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.banner-slide-panel--open .banner-slide-panel__close:hover {
+  background: var(--admin-danger-bg);
+  border-color: color-mix(in srgb, var(--admin-danger) 25%, transparent);
+  color: var(--admin-danger);
+  transform: rotate(90deg);
+}
+
+/* ---------- Corps du formulaire ---------- */
+.banner-slide-panel--open .banner-slide-panel__body {
+  gap: 18px;
+  padding: 22px 26px 26px !important;
+  background: var(--admin-surface) !important;
+  scrollbar-width: thin;
+  scrollbar-color: var(--admin-border) transparent;
+}
+
+.banner-slide-panel--open .banner-slide-panel__body::-webkit-scrollbar {
+  width: 7px;
+}
+
+.banner-slide-panel--open .banner-slide-panel__body::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--admin-border);
+}
+
+/* Libellés : petits, gras, légèrement espacés */
+.banner-slide-panel .banner-field > span:first-child,
+.banner-slide-panel .banner-field > legend:first-child {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--admin-ink-soft);
+}
+
+/* Champs */
+.banner-slide-panel .banner-field input:not([type='checkbox']):not([type='file']),
+.banner-slide-panel .banner-field select,
+.banner-slide-panel .banner-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px 13px;
+  border: 1px solid var(--admin-border);
+  border-radius: 11px;
+  background: var(--admin-surface-alt);
+  color: var(--admin-ink);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.banner-slide-panel .banner-field input::placeholder,
+.banner-slide-panel .banner-field textarea::placeholder {
+  color: var(--admin-ink-faint);
+  opacity: 1;
+}
+
+.banner-slide-panel .banner-field input:hover:not([type='checkbox']):not([type='file']),
+.banner-slide-panel .banner-field select:hover,
+.banner-slide-panel .banner-field textarea:hover {
+  border-color: var(--sky-400);
+  background: var(--admin-surface);
+}
+
+.banner-slide-panel .banner-field input:focus:not([type='checkbox']):not([type='file']),
+.banner-slide-panel .banner-field select:focus,
+.banner-slide-panel .banner-field textarea:focus {
+  border-color: var(--sky-500);
+  background: var(--admin-surface);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sky-500) 14%, transparent);
+}
+
+.banner-slide-panel .banner-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 38px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+}
+
+.banner-slide-panel .banner-field textarea {
+  min-height: 108px;
+  resize: vertical;
+}
+
+.banner-slide-panel .banner-field small {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--admin-ink-faint);
+}
+
+.banner-slide-panel .banner-field input[type='checkbox'] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--sky-600);
+  cursor: pointer;
+}
+
+.banner-slide-panel .banner-field .checkbox-label {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--admin-ink);
+}
+
+/* Fieldsets et grilles de permissions */
+.banner-slide-panel .eq-fieldset legend {
+  margin-bottom: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--admin-ink-soft);
+}
+
+.banner-slide-panel .perm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 8px;
+}
+
+.banner-slide-panel .perm-chip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: 11px;
+  background: var(--admin-surface-alt);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.banner-slide-panel .perm-chip:hover {
+  border-color: var(--sky-400);
+  background: var(--admin-surface);
+}
+
+.banner-slide-panel .perm-chip--on {
+  border-color: color-mix(in srgb, var(--sky-500) 45%, transparent);
+  background: var(--sky-50);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sky-500) 9%, transparent);
+}
+
+.banner-slide-panel .perm-chip__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.banner-slide-panel .perm-chip__text strong {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--admin-ink);
+}
+
+.banner-slide-panel .perm-chip__text small {
+  margin: 0;
+  font-size: 11px;
+  color: var(--admin-ink-soft);
+}
+
+.banner-slide-panel .pw-strength {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ---------- Zone d'upload ---------- */
+div.banner-slide-panel div.banner-slide-panel__body div.banner-upload-zone {
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  min-height: 176px !important;
+  padding: 26px !important;
+  border: 1.5px dashed var(--sky-200) !important;
+  border-radius: 16px !important;
+  background: linear-gradient(135deg, var(--sky-50) 0%, var(--admin-surface) 100%) !important;
+}
+
+div.banner-slide-panel div.banner-slide-panel__body div.banner-upload-zone:hover {
+  border-color: var(--sky-500) !important;
+  background: linear-gradient(135deg, var(--sky-100) 0%, var(--sky-50) 100%) !important;
+  box-shadow: 0 12px 26px -16px color-mix(in srgb, var(--sky-500) 70%, transparent);
+  transform: translateY(-2px);
+}
+
+.banner-slide-panel .banner-upload-zone .icon-container {
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+  background: var(--admin-surface);
+  border: 1px solid var(--sky-100);
+  box-shadow: 0 6px 14px -8px color-mix(in srgb, var(--sky-500) 55%, transparent);
+}
+
+.banner-slide-panel .banner-upload-zone p {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--admin-ink);
+}
+
+.banner-slide-panel .banner-upload-zone > span {
+  font-size: 11.5px;
+  color: var(--admin-ink-soft);
+}
+
+/* ---------- Pied de page ---------- */
+.banner-slide-panel--open .banner-slide-panel__footer {
+  position: sticky;
+  bottom: 0;
+  gap: 10px;
+  padding: 16px 26px;
+  background: color-mix(in srgb, var(--admin-surface) 92%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.banner-slide-panel__footer .admin-btn {
+  min-height: 40px;
+  padding: 0 17px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.banner-slide-panel__footer .admin-btn--success,
+.banner-slide-panel__footer button[type='submit'] {
+  background: var(--gradient-primary);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--sky-600) 85%, transparent);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.banner-slide-panel__footer .admin-btn--success:hover:not(:disabled),
+.banner-slide-panel__footer button[type='submit']:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px -10px color-mix(in srgb, var(--sky-600) 90%, transparent);
+}
+
+.banner-slide-panel__footer .admin-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* ---------- Animation d'ouverture ---------- */
+.banner-slide-panel--open .banner-slide-panel__content {
+  animation: slide-form-in 0.35s var(--ease) both;
+}
+
+@keyframes slide-form-in {
+  from { opacity: 0; transform: translateX(14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 560px) {
+  .banner-slide-panel--open .banner-slide-panel__header,
+  .banner-slide-panel--open .banner-slide-panel__body,
+  .banner-slide-panel--open .banner-slide-panel__footer {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .banner-slide-panel__footer .admin-btn {
+    flex: 1 1 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner-slide-panel--open .banner-slide-panel__content {
+    animation: none;
+  }
+
+  .banner-slide-panel--open .banner-slide-panel__close:hover,
+  div.banner-slide-panel div.banner-slide-panel__body div.banner-upload-zone:hover {
+    transform: none;
+  }
+}

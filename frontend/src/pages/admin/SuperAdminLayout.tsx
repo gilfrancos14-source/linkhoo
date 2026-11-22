@@ -13,6 +13,7 @@ import { marketSlugFromPath } from '../../contexts/MarketContext';
 import '../../styles/20-auth.css';
 import '../../styles/18-admin.css';
 import '../../styles/21-admin-override.css';
+import '../../styles/48-admin-slide-forms.css';
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
