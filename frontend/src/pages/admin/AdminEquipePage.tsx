@@ -1,11 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  AlertCircle,
+  CheckCircle2,
+  KeyRound,
+  Pencil,
+  ShieldCheck,
+  Trash2,
+  UserPlus,
+  Users,
+} from 'lucide-react';
+import {
   apiAdmin,
   type AdminData,
   type AdminPermissionDef,
   type AdminPermissionKey,
   type AdminTeamMember,
 } from '../../lib/adminApi';
+import '../../styles/47-admin-equipe.css';
 
 function toggleKey(set: Set<AdminPermissionKey>, key: AdminPermissionKey): Set<AdminPermissionKey> {
   const next = new Set(set);
@@ -26,6 +37,12 @@ function pwStrength(pw: string) {
   if (s <= 2) return { score: s, pct: (s / 5) * 100, label: 'Faible', cls: 'weak' };
   if (s <= 3) return { score: s, pct: (s / 5) * 100, label: 'Correct', cls: 'fair' };
   return { score: s, pct: (s / 5) * 100, label: 'Robuste', cls: 'strong' };
+}
+
+function initials(member: AdminTeamMember): string {
+  const first = (member.prenom || member.email || '?').trim()[0] ?? '?';
+  const last = (member.nom || '').trim()[0] ?? '';
+  return (first + last).toUpperCase();
 }
 
 export default function AdminEquipePage() {
@@ -218,46 +235,69 @@ export default function AdminEquipePage() {
           <h1>Équipe</h1>
           <p>Gestion des comptes administrateurs</p>
         </div>
-        <div className="panel" style={{ padding: '24px' }}>
-          <div className="auth-error">
-            La gestion de l&apos;équipe est réservée au superadministrateur.
-          </div>
+        <div className="panel eq-alert eq-alert--error">
+          <AlertCircle size={17} aria-hidden="true" />
+          <span>La gestion de l&apos;équipe est réservée au superadministrateur.</span>
         </div>
       </div>
     );
   }
 
+  const superadminCount = members.filter((m) => m.is_superadmin).length;
+  const usedPermissions = new Set(members.flatMap((m) => m.permissions)).size;
+
   return (
-    <div className="dash">
-      <div className="dash-page-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <h1>Équipe</h1>
-          <p>Créer et gérer les comptes administrateurs et leur périmètre</p>
+    <div className="dash eq-page">
+      <div className="dash-page-head eq-page__head">
+        <div className="eq-page__heading">
+          <span className="eq-page__icon" aria-hidden="true"><Users size={22} strokeWidth={1.8} /></span>
+          <div>
+            <h1>Équipe</h1>
+            <p>Créer et gérer les comptes administrateurs et leur périmètre</p>
+          </div>
         </div>
         {!createOpen && (
-          <button
-            className="admin-btn admin-btn--primary"
-            onClick={() => setCreateOpen(true)}
-          >
+          <button className="admin-btn admin-btn--primary eq-add-btn" onClick={() => setCreateOpen(true)}>
+            <UserPlus size={16} aria-hidden="true" />
             Ajouter un administrateur
           </button>
         )}
       </div>
 
-      {error && <div className="auth-error" style={{ marginBottom: '16px' }}>{error}</div>}
+      <div className="eq-stats" aria-label="Aperçu de l'équipe">
+        <div className="eq-stat">
+          <span className="eq-stat__icon" aria-hidden="true"><Users size={18} /></span>
+          <span className="eq-stat__body">
+            <strong>{members.length}</strong>
+            <small>Administrateurs</small>
+          </span>
+        </div>
+        <div className="eq-stat">
+          <span className="eq-stat__icon eq-stat__icon--accent" aria-hidden="true"><ShieldCheck size={18} /></span>
+          <span className="eq-stat__body">
+            <strong>{superadminCount}</strong>
+            <small>Superadministrateurs</small>
+          </span>
+        </div>
+        <div className="eq-stat">
+          <span className="eq-stat__icon" aria-hidden="true"><KeyRound size={18} /></span>
+          <span className="eq-stat__body">
+            <strong>{usedPermissions}</strong>
+            <small>Sections déléguées</small>
+          </span>
+        </div>
+      </div>
+
+      {error && (
+        <div className="eq-alert eq-alert--error" role="alert">
+          <AlertCircle size={17} aria-hidden="true" />
+          <span>{error}</span>
+        </div>
+      )}
       {success && (
-        <div
-          style={{
-            background: '#ecfdf5',
-            border: '1px solid #6ee7b7',
-            color: '#065f46',
-            padding: '0.6rem 0.8rem',
-            borderRadius: '8px',
-            fontSize: '0.82rem',
-            marginBottom: '16px',
-          }}
-        >
-          {success}
+        <div className="eq-alert eq-alert--success" role="status">
+          <CheckCircle2 size={17} aria-hidden="true" />
+          <span>{success}</span>
         </div>
       )}
 
@@ -274,7 +314,7 @@ export default function AdminEquipePage() {
           </div>
 
           {/* Le formulaire englobe body + footer : le bouton submit reste dans le form. */}
-          <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+          <form onSubmit={handleCreate} className="eq-create-form">
             <div className="banner-slide-panel__body">
               <label className="banner-field">
                 <span>Email</span>
@@ -337,10 +377,8 @@ export default function AdminEquipePage() {
                 )}
               </div>
 
-              <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
-                <legend style={{ fontSize: '12px', fontWeight: 600, color: 'var(--admin-ink)', marginBottom: '8px' }}>
-                  Sections autorisées
-                </legend>
+              <fieldset className="eq-fieldset">
+                <legend>Sections autorisées</legend>
                 <div className="perm-grid">
                   {catalog.map((perm) => (
                     <label key={perm.key} className={`perm-chip ${createPerms.has(perm.key) ? 'perm-chip--on' : ''}`}>
@@ -371,149 +409,141 @@ export default function AdminEquipePage() {
       </div>
 
       {members.length === 0 && !error ? (
-        <div className="panel" style={{ padding: '24px' }}>
+        <div className="panel eq-empty">
+          <span className="eq-empty__icon" aria-hidden="true"><Users size={26} /></span>
           <p>Aucun compte administrateur.</p>
         </div>
       ) : (
-        members.map((member) => {
-          const isMe = member.id === me?.id;
-          const isEditing = editingId === member.id;
-          const isResetting = resetId === member.id;
-          return (
-            <div key={member.id} className="panel" style={{ padding: '20px 24px', marginBottom: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
-                <div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <strong>{member.prenom} {member.nom}</strong>
-                    {member.is_superadmin && (
-                      <span className="admin-badge admin-badge--success">Superadmin</span>
-                    )}
-                    {isMe && <span className="admin-badge">Vous</span>}
-                  </div>
-                  <span style={{ fontSize: '0.82rem', color: 'var(--ink-soft)' }}>{member.email}</span>
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
-                    {member.is_superadmin ? (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
-                        Toutes les sections
-                      </span>
-                    ) : member.permissions.length === 0 ? (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--ink-soft)' }}>
-                        Aucune section
-                      </span>
-                    ) : (
-                      member.permissions.map((key) => (
-                        <span
-                          key={key}
-                          style={{
-                            fontSize: '0.72rem',
-                            background: '#f1f5f9',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '999px',
-                            padding: '2px 10px',
-                          }}
-                        >
-                          {labelOf(key)}
-                        </span>
-                      ))
-                    )}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <button
-                    className="admin-btn admin-btn--sm"
-                    onClick={() => {
-                      setResetId(isResetting ? null : member.id);
-                      setEditingId(null);
-                      setResetPassword('');
-                    }}
-                  >
-                    Mot de passe
-                  </button>
-                  <button
-                    className="admin-btn admin-btn--sm"
-                    onClick={() => {
-                      setEditingId(isEditing ? null : member.id);
-                      setResetId(null);
-                      setEditPerms(new Set(member.permissions));
-                      setEditSuper(member.is_superadmin);
-                    }}
-                  >
-                    {isEditing ? 'Annuler' : 'Modifier'}
-                  </button>
-                  {!isMe && (
-                    <button
-                      className="admin-btn admin-btn--danger admin-btn--sm"
-                      onClick={() => void handleDelete(member)}
-                    >
-                      Supprimer
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {isEditing && (
-                <div style={{ marginTop: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
-                  <label style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '0.85rem', marginBottom: '12px' }}>
-                    <input
-                      type="checkbox"
-                      checked={editSuper}
-                      onChange={(e) => setEditSuper(e.target.checked)}
-                    />
-                    <span>
-                      <strong>Super administrateur</strong> — toutes les sections, gestion de l&apos;équipe
-                    </span>
-                  </label>
-                  {!editSuper && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px', marginBottom: '12px' }}>
-                      {catalog.map((perm) => (
-                        <label key={perm.key} style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '0.85rem' }}>
-                          <input
-                            type="checkbox"
-                            checked={editPerms.has(perm.key)}
-                            onChange={() => setEditPerms((prev) => toggleKey(prev, perm.key))}
-                          />
-                          {perm.label}
-                        </label>
-                      ))}
+        <div className="eq-members">
+          {members.map((member) => {
+            const isMe = member.id === me?.id;
+            const isEditing = editingId === member.id;
+            const isResetting = resetId === member.id;
+            return (
+              <div key={member.id} className="panel eq-member">
+                <div className="eq-member__top">
+                  <div className="eq-member__identity">
+                    <span className="eq-member__avatar" aria-hidden="true">{initials(member)}</span>
+                    <div className="eq-member__info">
+                      <div className="eq-member__name">
+                        <strong>{member.prenom} {member.nom}</strong>
+                        {member.is_superadmin && (
+                          <span className="admin-badge admin-badge--success">Superadmin</span>
+                        )}
+                        {isMe && <span className="admin-badge">Vous</span>}
+                      </div>
+                      <span className="eq-member__email">{member.email}</span>
+                      <div className="eq-member__perms">
+                        {member.is_superadmin ? (
+                          <span className="eq-perm eq-perm--muted">Toutes les sections</span>
+                        ) : member.permissions.length === 0 ? (
+                          <span className="eq-perm eq-perm--muted">Aucune section</span>
+                        ) : (
+                          member.permissions.map((key) => (
+                            <span key={key} className="eq-perm">{labelOf(key)}</span>
+                          ))
+                        )}
+                      </div>
                     </div>
-                  )}
-                  <button
-                    className="admin-btn admin-btn--primary admin-btn--sm"
-                    onClick={() => void handleSaveEdit()}
-                    disabled={savingEdit}
-                  >
-                    {savingEdit ? 'Enregistrement…' : 'Enregistrer le périmètre'}
-                  </button>
+                  </div>
+                  <div className="eq-member__actions">
+                    <button
+                      className="admin-btn admin-btn--sm"
+                      onClick={() => {
+                        setResetId(isResetting ? null : member.id);
+                        setEditingId(null);
+                        setResetPassword('');
+                      }}
+                    >
+                      <KeyRound size={14} aria-hidden="true" />
+                      Mot de passe
+                    </button>
+                    <button
+                      className="admin-btn admin-btn--sm"
+                      onClick={() => {
+                        setEditingId(isEditing ? null : member.id);
+                        setResetId(null);
+                        setEditPerms(new Set(member.permissions));
+                        setEditSuper(member.is_superadmin);
+                      }}
+                    >
+                      <Pencil size={14} aria-hidden="true" />
+                      {isEditing ? 'Annuler' : 'Modifier'}
+                    </button>
+                    {!isMe && (
+                      <button
+                        className="admin-btn admin-btn--danger admin-btn--sm"
+                        onClick={() => void handleDelete(member)}
+                      >
+                        <Trash2 size={14} aria-hidden="true" />
+                        Supprimer
+                      </button>
+                    )}
+                  </div>
                 </div>
-              )}
 
-              {isResetting && (
-                <div style={{ marginTop: '16px', borderTop: '1px solid #e2e8f0', paddingTop: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                  <label className="auth-field" style={{ flex: '1 1 240px', margin: 0 }}>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 600, display: 'block', marginBottom: '4px' }}>
-                      Nouveau mot de passe
-                    </span>
-                    <input
-                      type="password"
-                      value={resetPassword}
-                      onChange={(e) => setResetPassword(e.target.value)}
-                      minLength={6}
-                      autoComplete="new-password"
-                      placeholder="Minimum 6 caractères"
-                    />
-                  </label>
-                  <button
-                    className="admin-btn admin-btn--primary admin-btn--sm"
-                    onClick={() => void handleResetPassword()}
-                    disabled={resetting}
-                  >
-                    {resetting ? 'Enregistrement…' : 'Réinitialiser'}
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })
+                {isEditing && (
+                  <div className="eq-member__expand">
+                    <label className="eq-super-check">
+                      <input
+                        type="checkbox"
+                        checked={editSuper}
+                        onChange={(e) => setEditSuper(e.target.checked)}
+                      />
+                      <span>
+                        <strong>Super administrateur</strong> — toutes les sections, gestion de l&apos;équipe
+                      </span>
+                    </label>
+                    {!editSuper && (
+                      <div className="eq-edit-perms">
+                        {catalog.map((perm) => (
+                          <label key={perm.key} className="eq-edit-perm">
+                            <input
+                              type="checkbox"
+                              checked={editPerms.has(perm.key)}
+                              onChange={() => setEditPerms((prev) => toggleKey(prev, perm.key))}
+                            />
+                            {perm.label}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                    <button
+                      className="admin-btn admin-btn--primary admin-btn--sm"
+                      onClick={() => void handleSaveEdit()}
+                      disabled={savingEdit}
+                    >
+                      {savingEdit ? 'Enregistrement…' : 'Enregistrer le périmètre'}
+                    </button>
+                  </div>
+                )}
+
+                {isResetting && (
+                  <div className="eq-member__expand eq-reset">
+                    <label className="banner-field eq-reset__field">
+                      <span>Nouveau mot de passe</span>
+                      <input
+                        type="password"
+                        value={resetPassword}
+                        onChange={(e) => setResetPassword(e.target.value)}
+                        minLength={6}
+                        autoComplete="new-password"
+                        placeholder="Minimum 6 caractères"
+                      />
+                    </label>
+                    <button
+                      className="admin-btn admin-btn--primary admin-btn--sm"
+                      onClick={() => void handleResetPassword()}
+                      disabled={resetting}
+                    >
+                      {resetting ? 'Enregistrement…' : 'Réinitialiser'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
