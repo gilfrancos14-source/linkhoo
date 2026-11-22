@@ -1475,17 +1475,18 @@
   min-height: 220px;
 }
 
-/* Vignette Ã  ratio fixe : une carte au contenu plus long ne doit jamais
-   Ã©tirer l'image en portrait. L'image est centrÃ©e verticalement dans sa
-   colonne et garde un cadrage 4/3 homogÃ¨ne sur toutes les cartes. */
+/* Disposition ligne par ligne : la vignette occupe TOUTE la hauteur de la
+   carte (elle suit les deux lignes media/body + media/foot). C'est cette
+   hauteur qui donne l'effet « image verticale », sans laisser de bandes vides
+   au-dessus et en dessous. */
 .search-page__grid--list .stay-card__media {
-  align-self: center;
+  align-self: stretch;
   width: calc(100% - 1.5rem);
   height: auto;
   min-height: 0;
   margin: 0.75rem;
   border-radius: 0.9rem;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: auto;
 }
 
 .search-page__grid--list .stay-card__body {
@@ -1926,15 +1927,17 @@
     min-height: 0;
   }
 
+  /* Mobile : la vignette prend toute la hauteur de la ligne, donc elle est
+     nettement plus haute que large (format vertical) à gauche du contenu. */
   .search-page__grid--list .stay-card__media {
     grid-area: media;
-    align-self: center;
+    align-self: stretch;
     width: calc(100% - 1rem);
     height: auto;
-    min-height: 0;
+    min-height: 7rem;
     margin: 0.5rem;
     border-radius: 0.75rem;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: auto;
   }
 
   .search-page__grid--list .stay-card__body {
