@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 /* Spec hors-ligne (PWA) — lancée par `npm run test:e2e:offline`
    (config dédiée : service workers autorisés, serveur `dist/` + mocks
@@ -30,11 +31,12 @@ async function waitForCaches(page: Page): Promise<void> {
   await page.waitForFunction(
     async () => {
       try {
-        const api = await caches.open('linkhoo-v2');
-        const apiKeys = await api.keys();
-        const img = await caches.open('linkhoo-v2');
-        const imgKeys = await img.keys();
-        return apiKeys.length > 0 && imgKeys.length > 0;
+        // Noms de caches réels du service worker (ilehya-*-v4).
+        const dynamic = await caches.open('ilehya-dynamic-v4');
+        const images = await caches.open('ilehya-images-v4');
+        const dynamicKeys = await dynamic.keys();
+        const imageKeys = await images.keys();
+        return dynamicKeys.length > 0 && imageKeys.length > 0;
       } catch {
         return false;
       }

@@ -184,13 +184,10 @@ export default function RegisterRolePage() {
               signInUrl={`/${currentMarket}/login`}
               fallbackRedirectUrl={clerkPath}
               unsafeMetadata={{ role }}
-              // Pour les gérants, Clerk demande le numéro de téléphone : il
-              // sert au backend à vérifier que le gérant appartient au marché.
-              requiredFields={
-                role === 'gerant'
-                  ? ['phoneNumber', 'emailAddress', 'password']
-                  : ['emailAddress', 'password']
-              }
+              // Note : le numéro de téléphone du gérant est demandé par Clerk
+              // (champ configuré dans le dashboard Clerk > Sign-up > Phone
+              // number, obligatoire). Le backend le lit depuis le compte Clerk
+              // au bootstrap pour vérifier qu'il correspond au marché déclaré.
               appearance={{
                 variables: {
                   colorBackground: 'transparent',
