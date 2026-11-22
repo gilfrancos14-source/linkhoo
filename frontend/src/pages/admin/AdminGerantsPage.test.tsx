@@ -201,7 +201,9 @@ describe('AdminGerantsPage', () => {
     expect(scope.getAllByText(frDate('2025-12-01T00:00:00.000Z'))).toHaveLength(4);
     expect(scope.getAllByText(frDate('2026-01-10T09:00:00.000Z'))).toHaveLength(2);
     expect(scope.getAllByText(frDate('2026-01-12T08:00:00.000Z'))).toHaveLength(1);
-    expect(scope.getAllByText('—')).toHaveLength(1);
+    // Les tirets incluent aussi la colonne « Pays IP » (indice IP absent dans
+    // les fixtures) : on vérifie qu'il y en a au moins un pour la date manquante.
+    expect(scope.getAllByText('—').length).toBeGreaterThanOrEqual(1);
   });
 
   it('compte les gérants dans chaque onglet de statut', async () => {

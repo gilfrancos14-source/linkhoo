@@ -15,25 +15,27 @@ const DYNAMIC_CACHE = 'ilehya-dynamic-v4';
 const IMAGE_CACHE = 'ilehya-images-v4';
 const KEEP_CACHES = [STATIC_CACHE, DYNAMIC_CACHE, IMAGE_CACHE];
 
+// Uniquement des fichiers RÉELS du build. Vite compile tous les CSS/JS dans
+// /assets/ avec des noms hashés : l'ancienne liste (/css/*.css) pointait sur
+// des fichiers inexistants, faisait échouer cache.addAll() et empêchait
+// l'installation du service worker (donc tout le mode hors ligne).
 const PRECACHE = [
   '/',
+  '/index.html',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/maskable-512.png',
-  '/css/41-client-dashboard.css',
-  '/css/42-client-reservations.css',
-  '/css/43-client-messages.css',
-  '/css/40-room-detail-maq7.css',
-  '/css/00-fontawesome.css',
-  '/css/01-tokens.css',
-  '/css/02-base.css',
-  '/css/03-header.css',
-  '/css/10-home-avis-footer.css',
-  '/css/11-responsive-global.css',
-  '/css/28-landing-accueil.css',
-  '/css/31-maquette.css',
 ];
+
+// Requêtes de NAVIGATION (pages SPA) : on tente le réseau, puis on retombe
+// sur l'index.html en cache pour que les pages déjà visitées s'affichent
+// hors ligne. Les données personnelles ne sont PAS concernées (voir
+// bypassesServiceWorker : les requêtes authentifiées ne sont pas interceptées).
+function isNavigation(request) {
+  return request.mode === 'navigate' ||
+    (request.method === 'GET' && request.headers.get('accept')?.includes('text/html'));
+}
 
 // Ces chemins ne sont jamais interceptés, même sans en-tête d'authentification.
 const NEVER_INTERCEPT = [
@@ -78,6 +80,12 @@ self.addEventListener('fetch', (event) => {
   if (bypassesServiceWorker(request)) return;
 
   const url = new URL(request.url);
+
+  // Navigation SPA : réseau d'abord, fallback index.html en cache hors ligne.
+  if (isNavigation(request)) {
+    event.respondWith(handleNavigationRequest(request));
+    return;
+  }
 
   if (/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url.pathname)) {
     event.respondWith(handleImageRequest(request));
@@ -135,6 +143,27 @@ async function handleApiRequest(request) {
     return new Response(
       JSON.stringify({ error: 'Service indisponible', message: 'Vérifiez votre connexion', offline: true }),
       { status: 503, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+}
+
+async function handleNavigationRequest(request) {
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(DYNAMIC_CACHE);
+      // On stocke l'index sous une clé commune : toute navigation hors ligne
+      // retombera dessus, quelle que soit la route (/ci/chambre/... etc.).
+      cache.put('/index.html', response.clone()).catch(() => {});
+    }
+    return response;
+  } catch {
+    const cache = await caches.open(DYNAMIC_CACHE);
+    const cached = (await cache.match('/index.html')) || (await caches.match('/index.html'));
+    if (cached) return cached;
+    return new Response(
+      '<!DOCTYPE html><html><head><title>Mode hors-ligne</title></head><body><div style="text-align:center;padding:50px"><h1>Mode hors-ligne</h1><p>Vérifiez votre connexion puis réessayez.</p></div></body></html>',
+      { status: 503, headers: { 'Content-Type': 'text/html' } },
     );
   }
 }

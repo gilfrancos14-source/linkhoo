@@ -120,20 +120,26 @@ describe('libellés et couleurs de paiement', () => {
 });
 
 describe('canPayReservation', () => {
-  it('autorise le paiement seulement quand rien n’est encaissé', () => {
-    expect(canPayReservation('unpaid')).toBe(true);
-    expect(canPayReservation('failed')).toBe(true);
+  it('autorise le paiement seulement quand la réservation est confirmée et rien n’est encaissé', () => {
+    expect(canPayReservation('unpaid', 'confirmee')).toBe(true);
+    expect(canPayReservation('failed', 'confirmee')).toBe(true);
     // pawaPay permet de rouvrir un checkout encore ouvert (pending) et de
     // compléter un acompte (deposit_paid).
-    expect(canPayReservation('pending')).toBe(true);
-    expect(canPayReservation('deposit_paid')).toBe(true);
+    expect(canPayReservation('pending', 'confirmee')).toBe(true);
+    expect(canPayReservation('deposit_paid', 'confirmee')).toBe(true);
+  });
+
+  it('refuse le paiement tant que la réservation n’est pas confirmée', () => {
+    expect(canPayReservation('unpaid')).toBe(false);
+    expect(canPayReservation('unpaid', 'en_attente')).toBe(false);
+    expect(canPayReservation('unpaid', 'annulee')).toBe(false);
   });
 
   it('refuse le paiement quand l’argent est déjà encaissé ou remboursé', () => {
-    expect(canPayReservation('paid')).toBe(false);
-    expect(canPayReservation('refund_pending')).toBe(false);
-    expect(canPayReservation('refunded')).toBe(false);
-    expect(canPayReservation(undefined)).toBe(false);
+    expect(canPayReservation('paid', 'confirmee')).toBe(false);
+    expect(canPayReservation('refund_pending', 'confirmee')).toBe(false);
+    expect(canPayReservation('refunded', 'confirmee')).toBe(false);
+    expect(canPayReservation(undefined, 'confirmee')).toBe(false);
   });
 });
 
