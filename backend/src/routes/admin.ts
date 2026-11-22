@@ -119,11 +119,16 @@ router.post('/logout', (_req: Request, res: Response) => {
   res.json({ ok: true });
 });
 
-router.get('/stats', requireAdminAuth, requirePermission('stats'), async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/stats', requireAdminAuth, requirePermission('stats'), async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const period = z.enum(['all', 'month', 'quarter', 'year']).safeParse(req.query.period ?? 'all');
+    if (!period.success) {
+      return res.status(400).json({ error: 'Période invalide' });
+    }
     // Agrégats calculés en SQL par la RPC (P1 #7) : plus de chargement des
-    // tables gerants/rooms/reservations entières en mémoire.
-    const { data, error } = await supabaseAdmin.rpc('admin_stats');
+    // tables gerants/rooms/reservations entières en mémoire. La période est
+    // transmise à la fonction pour borner les comptages et le CA.
+    const { data, error } = await supabaseAdmin.rpc('admin_stats', { p_period: period.data });
     if (error) throw error;
     res.json(data);
   } catch (err) {

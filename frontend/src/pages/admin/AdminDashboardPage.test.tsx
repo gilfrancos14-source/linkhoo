@@ -6,7 +6,7 @@ import AdminDashboardPage, { buildRoomChartData } from './AdminDashboardPage';
 import type { AdminStats } from '../../lib/adminApi';
 
 const mocks = vi.hoisted(() => ({
-  getStats: vi.fn<() => Promise<AdminStats>>(),
+  getStats: vi.fn<(period?: 'all' | 'month' | 'quarter' | 'year') => Promise<AdminStats>>(),
 }));
 
 vi.mock('../../lib/adminApi', () => ({
@@ -77,6 +77,21 @@ describe('AdminDashboardPage', () => {
       await screen.findByText("Vue d'ensemble de la plateforme Linkhoo — tous les marchés"),
     ).toBeInTheDocument();
     expect(screen.queryByText('Chargement...')).not.toBeInTheDocument();
+  });
+
+  it('recharge les statistiques quand la période change', async () => {
+    render(<MemoryRouter><AdminDashboardPage /></MemoryRouter>);
+
+    expect(await screen.findByText("Vue d'ensemble de la plateforme Linkhoo — tous les marchés")).toBeInTheDocument();
+    expect(mocks.getStats).toHaveBeenLastCalledWith('all');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Trimestre' }));
+
+    await waitFor(() => expect(mocks.getStats).toHaveBeenLastCalledWith('quarter'));
+    expect(screen.getByRole('button', { name: 'Trimestre' })).toHaveClass('dash-period-pill--active');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Année' }));
+    await waitFor(() => expect(mocks.getStats).toHaveBeenLastCalledWith('year'));
   });
 
   it('affiche les KPI gérants, chambres et réservations', async () => {
@@ -202,6 +217,6 @@ describe('AdminDashboardPage', () => {
     render(<MemoryRouter><AdminDashboardPage /></MemoryRouter>);
 
     await waitFor(() => expect(mocks.getStats).toHaveBeenCalledTimes(1));
-    expect(mocks.getStats).toHaveBeenCalledWith();
+    expect(mocks.getStats).toHaveBeenCalledWith('all');
   });
 });

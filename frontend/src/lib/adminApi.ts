@@ -482,7 +482,8 @@ export const apiAdmin = {
   deleteTeamMember: (id: string) =>
     adminRequest<void>(`/admin/admins/${id}`, { method: 'DELETE' }),
 
-  getStats: () => adminRequest<AdminStats>('/admin/stats'),
+  getStats: (period: 'all' | 'month' | 'quarter' | 'year' = 'all') =>
+    adminRequest<AdminStats>(`/admin/stats?period=${period}`),
 
   changePassword: (currentPassword: string, newPassword: string) =>
     adminRequest<{ message: string }>('/admin/change-password', {

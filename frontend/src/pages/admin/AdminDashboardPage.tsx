@@ -73,7 +73,7 @@ export default function AdminDashboardPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodFilter>('all');
   const [lastUpdated, setLastUpdated] = useState<string>('');
 
-  const loadStats = async (isManualRefresh = false) => {
+  const loadStats = async (isManualRefresh = false, period: PeriodFilter = selectedPeriod) => {
     if (isManualRefresh) {
       setIsRefreshing(true);
     } else {
@@ -81,7 +81,7 @@ export default function AdminDashboardPage() {
     }
     setError('');
     try {
-      const data = await apiAdmin.getStats();
+      const data = await apiAdmin.getStats(period);
       setStats(data);
       const now = new Date();
       setLastUpdated(
@@ -95,9 +95,11 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // Recharge les agrégats à chaque changement de période : les chiffres
+  // viennent de la RPC admin_stats(p_period), pas d'un filtre d'affichage.
   useEffect(() => {
-    loadStats();
-  }, []);
+    void loadStats(false, selectedPeriod);
+  }, [selectedPeriod]);
 
   const marketLabels: Record<string, string> = useMemo(
     () => Object.fromEntries(MARKETS.map(({ code, label }) => [code, label])),

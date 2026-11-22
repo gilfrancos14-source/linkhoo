@@ -285,10 +285,33 @@ describe('GET /api/admin/stats', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(stats);
-    expect(supabaseAdmin.rpc).toHaveBeenCalledWith('admin_stats');
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith('admin_stats', { p_period: 'all' });
     // Plus aucun chargement de table entière pour les statistiques :
     // seule la lecture de permission (admins) subsiste côté from().
     expect(vi.mocked(supabaseAdmin.from).mock.calls.map((call) => call[0])).toEqual(['admins']);
+  });
+
+  it('200 : transmet la période demandée à la RPC', async () => {
+    vi.mocked(supabaseAdmin.rpc).mockResolvedValue({
+      data: { gerants: {}, rooms: {}, reservations: {} },
+      error: null,
+    } as never);
+
+    const res = await request(app)
+      .get('/api/admin/stats?period=quarter')
+      .set(auth(adminToken()));
+
+    expect(res.status).toBe(200);
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith('admin_stats', { p_period: 'quarter' });
+  });
+
+  it('400 sur une période inconnue', async () => {
+    const res = await request(app)
+      .get('/api/admin/stats?period=siecle')
+      .set(auth(adminToken()));
+
+    expect(res.status).toBe(400);
+    expect(supabaseAdmin.rpc).not.toHaveBeenCalled();
   });
 
   it('500 si la RPC remonte une erreur', async () => {
