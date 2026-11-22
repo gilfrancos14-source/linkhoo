@@ -248,61 +248,23 @@ const MyComponent = () => {
 
 ### 3. Formulaires hors-ligne
 
-```javascript
-// Exemple d'utilisation
-import { useOfflineForm } from './src/hooks/useOfflineForm';
+Les soumissions (réservations, newsletter) passent par la file d'attente
+`lib/offlineQueue.ts`. Quand le réseau est indisponible, l'élément est
+enregistré dans `localStorage` avec une clé d'idempotence, puis envoyé
+automatiquement au retour de la connexion par `useOfflineQueueSync`
+(monté dans le `Footer`, donc actif sur toutes les pages).
 
-const MyForm = () => {
-  const { state, getField, updateField, submit } = useOfflineForm(
-    [
-      { name: 'name', value: '', touched: false },
-      { name: 'email', value: '', touched: false }
-    ],
-    {
-      validate: (values) => {
-        const errors = {};
-        if (!values.name) errors.name = 'Le nom est requis';
-        if (!values.email) errors.email = 'L\\'email est requis';
-        return Object.keys(errors).length > 0 ? errors : null;
-      },
-      onSubmit: async (values) => {
-        const response = await fetch('/api/submit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(values)
-        });
-        return response.json();
-      }
-    }
-  );
-  
-  return (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        value={getField('name').value}
-        onChange={(e) => updateField('name', e.target.value)}
-      />
-      {getField('name').touched && getField('name').error && (
-        <div>{getField('name').error}</div>
-      )}
-      
-      <input
-        type="email"
-        value={getField('email').value}
-        onChange={(e) => updateField('email', e.target.value)}
-      />
-      {getField('email').touched && getField('email').error && (
-        <div>{getField('email').error}</div>
-      )}
-      
-      <button type="submit" disabled={state.isSubmitting}>
-        {state.isSubmitting ? 'Envoi...' : 'Envoyer'}
-      </button>
-    </form>
-  );
-};
+```javascript
+import { enqueue, newClientKey } from './src/lib/offlineQueue';
+
+// Hors ligne : on met la demande en file ; la synchro globale l'enverra.
+if (!navigator.onLine) {
+  enqueue({ type: 'reservation', payload: { ...data, clientKey: newClientKey() } });
+}
 ```
+
+La file gère elle-même le nombre de tentatives, l'âge maximal des éléments,
+et la distinction erreur définitive (4xx, non rejouée) / erreur transitoire.
 
 ### 4. Gestion du cache
 

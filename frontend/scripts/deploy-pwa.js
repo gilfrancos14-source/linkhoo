@@ -172,12 +172,10 @@ function checkPrerequisites() {
     'src/components/OfflineQueueStatus.tsx',
     'src/components/InstallPrompt.tsx',
     'src/components/CacheManager.tsx',
-    'src/components/OfflineForm.tsx',
     'src/hooks/usePushNotifications.ts',
     'src/hooks/useOfflineQueue.ts',
     'src/hooks/useCacheManager.ts',
     'src/hooks/useInstallPrompt.ts',
-    'src/hooks/useOfflineForm.ts',
     'src/css/pwa-components.css',
     'public/manifest.json',
     'public/sw.js'
