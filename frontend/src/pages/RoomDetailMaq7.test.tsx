@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   redirectTo: vi.fn<(url: string) => void>(),
   me: vi.fn<() => Promise<unknown>>(),
   getOrCreateConversation: vi.fn<(roomId: string) => Promise<unknown>>(),
+  enqueue: vi.fn<(...args: unknown[]) => unknown>(),
   clerk: {
     isLoaded: true,
     isSignedIn: false,
@@ -38,6 +39,16 @@ vi.mock('../lib/reservations', () => ({
 
 vi.mock('../lib/navigation', () => ({
   redirectTo: mocks.redirectTo,
+}));
+
+vi.mock('../lib/offlineQueue', () => ({
+  newClientKey: () => 'client-key-test-0001',
+  enqueue: mocks.enqueue,
+  isRetryableError: (err: unknown) => {
+    const status = (err as { status?: number } | null)?.status;
+    if (typeof status === 'number') return !(status >= 400 && status < 500 && status !== 408 && status !== 429);
+    return true;
+  },
 }));
 
 vi.mock('../data/rooms', () => ({
@@ -154,6 +165,7 @@ async function renderLoaded(entry = '/ci/chambre/r1') {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
   mocks.clerk = { isLoaded: true, isSignedIn: false, user: null };
   mocks.fetchRoomById.mockResolvedValue(makeRoom());
   mocks.fetchCategoriesByMarket.mockResolvedValue(CATEGORIES);
@@ -382,6 +394,43 @@ describe('RoomDetailMaq7 — réservation', () => {
       expect(mocks.redirectTo).toHaveBeenCalledWith('https://checkout.pawapay.io/pay-1');
     });
     expect(screen.queryByText('Demande envoyée !')).not.toBeInTheDocument();
+  }, 20000);
+
+  it('met la demande en file quand le navigateur est hors ligne', async () => {
+    Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
+    const { container } = await renderLoaded();
+
+    fillReservationForm(container);
+
+    expect(await screen.findByText('Demande enregistrée')).toBeInTheDocument();
+    expect(mocks.enqueue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'reservation',
+        payload: expect.objectContaining({ roomId: 'r1', clientKey: 'client-key-test-0001' }),
+      }),
+    );
+    expect(mocks.addReservation).not.toHaveBeenCalled();
+  }, 20000);
+
+  it('met la demande en file sur une erreur réseau, mais pas sur un refus 4xx', async () => {
+    mocks.addReservation.mockRejectedValueOnce(new Error('NetworkError'));
+    const { container } = await renderLoaded();
+
+    fillReservationForm(container);
+
+    expect(await screen.findByText('Demande enregistrée')).toBeInTheDocument();
+    expect(mocks.enqueue).toHaveBeenCalledTimes(1);
+  }, 20000);
+
+  it('affiche une erreur et ne met PAS en file un refus définitif (4xx)', async () => {
+    const err = Object.assign(new Error('Ces dates ne sont pas disponibles'), { status: 409 });
+    mocks.addReservation.mockRejectedValueOnce(err);
+    const { container } = await renderLoaded();
+
+    fillReservationForm(container);
+
+    expect(await screen.findByText(/Ces dates ne sont pas disponibles/)).toBeInTheDocument();
+    expect(mocks.enqueue).not.toHaveBeenCalled();
   }, 20000);
 });
 

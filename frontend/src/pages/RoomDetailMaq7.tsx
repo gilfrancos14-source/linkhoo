@@ -25,7 +25,7 @@ import { formatDate } from '../lib/formatDate';
 import { redirectTo } from '../lib/navigation';
 import { isPremiumActive } from '../lib/premium';
 import { addReservation } from '../lib/reservations';
-import { newClientKey } from '../lib/offlineQueue';
+import { newClientKey, enqueue, isRetryableError } from '../lib/offlineQueue';
 import { conditionIcon, conditionLabel } from '../lib/roomConditions';
 import { formatCapacity, priceWithCurrency } from '../lib/roomDisplay';
 import { initialDuree, validateForm, type FormErrors } from './room-detail/roomForm';
@@ -366,6 +366,8 @@ export default function RoomDetailMaq7() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  // Demande enregistrée hors ligne : sera envoyée au retour de connexion.
+  const [queued, setQueued] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
 
   const signedIn = authLoaded && Boolean(isSignedIn);
@@ -595,10 +597,20 @@ export default function RoomDetailMaq7() {
 
     setSubmitting(true);
     setSubmitError('');
+    const payload = reservationPayloadData(room, form, dureeNombre, unite, clientKeyRef.current as string);
+
+    // Mode hors ligne : on enregistre la demande dans la file. La synchro
+    // globale (Footer) l'enverra dès que la connexion revient. La clé
+    // d'idempotence garantit qu'un rejeu ne créera pas de doublon.
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      enqueue({ type: 'reservation', payload });
+      setQueued(true);
+      setSubmitting(false);
+      return;
+    }
+
     try {
-      const created = await addReservation(
-        reservationPayloadData(room, form, dureeNombre, unite, clientKeyRef.current as string),
-      );
+      const created = await addReservation(payload);
       // Paiement en ligne disponible : on emmène le client sur le checkout
       // hébergé pawaPay. La réservation est déjà enregistrée et reste
       // consultable depuis son compte si le paiement est abandonné.
@@ -609,11 +621,19 @@ export default function RoomDetailMaq7() {
       }
       setSubmitted(true);
     } catch (error) {
-      setSubmitError(
-        error instanceof Error
-          ? error.message
-          : 'Une erreur est survenue. Veuillez réessayer.',
-      );
+      // Erreur réseau / timeout / 5xx : la demande n'est pas perdue, on la met
+      // en file pour un envoi ultérieur. Un refus métier (4xx : dates prises,
+      // données invalides) est affiché immédiatement et N'est PAS rejoué.
+      if (isRetryableError(error)) {
+        enqueue({ type: 'reservation', payload });
+        setQueued(true);
+      } else {
+        setSubmitError(
+          error instanceof Error
+            ? error.message
+            : 'Une erreur est survenue. Veuillez réessayer.',
+        );
+      }
     } finally {
       setSubmitting(false);
     }
@@ -621,6 +641,7 @@ export default function RoomDetailMaq7() {
 
   const resetRequest = () => {
     setSubmitted(false);
+    setQueued(false);
     setErrors({});
     setTouched({});
     setSubmitError('');
@@ -867,7 +888,25 @@ export default function RoomDetailMaq7() {
                   : 'Pour 1 personne'}
               </p>
 
-              {submitted ? (
+              {queued ? (
+                <div className="py-6 text-center" role="status">
+                  <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-amber-100 text-amber-600">
+                    <Icon name="clock" className="h-7 w-7" />
+                  </span>
+                  <h3 className="mt-4 text-lg font-bold">Demande enregistrée</h3>
+                  <p className="mt-1 text-xs text-mute">
+                    Vous êtes hors ligne. Votre demande sera envoyée automatiquement dès que
+                    la connexion sera rétablie. Vous pouvez fermer cette page.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={resetRequest}
+                    className="mt-4 w-full rounded-lg border border-brand py-2.5 text-[13px] font-bold text-brand transition hover:bg-brand-soft"
+                  >
+                    Retourner à l&apos;annonce
+                  </button>
+                </div>
+              ) : submitted ? (
                 <div className="py-6 text-center" role="status">
                   <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-emerald-100 text-emerald-600">
                     <Icon name="check" className="h-7 w-7" />

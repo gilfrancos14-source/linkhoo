@@ -54,6 +54,20 @@ export function newClientKey(): string {
  * transitoire et sera réessayée.
  */
 function isPermanentFailure(err: unknown): boolean {
+  return isPermanentError(err);
+}
+
+/**
+ * Vrai si l'erreur vaut la peine d'être mise en file (réseau/timeout/5xx),
+ * faux pour un refus définitif du serveur (4xx hors 408/429).
+ * Partagé avec le formulaire de réservation pour éviter de mettre en file une
+ * demande que le serveur a déjà rejetée (dates prises, données invalides…).
+ */
+export function isRetryableError(err: unknown): boolean {
+  return !isPermanentError(err);
+}
+
+function isPermanentError(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false;
   const status = (err as { status?: unknown }).status;
   if (typeof status !== 'number') return false;
