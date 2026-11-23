@@ -551,6 +551,39 @@
   color: var(--acc-brand);
 }
 
+/* Bouton de continuation affiché dès qu'un pays est sélectionné. */
+.acc-country-continue {
+  grid-column: 1 / -1;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  /* La grille met déjà 17 px entre les lignes : on ajoute juste un léger
+     rattrapage au lieu de 1 rem, sinon l'écart paraît trop grand. */
+  margin-top: 0.25rem;
+  padding: 0.8rem 1.35rem;
+  border-radius: 10px;
+  background: var(--acc-brand);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--acc-brand) 55%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.acc-country-continue:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px -8px color-mix(in srgb, var(--acc-brand) 65%, transparent);
+}
+
+.acc-country-continue:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--acc-brand) 35%, transparent);
+  outline-offset: 2px;
+}
+
 /* ---------- Sections annonces / avis ---------- */
 .acc-section {
   background: #fff;

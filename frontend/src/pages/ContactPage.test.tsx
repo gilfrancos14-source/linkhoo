@@ -150,14 +150,10 @@ describe('ContactPage', () => {
     );
   });
 
-  it('change de pays depuis le sélecteur', async () => {
+  it("n'affiche aucun sélecteur de pays dans la barre de navigation", () => {
     renderContact();
 
-    await userEvent.click(screen.getByRole('button', { name: "Pays : Côte d'Ivoire" }));
-    expect(screen.getByRole('listbox', { name: 'Choisir le pays' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('option', { name: 'Sénégal' }));
-
-    expect(screen.getByRole('button', { name: 'Pays : Sénégal' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Pays :/ })).toBeNull();
     expect(screen.queryByRole('listbox', { name: 'Choisir le pays' })).toBeNull();
   });
 

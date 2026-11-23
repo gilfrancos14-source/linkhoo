@@ -79,6 +79,14 @@ describe('LandingPage — maquette accueil', () => {
     expect(screen.getByRole('combobox', { name: /Pays/ })).toBeInTheDocument();
   }, 20000);
 
+  it("n'aucun pays sélectionné par défaut", () => {
+    renderLanding();
+
+    expect(screen.getByRole('combobox', { name: /Pays/ })).toHaveValue('');
+    expect(document.querySelector('.acc-country-card--active')).toBeNull();
+    expect(screen.queryByRole('link', { name: /Continuer vers/ })).toBeNull();
+  });
+
   it('affiche les 12 pays et permet d’en sélectionner un', () => {
     renderLanding();
 
@@ -91,7 +99,7 @@ describe('LandingPage — maquette accueil', () => {
 
     expect(screen.getByRole('button', { name: /^Sénégal$/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('combobox', { name: /Pays/ })).toHaveValue('SN');
-    expect(screen.getByRole('button', { name: 'Pays : Sénégal' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Continuer vers Sénégal/ })).toHaveAttribute('href', '/sn');
   }, 20000);
 
   it('affiche le carrousel et les six avis', async () => {

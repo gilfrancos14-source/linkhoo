@@ -7,8 +7,8 @@ import { COUNTRIES, type Country } from './data';
 import { AnimatedSection, slideInFromBottomVariants } from '../../lib/animations';
 
 interface LandingHeroProps {
-  country: Country;
-  onCountryChange: (country: Country) => void;
+  country: Country | null;
+  onCountryChange: (country: Country | null) => void;
 }
 
 export default function LandingHero({ country, onCountryChange }: LandingHeroProps) {
@@ -18,6 +18,11 @@ export default function LandingHero({ country, onCountryChange }: LandingHeroPro
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
+    setCategory('');
+    if (!country) {
+      setCategories([]);
+      return;
+    }
     let alive = true;
     fetchCategoriesByMarket(country.code)
       .then((data) => {
@@ -26,14 +31,19 @@ export default function LandingHero({ country, onCountryChange }: LandingHeroPro
       .catch(() => {
         if (alive) setCategories([]);
       });
-    setCategory('');
     return () => {
       alive = false;
     };
-  }, [country.code]);
+  }, [country]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    // Le pays est obligatoire : sans sélection on ne navigue pas vers une
+    // page de résultats qui partirait sur un marché arbitraire.
+    if (!country) {
+      document.getElementById('acc-search-country')?.focus();
+      return;
+    }
     const params = new URLSearchParams();
     if (keyword.trim()) params.set('q', keyword.trim());
     if (category) params.set('categorie', category);
@@ -115,7 +125,11 @@ export default function LandingHero({ country, onCountryChange }: LandingHeroPro
           </label>
 
           <label className="acc-search-field" htmlFor="acc-search-country">
-            <span className="acc-flag" style={{ background: country.flag }} aria-hidden="true" />
+            {country ? (
+              <span className="acc-flag" style={{ background: country.flag }} aria-hidden="true" />
+            ) : (
+              <Icon name="mapPin" size={20} />
+            )}
             <span className="acc-search-field__body">
               <span className="acc-search-field__label">
                 Pays <span className="acc-required">*</span>
@@ -123,12 +137,16 @@ export default function LandingHero({ country, onCountryChange }: LandingHeroPro
               <select
                 id="acc-search-country"
                 className="acc-search-field__select"
-                value={country.code}
+                value={country?.code ?? ''}
+                required
                 onChange={(event) => {
                   const next = COUNTRIES.find((item) => item.code === event.target.value);
-                  if (next) onCountryChange(next);
+                  onCountryChange(next ?? null);
                 }}
               >
+                <option value="" disabled>
+                  Choisir un pays
+                </option>
                 {COUNTRIES.map((item) => (
                   <option key={item.code} value={item.code}>
                     {item.label}

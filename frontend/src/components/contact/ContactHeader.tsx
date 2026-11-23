@@ -1,27 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Icon from '../landing/icons';
-import { CONTACT_COUNTRIES, type ContactCountry } from './data';
 
 export default function ContactHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [countryOpen, setCountryOpen] = useState(false);
-  const [country, setCountry] = useState<ContactCountry>(CONTACT_COUNTRIES[1]);
-  const countryRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!countryOpen) return;
-
-    const closeOnOutsideClick = (event: MouseEvent) => {
-      if (!countryRef.current?.contains(event.target as Node)) {
-        setCountryOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', closeOnOutsideClick);
-    return () => document.removeEventListener('mousedown', closeOnOutsideClick);
-  }, [countryOpen]);
 
   return (
     <header className="ct-header">
@@ -50,45 +33,6 @@ export default function ContactHeader() {
         </nav>
 
         <div className="ct-header__actions">
-          <div className="ct-country" ref={countryRef}>
-            <button
-              type="button"
-              className="ct-country__btn"
-              aria-label={`Pays : ${country.label}`}
-              aria-expanded={countryOpen}
-              aria-controls="ct-country-menu"
-              onClick={() => setCountryOpen((open) => !open)}
-            >
-              <span className="ct-country__flag" aria-hidden="true">
-                {country.colors.map((color) => (
-                  <span key={color} style={{ background: color }} />
-                ))}
-              </span>
-              <span className="ct-country__label">{country.label}</span>
-              <Icon name="chevronDown" size={12} />
-            </button>
-
-            {countryOpen && (
-              <ul id="ct-country-menu" className="ct-country__menu" role="listbox" aria-label="Choisir le pays">
-                {CONTACT_COUNTRIES.map((item) => (
-                  <li key={item.label}>
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={item.label === country.label}
-                      onClick={() => {
-                        setCountry(item);
-                        setCountryOpen(false);
-                      }}
-                    >
-                      {item.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
           <button
             type="button"
             className="ct-icon-btn"

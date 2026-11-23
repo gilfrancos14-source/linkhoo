@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useRef, type FormEvent } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useMarket } from '../contexts/MarketContext';
 import { useHomePath } from '../hooks/useHomePath';
@@ -17,7 +17,6 @@ import SearchStayCard from '../components/SearchStayCard';
 import PremiumRoomsCarousel from '../components/PremiumRoomsCarousel';
 import LandingFooter from '../components/landing/LandingFooter';
 import LandingHeader from '../components/landing/LandingHeader';
-import { COUNTRIES, DEFAULT_COUNTRY } from '../components/landing/data';
 import Icon from '../components/landing/icons';
 import { AnimatedList } from '../lib/animations.tsx';
 
@@ -221,17 +220,9 @@ function SearchPagination({ currentPage, totalPages, onPageChange }: PaginationP
 }
 
 function SearchHeader({ onSearchClick }: { onSearchClick: () => void }) {
-  const { market } = useMarket();
-  const navigate = useNavigate();
-  const country = COUNTRIES.find((item) => item.code === market) ?? DEFAULT_COUNTRY;
-
   return (
     <div className="search-header-scope">
-      <LandingHeader
-        country={country}
-        onCountryClick={() => navigate('/')}
-        onSearchClick={onSearchClick}
-      />
+      <LandingHeader onSearchClick={onSearchClick} />
     </div>
   );
 }

@@ -3,12 +3,12 @@ import Icon from './icons';
 import { COUNTRIES, type Country } from './data';
 
 interface LandingCountriesProps {
-  country: Country;
-  onCountryChange: (country: Country) => void;
+  country: Country | null;
+  onCountryChange: (country: Country | null) => void;
 }
 
 export default function LandingCountries({ country, onCountryChange }: LandingCountriesProps) {
-  const loginSlug = country.marketSlug ?? 'ci';
+  const loginSlug = country?.marketSlug ?? 'ci';
 
   return (
     <section className="acc-countries-section" id="ou-louer">
@@ -39,7 +39,7 @@ export default function LandingCountries({ country, onCountryChange }: LandingCo
 
         <div className="acc-country-grid">
           {COUNTRIES.map((item) => {
-            const selected = item.code === country.code;
+            const selected = country?.code === item.code;
             return (
               <button
                 key={item.code}
@@ -58,6 +58,15 @@ export default function LandingCountries({ country, onCountryChange }: LandingCo
               </button>
             );
           })}
+          {country && (
+            <Link
+              to={`/${country.marketSlug ?? country.code.toLowerCase()}`}
+              className="acc-country-continue"
+            >
+              Continuer vers {country.label}
+              <Icon name="arrowRight" size={16} aria-hidden="true" />
+            </Link>
+          )}
         </div>
       </div>
     </section>

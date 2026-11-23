@@ -2,7 +2,6 @@ import { useCallback, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import LandingFooter from '../components/landing/LandingFooter';
 import LandingHeader from '../components/landing/LandingHeader';
-import { COUNTRIES } from '../components/landing/data';
 import { useMarket } from '../contexts/MarketContext';
 import MaquetteHome from '../maquette/MaquetteHome';
 import { MAQUETTE_NAV_ITEMS as NAV_ITEMS } from '../maquette/nav';
@@ -16,7 +15,6 @@ import { useMaquetteData } from '../maquette/useMaquetteData';
 export default function MaquettePage() {
   const { market } = useMarket();
   const data = useMaquetteData(market);
-  const country = COUNTRIES.find((item) => item.code === market) ?? COUNTRIES[0];
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -74,8 +72,6 @@ export default function MaquettePage() {
     <div className="landing">
       <div className="maquette-shell">
         <LandingHeader
-          country={country}
-          onCountryClick={() => {}}
           onSearchClick={focusSearch}
           items={NAV_ITEMS}
           onItemClick={scrollToSection}

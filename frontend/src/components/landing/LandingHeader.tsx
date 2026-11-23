@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from './icons';
-import type { Country } from './data';
 import LanguageSwitcher from '../LanguageSwitcher';
 
 export interface HeaderItem {
@@ -16,8 +15,6 @@ export interface HeaderAccount {
 }
 
 interface LandingHeaderProps {
-  country: Country;
-  onCountryClick: () => void;
   onSearchClick: () => void;
   items?: readonly HeaderItem[];
   brandTo?: string;
@@ -32,8 +29,6 @@ const DEFAULT_ITEMS: readonly HeaderItem[] = [
 ];
 
 export default function LandingHeader({
-  country,
-  onCountryClick,
   onSearchClick,
   items = DEFAULT_ITEMS,
   brandTo = '/',
@@ -79,16 +74,6 @@ export default function LandingHeader({
         </nav>
 
         <div className="acc-header__actions">
-          <button
-            type="button"
-            className="acc-country-btn"
-            onClick={onCountryClick}
-            aria-label={`Pays : ${country.label}`}
-          >
-            <span className="acc-flag" style={{ background: country.flag }} aria-hidden="true" />
-            <span>{country.label}</span>
-            <Icon name="chevronDown" size={16} />
-          </button>
           <button type="button" className="acc-icon-btn" aria-label="Rechercher" onClick={onSearchClick}>
             <Icon name="search" size={24} />
           </button>

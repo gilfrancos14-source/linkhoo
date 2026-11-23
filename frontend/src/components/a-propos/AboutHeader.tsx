@@ -37,16 +37,6 @@ export default function AboutHeader() {
         <div className="ab-header__actions">
           <button
             type="button"
-            className="ab-country"
-            aria-label="Choisir le pays"
-            onClick={goToLanding}
-          >
-            <span className="ab-country__flag" aria-hidden="true" />
-            <span>Côte d&apos;Ivoire</span>
-            <Icon name="chevronDown" size={14} />
-          </button>
-          <button
-            type="button"
             className="ab-icon-btn"
             aria-label="Rechercher"
             onClick={goToLanding}

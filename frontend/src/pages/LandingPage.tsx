@@ -7,11 +7,13 @@ import LandingHero from '../components/landing/LandingHero';
 import LandingReviews from '../components/landing/LandingReviews';
 import LandingSlider from '../components/landing/LandingSlider';
 import LandingTopBar from '../components/landing/LandingTopBar';
-import { DEFAULT_COUNTRY, type Country } from '../components/landing/data';
+import type { Country } from '../components/landing/data';
 import { AnimatedSection } from '../lib/animations.tsx';
 
 export default function LandingPage() {
-  const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
+  // Aucun pays pré-sélectionné : le visiteur choisit explicitement son marché
+  // depuis le hero, l'en-tête ou la grille « Où louer ? ».
+  const [country, setCountry] = useState<Country | null>(null);
 
   const focusSearch = () => {
     const input = document.getElementById('acc-search-keyword');
@@ -19,18 +21,10 @@ export default function LandingPage() {
     input?.focus({ preventScroll: true });
   };
 
-  const scrollToCountries = () => {
-    document.getElementById('ou-louer')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
     <div className="landing">
       <LandingTopBar />
-      <LandingHeader
-        country={country}
-        onCountryClick={scrollToCountries}
-        onSearchClick={focusSearch}
-      />
+      <LandingHeader onSearchClick={focusSearch} />
       <main>
         <LandingHero country={country} onCountryChange={setCountry} />
         <AnimatedSection>

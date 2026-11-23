@@ -7,7 +7,6 @@ import { useHomePath } from '../hooks/useHomePath';
 import { useFavorites } from '../contexts/FavoritesContext';
 import LandingHeader from '../components/landing/LandingHeader';
 import LandingFooter from '../components/landing/LandingFooter';
-import { COUNTRIES } from '../components/landing/data';
 import { MAQUETTE_NAV_ITEMS } from '../maquette/nav';
 import { fetchCategoriesByMarket, type Category } from '../data/categories';
 import { fetchRoomById, type Room } from '../data/rooms';
@@ -672,7 +671,7 @@ export default function RoomDetailMaq7() {
   if (loading) {
     return (
       <div className="room-detail-maq7 min-h-screen bg-[#F6F8FB] font-sans text-ink antialiased">
-        <MarketHeader homePath={homePath} market={market} />
+        <MarketHeader homePath={homePath} />
         <main className="mx-auto max-w-6xl px-4 py-10 lg:px-6">
           <p className="text-sm text-mute" role="status">
             Chargement de la chambre…
@@ -685,7 +684,7 @@ export default function RoomDetailMaq7() {
   if (!room) {
     return (
       <div className="room-detail-maq7 min-h-screen bg-[#F6F8FB] font-sans text-ink antialiased">
-        <MarketHeader homePath={homePath} market={market} />
+        <MarketHeader homePath={homePath} />
         <main className="mx-auto max-w-6xl px-4 py-10 lg:px-6">
           <p className="text-base font-semibold">Chambre introuvable</p>
           <Link
@@ -707,7 +706,7 @@ export default function RoomDetailMaq7() {
       animate="visible"
       className="room-detail-maq7 min-h-screen bg-[#F6F8FB] font-sans text-ink antialiased"
     >
-      <MarketHeader homePath={homePath} market={market} />
+      <MarketHeader homePath={homePath} />
 
       <motion.main 
         className="mx-auto max-w-6xl px-4 py-4 lg:px-6 lg:py-6"
@@ -1434,9 +1433,8 @@ export default function RoomDetailMaq7() {
 /*  En-tête de marché (identique à /ci)                                        */
 /* -------------------------------------------------------------------------- */
 
-function MarketHeader({ homePath, market }: { homePath: string; market: string }) {
+function MarketHeader({ homePath }: { homePath: string }) {
   const navigate = useNavigate();
-  const country = COUNTRIES.find((item) => item.code === market) ?? COUNTRIES[0];
   // Sur la fiche, aucun onglet n'est « actif » : ils renvoient aux sections de
   // l'accueil du marché, exactement comme la barre de /ci.
   const items = useMemo(
@@ -1447,8 +1445,6 @@ function MarketHeader({ homePath, market }: { homePath: string; market: string }
   return (
     <div className="landing maquette-shell m7-market-header">
       <LandingHeader
-        country={country}
-        onCountryClick={() => {}}
         onSearchClick={() => navigate(homePath, { state: { focusSearch: true } })}
         items={items}
         onItemClick={(purpose) => navigate(homePath, { state: { scrollTo: purpose } })}
