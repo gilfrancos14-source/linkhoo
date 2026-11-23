@@ -142,6 +142,9 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-ilehya}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ilehya}
       I18N_CACHE_DIR: /app/i18n-model
     command: ["node", "scripts/translationWorker.mjs"]
+    # Le worker ne sert pas HTTP : le HEALTHCHECK de l'image ne s'applique pas.
+    healthcheck:
+      disable: true
     depends_on:
       postgres:
         condition: service_healthy
