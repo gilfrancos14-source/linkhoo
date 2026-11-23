@@ -89,38 +89,6 @@ export default function ClientSidebar() {
       >
         <div className="flex h-[70px] flex-none items-center gap-2.5 px-[34px]">
           <img className="sidebar-logo" src="/logo.jpg" alt="Logo Linkhoo" />
-          <button
-            type="button"
-            className="client-sidebar__close"
-            onClick={() => clientSidebarStore.close()}
-            aria-label="Fermer la navigation"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M6 6l12 12M18 6L6 18"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
-          <button
-            type="button"
-            className="client-sidebar__toggle"
-            onClick={() => clientSidebarStore.toggleCollapsed()}
-            aria-label="Réduire la navigation"
-            aria-pressed={collapsed}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M15 6l-6 6 6 6"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
         </div>
 
         <nav className="mt-3 space-y-[4px] px-[15px]">

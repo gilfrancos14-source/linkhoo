@@ -174,11 +174,6 @@ aside.client-sidebar .text-blue-400 {
     margin-left: 0;
   }
 
-  /* Le bouton « Réduire le menu » n'a pas de sens sur mobile : le tiroir
-     s'ouvre et se ferme avec le hamburger et la croix. */
-  aside.client-sidebar .client-sidebar__toggle {
-    display: none;
-  }
 }
 
 /* Ordinateur : la sidebar réduite laisse toute la place au contenu. */
@@ -192,29 +187,6 @@ aside.client-sidebar .text-blue-400 {
     margin-left: 0;
   }
 
-  aside.client-sidebar .client-sidebar__close {
-    display: none;
-  }
-}
-
-/* Boutons de la sidebar : cible tactile confortable (44 × 44 px). */
-aside.client-sidebar .client-sidebar__close,
-aside.client-sidebar .client-sidebar__toggle {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  margin-left: auto;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: #1d3f8f;
-  cursor: pointer;
-}
-
-aside.client-sidebar .client-sidebar__close:hover,
-aside.client-sidebar .client-sidebar__toggle:hover {
-  background-color: #f5f8ff;
 }
 
 /* Bouton hamburger de l'espace client (barre haute des pages). */
