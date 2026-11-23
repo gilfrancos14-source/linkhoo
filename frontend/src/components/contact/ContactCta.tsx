@@ -1,6 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import Icon from '../landing/icons';
 
 export default function ContactCta() {
+  const { t } = useTranslation();
+
   return (
     <section className="ct-cta">
       <div className="ct-cta__inner">
@@ -12,13 +15,13 @@ export default function ContactCta() {
             <Icon name="send" size={22} />
           </span>
           <div>
-            <h2>Encore une question ?</h2>
-            <p>Notre équipe est toujours disponible pour vous aider.</p>
+            <h2>{t('contact.cta.title')}</h2>
+            <p>{t('contact.cta.text')}</p>
           </div>
         </div>
 
         <a href="#contactForm" className="ct-cta__btn">
-          Nous contacter
+          {t('contact.cta.button')}
           <Icon name="arrowRight" size={14} />
         </a>
       </div>

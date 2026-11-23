@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Icon from '../landing/icons';
 import { MARKETS } from '../../config/markets';
 import { apiContact, type ContactPayload } from '../../lib/api';
-import { CONTACT_SUBJECTS } from './data';
+import { CONTACT_SUBJECT_KEYS, type ContactSubjectKey } from './data';
 
 interface FormValues {
   nom: string;
@@ -15,6 +16,7 @@ interface FormValues {
 
 type RequiredField = 'nom' | 'email' | 'objet' | 'message';
 type FieldErrors = Partial<Record<RequiredField, boolean>>;
+type Status = 'idle' | 'sending' | 'error' | 'sent' | 'apiError';
 
 const EMPTY_FORM: FormValues = {
   nom: '',
@@ -26,28 +28,21 @@ const EMPTY_FORM: FormValues = {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const LABELS = {
-  idle: 'Envoyer le message',
-  sending: 'Envoi en cours…',
-  error: 'Veuillez remplir les champs obligatoires',
-  sent: 'Message envoyé ✓',
-  apiError: 'Envoi impossible, veuillez réessayer.',
-} as const;
-
-/** Libellés de la maquette → valeurs acceptées par l'API. */
-const SUJET_PAR_OBJET: Record<(typeof CONTACT_SUBJECTS)[number], ContactPayload['sujet']> = {
-  'Question générale': 'autre',
-  'Publier une annonce': 'compte-gerant',
-  'Problème technique': 'autre',
-  Paiement: 'reservation',
-  Suggestion: 'autre',
+/** Clé stable de la maquette → valeur acceptée par l'API (indépendant de la langue). */
+const SUBJECT_TO_API: Record<ContactSubjectKey, ContactPayload['sujet']> = {
+  general: 'autre',
+  publish: 'compte-gerant',
+  technical: 'autre',
+  payment: 'reservation',
+  suggestion: 'autre',
 };
 
 export default function ContactForm() {
+  const { t } = useTranslation();
   const { pathname } = useLocation();
   const [values, setValues] = useState<FormValues>(EMPTY_FORM);
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [status, setStatus] = useState<keyof typeof LABELS>('idle');
+  const [status, setStatus] = useState<Status>('idle');
   const timer = useRef<number | null>(null);
 
   // La page /contact est à la racine : on retombe sur le marché par défaut.
@@ -99,7 +94,7 @@ export default function ContactForm() {
         email: values.email.trim(),
         telephone: values.tel.trim(),
         pays: market.pays,
-        sujet: SUJET_PAR_OBJET[values.objet as (typeof CONTACT_SUBJECTS)[number]] ?? 'autre',
+        sujet: SUBJECT_TO_API[values.objet as ContactSubjectKey] ?? 'autre',
         message: values.message.trim(),
         market: market.code,
         // Pot de miel : plus tard rempli par les robots, jamais par un humain.
@@ -123,10 +118,8 @@ export default function ContactForm() {
           <Icon name="house" size={14} />
         </span>
         <div>
-          <h2 className="ct-card__title">Envoyez-nous un message</h2>
-          <p className="ct-card__subtitle">
-            Remplissez le formulaire ci-dessous et nous vous répondrons rapidement.
-          </p>
+          <h2 className="ct-card__title">{t('contact.form.title')}</h2>
+          <p className="ct-card__subtitle">{t('contact.form.subtitle')}</p>
         </div>
       </div>
 
@@ -134,14 +127,14 @@ export default function ContactForm() {
         <div className="ct-form__grid">
           <div>
             <label className="ct-label" htmlFor="ct-nom">
-              Nom complet <span aria-hidden="true">*</span>
+              {t('contact.form.fullName')} <span aria-hidden="true">*</span>
             </label>
             <input
               id="ct-nom"
               className={inputClass(Boolean(errors.nom))}
               type="text"
               required
-              placeholder="Votre nom complet"
+              placeholder={t('contact.form.namePlaceholder')}
               value={values.nom}
               onChange={update('nom')}
             />
@@ -149,7 +142,7 @@ export default function ContactForm() {
 
           <div>
             <label className="ct-label" htmlFor="ct-email">
-              Email <span aria-hidden="true">*</span>
+              {t('contact.form.email')} <span aria-hidden="true">*</span>
             </label>
             <input
               id="ct-email"
@@ -164,7 +157,7 @@ export default function ContactForm() {
 
           <div>
             <label className="ct-label" htmlFor="ct-objet">
-              Objet <span aria-hidden="true">*</span>
+              {t('contact.form.subject')} <span aria-hidden="true">*</span>
             </label>
             <div className="ct-select">
               <select
@@ -174,10 +167,10 @@ export default function ContactForm() {
                 value={values.objet}
                 onChange={update('objet')}
               >
-                <option value="">Choisissez un sujet</option>
-                {CONTACT_SUBJECTS.map((subject) => (
-                  <option key={subject} value={subject}>
-                    {subject}
+                <option value="">{t('contact.form.subjectPlaceholder')}</option>
+                {CONTACT_SUBJECT_KEYS.map((key) => (
+                  <option key={key} value={key}>
+                    {t(`contact.form.subjects.${key}`)}
                   </option>
                 ))}
               </select>
@@ -187,13 +180,13 @@ export default function ContactForm() {
 
           <div>
             <label className="ct-label" htmlFor="ct-tel">
-              Téléphone <span className="ct-label__optional">(optionnel)</span>
+              {t('contact.form.phone')} <span className="ct-label__optional">{t('contact.form.optional')}</span>
             </label>
             <input
               id="ct-tel"
               className="ct-input"
               type="tel"
-              placeholder="Votre numéro de téléphone"
+              placeholder={t('contact.form.phonePlaceholder')}
               value={values.tel}
               onChange={update('tel')}
             />
@@ -202,13 +195,13 @@ export default function ContactForm() {
 
         <div className="ct-form__message">
           <label className="ct-label" htmlFor="ct-message">
-            Votre message <span aria-hidden="true">*</span>
+            {t('contact.form.message')} <span aria-hidden="true">*</span>
           </label>
           <textarea
             id="ct-message"
             className={inputClass(Boolean(errors.message))}
             required
-            placeholder="Écrivez votre message ici..."
+            placeholder={t('contact.form.messagePlaceholder')}
             value={values.message}
             onChange={update('message')}
           />
@@ -216,7 +209,7 @@ export default function ContactForm() {
 
         <button type="submit" className="ct-submit" disabled={status === 'sending'}>
           <Icon name="send" size={13} />
-          <span aria-live="polite">{LABELS[status]}</span>
+          <span aria-live="polite">{t(`contact.form.labels.${status}`)}</span>
         </button>
       </form>
     </div>

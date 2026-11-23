@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import Icon from '../landing/icons';
 
 const SOCIALS = [
@@ -10,12 +11,13 @@ const SOCIALS = [
 ];
 
 export default function ContactDetails() {
+  const { t } = useTranslation();
+  const d = (key: string) => t(`contact.details.${key}`);
+
   return (
     <aside className="ct-card ct-details">
-      <h2 className="ct-details__title">Nos coordonnées</h2>
-      <p className="ct-details__lead">
-        Vous pouvez aussi nous contacter directement via les informations ci-dessous.
-      </p>
+      <h2 className="ct-details__title">{d('title')}</h2>
+      <p className="ct-details__lead">{d('lead')}</p>
 
       <ul className="ct-details__list" role="list">
         <li>
@@ -23,9 +25,9 @@ export default function ContactDetails() {
             <Icon name="mail" size={14} />
           </span>
           <div>
-            <p className="ct-details__label">Email</p>
+            <p className="ct-details__label">{d('email')}</p>
             <a href="mailto:contact@linkhoo.com">contact@linkhoo.com</a>
-            <p className="ct-details__note">Réponse sous 24h</p>
+            <p className="ct-details__note">{d('responseTime')}</p>
           </div>
         </li>
         <li>
@@ -33,9 +35,9 @@ export default function ContactDetails() {
             <Icon name="phone" size={14} />
           </span>
           <div>
-            <p className="ct-details__label">Téléphone</p>
+            <p className="ct-details__label">{d('phone')}</p>
             <a href="tel:+2290160000000">+229 01 60 00 00 00</a>
-            <p className="ct-details__note">Lun - Ven : 8h - 22h</p>
+            <p className="ct-details__note">{d('hours')}</p>
           </div>
         </li>
         <li>
@@ -43,16 +45,16 @@ export default function ContactDetails() {
             <Icon name="mapPin" size={14} />
           </span>
           <div>
-            <p className="ct-details__label">Adresse</p>
-            <p className="ct-details__value">Cotonou, Bénin</p>
-            <p className="ct-details__note">Siège social de Linkhoo</p>
+            <p className="ct-details__label">{d('address')}</p>
+            <p className="ct-details__value">{d('addressValue')}</p>
+            <p className="ct-details__note">{d('headquarters')}</p>
           </div>
         </li>
       </ul>
 
       <div className="ct-details__social">
-        <h3>Suivez-nous</h3>
-        <p>Restez connecté avec nous sur les réseaux sociaux.</p>
+        <h3>{d('socialTitle')}</h3>
+        <p>{d('socialText')}</p>
         <div className="ct-details__socials">
           {SOCIALS.map((social) => (
             <span key={social.label} aria-label={social.label} role="img">

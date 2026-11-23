@@ -106,7 +106,152 @@
     "message": "Mensaje",
     "send": "Enviar",
     "success": "¡Mensaje enviado con éxito!",
-    "error": "Ocurrió un error, por favor inténtalo de nuevo."
+    "error": "Ocurrió un error, por favor inténtalo de nuevo.",
+    "topbar": {
+      "message": "¡Alquila con confianza, en todo el África Occidental!",
+      "countries": "12 países disponibles",
+      "close": "Cerrar"
+    },
+    "header": {
+      "home": "Inicio",
+      "about": "Acerca de",
+      "contact": "Contacto",
+      "search": "Buscar",
+      "menu": "Menú",
+      "mainNav": "Navegación principal",
+      "brandAria": "Linkhoo — inicio",
+      "breadcrumb": "Ruta de navegación"
+    },
+    "hero": {
+      "badge": "Contáctanos",
+      "title1": "¿Una pregunta?",
+      "title2": "¡Estamos aquí para ti!",
+      "lead": "Nuestro equipo está aquí para responder a todas tus preguntas, acompañarte y ayudarte a aprovechar al máximo Linkhoo. Ya sea una consulta, un problema técnico o una sugerencia, ¡no dudes en escribirnos!",
+      "script": "Tu satisfacción<br/>es nuestra prioridad",
+      "reply": "Respondemos<br/>en menos de 24 h"
+    },
+    "highlights": [
+      {
+        "title": "Respuesta rápida",
+        "text": "Generalmente en 24 h"
+      },
+      {
+        "title": "Equipo disponible",
+        "text": "7 días/7, de 8 h a 22 h"
+      },
+      {
+        "title": "Ayuda personalizada",
+        "text": "Por correo, teléfono o mediante el formulario"
+      }
+    ],
+    "form": {
+      "title": "Envíanos un mensaje",
+      "subtitle": "Rellena el formulario y te responderemos rápidamente.",
+      "fullName": "Nombre completo",
+      "namePlaceholder": "Tu nombre completo",
+      "email": "Correo electrónico",
+      "subject": "Asunto",
+      "subjectPlaceholder": "Elige un asunto",
+      "subjects": {
+        "general": "Pregunta general",
+        "publish": "Publicar un anuncio",
+        "technical": "Problema técnico",
+        "payment": "Pago",
+        "suggestion": "Sugerencia"
+      },
+      "phone": "Teléfono",
+      "optional": "(opcional)",
+      "phonePlaceholder": "Tu número de teléfono",
+      "message": "Tu mensaje",
+      "messagePlaceholder": "Escribe tu mensaje aquí...",
+      "labels": {
+        "idle": "Enviar mensaje",
+        "sending": "Enviando…",
+        "error": "Por favor, rellena los campos obligatorios",
+        "sent": "Mensaje enviado ✓",
+        "apiError": "No se pudo enviar, inténtalo de nuevo."
+      }
+    },
+    "details": {
+      "title": "Nuestros datos de contacto",
+      "lead": "También puedes contactarnos directamente con la información siguiente.",
+      "email": "Correo electrónico",
+      "responseTime": "Respuesta en 24 h",
+      "phone": "Teléfono",
+      "hours": "Lun - Vie: 8 h - 22 h",
+      "address": "Dirección",
+      "addressValue": "Cotonú, Benín",
+      "headquarters": "Sede de Linkhoo",
+      "socialTitle": "Síguenos",
+      "socialText": "Mantente conectado con nosotros en las redes sociales."
+    },
+    "location": {
+      "title": "Dónde estamos",
+      "lead": "Estamos en Cotonú, Benín. ¡No dudes en visitarnos!",
+      "mapTitle": "Google Maps — Linkhoo en Cotonú, Benín",
+      "mapLink": "Ver en Google Maps"
+    },
+    "faq": {
+      "title": "Preguntas frecuentes",
+      "lead": "¿Tienes una pregunta? Aquí están las respuestas más habituales.",
+      "items": [
+        {
+          "question": "¿Cómo reservo un alojamiento en Linkhoo?",
+          "answer": "Elige tu país, ciudad y fechas, abre la ficha del alojamiento y envía tu solicitud de reserva. Pagas la estancia en línea al hacer la solicitud; el gestor confirma después la disponibilidad. Si la solicitud se rechaza o se cancela, el importe se reembolsa íntegramente. También puedes hablar con el gestor mediante la mensajería integrada."
+        },
+        {
+          "question": "¿Cómo se paga el alquiler?",
+          "answer": "La estancia se paga en línea al hacer la solicitud, con mobile money a través de nuestro proveedor pawaPay. Linkhoo cobra el importe y lo transfiere al gestor tras la estancia. Si el gestor rechaza o se cancela, se reembolsa el 97 % del importe (3 % de gastos de cancelación, repartidos entre la plataforma y el gestor)."
+        },
+        {
+          "question": "¿Cómo publico mi alojamiento como gestor?",
+          "answer": "Crea una cuenta de gestor, completa la ficha del inmueble (ciudad, tarifa, equipamiento, fotos) y publica el anuncio. Cada foto se revisa automáticamente: solo se aceptan fotos de interiores o fachadas, sin personas visibles."
+        },
+        {
+          "question": "¿Por qué debe verificarse mi cuenta de gestor?",
+          "answer": "La verificación (documento de identidad y selfie) tranquiliza a los viajeros y desbloquea la gestión de tus inmuebles: mensajería, gestión de reservas y insignia de confianza. Mientras la cuenta no esté verificada, las reservas de tus inmuebles las gestiona el administrador."
+        },
+        {
+          "question": "¿Cómo hago que mi anuncio sea más visible?",
+          "answer": "La suscripción Premium (5 000 XOF al mes) añade una insignia y coloca uno de tus anuncios entre los primeros resultados de tu mercado."
+        },
+        {
+          "question": "¿Cómo dejo una opinión después de una estancia?",
+          "answer": "Desde tu área de cliente puedes publicar una opinión por cada reserva confirmada. Tu nota y tu comentario se mostrarán en la ficha del alojamiento para ayudar a otros viajeros."
+        }
+      ]
+    },
+    "cta": {
+      "title": "¿Tienes otra pregunta?",
+      "text": "Nuestro equipo está siempre disponible para ayudarte.",
+      "button": "Contáctanos"
+    },
+    "footer": {
+      "desc": "Alquiler directo en África Occidental.<br/>Miles de alojamientos, una sola plataforma.",
+      "usefulLinks": "Enlaces útiles",
+      "markets": "Nuestros mercados",
+      "moreCountries": "y 7 países más",
+      "mobileApp": "Aplicación móvil",
+      "appText": "Descarga nuestra aplicación<br/>para una mejor experiencia.",
+      "availableOn": "Disponible en",
+      "newsletter": "Boletín",
+      "newsletterText": "Mantente al día de nuestras novedades<br/>y ofertas exclusivas.",
+      "emailPlaceholder": "Tu dirección de correo electrónico",
+      "send": "Enviar",
+      "copyright": "© 2025 Linkhoo. Todos los derechos reservados.",
+      "legal": "Aviso legal",
+      "terms": "Términos de uso",
+      "privacy": "Política de privacidad",
+      "help": "Ayuda",
+      "countries": {
+        "senegal": "Senegal",
+        "ivoryCoast": "Costa de Marfil",
+        "benin": "Benín",
+        "mali": "Mali"
+      },
+      "appStoreLabel": "Descargar en",
+      "googlePlayLabel": "Disponible en"
+    }
   },
   "reservations": {
     "title": "Mis Reservas",
@@ -142,7 +287,9 @@
   "footer": {
     "about": "Acerca de nosotros",
     "services": "Servicios",
-    "contact": "Contacto",
+    "contact": {
+      "email": "contact@linkhoo.com"
+    },
     "privacy": "Política de privacidad",
     "terms": "Términos de uso",
     "copyright": "© 2026 Ileyha Location. Todos los derechos reservados.",
@@ -173,7 +320,6 @@
     "contactLink": "Contacto",
     "legalNotice": "Aviso legal",
     "privacyLink": "Política de privacidad",
-    "legal": "Información legal",
     "landing": {
       "platformDescription": "Linkhoo es la plataforma de alquiler directo en África Occidental. Miles de alojamientos para todas tus estancias.",
       "mobileAppTitle": "Aplicación móvil",
@@ -203,9 +349,6 @@
     "logo": {
       "alt": "Logo de Linkhoo"
     },
-    "contact": {
-      "email": "contact@linkhoo.com"
-    },
     "social": {
       "facebook": "https://www.facebook.com/",
       "x": "https://x.com/",
@@ -234,5 +377,151 @@
     "title": "Escapadas de fin de semana",
     "subtitle": "Ideas de viaje para escaparte un fin de semana.",
     "weekendAt": "Fin de semana en {{place}}"
+  },
+  "about": {
+    "topbar": {
+      "message": "¡Alquila con confianza, en todo el África Occidental!",
+      "countries": "12 países disponibles",
+      "close": "Cerrar"
+    },
+    "nav": {
+      "home": "Inicio",
+      "about": "Acerca de",
+      "contact": "Contacto",
+      "search": "Buscar",
+      "menu": "Menú",
+      "mainNav": "Navegación principal",
+      "brandAria": "Linkhoo — inicio",
+      "breadcrumb": "Ruta de navegación"
+    },
+    "hero": {
+      "badge": "Acerca de Linkhoo",
+      "title": "Nuestra misión: <br/>hacer que alquilar sea <brand>más sencillo,</brand> <br/><grad>más seguro</grad> y <grad>más cercano</grad> a ti<dot>.</dot>",
+      "lead1": "Linkhoo es una plataforma de alquiler directo que conecta a viajeros con propietarios en todo el África Occidental.",
+      "lead2": "Creemos que una buena estancia empieza con una buena experiencia de búsqueda. Por eso ponemos la tecnología al servicio de la hospitalidad y la confianza.",
+      "cta": "Descubre nuestros mercados",
+      "hand": "Estancias<br/>que acercan<br/>a las personas",
+      "statValue": "12 países",
+      "statLabel": "en el África Occidental"
+    },
+    "pillars": {
+      "missionTitle": "Nuestra misión",
+      "missionText": "Simplificar el acceso al alquiler de viviendas y alojamientos en el África Occidental, ofreciendo una plataforma fiable, intuitiva y accesible para todos.",
+      "visionTitle": "Nuestra visión",
+      "visionText": "Convertirnos en la referencia del alquiler directo en el África Occidental, conectando a millones de personas con alojamientos de calidad, en cualquier lugar y momento.",
+      "valuesTitle": "Nuestros valores",
+      "values": [
+        "Confianza",
+        "Cercanía",
+        "Simplicidad",
+        "Innovación",
+        "Impacto local"
+      ]
+    },
+    "stats": {
+      "badge": "En pocas cifras",
+      "title": "Una plataforma que <brand>crece contigo</brand>",
+      "lead": "Desde nuestro lanzamiento, acompañamos a miles de viajeros y propietarios en todo el África Occidental.",
+      "join": "Únete a nosotros",
+      "items": [
+        {
+          "value": "12",
+          "label": "países cubiertos",
+          "note": "De Senegal a Togo"
+        },
+        {
+          "value": "+ 50 000",
+          "label": "viajeros",
+          "note": "confían en nosotros"
+        },
+        {
+          "value": "+ 10 000",
+          "label": "anuncios",
+          "note": "de viviendas y habitaciones"
+        },
+        {
+          "value": "99%",
+          "label": "de satisfacción",
+          "note": "de nuestros usuarios"
+        }
+      ]
+    },
+    "why": {
+      "badge": "¿Por qué elegir Linkhoo?",
+      "title": "Una <brand>experiencia única</brand>",
+      "lead1": "No somos solo una plataforma de alquiler.",
+      "lead2": "Somos tu aliado para estancias exitosas.",
+      "benefits": [
+        {
+          "title": "Pago seguro",
+          "text": "Transacciones protegidas y fiables."
+        },
+        {
+          "title": "Reserva instantánea",
+          "text": "Reserva en unos clics, sin estrés."
+        },
+        {
+          "title": "Atención reactiva",
+          "text": "Un equipo que te escucha 24/7."
+        },
+        {
+          "title": "Arraigo local",
+          "text": "Un conocimiento único de los mercados de la región."
+        }
+      ]
+    },
+    "team": {
+      "badge": "Nuestro equipo",
+      "title": "Apasionados detrás de <brand>Linkhoo</brand>",
+      "lead": "Somos un equipo de jóvenes profesionales unidos por una misma ambición: hacer del alquiler directo una realidad accesible para todos en el África Occidental.",
+      "hand": "Juntos por un<br/>África Occidental<br/>más conectada",
+      "values": [
+        {
+          "title": "Innovación",
+          "text": "a diario"
+        },
+        {
+          "title": "Cercanía",
+          "text": "con nuestros usuarios"
+        },
+        {
+          "title": "Compromiso",
+          "text": "con la región"
+        },
+        {
+          "title": "Excelencia",
+          "text": "en todo lo que hacemos"
+        }
+      ]
+    },
+    "cta": {
+      "title": "¿Listo para encontrar tu próxima estancia?",
+      "text": "Únete a miles de viajeros y descubre alojamientos únicos en el África Occidental.",
+      "button": "Explorar anuncios"
+    },
+    "footer": {
+      "desc": "Alquiler directo en África Occidental.<br/>Miles de alojamientos, una sola plataforma.",
+      "usefulLinks": "Enlaces útiles",
+      "markets": "Nuestros mercados",
+      "moreCountries": "y 7 países más",
+      "mobileApp": "Aplicación móvil",
+      "appText": "Descarga nuestra aplicación<br/>para una mejor experiencia.",
+      "availableOn": "Disponible en",
+      "newsletter": "Boletín",
+      "newsletterText": "Mantente al día de nuestras novedades<br/>y ofertas exclusivas.",
+      "emailPlaceholder": "Tu dirección de correo electrónico",
+      "send": "Enviar",
+      "copyright": "© 2025 Linkhoo. Todos los derechos reservados.",
+      "legal": "Aviso legal",
+      "terms": "Términos de uso",
+      "privacy": "Política de privacidad",
+      "help": "Ayuda",
+      "countries": {
+        "senegal": "Senegal",
+        "ivoryCoast": "Costa de Marfil",
+        "benin": "Benín",
+        "mali": "Mali"
+      }
+    }
   }
 }

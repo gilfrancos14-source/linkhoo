@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import Icon from '../landing/icons';
+import LanguageSwitcher from '../LanguageSwitcher';
 
 export default function AboutHeader() {
+  const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -11,7 +14,7 @@ export default function AboutHeader() {
   return (
     <header className="ab-header">
       <div className="ab-header__inner">
-        <Link to="/" className="ab-brand" aria-label="Linkhoo – accueil">
+        <Link to="/" className="ab-brand" aria-label={t('about.nav.brandAria')}>
           <img
             className="ab-brand__logo"
             src="/logo.jpg"
@@ -22,15 +25,15 @@ export default function AboutHeader() {
           />
         </Link>
 
-        <nav className="ab-nav" aria-label="Navigation principale">
+        <nav className="ab-nav" aria-label={t('about.nav.mainNav')}>
           <Link to="/" className="ab-nav__link">
-            Accueil
+            {t('navigation.home')}
           </Link>
           <Link to="/a-propos" className="ab-nav__link ab-nav__link--active" aria-current="page">
-            À propos
+            {t('navigation.about')}
           </Link>
           <Link to="/contact" className="ab-nav__link">
-            Contact
+            {t('navigation.contact')}
           </Link>
         </nav>
 
@@ -38,15 +41,16 @@ export default function AboutHeader() {
           <button
             type="button"
             className="ab-icon-btn"
-            aria-label="Rechercher"
+            aria-label={t('about.nav.search')}
             onClick={goToLanding}
           >
             <Icon name="search" size={20} />
           </button>
+          <LanguageSwitcher compact />
           <button
             type="button"
             className="ab-icon-btn"
-            aria-label="Menu"
+            aria-label={t('about.nav.menu')}
             aria-expanded={menuOpen}
             aria-controls="ab-mobile-menu"
             onClick={() => setMenuOpen((open) => !open)}
@@ -61,13 +65,13 @@ export default function AboutHeader() {
         className={`ab-mobile-menu${menuOpen ? ' ab-mobile-menu--open' : ''}`}
       >
         <Link to="/" onClick={() => setMenuOpen(false)}>
-          Accueil
+          {t('navigation.home')}
         </Link>
         <Link to="/a-propos" className="ab-mobile-menu__active" onClick={() => setMenuOpen(false)}>
-          À propos
+          {t('navigation.about')}
         </Link>
         <Link to="/contact" onClick={() => setMenuOpen(false)}>
-          Contact
+          {t('navigation.contact')}
         </Link>
       </div>
     </header>

@@ -1,34 +1,38 @@
+import { Trans, useTranslation } from 'react-i18next';
 import Icon from '../landing/icons';
-import { CONTACT_HIGHLIGHTS } from './data';
+import { CONTACT_HIGHLIGHT_ICONS } from './data';
+
+interface ContactHighlight {
+  title: string;
+  text: string;
+}
 
 export default function ContactHero() {
+  const { t } = useTranslation();
+  const highlights = t('contact.highlights', { returnObjects: true }) as unknown as ContactHighlight[];
+
   return (
     <section className="ct-hero">
       <div className="ct-hero__inner">
         <div className="ct-hero__content">
           <span className="ct-badge">
             <Icon name="send" size={11} />
-            Nous contacter
+            {t('contact.hero.badge')}
           </span>
 
           <h1 className="ct-hero__title">
-            Une question ?
+            {t('contact.hero.title1')}
             <br />
-            <span>Nous sommes là pour vous !</span>
+            <span>{t('contact.hero.title2')}</span>
           </h1>
 
-          <p className="ct-hero__lead">
-            Notre équipe est à votre écoute pour répondre à toutes vos questions, vous accompagner
-            et vous aider à profiter pleinement de Linkhoo. Que ce soit pour une demande
-            d&apos;information, un souci technique ou une suggestion, n&apos;hésitez pas à nous
-            écrire !
-          </p>
+          <p className="ct-hero__lead">{t('contact.hero.lead')}</p>
 
           <ul className="ct-highlights" role="list">
-            {CONTACT_HIGHLIGHTS.map((item) => (
+            {highlights.map((item, index) => (
               <li key={item.title}>
                 <span className="ct-highlights__icon">
-                  <Icon name={item.icon} size={18} />
+                  <Icon name={CONTACT_HIGHLIGHT_ICONS[index] ?? 'house'} size={18} />
                 </span>
                 <h3>{item.title}</h3>
                 <p>{item.text}</p>
@@ -40,9 +44,7 @@ export default function ContactHero() {
         <div className="ct-hero__visual">
           <div className="ct-hero__script">
             <p>
-              Votre satisfaction
-              <br />
-              est notre priorité
+              <Trans i18nKey="contact.hero.script" components={{ br: <br /> }} />
             </p>
             <svg viewBox="0 0 110 14" fill="none" aria-hidden="true">
               <path d="M2 12C30 4 70 3 108 3" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
@@ -58,9 +60,7 @@ export default function ContactHero() {
               <Icon name="messagesSquare" size={16} />
             </span>
             <p>
-              Nous répondons
-              <br />
-              en moins de 24h
+              <Trans i18nKey="contact.hero.reply" components={{ br: <br /> }} />
             </p>
           </div>
         </div>

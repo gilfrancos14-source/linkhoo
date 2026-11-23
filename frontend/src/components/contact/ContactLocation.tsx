@@ -1,6 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import Icon from '../landing/icons';
 
 export default function ContactLocation() {
+  const { t } = useTranslation();
+
   return (
     <div className="ct-card ct-location">
       <div className="ct-card__head ct-card__head--compact">
@@ -8,17 +11,15 @@ export default function ContactLocation() {
           <Icon name="mapPin" size={12} />
         </span>
         <div>
-          <h2 className="ct-location__title">Notre localisation</h2>
-          <p className="ct-location__lead">
-            Nous sommes basés à Cotonou, au Bénin. N&apos;hésitez pas à venir nous rendre visite !
-          </p>
+          <h2 className="ct-location__title">{t('contact.location.title')}</h2>
+          <p className="ct-location__lead">{t('contact.location.lead')}</p>
         </div>
       </div>
 
       <div className="ct-map">
         <iframe
           className="ct-map__frame"
-          title="Carte Google Maps — Linkhoo à Cotonou, Bénin"
+          title={t('contact.location.mapTitle')}
           src="https://www.google.com/maps?q=Cotonou,+B%C3%A9nin&z=13&hl=fr&output=embed"
           loading="lazy"
           allowFullScreen
@@ -32,7 +33,7 @@ export default function ContactLocation() {
           rel="noopener noreferrer"
         >
           <Icon name="map" size={11} />
-          Voir sur Google Maps
+          {t('contact.location.mapLink')}
         </a>
       </div>
     </div>

@@ -1,44 +1,43 @@
 import { Link } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import Icon from '../landing/icons';
 
 export default function AboutHero() {
+  const { t } = useTranslation();
+
   return (
     <section className="ab-hero">
       <div className="ab-hero__inner">
         <div className="ab-hero__content">
-          <nav className="ab-breadcrumb" aria-label="Fil d'Ariane">
+          <nav className="ab-breadcrumb" aria-label={t('about.nav.breadcrumb')}>
             <Icon name="house" size={14} />
-            <Link to="/">Accueil</Link>
+            <Link to="/">{t('navigation.home')}</Link>
             <Icon name="chevronRight" size={12} />
-            <span>À propos</span>
+            <span>{t('navigation.about')}</span>
           </nav>
 
-          <span className="ab-badge">À propos de Linkhoo</span>
+          <span className="ab-badge">{t('about.hero.badge')}</span>
 
           <h1 className="ab-hero__title">
-            Notre mission :{' '}
-            <br />
-            rendre la location <span className="ab-hero__title-brand">plus simple,</span>
-            {' '}
-            <br />
-            <span className="ab-hero__title-gradient">plus sûre</span> et{' '}
-            <span className="ab-hero__title-gradient">plus proche</span> de vous
-            <span className="ab-hero__title-dot">.</span>
+            <Trans
+              i18nKey="about.hero.title"
+              components={{
+                br: <br />,
+                brand: <span className="ab-hero__title-brand" />,
+                grad: <span className="ab-hero__title-gradient" />,
+                dot: <span className="ab-hero__title-dot" />,
+              }}
+            />
           </h1>
 
           <p className="ab-hero__lead">
-            <span>
-              Linkhoo est une plateforme de location directe qui connecte les voyageurs aux
-              propriétaires, partout en Afrique de l&apos;Ouest.
-            </span>
+            <span>{t('about.hero.lead1')}</span>
             <br />
-            Nous croyons qu&apos;un bon séjour commence par une bonne expérience de recherche.
-            C&apos;est pourquoi nous mettons la technologie au service de l&apos;hospitalité et de la
-            confiance.
+            {t('about.hero.lead2')}
           </p>
 
           <Link to="/#ou-louer" className="ab-btn ab-btn--primary ab-hero__cta">
-            Découvrir nos marchés
+            {t('about.hero.cta')}
             <Icon name="arrowRight" size={16} />
           </Link>
         </div>
@@ -49,11 +48,7 @@ export default function AboutHero() {
 
           <div className="ab-hero__photo">
             <p className="ab-hand ab-hero__hand">
-              Des séjours
-              <br />
-              qui rapprochent
-              <br />
-              les gens
+              <Trans i18nKey="about.hero.hand" components={{ br: <br /> }} />
               <svg
                 className="ab-hero__underline"
                 width="90"
@@ -76,8 +71,8 @@ export default function AboutHero() {
                 <Icon name="house" size={24} />
               </span>
               <div>
-                <p className="ab-hero__badge-value">12 pays</p>
-                <p className="ab-hero__badge-label">en Afrique de l&apos;Ouest</p>
+                <p className="ab-hero__badge-value">{t('about.hero.statValue')}</p>
+                <p className="ab-hero__badge-label">{t('about.hero.statLabel')}</p>
               </div>
             </div>
           </div>

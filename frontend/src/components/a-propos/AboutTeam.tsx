@@ -1,25 +1,34 @@
+import { Trans, useTranslation } from 'react-i18next';
 import Icon from '../landing/icons';
-import { ABOUT_TEAM_VALUES } from './data';
+import { ABOUT_TEAM_ICONS } from './data';
+
+interface AboutTeamValue {
+  title: string;
+  text: string;
+}
 
 export default function AboutTeam() {
+  const { t } = useTranslation();
+  const values = t('about.team.values', { returnObjects: true }) as unknown as AboutTeamValue[];
+
   return (
     <section className="ab-team">
       <div className="ab-team__inner">
         <div className="ab-team__content">
-          <span className="ab-badge">Notre équipe</span>
+          <span className="ab-badge">{t('about.team.badge')}</span>
           <h2 className="ab-section-title">
-            Des passionnés derrière <span className="ab-text-brand">Linkhoo</span>
+            <Trans
+              i18nKey="about.team.title"
+              components={{ brand: <span className="ab-text-brand" /> }}
+            />
           </h2>
-          <p className="ab-section-lead">
-            Nous sommes une équipe de jeunes professionnels, unis par une même ambition : faire de
-            la location directe une réalité accessible à tous en Afrique de l&apos;Ouest.
-          </p>
+          <p className="ab-section-lead">{t('about.team.lead')}</p>
 
           <ul className="ab-team__values" role="list">
-            {ABOUT_TEAM_VALUES.map((value) => (
+            {values.map((value, index) => (
               <li key={value.title}>
                 <span className="ab-team__icon">
-                  <Icon name={value.icon} size={20} />
+                  <Icon name={ABOUT_TEAM_ICONS[index] ?? 'house'} size={20} />
                 </span>
                 <p className="ab-team__value-title">{value.title}</p>
                 <p className="ab-team__value-text">{value.text}</p>
@@ -30,11 +39,7 @@ export default function AboutTeam() {
 
         <div className="ab-team__visual">
           <p className="ab-hand ab-team__hand">
-            Ensemble pour
-            <br />
-            l&apos;Afrique de l&apos;Ouest
-            <br />
-            plus connectée
+            <Trans i18nKey="about.team.hand" components={{ br: <br /> }} />
           </p>
         </div>
       </div>

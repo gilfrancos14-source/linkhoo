@@ -111,7 +111,152 @@
     "message": "Message",
     "send": "Envoyer",
     "success": "Message envoyé avec succès!",
-    "error": "Une erreur est survenue, veuillez réessayer."
+    "error": "Une erreur est survenue, veuillez réessayer.",
+    "topbar": {
+      "message": "Louez en toute confiance, partout en Afrique de l'Ouest !",
+      "countries": "12 pays disponibles",
+      "close": "Fermer"
+    },
+    "header": {
+      "home": "Accueil",
+      "about": "À propos",
+      "contact": "Contact",
+      "search": "Rechercher",
+      "menu": "Menu",
+      "mainNav": "Navigation principale",
+      "brandAria": "Linkhoo – accueil",
+      "breadcrumb": "Fil d'Ariane"
+    },
+    "hero": {
+      "badge": "Nous contacter",
+      "title1": "Une question ?",
+      "title2": "Nous sommes là pour vous !",
+      "lead": "Notre équipe est à votre écoute pour répondre à toutes vos questions, vous accompagner et vous aider à profiter pleinement de Linkhoo. Que ce soit pour une demande d'information, un souci technique ou une suggestion, n'hésitez pas à nous écrire !",
+      "script": "Votre satisfaction<br/>est notre priorité",
+      "reply": "Nous répondons<br/>en moins de 24h"
+    },
+    "highlights": [
+      {
+        "title": "Réponse rapide",
+        "text": "Sous 24h, en général"
+      },
+      {
+        "title": "Équipe disponible",
+        "text": "7j/7, de 8h à 22h"
+      },
+      {
+        "title": "Aide personnalisée",
+        "text": "Par email, téléphone ou via le formulaire"
+      }
+    ],
+    "form": {
+      "title": "Envoyez-nous un message",
+      "subtitle": "Remplissez le formulaire ci-dessous et nous vous répondrons rapidement.",
+      "fullName": "Nom complet",
+      "namePlaceholder": "Votre nom complet",
+      "email": "Email",
+      "subject": "Objet",
+      "subjectPlaceholder": "Choisissez un sujet",
+      "subjects": {
+        "general": "Question générale",
+        "publish": "Publier une annonce",
+        "technical": "Problème technique",
+        "payment": "Paiement",
+        "suggestion": "Suggestion"
+      },
+      "phone": "Téléphone",
+      "optional": "(optionnel)",
+      "phonePlaceholder": "Votre numéro de téléphone",
+      "message": "Votre message",
+      "messagePlaceholder": "Écrivez votre message ici...",
+      "labels": {
+        "idle": "Envoyer le message",
+        "sending": "Envoi en cours…",
+        "error": "Veuillez remplir les champs obligatoires",
+        "sent": "Message envoyé ✓",
+        "apiError": "Envoi impossible, veuillez réessayer."
+      }
+    },
+    "details": {
+      "title": "Nos coordonnées",
+      "lead": "Vous pouvez aussi nous contacter directement via les informations ci-dessous.",
+      "email": "Email",
+      "responseTime": "Réponse sous 24h",
+      "phone": "Téléphone",
+      "hours": "Lun - Ven : 8h - 22h",
+      "address": "Adresse",
+      "addressValue": "Cotonou, Bénin",
+      "headquarters": "Siège social de Linkhoo",
+      "socialTitle": "Suivez-nous",
+      "socialText": "Restez connecté avec nous sur les réseaux sociaux."
+    },
+    "location": {
+      "title": "Notre localisation",
+      "lead": "Nous sommes basés à Cotonou, au Bénin. N'hésitez pas à venir nous rendre visite !",
+      "mapTitle": "Carte Google Maps — Linkhoo à Cotonou, Bénin",
+      "mapLink": "Voir sur Google Maps"
+    },
+    "faq": {
+      "title": "Questions fréquentes",
+      "lead": "Vous avez une question ? Voici les réponses aux questions les plus courantes.",
+      "items": [
+        {
+          "question": "Comment réserver un logement sur Linkhoo ?",
+          "answer": "Choisissez votre pays, votre ville et vos dates, ouvrez la fiche du logement puis envoyez votre demande de réservation. Vous réglez le séjour en ligne au moment de la demande ; le gérant confirme ensuite la disponibilité. Si la demande est refusée ou annulée, le montant est remboursé intégralement. Vous pouvez aussi échanger avec le gérant via la messagerie intégrée."
+        },
+        {
+          "question": "Comment se règle le loyer ?",
+          "answer": "Le séjour se règle en ligne au moment de la demande, par mobile money via notre prestataire pawaPay. Linkhoo encaisse le montant et le reverse au gérant après le séjour. En cas de refus du gérant ou d’annulation, le remboursement est effectué à 97 % du montant (frais d’annulation de 3 %, partagés entre la plateforme et le gérant)."
+        },
+        {
+          "question": "Comment publier mon logement en tant que gérant ?",
+          "answer": "Créez un compte gérant, complétez la fiche du bien (ville, tarif, équipements, photos) puis publiez l’annonce. Chaque photo est contrôlée automatiquement : seules les photos d’intérieur ou de façade sont acceptées, sans personne visible."
+        },
+        {
+          "question": "Pourquoi mon compte gérant doit-il être vérifié ?",
+          "answer": "La vérification (pièce d’identité et selfie) rassure les voyageurs et débloque la gestion de vos biens : messagerie, traitement des réservations et badge de confiance. Tant que le compte n’est pas vérifié, les réservations de vos biens sont gérées par l’administrateur."
+        },
+        {
+          "question": "Comment rendre mon annonce plus visible ?",
+          "answer": "L’abonnement Premium (5 000 XOF par mois) ajoute un badge et fait remonter une de vos annonces en tête des résultats sur votre marché."
+        },
+        {
+          "question": "Comment laisser un avis après un séjour ?",
+          "answer": "Depuis votre espace client, vous pouvez publier un avis une seule fois par réservation confirmée. Votre note et votre commentaire sont ensuite affichés sur la fiche du logement pour aider les autres voyageurs."
+        }
+      ]
+    },
+    "cta": {
+      "title": "Encore une question ?",
+      "text": "Notre équipe est toujours disponible pour vous aider.",
+      "button": "Nous contacter"
+    },
+    "footer": {
+      "desc": "La location directe en Afrique de l'Ouest.<br/>Des milliers de logements, une seule plateforme.",
+      "usefulLinks": "Liens utiles",
+      "markets": "Nos marchés",
+      "moreCountries": "et 7 autres pays",
+      "mobileApp": "Application mobile",
+      "appText": "Téléchargez notre application<br/>pour une meilleure expérience.",
+      "availableOn": "Disponible sur",
+      "newsletter": "Newsletter",
+      "newsletterText": "Restez informé de nos nouveautés<br/>et offres exclusives.",
+      "emailPlaceholder": "Votre adresse e-mail",
+      "send": "Envoyer",
+      "copyright": "© 2025 Linkhoo. Tous droits réservés.",
+      "legal": "Mentions légales",
+      "terms": "Conditions d'utilisation",
+      "privacy": "Politique de confidentialité",
+      "help": "Aide",
+      "countries": {
+        "senegal": "Sénégal",
+        "ivoryCoast": "Côte d'Ivoire",
+        "benin": "Bénin",
+        "mali": "Mali"
+      },
+      "appStoreLabel": "Télécharger sur",
+      "googlePlayLabel": "Disponible sur"
+    }
   },
   "reservations": {
     "title": "Mes Réservations",
@@ -147,7 +292,9 @@
   "footer": {
     "about": "À propos de nous",
     "services": "Services",
-    "contact": "Contact",
+    "contact": {
+      "email": "contact@linkhoo.com"
+    },
     "privacy": "Politique de confidentialité",
     "terms": "Conditions d'utilisation",
     "copyright": "© 2026 Ileyha Location. Tous droits réservés.",
@@ -178,7 +325,6 @@
     "contactLink": "Contact",
     "legalNotice": "Mentions légales",
     "privacyLink": "Politique de confidentialité",
-    "legal": "Informations légales",
     "landing": {
       "platformDescription": "Linkhoo est la plateforme de location directe en Afrique de l'Ouest. Des milliers de logements pour tous vos séjours.",
       "mobileAppTitle": "Application mobile",
@@ -208,9 +354,6 @@
     "logo": {
       "alt": "Logo Linkhoo"
     },
-    "contact": {
-      "email": "contact@linkhoo.com"
-    },
     "social": {
       "facebook": "https://www.facebook.com/",
       "x": "https://x.com/",
@@ -232,6 +375,152 @@
         "title": "Au Bénin, la location sans intermédiaire se démocratise",
         "date": "5 décembre 2025",
         "source": "lanouvelletribune.bj"
+      }
+    }
+  },
+  "about": {
+    "topbar": {
+      "message": "Louer en toute confiance, partout en Afrique de l'Ouest !",
+      "countries": "12 pays disponibles",
+      "close": "Fermer"
+    },
+    "nav": {
+      "home": "Accueil",
+      "about": "À propos",
+      "contact": "Contact",
+      "search": "Rechercher",
+      "menu": "Menu",
+      "mainNav": "Navigation principale",
+      "brandAria": "Linkhoo – accueil",
+      "breadcrumb": "Fil d'Ariane"
+    },
+    "hero": {
+      "badge": "À propos de Linkhoo",
+      "title": "Notre mission : <br/>rendre la location <brand>plus simple,</brand> <br/><grad>plus sûre</grad> et <grad>plus proche</grad> de vous<dot>.</dot>",
+      "lead1": "Linkhoo est une plateforme de location directe qui connecte les voyageurs aux propriétaires, partout en Afrique de l'Ouest.",
+      "lead2": "Nous croyons qu'un bon séjour commence par une bonne expérience de recherche. C'est pourquoi nous mettons la technologie au service de l'hospitalité et de la confiance.",
+      "cta": "Découvrir nos marchés",
+      "hand": "Des séjours<br/>qui rapprochent<br/>les gens",
+      "statValue": "12 pays",
+      "statLabel": "en Afrique de l'Ouest"
+    },
+    "pillars": {
+      "missionTitle": "Notre mission",
+      "missionText": "Simplifier l'accès à la location de logements et d'hébergements en Afrique de l'Ouest en offrant une plateforme fiable, intuitive et accessible à tous.",
+      "visionTitle": "Notre vision",
+      "visionText": "Devenir la référence de la location directe en Afrique de l'Ouest, en connectant des millions de personnes à des logements de qualité, partout et à tout moment.",
+      "valuesTitle": "Nos valeurs",
+      "values": [
+        "Confiance",
+        "Proximité",
+        "Simplicité",
+        "Innovation",
+        "Impact local"
+      ]
+    },
+    "stats": {
+      "badge": "En quelques chiffres",
+      "title": "Une plateforme qui <brand>grandit avec vous</brand>",
+      "lead": "Depuis notre lancement, nous accompagnons des milliers de voyageurs et de propriétaires à travers l'Afrique de l'Ouest.",
+      "join": "Nous rejoindre",
+      "items": [
+        {
+          "value": "12",
+          "label": "pays couverts",
+          "note": "Du Sénégal au Togo"
+        },
+        {
+          "value": "+ 50 000",
+          "label": "voyageurs",
+          "note": "nous font confiance"
+        },
+        {
+          "value": "+ 10 000",
+          "label": "annonces",
+          "note": "de logements et chambres"
+        },
+        {
+          "value": "99%",
+          "label": "de satisfaction",
+          "note": "de nos utilisateurs"
+        }
+      ]
+    },
+    "why": {
+      "badge": "Pourquoi choisir Linkhoo ?",
+      "title": "Une <brand>expérience unique</brand>",
+      "lead1": "Nous ne sommes pas juste une plateforme de location.",
+      "lead2": "Nous sommes votre allié pour des séjours réussis.",
+      "benefits": [
+        {
+          "title": "Paiement sécurisé",
+          "text": "Transactions protégées et fiables."
+        },
+        {
+          "title": "Réservation instantanée",
+          "text": "Réservez en quelques clics, sans stress."
+        },
+        {
+          "title": "Service client réactif",
+          "text": "Une équipe à votre écoute 24/7."
+        },
+        {
+          "title": "Ancrage local",
+          "text": "Une connaissance unique des marchés de la région."
+        }
+      ]
+    },
+    "team": {
+      "badge": "Notre équipe",
+      "title": "Des passionnés derrière <brand>Linkhoo</brand>",
+      "lead": "Nous sommes une équipe de jeunes professionnels, unis par une même ambition : faire de la location directe une réalité accessible à tous en Afrique de l'Ouest.",
+      "hand": "Ensemble pour<br/>l'Afrique de l'Ouest<br/>plus connectée",
+      "values": [
+        {
+          "title": "Innovation",
+          "text": "au quotidien"
+        },
+        {
+          "title": "Proximité",
+          "text": "avec nos utilisateurs"
+        },
+        {
+          "title": "Engagement",
+          "text": "pour la région"
+        },
+        {
+          "title": "Excellence",
+          "text": "dans tout ce que nous faisons"
+        }
+      ]
+    },
+    "cta": {
+      "title": "Prêt à trouver votre prochain séjour ?",
+      "text": "Rejoignez des milliers de voyageurs et découvrez des logements uniques en Afrique de l'Ouest.",
+      "button": "Explorer les annonces"
+    },
+    "footer": {
+      "desc": "La location directe en Afrique de l'Ouest.<br/>Des milliers de logements, une seule plateforme.",
+      "usefulLinks": "Liens utiles",
+      "markets": "Nos marchés",
+      "moreCountries": "et 7 autres pays",
+      "mobileApp": "Application mobile",
+      "appText": "Téléchargez notre application<br/>pour une meilleure expérience.",
+      "availableOn": "Disponible sur",
+      "newsletter": "Newsletter",
+      "newsletterText": "Restez informé de nos nouveautés<br/>et offres exclusives.",
+      "emailPlaceholder": "Votre adresse e-mail",
+      "send": "Envoyer",
+      "copyright": "© 2025 Linkhoo. Tous droits réservés.",
+      "legal": "Mentions légales",
+      "terms": "Conditions d'utilisation",
+      "privacy": "Politique de confidentialité",
+      "help": "Aide",
+      "countries": {
+        "senegal": "Sénégal",
+        "ivoryCoast": "Côte d'Ivoire",
+        "benin": "Bénin",
+        "mali": "Mali"
       }
     }
   }

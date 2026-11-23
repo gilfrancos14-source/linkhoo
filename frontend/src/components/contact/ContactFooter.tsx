@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
 import Icon from '../landing/icons';
 
 const SOCIALS = [
@@ -11,6 +12,9 @@ const SOCIALS = [
 ];
 
 export default function ContactFooter() {
+  const { t } = useTranslation();
+  const f = (key: string) => t(`contact.footer.${key}`);
+
   return (
     <footer className="ct-footer">
       <div className="ct-footer__inner">
@@ -21,9 +25,7 @@ export default function ContactFooter() {
               <span>Linkhoo</span>
             </Link>
             <p className="ct-footer__desc">
-              La location directe en Afrique de l&apos;Ouest.
-              <br />
-              Des milliers de logements, une seule plateforme.
+              <Trans i18nKey="contact.footer.desc" components={{ br: <br /> }} />
             </p>
             <div className="ct-footer__socials">
               {SOCIALS.map((social) => (
@@ -35,61 +37,43 @@ export default function ContactFooter() {
           </div>
 
           <div>
-            <h3>Liens utiles</h3>
+            <h3>{f('usefulLinks')}</h3>
             <ul className="ct-footer__list">
-              <li>
-                <Link to="/">Accueil</Link>
-              </li>
-              <li>
-                <Link to="/a-propos">À propos</Link>
-              </li>
-              <li>
-                <Link to="/contact">Contact</Link>
-              </li>
-              <li>
-                <Link to="/contact">FAQ</Link>
-              </li>
+              <li><Link to="/">{t('navigation.home')}</Link></li>
+              <li><Link to="/a-propos">{t('navigation.about')}</Link></li>
+              <li><Link to="/contact">{t('navigation.contact')}</Link></li>
+              <li><Link to="/contact">FAQ</Link></li>
             </ul>
           </div>
 
           <div>
-            <h3>Nos marchés</h3>
+            <h3>{f('markets')}</h3>
             <ul className="ct-footer__list">
-              <li>
-                <Link to="/sn">Sénégal</Link>
-              </li>
-              <li>
-                <Link to="/ci">Côte d&apos;Ivoire</Link>
-              </li>
-              <li>
-                <Link to="/bj">Bénin</Link>
-              </li>
-              <li>
-                <Link to="/ml">Mali</Link>
-              </li>
-              <li>+ 7 autres pays</li>
+              <li><Link to="/sn">{f('countries.senegal')}</Link></li>
+              <li><Link to="/ci">{f('countries.ivoryCoast')}</Link></li>
+              <li><Link to="/bj">{f('countries.benin')}</Link></li>
+              <li><Link to="/ml">{f('countries.mali')}</Link></li>
+              <li>{f('moreCountries')}</li>
             </ul>
           </div>
 
           <div>
-            <h3>Application mobile</h3>
+            <h3>{f('mobileApp')}</h3>
             <p className="ct-footer__text">
-              Téléchargez notre application
-              <br />
-              pour une meilleure expérience.
+              <Trans i18nKey="contact.footer.appText" components={{ br: <br /> }} />
             </p>
             <div className="ct-footer__stores">
               <span className="ct-store">
                 <Icon name="apple" size={14} />
                 <span>
-                  <small>Télécharger sur</small>
+                  <small>{f('appStoreLabel')}</small>
                   App Store
                 </span>
               </span>
               <span className="ct-store">
                 <Icon name="play" size={11} className="ct-store__play" />
                 <span>
-                  <small>Disponible sur</small>
+                  <small>{f('googlePlayLabel')}</small>
                   Google Play
                 </span>
               </span>
@@ -97,15 +81,13 @@ export default function ContactFooter() {
           </div>
 
           <div>
-            <h3>Newsletter</h3>
+            <h3>{f('newsletter')}</h3>
             <p className="ct-footer__text">
-              Restez informé de nos nouveautés
-              <br />
-              et offres exclusives.
+              <Trans i18nKey="contact.footer.newsletterText" components={{ br: <br /> }} />
             </p>
             <form className="ct-newsletter" onSubmit={(event) => event.preventDefault()}>
-              <input type="email" placeholder="Votre adresse e-mail" aria-label="Votre adresse e-mail" />
-              <button type="submit" aria-label="S'abonner">
+              <input type="email" placeholder={f('emailPlaceholder')} aria-label={f('emailPlaceholder')} />
+              <button type="submit" aria-label={f('send')}>
                 <Icon name="send" size={12} />
               </button>
             </form>
@@ -114,20 +96,12 @@ export default function ContactFooter() {
 
         <div className="ct-footer__bottom">
           <div>
-            <p>© 2025 Linkhoo. Tous droits réservés.</p>
+            <p>{f('copyright')}</p>
             <ul className="ct-footer__legal">
-              <li>
-                <Link to="/ci/mentions-legales">Mentions légales</Link>
-              </li>
-              <li>
-                <Link to="/ci/mentions-legales">Conditions d&apos;utilisation</Link>
-              </li>
-              <li>
-                <Link to="/ci/politique-de-confidentialite">Politique de confidentialité</Link>
-              </li>
-              <li>
-                <Link to="/contact">Aide</Link>
-              </li>
+              <li><Link to="/ci/mentions-legales">{f('legal')}</Link></li>
+              <li><Link to="/ci/mentions-legales">{f('terms')}</Link></li>
+              <li><Link to="/ci/politique-de-confidentialite">{f('privacy')}</Link></li>
+              <li><Link to="/contact">{f('help')}</Link></li>
             </ul>
           </div>
         </div>
