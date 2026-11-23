@@ -231,6 +231,25 @@ describe('RoleRouteGuard', () => {
     expect(mocks.bootstrap).toHaveBeenCalledTimes(1);
   });
 
+  it('affiche le refus géographique du serveur sans redirection ni retry', async () => {
+    mocks.isSignedIn = true;
+    const message =
+      'Accès refusé : votre position (Bénin) ne correspond pas au marché CI. Connectez-vous depuis le pays de votre marché.';
+    mocks.bootstrap.mockRejectedValue(
+      new ApiError(message, 403, {
+        code: 'GERANT_COUNTRY_MARKET_MISMATCH',
+        country: 'BJ',
+        market: 'CI',
+      }),
+    );
+
+    renderGuard('gerant', '/ci/protege');
+
+    const alert = await screen.findByRole('alert', {}, { timeout: 3000 });
+    expect(alert).toHaveTextContent('votre position (Bénin) ne correspond pas au marché CI');
+    expect(mocks.bootstrap).toHaveBeenCalledTimes(1);
+  });
+
   it('redirige vers /${market} quand VITE_CLERK_PUBLISHABLE_KEY est absente', async () => {
     vi.stubEnv('VITE_CLERK_PUBLISHABLE_KEY', '');
     vi.resetModules();

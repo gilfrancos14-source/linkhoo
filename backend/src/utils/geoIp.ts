@@ -3,8 +3,12 @@
  *
  * Utilise ip-api.com (45 req/min, aucun compte requis) avec un cache en
  * mémoire pour ne jamais dépasser le quota. En cas d'indisponibilité ou
- * d'IP invalide, retourne null SILENCIEUSEMENT : c'est un simple indice
- * affiché à l'admin, jamais un contrôle bloquant.
+ * d'IP invalide, retourne null silencieusement.
+ *
+ * Deux usages :
+ *  - indicateur pays dans le back-office (admin) ;
+ *  - contrôle au bootstrap gérant : un pays connu et incohérent avec le
+ *    marché bloque l'accès, un null est traité en fail-open et journalisé.
  */
 
 interface GeoResult {

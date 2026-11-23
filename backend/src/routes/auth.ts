@@ -4,8 +4,44 @@ import { supabaseAdmin } from '../config/supabase';
 import { bootstrapSchema, type AuthRole } from '../validations/auth';
 import { emailSchema } from '../validations/common';
 import { phoneMatchesMarket } from '../utils/phoneMarket';
+import { countryOfIp } from '../utils/geoIp';
 
 const router = Router();
+
+/**
+ * Contrôle géographique au bootstrap d'un compte gérant.
+ *
+ * L'IP vient de `req.ip` (fiable en production si TRUST_PROXY est configuré).
+ * Quand le pays ne peut pas être résolu (localhost, VPN, service ip-api
+ * indisponible), on autorise et on journalise : un contrôle de sécurité ne
+ * doit jamais reposer sur une information incertaine.
+ *
+ * @returns true si l'accès est autorisé, false si la réponse 403 a été envoyée.
+ */
+async function gerantCountryAllowed(req: Request, res: Response, market: string): Promise<boolean> {
+  const ip = req.ip ?? null;
+  const geo = await countryOfIp(ip);
+
+  if (!geo) {
+    console.warn(`[geo] Contrôle ignoré : pays inconnu pour ${ip ?? 'IP absente'} (marché ${market}).`);
+    return true;
+  }
+
+  if (geo.countryCode.toUpperCase() !== market.toUpperCase()) {
+    console.warn(
+      `[geo] Accès refusé : IP ${ip ?? '?'} localisée en ${geo.countryCode} alors que le marché est ${market}.`,
+    );
+    res.status(403).json({
+      error: `Accès refusé : votre position (${geo.country}) ne correspond pas au marché ${market}. Connectez-vous depuis le pays de votre marché.`,
+      code: 'GERANT_COUNTRY_MARKET_MISMATCH',
+      country: geo.countryCode,
+      market,
+    });
+    return false;
+  }
+
+  return true;
+}
 
 function getClerkClient() {
   return createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY! });
@@ -181,6 +217,9 @@ router.post('/bootstrap', async (req: Request, res: Response, next: NextFunction
         });
       }
 
+      // Le pays de l'IP doit correspondre au marché déclaré (nouvelle inscription).
+      if (!(await gerantCountryAllowed(req, res, market))) return;
+
       const { error } = await supabaseAdmin.from('gerants').insert({
         clerk_user_id: authUserId,
         email: identity.email,
@@ -200,6 +239,10 @@ router.post('/bootstrap', async (req: Request, res: Response, next: NextFunction
         role: 'gerant',
         market: existing.market,
       });
+    } else {
+      // Gérant existant : on compare au marché du profil (source de vérité),
+      // pas seulement à celui de l'URL.
+      if (!(await gerantCountryAllowed(req, res, existing.market))) return;
     }
 
     await setClerkRole(identity.clerk, authUserId, 'gerant');

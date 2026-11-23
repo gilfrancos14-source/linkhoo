@@ -18,6 +18,8 @@ const clerkUsers = vi.hoisted(() => ({
   updateUser: vi.fn(),
 }));
 
+const geoMock = vi.hoisted(() => ({ countryOfIp: vi.fn() }));
+
 vi.mock('../config/supabase', async () => {
   const helper = await import('../testHelpers/supertestApp');
   return helper.createSupabaseMock();
@@ -27,6 +29,8 @@ vi.mock('@clerk/backend', () => ({
   verifyToken: vi.fn(),
   createClerkClient: vi.fn(() => ({ users: clerkUsers })),
 }));
+
+vi.mock('../utils/geoIp', () => ({ countryOfIp: geoMock.countryOfIp }));
 
 const app = buildTestApp('/api/auth', authRouter, {
   middlewares: [requireClerkAuth],
@@ -51,6 +55,8 @@ function stubTables(tables: Partial<{ clients: FakeChain | FakeChain[]; gerants:
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Par défaut : pays inconnu → contrôle ignoré (fail-open).
+  geoMock.countryOfIp.mockResolvedValue(null);
   vi.mocked(verifyToken).mockImplementation(defaultVerifyToken);
   clerkUsers.getUser.mockResolvedValue(clerkUser);
   clerkUsers.updateUser.mockResolvedValue({});
@@ -337,5 +343,93 @@ describe('POST /api/auth/bootstrap', () => {
     expect(res.status).toBe(200);
     expect(res.body.role).toBe('gerant');
     expect(res.body.market).toBe('CI');
+  });
+
+  describe('contrôle géographique par IP', () => {
+    it('403 si le pays de l’IP ne correspond pas au marché à l’inscription', async () => {
+      geoMock.countryOfIp.mockResolvedValue({ countryCode: 'BJ', country: 'Bénin' });
+      const roleCheck = fakeChain({ data: null, error: null });
+      const existing = fakeChain({ data: null, error: null });
+      const inserted = fakeChain({ data: null, error: null });
+      stubTables({ gerants: [roleCheck, existing, inserted] });
+
+      const res = await request(app)
+        .post('/api/auth/bootstrap')
+        .set('Authorization', clerkBearer('user_1'))
+        .send({ role: 'gerant', market: 'CI' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('GERANT_COUNTRY_MARKET_MISMATCH');
+      expect(res.body.country).toBe('BJ');
+      expect(res.body.market).toBe('CI');
+      expect(res.body.error).toContain('ne correspond pas au marché CI');
+      expect(inserted.insert).not.toHaveBeenCalled();
+      expect(clerkUsers.updateUser).not.toHaveBeenCalled();
+    });
+
+    it('403 si le pays de l’IP ne correspond pas au marché du profil existant', async () => {
+      geoMock.countryOfIp.mockResolvedValue({ countryCode: 'SN', country: 'Sénégal' });
+      const roleCheck = fakeChain({ data: { id: 'g1' }, error: null });
+      const existing = fakeChain({ data: { id: 'g1', market: 'CI' }, error: null });
+      stubTables({ gerants: [roleCheck, existing] });
+
+      const res = await request(app)
+        .post('/api/auth/bootstrap')
+        .set('Authorization', clerkBearer('user_1'))
+        .send({ role: 'gerant', market: 'CI' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('GERANT_COUNTRY_MARKET_MISMATCH');
+      expect(clerkUsers.updateUser).not.toHaveBeenCalled();
+    });
+
+    it('201 si le pays de l’IP correspond au marché déclaré', async () => {
+      geoMock.countryOfIp.mockResolvedValue({ countryCode: 'CI', country: "Côte d'Ivoire" });
+      const roleCheck = fakeChain({ data: null, error: null });
+      const existing = fakeChain({ data: null, error: null });
+      const inserted = fakeChain({ data: null, error: null });
+      stubTables({ gerants: [roleCheck, existing, inserted] });
+
+      const res = await request(app)
+        .post('/api/auth/bootstrap')
+        .set('Authorization', clerkBearer('user_1'))
+        .send({ role: 'gerant', market: 'CI' });
+
+      expect(res.status).toBe(201);
+      expect(inserted.insert).toHaveBeenCalled();
+      expect(geoMock.countryOfIp).toHaveBeenCalled();
+    });
+
+    it('autorise (et journalise) quand le pays ne peut pas être résolu', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      geoMock.countryOfIp.mockResolvedValue(null);
+      const roleCheck = fakeChain({ data: { id: 'g1' }, error: null });
+      const existing = fakeChain({ data: { id: 'g1', market: 'CI' }, error: null });
+      stubTables({ gerants: [roleCheck, existing] });
+
+      const res = await request(app)
+        .post('/api/auth/bootstrap')
+        .set('Authorization', clerkBearer('user_1'))
+        .send({ role: 'gerant', market: 'CI' });
+
+      expect(res.status).toBe(200);
+      expect(warn).toHaveBeenCalled();
+      warn.mockRestore();
+    });
+
+    it('ne contrôle pas le pays pour un compte client', async () => {
+      const roleCheck = fakeChain({ data: null, error: null });
+      const existing = fakeChain({ data: null, error: null });
+      const inserted = fakeChain({ data: null, error: null });
+      stubTables({ clients: [roleCheck, existing, inserted] });
+
+      const res = await request(app)
+        .post('/api/auth/bootstrap')
+        .set('Authorization', clerkBearer('user_1'))
+        .send({ role: 'client', market: 'CI' });
+
+      expect(res.status).toBe(201);
+      expect(geoMock.countryOfIp).not.toHaveBeenCalled();
+    });
   });
 });
