@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Icon from './icons';
 import { SLIDES } from './data';
 
 export default function LandingSlider() {
+  const { t } = useTranslation();
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -17,17 +19,17 @@ export default function LandingSlider() {
   };
 
   return (
-    <section className="acc-slider" aria-roledescription="carrousel" aria-label="Séjours">
+    <section className="acc-slider" aria-roledescription="carrousel" aria-label={t('landing.slider.ariaLabel')}>
       <div className="acc-slider__bg" style={{ background: SLIDES[index] }} aria-hidden="true" />
       <div className="acc-container acc-slider__inner">
         <div className="acc-slider__content">
-          <p className="acc-slider__eyebrow">Découvrez l&apos;Afrique de l&apos;Ouest autrement</p>
-          <h2 className="acc-slider__title">Des séjours inoubliables vous attendent</h2>
+          <p className="acc-slider__eyebrow">{t('landing.slider.eyebrow')}</p>
+          <h2 className="acc-slider__title">{t('landing.slider.title')}</h2>
           <p className="acc-slider__desc">
-            Plages, villes, nature, culture... trouvez le logement parfait pour toutes vos envies.
+            {t('landing.slider.desc')}
           </p>
           <button type="button" className="acc-slider__cta">
-            Explorer maintenant
+            {t('landing.slider.cta')}
             <Icon name="arrowRight" size={16} />
           </button>
         </div>
@@ -36,7 +38,7 @@ export default function LandingSlider() {
       <button
         type="button"
         className="acc-slider__nav acc-slider__nav--prev"
-        aria-label="Précédent"
+        aria-label={t('landing.slider.prev')}
         onClick={() => go(index - 1)}
       >
         <Icon name="chevronLeft" size={20} />
@@ -44,7 +46,7 @@ export default function LandingSlider() {
       <button
         type="button"
         className="acc-slider__nav acc-slider__nav--next"
-        aria-label="Suivant"
+        aria-label={t('landing.slider.next')}
         onClick={() => go(index + 1)}
       >
         <Icon name="chevronRight" size={20} />
@@ -56,7 +58,7 @@ export default function LandingSlider() {
             key={slide}
             type="button"
             className={`acc-slider__dot${slide === index ? ' acc-slider__dot--active' : ''}`}
-            aria-label={`Slide ${slide + 1}`}
+            aria-label={t('landing.slider.slide', { index: slide + 1 })}
             aria-current={slide === index}
             onClick={() => go(slide)}
           />

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Icon from './icons';
 import { COUNTRIES, type Country } from './data';
 
@@ -8,6 +9,7 @@ interface LandingCountriesProps {
 }
 
 export default function LandingCountries({ country, onCountryChange }: LandingCountriesProps) {
+  const { t } = useTranslation();
   const loginSlug = country?.marketSlug ?? 'ci';
 
   return (
@@ -16,12 +18,11 @@ export default function LandingCountries({ country, onCountryChange }: LandingCo
         <div>
           <p className="acc-countries__eyebrow">
             <Icon name="mapPin" size={20} />
-            Où louer ?
+            {t('landing.countries.eyebrow')}
           </p>
-          <h2 className="acc-countries__title">Choisissez un Pays</h2>
+          <h2 className="acc-countries__title">{t('landing.countries.title')}</h2>
           <p className="acc-countries__desc">
-            Explorez nos marchés disponibles et trouvez le logement qu&apos;il vous faut dans votre
-            pays.
+            {t('landing.countries.desc')}
           </p>
 
           <Link to={`/${loginSlug}/login/gerant`} className="acc-manage-card">
@@ -29,9 +30,9 @@ export default function LandingCountries({ country, onCountryChange }: LandingCo
               <Icon name="userRoundCog" size={24} />
             </span>
             <span className="acc-manage-card__text">
-              <span className="acc-manage-card__brand">Connectez-vous</span>{' '}
-              <b>pour gérer votre marché</b>
-              <small>Accédez à vos annonces, statistiques et plus encore.</small>
+              <span className="acc-manage-card__brand">{t('landing.countries.manageBrand')}</span>{' '}
+              <b>{t('landing.countries.manageBold')}</b>
+              <small>{t('landing.countries.manageSmall')}</small>
             </span>
             <Icon name="chevronRight" size={16} />
           </Link>
@@ -63,7 +64,7 @@ export default function LandingCountries({ country, onCountryChange }: LandingCo
               to={`/${country.marketSlug ?? country.code.toLowerCase()}`}
               className="acc-country-continue"
             >
-              Continuer vers {country.label}
+              {t('landing.countries.continue', { country: country.label })}
               <Icon name="arrowRight" size={16} aria-hidden="true" />
             </Link>
           )}

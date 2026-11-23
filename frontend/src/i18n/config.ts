@@ -22,8 +22,9 @@ i18n
         translation: esTranslations
       }
     },
-    lng: 'fr',  // Langue par défaut
-    fallbackLng: 'fr',  // Langue de fallback si une traduction manque
+    // Pas de `lng` figé : le LanguageDetector peut appliquer la langue
+    // enregistrée dans localStorage (ou celle du navigateur) au chargement.
+    fallbackLng: 'fr',  // Langue par défaut / de fallback si une traduction manque
     
     interpolation: {
       escapeValue: false  // React already escapes by default
@@ -34,5 +35,14 @@ i18n
       caches: ['localStorage']
     }
   });
+
+// Garde l'attribut lang du document synchronisé pour l'accessibilité et le SEO.
+const syncDocumentLang = (language: string) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = language.split('-')[0];
+  }
+};
+syncDocumentLang(i18n.language);
+i18n.on('languageChanged', syncDocumentLang);
 
 export default i18n;

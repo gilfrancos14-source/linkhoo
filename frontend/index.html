@@ -38,6 +38,10 @@
         var path = location.pathname.replace(/\/+$/, '') || '/';
         var slug = path === '/' ? 'ci' : path.slice(1);
         if (slug.indexOf('/') !== -1) return; // page profonde : on n'anticipe pas
+        // Miroir de MARKETS (src/config/markets.ts) : sans ce filtre, les pages
+        // racine (/contact, /a-propos, /login…) sont prises pour des marchés
+        // et génèrent des /api/...?market=CONTACT en 400.
+        if (!/^(ci|bj|sn|tg|cm|bf|cg|ga|gn|ml|ne|cd)$/.test(slug)) return;
         var market = slug.toUpperCase();
         var paths = path === '/'
           ? ['/categories?market=CI']
@@ -55,8 +59,12 @@
         paths.forEach(function (apiPath) {
           // La clé inclut /api : c'est la clé lue par takePrefetched() dans
           // src/lib/api.ts, qui reçoit des chemins sans préfixe.
-          map.set('/api' + apiPath, fetch('/api' + apiPath, { cache: 'no-cache' })
-            .then(function (res) { return res.ok ? res.json() : Promise.reject(new Error(String(res.status))); }));
+          var pending = fetch('/api' + apiPath, { cache: 'no-cache' })
+            .then(function (res) { return res.ok ? res.json() : Promise.reject(new Error(String(res.status))); });
+          // Personne ne consommera peut-être ce prefetch (navigation ailleurs) :
+          // on marque le rejet comme traité sans altérer la promesse stockée.
+          pending.catch(function () {});
+          map.set('/api' + apiPath, pending);
         });
         window.__LINKHOO_PREFETCH__ = map;
       } catch (_) { /* la page reste entièrement fonctionnelle sans ça */ }

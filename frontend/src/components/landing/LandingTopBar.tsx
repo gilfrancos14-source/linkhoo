@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import Icon from './icons';
 
@@ -8,6 +9,7 @@ import Icon from './icons';
  * coupure survient après un retour à la connexion.
  */
 export default function LandingTopBar() {
+  const { t } = useTranslation();
   const online = useOnlineStatus();
   const [dismissed, setDismissed] = useState(false);
 
@@ -22,7 +24,7 @@ export default function LandingTopBar() {
       <div className="acc-container acc-offline__inner">
         <p className="acc-offline__msg">
           <Icon name="wifiOff" size={16} />
-          <span>Vous êtes actuellement hors ligne. Certaines fonctionnalités peuvent être limitées.</span>
+          <span>{t('landing.topbar.offlineMessage')}</span>
         </p>
         <div className="acc-offline__actions">
           <button
@@ -31,12 +33,12 @@ export default function LandingTopBar() {
             onClick={() => window.location.reload()}
           >
             <Icon name="rotateCw" size={14} />
-            Réessayer
+            {t('landing.topbar.retry')}
           </button>
           <button
             type="button"
             className="acc-offline__close"
-            aria-label="Fermer"
+            aria-label={t('landing.topbar.close')}
             onClick={() => setDismissed(true)}
           >
             <Icon name="x" size={20} />

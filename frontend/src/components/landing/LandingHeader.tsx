@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Icon from './icons';
 import LanguageSwitcher from '../LanguageSwitcher';
 
 export interface HeaderItem {
   readonly label: string;
+  /** Clé i18next pour les libellés par défaut (les pages marchés gardent leur label). */
+  readonly labelKey?: string;
   readonly href: string;
   readonly active?: boolean;
 }
@@ -23,9 +26,9 @@ interface LandingHeaderProps {
 }
 
 const DEFAULT_ITEMS: readonly HeaderItem[] = [
-  { label: 'Accueil', href: '/', active: true },
-  { label: 'À propos', href: '/a-propos' },
-  { label: 'Contact', href: '/contact' },
+  { label: 'Accueil', labelKey: 'navigation.home', href: '/', active: true },
+  { label: 'À propos', labelKey: 'navigation.about', href: '/a-propos' },
+  { label: 'Contact', labelKey: 'navigation.contact', href: '/contact' },
 ];
 
 export default function LandingHeader({
@@ -35,7 +38,15 @@ export default function LandingHeader({
   onItemClick,
   account,
 }: LandingHeaderProps) {
+  const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Les pages marchés passent leurs propres libellés (déjà dans leur contexte) :
+  // seuls les éléments par défaut de la landing sont traduits ici.
+  const navItems = items.map((item) => ({
+    ...item,
+    label: item.labelKey ? t(item.labelKey) : item.label,
+  }));
 
   const navLink = (item: HeaderItem) =>
     `acc-nav__link${item.active ? ' acc-nav__link--active' : ''}`;
@@ -43,7 +54,7 @@ export default function LandingHeader({
   return (
     <header className="acc-header">
       <div className="acc-container acc-header__inner">
-        <Link to={brandTo} className="acc-brand" aria-label="Linkhoo — accueil">
+        <Link to={brandTo} className="acc-brand" aria-label={t('landing.header.brandAria')}>
           <img
             className="acc-brand__logo"
             src="/logo.jpg"
@@ -54,11 +65,11 @@ export default function LandingHeader({
           />
         </Link>
 
-        <nav className="acc-nav" aria-label="Navigation principale">
-          {items.map((item) =>
+        <nav className="acc-nav" aria-label={t('landing.header.mainNav')}>
+          {navItems.map((item) =>
             onItemClick ? (
               <button
-                key={item.label}
+                key={item.href}
                 type="button"
                 className={navLink(item)}
                 onClick={() => onItemClick(item.href)}
@@ -66,7 +77,7 @@ export default function LandingHeader({
                 {item.label}
               </button>
             ) : (
-              <Link key={item.label} to={item.href} className={navLink(item)}>
+              <Link key={item.href} to={item.href} className={navLink(item)}>
                 {item.label}
               </Link>
             ),
@@ -74,7 +85,7 @@ export default function LandingHeader({
         </nav>
 
         <div className="acc-header__actions">
-          <button type="button" className="acc-icon-btn" aria-label="Rechercher" onClick={onSearchClick}>
+          <button type="button" className="acc-icon-btn" aria-label={t('landing.header.searchAria')} onClick={onSearchClick}>
             <Icon name="search" size={24} />
           </button>
           {account && (
@@ -87,7 +98,7 @@ export default function LandingHeader({
           <button
             type="button"
             className="acc-icon-btn"
-            aria-label="Menu"
+            aria-label={t('landing.header.menuAria')}
             aria-expanded={menuOpen}
             aria-controls="acc-mobile-menu"
             onClick={() => setMenuOpen((open) => !open)}
@@ -101,10 +112,10 @@ export default function LandingHeader({
         id="acc-mobile-menu"
         className={`acc-mobile-menu${menuOpen ? ' acc-mobile-menu--open' : ''}`}
       >
-        {items.map((item) =>
+        {navItems.map((item) =>
           onItemClick ? (
             <button
-              key={item.label}
+              key={item.href}
               type="button"
               onClick={() => {
                 onItemClick(item.href);
@@ -114,7 +125,7 @@ export default function LandingHeader({
               {item.label}
             </button>
           ) : (
-            <Link key={item.label} to={item.href} onClick={() => setMenuOpen(false)}>
+            <Link key={item.href} to={item.href} onClick={() => setMenuOpen(false)}>
               {item.label}
             </Link>
           ),

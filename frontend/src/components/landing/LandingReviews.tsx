@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { apiReviews, type FeaturedReviewData } from '../../lib/api';
 import Icon from './icons';
 
@@ -9,15 +11,23 @@ function initialsOf(name: string): string {
   return (`${first.charAt(0)}${last.charAt(0)}`).toUpperCase() || '?';
 }
 
-function stayOf(review: FeaturedReviewData): string {
+function stayOf(review: FeaturedReviewData, t: TFunction): string {
   const room = review.room;
-  if (!room) return 'Séjour vérifié';
+  if (!room) return t('landing.reviews.verified');
   const city = room.ville?.trim();
-  if (city) return `Séjour à ${city}${room.market ? `, ${room.market}` : ''}`;
-  return room.title ? `Séjour — ${room.title}` : 'Séjour vérifié';
+  if (city) {
+    return t('landing.reviews.stayCity', {
+      city,
+      market: room.market ? `, ${room.market}` : '',
+    });
+  }
+  return room.title
+    ? t('landing.reviews.stayTitle', { title: room.title })
+    : t('landing.reviews.verified');
 }
 
 export default function LandingReviews() {
+  const { t } = useTranslation();
   const [reviews, setReviews] = useState<FeaturedReviewData[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
@@ -52,14 +62,14 @@ export default function LandingReviews() {
               <Icon name="messagesSquare" size={16} />
             </span>
             <div>
-              <h2 className="acc-reviews__title">Nos utilisateurs en parlent</h2>
+              <h2 className="acc-reviews__title">{t('landing.reviews.title')}</h2>
               <p className="acc-reviews__sub">
-                Découvrez les avis de nos voyageurs et de nos hôtes.
+                {t('landing.reviews.subtitle')}
               </p>
             </div>
           </div>
           <button type="button" className="acc-link acc-reviews__link">
-            Voir tous les avis
+            {t('landing.reviews.all')}
             <Icon name="arrowRight" size={14} />
           </button>
         </div>
@@ -88,7 +98,7 @@ export default function LandingReviews() {
                       <span className="acc-review__avatar">{initialsOf(review.client_name)}</span>
                       <div className="acc-review__identity">
                         <p className="acc-review__name">{review.client_name}</p>
-                        <p className="acc-review__stay">{stayOf(review)}</p>
+                        <p className="acc-review__stay">{stayOf(review, t)}</p>
                       </div>
                     </div>
                     <p className="acc-review__rating">

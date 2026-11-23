@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import Icon from './icons';
 import PWAControlPanel from '../PWAControlPanel';
@@ -19,7 +19,7 @@ const SOCIALS = [
 ];
 
 export default function LandingFooter() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const homePath = useHomePath();
   const { market } = useMarket();
   const [email, setEmail] = useState('');
@@ -27,6 +27,11 @@ export default function LandingFooter() {
   const [emailError, setEmailError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // La note est un état local : on la resynchronise quand la langue change.
+  useEffect(() => {
+    setNote(t('footer.newsletterNote'));
+  }, [i18n.language, t]);
 
   const handleNewsletter = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

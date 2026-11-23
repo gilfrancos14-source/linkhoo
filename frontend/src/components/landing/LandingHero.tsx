@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import Icon from './icons';
 import { COUNTRIES, type Country } from './data';
@@ -12,6 +13,7 @@ interface LandingHeroProps {
 }
 
 export default function LandingHero({ country, onCountryChange }: LandingHeroProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState('');
@@ -58,32 +60,31 @@ export default function LandingHero({ country, onCountryChange }: LandingHeroPro
         <AnimatedSection variants={slideInFromBottomVariants}>
             <div>
               <p className="acc-hero__eyebrow">
-                Location de chambres, appartements, villas et plus encore
+                {t('landing.hero.eyebrow')}
               </p>
-              <motion.h1 
+              <motion.h1
                 className="acc-hero__title"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
-                <span className="acc-hero__title-brand">Linkhoo</span> – La location directe en
-                Afrique de l&apos;Ouest
+                <span className="acc-hero__title-brand">{t('landing.hero.titleBrand')}</span>
+                {t('landing.hero.titleRest')}
               </motion.h1>
-              <motion.p 
+              <motion.p
                 className="acc-hero__sub"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
               >
-                Trouvez facilement le logement idéal pour vos séjours, vos voyages ou vos déplacements
-                professionnels.
+                {t('landing.hero.subtitle')}
               </motion.p>
             </div>
           </AnimatedSection>
 
-        <motion.form 
-          className="acc-hero-search" 
-          onSubmit={handleSubmit} 
+        <motion.form
+          className="acc-hero-search"
+          onSubmit={handleSubmit}
           role="search"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -92,11 +93,11 @@ export default function LandingHero({ country, onCountryChange }: LandingHeroPro
           <label className="acc-search-field" htmlFor="acc-search-keyword">
             <Icon name="search" size={20} />
             <span className="acc-search-field__body">
-              <span className="acc-search-field__label">Mot-clé</span>
+              <span className="acc-search-field__label">{t('landing.hero.keyword')}</span>
               <input
                 id="acc-search-keyword"
                 className="acc-search-field__input"
-                placeholder="Ex: villa, hôtel, plage..."
+                placeholder={t('landing.hero.keywordPlaceholder')}
                 value={keyword}
                 onChange={(event) => setKeyword(event.target.value)}
               />
@@ -106,14 +107,14 @@ export default function LandingHero({ country, onCountryChange }: LandingHeroPro
           <label className="acc-search-field" htmlFor="acc-search-category">
             <Icon name="layoutGrid" size={20} />
             <span className="acc-search-field__body">
-              <span className="acc-search-field__label">Catégorie</span>
+              <span className="acc-search-field__label">{t('landing.hero.category')}</span>
               <select
                 id="acc-search-category"
                 className="acc-search-field__select"
                 value={category}
                 onChange={(event) => setCategory(event.target.value)}
               >
-                <option value="">Toutes les catégories</option>
+                <option value="">{t('landing.hero.allCategories')}</option>
                 {categories.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.title}
@@ -132,7 +133,7 @@ export default function LandingHero({ country, onCountryChange }: LandingHeroPro
             )}
             <span className="acc-search-field__body">
               <span className="acc-search-field__label">
-                Pays <span className="acc-required">*</span>
+                {t('landing.hero.country')} <span className="acc-required">*</span>
               </span>
               <select
                 id="acc-search-country"
@@ -145,7 +146,7 @@ export default function LandingHero({ country, onCountryChange }: LandingHeroPro
                 }}
               >
                 <option value="" disabled>
-                  Choisir un pays
+                  {t('landing.hero.chooseCountry')}
                 </option>
                 {COUNTRIES.map((item) => (
                   <option key={item.code} value={item.code}>
@@ -157,7 +158,7 @@ export default function LandingHero({ country, onCountryChange }: LandingHeroPro
             <Icon name="chevronDown" size={16} />
           </label>
 
-          <button type="submit" className="acc-search-submit" aria-label="Rechercher">
+          <button type="submit" className="acc-search-submit" aria-label={t('landing.hero.searchAria')}>
             <Icon name="search" size={24} />
           </button>
         </motion.form>
