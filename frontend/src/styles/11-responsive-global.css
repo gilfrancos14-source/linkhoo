@@ -206,6 +206,16 @@
   min-height: 100dvh;
 }
 
+/* Pages légales hébergées sous la barre de navigation du marché
+   (MarketLegalLayout) : l'en-tête est dans le flux et colle en haut, il n'y a
+   donc plus de hauteur fixe à réserver. */
+.maquette-shell > .page-legal {
+  flex: 1;
+  padding-top: 2.5rem;
+  min-height: 0;
+  background: #fff;
+}
+
 .page-legal__back {
   display: inline-flex;
   align-items: center;

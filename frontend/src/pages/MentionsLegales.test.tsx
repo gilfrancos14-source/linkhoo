@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { MarketProvider } from '../contexts/MarketContext';
@@ -90,7 +90,15 @@ describe('MentionsLegales', () => {
   it('relie la politique de confidentialité depuis la section données personnelles', () => {
     renderMentions('/bj/mentions-legales');
 
-    const link = screen.getByRole('link', { name: 'Politique de confidentialité' });
+    // Le pied de page reprend aussi ce lien : on cible la section légale.
+    const section = screen
+      .getByRole('heading', { level: 2, name: '4. Données personnelles' })
+      .closest('section');
+    expect(section).not.toBeNull();
+
+    const link = within(section as HTMLElement).getByRole('link', {
+      name: 'Politique de confidentialité',
+    });
     expect(link).toHaveAttribute('href', '/bj/politique-de-confidentialite');
   });
 

@@ -135,6 +135,11 @@ function MarketContent() {
   const isClientSpace = /\/compte(\/|$)/.test(pathname) || /\/messages(\/|$)/.test(pathname) || /\/avis(\/|$)/.test(pathname);
   // La recherche porte le footer éditorial de la page d'accueil.
   const isSearchPage = /\/recherche(\/|$)/.test(pathname);
+  // Pages légales : elles portent la barre de navigation de l'accueil du
+  // marché (MarketLegalLayout), pas l'en-tête générique du site.
+  const isLegalPage =
+    /\/mentions-legales(\/|$)/.test(pathname) ||
+    /\/politique-de-confidentialite(\/|$)/.test(pathname);
   // La fiche chambre reproduit la maquette HabiCI : elle embarque son propre
   // en-tête, son pied de page et sa navigation mobile.
   const isRoomDetail = /\/chambre(\/|$)/.test(pathname);
@@ -153,7 +158,7 @@ function MarketContent() {
   return (
     <>
       {!isMaquetteHome && !isRoomDetail && <OfflineBanner />}
-      {!hideChrome && !isSearchPage && <Header />}
+      {!hideChrome && !isSearchPage && !isLegalPage && <Header />}
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           <Route path="/" element={<MaquettePage />} />
@@ -228,8 +233,8 @@ function MarketContent() {
         </Routes>
       </Suspense>
       {!hideChrome && <ClientNotificationBanner />}
-      {!hideChrome && !isSearchPage && <Footer />}
-      {!hideChrome && <BackToTop />}
+      {!hideChrome && !isSearchPage && !isLegalPage && <Footer />}
+      {!hideChrome && !isLegalPage && <BackToTop />}
     </>
   );
 }
