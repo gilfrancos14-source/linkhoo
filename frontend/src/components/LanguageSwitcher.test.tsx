@@ -7,7 +7,14 @@ const i18nMock = vi.hoisted(() => ({
 }));
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ i18n: i18nMock, t: (key: string) => key }),
+  useTranslation: () => ({
+    i18n: i18nMock,
+    t: (key: string) =>
+      ({
+        'landing.language.choose': 'Choisir la langue',
+        'landing.language.interfaceTitle': "Langue de l'interface",
+      })[key] ?? key,
+  }),
 }));
 
 import LanguageSwitcher from './LanguageSwitcher';

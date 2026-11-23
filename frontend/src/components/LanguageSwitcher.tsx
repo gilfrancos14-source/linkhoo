@@ -13,7 +13,7 @@ const LANGUAGES = [
 ];
 
 const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ compact = false }) => {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -48,7 +48,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ compact = false }) 
         <button
           type="button"
           className={`language-globe-btn${open ? ' is-open' : ''}`}
-          aria-label="Choisir la langue"
+          aria-label={t('landing.language.choose')}
           aria-haspopup="menu"
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
@@ -59,8 +59,8 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ compact = false }) 
         </button>
 
         {open && (
-          <div className="language-globe-menu" role="menu" aria-label="Choisir la langue">
-            <span className="language-globe-menu__title">Langue de l&apos;interface</span>
+          <div className="language-globe-menu" role="menu" aria-label={t('landing.language.choose')}>
+            <span className="language-globe-menu__title">{t('landing.language.interfaceTitle')}</span>
             {LANGUAGES.map((lang) => {
               const active = i18n.language === lang.code;
               return (
@@ -94,7 +94,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ compact = false }) 
           value={i18n.language}
           onChange={(e) => handleLanguageChange(e.target.value)}
           className="language-select"
-          aria-label="Choisir la langue"
+          aria-label={t('landing.language.choose')}
         >
           {LANGUAGES.map((lang) => (
             <option key={lang.code} value={lang.code}>

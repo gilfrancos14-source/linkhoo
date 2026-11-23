@@ -125,6 +125,23 @@ describe('GET /api/rooms', () => {
     expect(publicRooms.range).toHaveBeenCalledWith(0, 999);
   });
 
+  it('200 : applique la traduction demandée par lang=en', async () => {
+    publicRooms = fakeChain({ data: [{ id: 'r1', title: 'Studio Français' }], error: null });
+    stubPublic(publicRooms);
+    stubTables({
+      translations: fakeChain({
+        data: [{ entity_id: 'r1', field: 'title', value: 'French Studio' }],
+        error: null,
+      }),
+    });
+
+    const res = await request(app).get('/api/rooms?lang=en');
+
+    expect(res.status).toBe(200);
+    expect(res.body[0].title).toBe('French Studio');
+    expect(supabaseAdmin.from).toHaveBeenCalledWith('translations');
+  });
+
   it('400 si prix_min dépasse prix_max', async () => {
     const res = await request(app).get('/api/rooms?prix_min=50000&prix_max=10000');
     expect(res.status).toBe(400);

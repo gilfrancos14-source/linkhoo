@@ -22,7 +22,9 @@
     "optimize:images": "node scripts/optimize-images.mjs",
     "model:preload": "node scripts/modelPreload.mjs",
     "clip:bench": "node scripts/clipBench.mjs",
-    "clip:calibrate": "node scripts/clipCalibrate.mjs"
+    "clip:calibrate": "node scripts/clipCalibrate.mjs",
+    "i18n:preload": "node scripts/i18nModelPreload.mjs",
+    "i18n:worker": "node scripts/translationWorker.mjs"
   },
   "dependencies": {
     "@clerk/backend": "^3.27.0",

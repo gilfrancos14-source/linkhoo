@@ -129,5 +129,32 @@ services:
     ports:
       - "127.0.0.1:3004:3001"
 
+  # Traduction asynchrone des contenus (chambres) avec OPUS-MT.
+  # Une seule instance, un job à la fois : aucun pic CPU pendant les saves.
+  translator:
+    image: ilehya-backend:${IMAGE_TAG:-latest}
+    container_name: ilehya-translator
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.prod
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ilehya}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-ilehya}
+      I18N_CACHE_DIR: /app/i18n-model
+    command: ["node", "scripts/translationWorker.mjs"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 2G
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
 volumes:
   ilehya_pgdata:

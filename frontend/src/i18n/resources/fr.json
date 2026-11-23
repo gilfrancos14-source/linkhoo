@@ -1,4 +1,62 @@
 {
+  "landing": {
+    "topbar": {
+      "offlineMessage": "Vous êtes actuellement hors ligne. Certaines fonctionnalités peuvent être limitées.",
+      "retry": "Réessayer",
+      "close": "Fermer"
+    },
+    "header": {
+      "brandAria": "Linkhoo — accueil",
+      "searchAria": "Rechercher",
+      "menuAria": "Menu",
+      "mainNav": "Navigation principale"
+    },
+    "hero": {
+      "eyebrow": "Location de chambres, appartements, villas et plus encore",
+      "titleBrand": "Linkhoo",
+      "titleRest": " – La location directe en Afrique de l'Ouest",
+      "subtitle": "Trouvez facilement le logement idéal pour vos séjours, vos voyages ou vos déplacements professionnels.",
+      "keyword": "Mot-clé",
+      "keywordPlaceholder": "Ex: villa, hôtel, plage...",
+      "category": "Catégorie",
+      "allCategories": "Toutes les catégories",
+      "country": "Pays",
+      "chooseCountry": "Choisir un pays",
+      "searchAria": "Rechercher"
+    },
+    "countries": {
+      "eyebrow": "Où louer ?",
+      "title": "Choisissez un Pays",
+      "desc": "Explorez nos marchés disponibles et trouvez le logement qu'il vous faut dans votre pays.",
+      "manageBrand": "Connectez-vous",
+      "manageBold": "pour gérer votre marché",
+      "manageSmall": "Accédez à vos annonces, statistiques et plus encore.",
+      "continue": "Continuer vers {{country}}"
+    },
+    "slider": {
+      "ariaLabel": "Séjours",
+      "eyebrow": "Découvrez l'Afrique de l'Ouest autrement",
+      "title": "Des séjours inoubliables vous attendent",
+      "desc": "Plages, villes, nature, culture... trouvez le logement parfait pour toutes vos envies.",
+      "cta": "Explorer maintenant",
+      "prev": "Précédent",
+      "next": "Suivant",
+      "slide": "Slide {{index}}"
+    },
+    "reviews": {
+      "title": "Nos utilisateurs en parlent",
+      "subtitle": "Découvrez les avis de nos voyageurs et de nos hôtes.",
+      "all": "Voir tous les avis",
+      "verified": "Séjour vérifié",
+      "stayCity": "Séjour à {{city}}{{market}}",
+      "stayTitle": "Séjour — {{title}}"
+    },
+    "backToTop": "Haut de page",
+    "language": {
+      "choose": "Choisir la langue",
+      "interfaceTitle": "Langue de l'interface"
+    }
+  },
   "navigation": {
     "home": "Accueil",
     "services": "Services",

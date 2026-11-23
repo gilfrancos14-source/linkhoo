@@ -12,6 +12,11 @@ import {
   roomUpdateSchema,
 } from '../validations/room';
 import { isPlatformImageUrl } from '../validations/imageUrl';
+import {
+  attachTranslations,
+  enqueueTranslations,
+  resolveLocale,
+} from '../i18n/translations';
 import { fetchAllRows } from '../utils/fetchAll';
 import { normalizeCity } from '../utils/city';
 import { isPremiumActive } from '../utils/premium';
@@ -187,7 +192,7 @@ router.get('/popular', async (req: Request, res: Response, next: NextFunction) =
       .slice(0, Math.max(0, remaining));
 
     const result = [...popular, ...topBooked].slice(0, 6);
-    res.json(result);
+    res.json(await attachTranslations(result, 'room', resolveLocale(req.query.lang)));
   } catch (err) {
     next(err);
   }
@@ -200,6 +205,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       return res.status(400).json({ error: 'Paramètres invalides' });
     }
     const filters = parsedQuery.data;
+    const locale = resolveLocale(req.query.lang);
 
     if (filters.page === undefined && filters.limit === undefined) {
       const rowsPromise = fetchAllRows<any>((from, to) => {
@@ -215,7 +221,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       });
       const premiumPromise = loadGerantSignals();
       const [data, signals] = await Promise.all([rowsPromise, premiumPromise]);
-      return res.json(rankRows(data, signals));
+      return res.json(await attachTranslations(rankRows(data, signals), 'room', locale));
     }
 
     const page = filters.page ?? 1;
@@ -252,7 +258,12 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         ? stampGerantFlags(rows ?? [], signals)
         : rankRows(rows ?? [], signals).slice(offset, offset + limit);
 
-    res.json({ items, total: count ?? 0, page, limit });
+    res.json({
+      items: await attachTranslations(items, 'room', locale),
+      total: count ?? 0,
+      page,
+      limit,
+    });
   } catch (err) {
     next(err);
   }
@@ -266,6 +277,7 @@ router.get('/available', async (req: Request, res: Response, next: NextFunction)
     }
 
     const { market, arrivee, depart, ville, quartier, category, prix_min, prix_max, q } = parsedQuery.data;
+    const locale = resolveLocale(req.query.lang);
     const normalizedVille = ville ? normalizeCity(ville) : null;
 
     const overlapping = await fetchAllRows<{ room_id: string | null }>((from, to) =>
@@ -301,19 +313,22 @@ router.get('/available', async (req: Request, res: Response, next: NextFunction)
     const [rooms, signals] = await Promise.all([roomsPromise, premiumPromise]);
 
     const available = rooms.filter((room) => !blockedIds.has(room.id));
+    const send = async (rows: any[]) => {
+      res.json(await attachTranslations(rows, 'room', locale));
+    };
 
     if (!normalizedVille) {
-      res.json(rankAvailableRows(available, signals));
+      await send(rankAvailableRows(available, signals));
       return;
     }
 
     const exact = available.filter((room) => normalizeCity(room.ville) === normalizedVille);
     if (exact.length > 0) {
-      res.json(rankAvailableRows(exact, signals));
+      await send(rankAvailableRows(exact, signals));
       return;
     }
 
-    res.json(
+    await send(
       rankAvailableRows(
         available.filter((room) => {
           const v = normalizeCity(room.ville);
@@ -444,8 +459,9 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       }
     }
 
+    const [localized] = await attachTranslations([data], 'room', resolveLocale(req.query.lang));
     res.json({
-      ...data,
+      ...localized,
       gerant,
       gerant_premium: !!data.gerant_id && signals.premiumIds.has(data.gerant_id),
       gerant_verified: !!data.gerant_id && signals.verifiedIds.has(data.gerant_id),
@@ -485,6 +501,8 @@ router.post('/', requireClerkAuth, async (req: Request, res: Response, next: Nex
       .select(ROOM_COLUMNS)
       .single();
     if (error) throw error;
+    // Traduction asynchrone : on répond tout de suite, le worker s'en charge.
+    if (data?.id) void enqueueTranslations('room', data.id, payload);
     res.status(201).json(data);
   } catch (err) {
     next(err);
@@ -560,6 +578,7 @@ router.put('/:id', requireClerkAuth, async (req: Request, res: Response, next: N
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Chambre introuvable' });
+    void enqueueTranslations('room', data.id, data as Record<string, unknown>);
     res.json(data);
   } catch (err) {
     next(err);

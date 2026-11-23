@@ -58,6 +58,14 @@ RUN mkdir -p /app/clip-model \
     node scripts/modelPreload.mjs \
  && chown -R node:node /app/clip-model
 
+# Modèles OPUS-MT pour la traduction asynchrone des contenus (fr → en/es et
+# retour pour la détection des traductions à revoir). Préchargés au build :
+# aucun téléchargement réseau au démarrage du worker.
+ENV I18N_CACHE_DIR=/app/i18n-model
+RUN mkdir -p /app/i18n-model \
+ && I18N_CACHE_DIR=/app/i18n-model node scripts/i18nModelPreload.mjs \
+ && chown -R node:node /app/i18n-model
+
 USER node
 EXPOSE 3001
 

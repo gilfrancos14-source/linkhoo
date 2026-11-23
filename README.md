@@ -114,6 +114,17 @@ Deux dossiers sous `STORAGE_DIR` (défaut `./storage`, production
 - `verification-docs/` : pièces justificatives, privées, servies par l'API via
   une URL signée HMAC avec expiration (`/api/media/verification-docs/…?exp=…&sig=…`).
 
+## Traduction des contenus (i18n)
+
+Les textes de l'interface vivent dans `frontend/src/i18n/resources/*.json`. Les textes **de la base** (chambres) sont traduits en arrière-plan par un worker OPUS-MT (`backend/scripts/translationWorker.mjs`, licence Apache-2.0) :
+
+- l'API accepte `?lang=fr|en|es` et renvoie les champs traduits, avec repli sur le français ;
+- l'enregistrement répond immédiatement et dépose un job dans `translation_jobs` ;
+- le worker traduit un job à la fois, protège montants/noms propres, et place les traductions douteuses (aller-retour FR→EN→FR trop différent) dans le statut `review` ;
+- le frontend ajoute `lang=` à ses requêtes et l'inclut dans la clé de cache.
+
+Les modèles sont préchargés dans l'image au build (`npm run i18n:preload`). En production, le service `translator` du compose tourne avec 1 CPU / 2 Go.
+
 ## Production
 
 Le runbook complet (préparation du VPS, DNS, TLS, migrations, sauvegardes,

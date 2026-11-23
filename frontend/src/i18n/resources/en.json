@@ -1,4 +1,62 @@
 {
+  "landing": {
+    "topbar": {
+      "offlineMessage": "You are currently offline. Some features may be limited.",
+      "retry": "Retry",
+      "close": "Close"
+    },
+    "header": {
+      "brandAria": "Linkhoo — back to home",
+      "searchAria": "Search",
+      "menuAria": "Menu",
+      "mainNav": "Main navigation"
+    },
+    "hero": {
+      "eyebrow": "Rooms, apartments, villas and more",
+      "titleBrand": "Linkhoo",
+      "titleRest": " – Direct rental in West Africa",
+      "subtitle": "Easily find the ideal place for your stays, trips or business travel.",
+      "keyword": "Keyword",
+      "keywordPlaceholder": "e.g. villa, hotel, beach...",
+      "category": "Category",
+      "allCategories": "All categories",
+      "country": "Country",
+      "chooseCountry": "Choose a country",
+      "searchAria": "Search"
+    },
+    "countries": {
+      "eyebrow": "Where to rent?",
+      "title": "Choose a country",
+      "desc": "Explore our available markets and find the right place for you in your country.",
+      "manageBrand": "Sign in",
+      "manageBold": "to manage your market",
+      "manageSmall": "Access your listings, statistics and more.",
+      "continue": "Continue to {{country}}"
+    },
+    "slider": {
+      "ariaLabel": "Stays",
+      "eyebrow": "Discover West Africa differently",
+      "title": "Unforgettable stays await you",
+      "desc": "Beaches, cities, nature, culture... find the perfect place for every desire.",
+      "cta": "Explore now",
+      "prev": "Previous",
+      "next": "Next",
+      "slide": "Slide {{index}}"
+    },
+    "reviews": {
+      "title": "What our users say",
+      "subtitle": "Discover reviews from our travelers and hosts.",
+      "all": "See all reviews",
+      "verified": "Verified stay",
+      "stayCity": "Stay in {{city}}{{market}}",
+      "stayTitle": "Stay — {{title}}"
+    },
+    "backToTop": "Back to top",
+    "language": {
+      "choose": "Choose language",
+      "interfaceTitle": "Interface language"
+    }
+  },
   "navigation": {
     "home": "Home",
     "services": "Services",

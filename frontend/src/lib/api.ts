@@ -1,6 +1,18 @@
 import type { MarketCode } from '../config/markets';
+import i18n from '../i18n/config';
 
 import type { DureeUnite } from './duration';
+
+/**
+ * Les contenus traduits sont servis par l'API selon `?lang=`. La langue fait
+ * aussi partie de la clé de cache : sans ça, un visiteur anglophone recevrait
+ * le français mis en cache par un autre visiteur.
+ */
+function withLang(path: string): string {
+  const lang = i18n.language?.split('-')[0];
+  if (lang !== 'en' && lang !== 'es') return path;
+  return `${path}${path.includes('?') ? '&' : '?'}lang=${lang}`;
+}
 
 export const API_BASE = '/api';
 
@@ -273,7 +285,7 @@ export const apiRooms = {
   // `fresh: true` contourne le cache mémoire : réservé aux écrans de gestion
   // (back-office) qui doivent refléter l'état exact de la base au montage.
   list: (market?: string, opts?: { fresh?: boolean }) => {
-    const path = market ? `/rooms?market=${market}` : '/rooms';
+    const path = withLang(market ? `/rooms?market=${market}` : '/rooms');
     if (opts?.fresh) return request<RoomData[]>(path, { cache: 'no-cache' });
     return cachedGet<RoomData[]>(path);
   },
@@ -293,17 +305,21 @@ export const apiRooms = {
     if (params.q) search.set('q', params.q);
     if (params.page !== undefined) search.set('page', String(params.page));
     if (params.limit !== undefined) search.set('limit', String(params.limit));
+    const lang = i18n.language?.split('-')[0];
+    if (lang === 'en' || lang === 'es') search.set('lang', lang);
     const qs = search.toString();
     return cachedGet<RoomListPage>(`/rooms${qs ? `?${qs}` : ''}`);
   },
   listMine: () => request<RoomData[]>('/rooms/mine'),
-  getPopular: (market: string) => cachedGet<RoomData[]>(`/rooms/popular?market=${market}`),
+  getPopular: (market: string) => cachedGet<RoomData[]>(withLang(`/rooms/popular?market=${market}`)),
   listAvailable: (market: string, arrivee: string, depart: string, ville?: string) =>
     request<RoomData[]>(
-      `/rooms/available?market=${market}&arrivee=${arrivee}&depart=${depart}` +
-        (ville ? `&ville=${encodeURIComponent(ville)}` : '')
+      withLang(
+        `/rooms/available?market=${market}&arrivee=${arrivee}&depart=${depart}` +
+          (ville ? `&ville=${encodeURIComponent(ville)}` : '')
+      )
     ),
-  get: (id: string) => request<RoomData>(`/rooms/${id}`, { public: true }),
+  get: (id: string) => request<RoomData>(withLang(`/rooms/${id}`), { public: true }),
   villes: (market?: string) =>
     request<string[]>(market ? `/rooms/villes?market=${market}` : '/rooms/villes', { public: true }),
   quartiers: (market?: string) =>

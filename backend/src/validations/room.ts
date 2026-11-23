@@ -100,6 +100,7 @@ export const roomListQuerySchema = z
     q: z.string().trim().min(1).max(100).optional(),
     page: z.coerce.number().int().min(1).max(100000).optional(),
     limit: z.coerce.number().int().min(1).max(100).optional(),
+    lang: z.enum(['fr', 'en', 'es']).optional(),
   })
   .refine((data) => data.prix_min === undefined || data.prix_max === undefined || data.prix_min <= data.prix_max, {
     message: 'prix_min doit être inférieur ou égal à prix_max',

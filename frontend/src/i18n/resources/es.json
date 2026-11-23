@@ -1,4 +1,62 @@
 {
+  "landing": {
+    "topbar": {
+      "offlineMessage": "Estás sin conexión. Algunas funciones pueden estar limitadas.",
+      "retry": "Reintentar",
+      "close": "Cerrar"
+    },
+    "header": {
+      "brandAria": "Linkhoo — volver al inicio",
+      "searchAria": "Buscar",
+      "menuAria": "Menú",
+      "mainNav": "Navegación principal"
+    },
+    "hero": {
+      "eyebrow": "Habitaciones, apartamentos, villas y mucho más",
+      "titleBrand": "Linkhoo",
+      "titleRest": " – El alquiler directo en África Occidental",
+      "subtitle": "Encuentra fácilmente el alojamiento ideal para tus estancias, viajes o desplazamientos de trabajo.",
+      "keyword": "Palabra clave",
+      "keywordPlaceholder": "p. ej.: villa, hotel, playa...",
+      "category": "Categoría",
+      "allCategories": "Todas las categorías",
+      "country": "País",
+      "chooseCountry": "Elige un país",
+      "searchAria": "Buscar"
+    },
+    "countries": {
+      "eyebrow": "¿Dónde alquilar?",
+      "title": "Elige un país",
+      "desc": "Explora nuestros mercados disponibles y encuentra el alojamiento que necesitas en tu país.",
+      "manageBrand": "Inicia sesión",
+      "manageBold": "para gestionar tu mercado",
+      "manageSmall": "Accede a tus anuncios, estadísticas y mucho más.",
+      "continue": "Continuar a {{country}}"
+    },
+    "slider": {
+      "ariaLabel": "Estancias",
+      "eyebrow": "Descubre África Occidental de otra forma",
+      "title": "Te esperan estancias inolvidables",
+      "desc": "Playas, ciudades, naturaleza, cultura... encuentra el alojamiento perfecto para todo lo que te apetece.",
+      "cta": "Explorar ahora",
+      "prev": "Anterior",
+      "next": "Siguiente",
+      "slide": "Diapositiva {{index}}"
+    },
+    "reviews": {
+      "title": "Nuestros usuarios opinan",
+      "subtitle": "Descubre las opiniones de nuestros viajeros y anfitriones.",
+      "all": "Ver todas las opiniones",
+      "verified": "Estancia verificada",
+      "stayCity": "Estancia en {{city}}{{market}}",
+      "stayTitle": "Estancia — {{title}}"
+    },
+    "backToTop": "Volver arriba",
+    "language": {
+      "choose": "Elegir idioma",
+      "interfaceTitle": "Idioma de la interfaz"
+    }
+  },
   "navigation": {
     "home": "Inicio",
     "services": "Servicios",

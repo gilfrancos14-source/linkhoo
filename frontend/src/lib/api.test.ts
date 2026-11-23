@@ -210,6 +210,30 @@ describe('request', () => {
   });
 });
 
+describe('contenus traduits', () => {
+  it('ajoute ?lang= et garde un cache distinct par langue', async () => {
+    const i18n = (await import('../i18n/config')).default;
+    await i18n.changeLanguage('en');
+    fetchMock.mockImplementation(() => Promise.resolve(jsonResponse([])));
+    try {
+      await api.apiRooms.list('CI');
+      expect(lastCall().url).toBe('/api/rooms?market=CI&lang=en');
+
+      // Une seconde requête en anglais doit être servie par le cache.
+      await api.apiRooms.list('CI');
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+
+      // Après changement de langue, une nouvelle requête est nécessaire.
+      await i18n.changeLanguage('fr');
+      await api.apiRooms.list('CI');
+      expect(lastCall().url).toBe('/api/rooms?market=CI');
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally {
+      await i18n.changeLanguage('fr');
+    }
+  });
+});
+
 describe('parseJsonBody', () => {
   it('retourne undefined sur une 204', async () => {
     const res = new Response(null, { status: 204 });
