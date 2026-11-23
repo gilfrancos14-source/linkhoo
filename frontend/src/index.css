@@ -15,6 +15,8 @@
 @import "./styles/12-touch-and-forms.css";
 @import "./styles/28-landing-accueil.css";
 @import "./styles/31-maquette.css";
+/* Écran de maintenance minimaliste (ErrorBoundary) — global : remplace tout le site. */
+@import "./styles/49-maintenance.css";
 
 /* Dashboard client : il dépend du moteur de couches de Tailwind (@layer base
    pour le rappel de bordures, @layer components pour ses règles locales), donc

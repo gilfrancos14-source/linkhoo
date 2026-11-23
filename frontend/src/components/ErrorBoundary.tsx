@@ -20,6 +20,29 @@ function isChunkLoadError(error: unknown): boolean {
   );
 }
 
+/** Icône unique, en trait fin, pour rester autonome (aucun import applicatif). */
+function StatusIcon({ update }: { update: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" aria-hidden="true" focusable="false">
+      {update ? (
+        <path
+          d="M12 3.5 13.6 9a2 2 0 0 0 1.4 1.4l5.5 1.6-5.5 1.6A2 2 0 0 0 13.6 15L12 20.5 10.4 15a2 2 0 0 0-1.4-1.4L3.5 12l5.5-1.6A2 2 0 0 0 10.4 9L12 3.5Z"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+        />
+      ) : (
+        <path
+          d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94L14.7 6.3Z"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+        />
+      )}
+    </svg>
+  );
+}
+
 export default class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
@@ -50,18 +73,38 @@ export default class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       const { isChunkError } = this.state;
       return (
-        <main className="error-page">
-          <div className="container">
-            <h1>{isChunkError ? 'Mise à jour du site' : 'Une erreur est survenue'}</h1>
-            <p>
+        <main className="status-page">
+          <div className="status-page__inner">
+            <div className="status-page__icon" aria-hidden="true">
+              <StatusIcon update={isChunkError} />
+            </div>
+
+            <p className="status-page__eyebrow">
+              {isChunkError ? 'Mise à jour' : 'Maintenance'}
+            </p>
+
+            <h1 className="status-page__title">
+              {isChunkError ? 'Mise à jour du site' : 'Une erreur est survenue'}
+            </h1>
+
+            <p className="status-page__desc">
               {isChunkError
-                ? 'Une nouvelle version du site vient d\'être publiée. Rechargez la page pour continuer.'
+                ? "Une nouvelle version du site vient d'être publiée. Rechargez la page pour continuer."
                 : 'Nous nous excusons pour ce désagrément. Veuillez réessayer ultérieurement.'}
             </p>
-            <button type="button" className="error-page__link" onClick={this.handleRetry}>
-              {isChunkError ? 'Recharger la page' : 'Réessayer'}
-            </button>
-            <a href="/" className="error-page__link">Retour à l'accueil</a>
+
+            <div className="status-page__actions">
+              <button
+                type="button"
+                className="status-page__btn status-page__btn--primary"
+                onClick={this.handleRetry}
+              >
+                {isChunkError ? 'Recharger la page' : 'Réessayer'}
+              </button>
+              <a href="/" className="status-page__btn status-page__btn--secondary">
+                Retour à l'accueil
+              </a>
+            </div>
           </div>
         </main>
       );
