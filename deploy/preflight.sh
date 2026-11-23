@@ -76,7 +76,7 @@ if [ -f "$ENV_FILE" ]; then
   ok "backend/.env.prod présent"
   MISSING=""
   for var in CLERK_SECRET_KEY ADMIN_JWT_SECRET PII_ENCRYPTION_KEY STORAGE_SIGNING_SECRET \
-             PAWAPAY_API_KEY PAWAPAY_MERCHANT_ID APP_PUBLIC_URL ALLOWED_ORIGINS TRUST_PROXY; do
+             PAWAPAY_API_KEY PAWAPAY_MERCHANT_ID APP_PUBLIC_URL ALLOWED_ORIGINS TRUST_PROXY STORAGE_PUBLIC_BASE_URL; do
     value=$(grep -E "^${var}=" "$ENV_FILE" | head -n1 | cut -d= -f2- || true)
     if [ -z "$value" ] || [ "$value" = "LE-DOMAINE.FR" ]; then MISSING="$MISSING $var"; fi
   done

@@ -82,6 +82,12 @@ Deux mécanismes évitent les doublons entre instances :
 Sans `REDIS_URL` (dev mono-instance), on retombe sur le comportement
 historique : compteurs en mémoire, une instance = leader.
 
+Le service **`translator`** (une seule instance, 1 CPU / 2 Go) traduit en
+arrière-plan les contenus de la base avec OPUS-MT (Apache-2.0) : il lit la file
+`translation_jobs`, écrit dans `translations`, et classe les traductions
+douteuses dans l'écran admin « Traductions ». `deploy.sh` le démarre avec les
+autres services.
+
 ### Cache des réponses API publiques
 
 Nginx met en cache pour **30 secondes** les GET publics et non personnalisés :
