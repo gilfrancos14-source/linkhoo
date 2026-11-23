@@ -136,7 +136,7 @@ export default function LandingFooter() {
                 aria-label={t('footer.newsletterSubscribe')}
                 disabled={submitting}
               >
-                <Icon name="send" size={12} />
+                <Icon name="send" size={16} />
               </button>
             </form>
             {(emailError || submitError) && (

@@ -88,7 +88,7 @@ export default function ContactFooter() {
             <form className="ct-newsletter" onSubmit={(event) => event.preventDefault()}>
               <input type="email" placeholder={f('emailPlaceholder')} aria-label={f('emailPlaceholder')} />
               <button type="submit" aria-label={f('send')}>
-                <Icon name="send" size={12} />
+                <Icon name="send" size={16} />
               </button>
             </form>
           </div>

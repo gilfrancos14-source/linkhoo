@@ -1145,39 +1145,40 @@
   line-height: 1.2;
 }
 
+/* Même modèle que le champ de la page À propos : fond blanc, bouton carré. */
 .ct-newsletter {
   display: flex;
   width: 100%;
-  max-width: 182px;
-  height: 25px;
-  margin-top: 9px;
+  height: 36px;
+  margin-top: 12px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 6px;
 }
 
 .ct-newsletter input {
   flex: 1;
   min-width: 0;
-  padding: 0 10px;
+  padding: 0 12px;
   border: 0;
-  border-radius: 6px 0 0 6px;
-  background: #f4f4fb;
-  color: var(--ct-ink);
+  background: #fff;
+  color: #1e293b;
   font-family: inherit;
   font-size: 16px;
   outline: none;
 }
 
 .ct-newsletter input::placeholder {
-  color: #8b8da8;
+  color: #94a3b8;
 }
 
 .contact-page .ct-newsletter button {
   display: grid;
   place-items: center;
-  width: 34px;
+  width: 40px;
   flex-shrink: 0;
   padding: 0;
   border: 0;
-  border-radius: 0 6px 6px 0;
   background: var(--ct-brand);
   color: #fff;
 }
@@ -1587,5 +1588,5 @@
 }
 
 .ct-newsletter input {
-  font-size: 16px;
+  font-size: 12px;
 }
