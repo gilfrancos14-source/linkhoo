@@ -10,6 +10,7 @@ import {
   escapadeUpdateSchema,
 } from '../validations/escapade';
 import { ESCAPADE_COLUMNS } from '../utils/selects';
+import { attachTranslations, enqueueTranslations, resolveLocale } from '../i18n/translations';
 
 const router = Router();
 
@@ -31,7 +32,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       .order('id', { ascending: true });
     if (error) throw error;
 
-    res.json(data ?? []);
+    res.json(await attachTranslations(data ?? [], 'escapade', resolveLocale(req.query.lang)));
   } catch (err) {
     next(err);
   }
@@ -53,6 +54,7 @@ router.post('/', requireAdminAuth, requirePermission('escapades'), async (req: R
       .select(ESCAPADE_COLUMNS)
       .single();
     if (error) throw error;
+    if (data?.id) void enqueueTranslations('escapade', data.id, data as Record<string, unknown>);
     res.status(201).json(data);
   } catch (err) {
     next(err);
@@ -81,6 +83,7 @@ router.put('/:id', requireAdminAuth, requirePermission('escapades'), async (req:
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Escapade introuvable' });
+    void enqueueTranslations('escapade', data.id, data as Record<string, unknown>);
     res.json(data);
   } catch (err) {
     next(err);

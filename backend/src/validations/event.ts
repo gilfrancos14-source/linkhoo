@@ -14,6 +14,7 @@ export const eventQuerySchema = z
   .object({
     market: marketSchema.optional(),
     include_past: z.enum(['0', '1']).optional(),
+    lang: z.enum(['fr', 'en', 'es']).optional(),
   })
   .strict()
   .refine((v) => v.market !== undefined || v.include_past === '1', {

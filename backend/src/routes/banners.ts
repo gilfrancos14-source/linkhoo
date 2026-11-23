@@ -6,6 +6,7 @@ import { requirePermission, requireSuperadmin } from '../middleware/adminPermiss
 import { idParamsSchema, marketQuerySchema } from '../validations/common';
 import { bannerCreateSchema, bannerUpdateSchema } from '../validations/banner';
 import { BANNER_COLUMNS } from '../utils/selects';
+import { attachTranslations, enqueueTranslations, resolveLocale } from '../i18n/translations';
 
 const router = Router();
 const validSections = ['popular', 'promos', 'categories', 'events'] as const;
@@ -32,7 +33,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
     const { data, error } = await query;
     if (error) throw error;
-    res.json(data);
+    res.json(await attachTranslations(data ?? [], 'banner', resolveLocale(req.query.lang)));
   } catch (err) {
     next(err);
   }
@@ -51,6 +52,7 @@ router.post('/', requireAdminAuth, requirePermission('bannieres'), async (req: R
       .select(BANNER_COLUMNS)
       .single();
     if (error) throw error;
+    if (data?.id) void enqueueTranslations('banner', data.id, data as Record<string, unknown>);
     res.status(201).json(data);
   } catch (err) {
     next(err);
@@ -73,6 +75,7 @@ router.put('/:id', requireAdminAuth, requirePermission('bannieres'), async (req:
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Bannière introuvable' });
+    void enqueueTranslations('banner', data.id, data as Record<string, unknown>);
     res.json(data);
   } catch (err) {
     next(err);

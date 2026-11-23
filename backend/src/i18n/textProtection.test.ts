@@ -20,6 +20,12 @@ describe('protectText', () => {
     expect(protectedText.restore(protectedText.text)).toBe('Studio à Cocody');
   });
 
+  it('applique le glossaire configurable', () => {
+    const protectedText = protectText('À Abidjan, FCFA.', [], { 'FCFA': 'CFA franc' });
+    expect(protectedText.text).not.toContain('FCFA');
+    expect(protectedText.restore(protectedText.text)).toBe('À Abidjan, CFA franc.');
+  });
+
   it('protège une URL', () => {
     const protectedText = protectText('Voir https://exemple.fr/photo.jpg pour details');
     expect(protectedText.text).not.toContain('https://');

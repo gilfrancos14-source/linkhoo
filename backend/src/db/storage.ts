@@ -35,7 +35,7 @@ function storageRoot(): string {
 }
 
 /**
- * Base publique des photos d'annonces (ex. `https://le-domaine.fr/media` ou
+ * Base publique des photos d'annonces (ex. `https://linkehoo.com/media` ou
  * `http://localhost:3001/api/media`). Exportée pour que la validation d'URL
  * (`validations/imageUrl.ts`) accepte **exactement** ce stockage et rien
  * d'autre : c'est l'unique source de vérité.

@@ -8,7 +8,7 @@ import type { DureeUnite } from './duration';
  * aussi partie de la clé de cache : sans ça, un visiteur anglophone recevrait
  * le français mis en cache par un autre visiteur.
  */
-function withLang(path: string): string {
+export function withLang(path: string): string {
   const lang = i18n.language?.split('-')[0];
   if (lang !== 'en' && lang !== 'es') return path;
   return `${path}${path.includes('?') ? '&' : '?'}lang=${lang}`;
@@ -359,7 +359,7 @@ export interface BannerData {
 }
 
 export const apiBanners = {
-  list: (market?: string) => cachedGet<BannerData[]>(market ? `/banners?market=${market}` : '/banners'),
+  list: (market?: string) => cachedGet<BannerData[]>(withLang(market ? `/banners?market=${market}` : '/banners')),
 };
 
 // ── Events ──
@@ -378,7 +378,7 @@ export interface EventData {
 }
 
 export const apiEvents = {
-  list: (market: string) => cachedGet<EventData[]>(`/events?market=${market}`),
+  list: (market: string) => cachedGet<EventData[]>(withLang(`/events?market=${market}`)),
 };
 
 // ── Tourisme ──
@@ -404,7 +404,7 @@ export interface TourismPartition {
 }
 
 export const apiTourism = {
-  list: (market: string) => cachedGet<TourismPartition>(`/tourism?market=${market}`),
+  list: (market: string) => cachedGet<TourismPartition>(withLang(`/tourism?market=${market}`)),
 };
 
 // ── Escapades ──
@@ -422,7 +422,7 @@ export interface EscapadeData {
 }
 
 export const apiEscapades = {
-  list: (market: string) => cachedGet<EscapadeData[]>(`/escapades?market=${market}`),
+  list: (market: string) => cachedGet<EscapadeData[]>(withLang(`/escapades?market=${market}`)),
 };
 
 // ── Reservations ──
@@ -591,6 +591,22 @@ interface NewsletterSubscribeData {
 export const apiNewsletter = {
   subscribe: (data: NewsletterSubscribeData) =>
     request<{ id?: string; email?: string; message?: string }>('/newsletter', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+};
+
+export interface TranslationReportData {
+  entityType: string;
+  entityId: string;
+  locale: string;
+  field: string;
+  value: string;
+}
+
+export const apiTranslations = {
+  report: (data: TranslationReportData) =>
+    request<void>('/translations/report', {
       method: 'POST',
       body: JSON.stringify(data),
     }),

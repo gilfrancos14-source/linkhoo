@@ -12,8 +12,10 @@ import 'dotenv/config';
 import { Client } from 'pg';
 import { env, pipeline } from '@huggingface/transformers';
 import protection from '../dist/i18n/textProtection.js';
+import fieldsModule from '../dist/i18n/fields.js';
 
 const { protectText, similarity } = protection;
+const { fieldsFor, PROTECTION_FIELDS } = fieldsModule;
 
 const CACHE_DIR = process.env.I18N_CACHE_DIR || 'i18n-model';
 const DTYPE = process.env.I18N_DTYPE || 'q8';
@@ -31,8 +33,6 @@ const MODELS = {
     backward: process.env.I18N_MODEL_ES_FR || 'Xenova/opus-mt-es-fr',
   },
 };
-
-const FIELDS = ['title', 'subtitle', 'info', 'description', 'conditions', 'capacity'];
 
 env.cacheDir = CACHE_DIR;
 
@@ -65,6 +65,14 @@ async function hasExistingTranslation(client, job) {
   return rows.length > 0 ? new Map(rows.map((r) => [r.field, r.value])) : null;
 }
 
+async function loadGlossary(client, locale) {
+  const { rows } = await client.query(
+    'SELECT source_term, target_term FROM public.translation_glossary WHERE locale = $1',
+    [locale],
+  );
+  return Object.fromEntries(rows.map((r) => [r.source_term, r.target_term]));
+}
+
 async function saveTranslation(client, job, field, value, status) {
   await client.query(
     `INSERT INTO public.translations
@@ -83,10 +91,11 @@ async function saveTranslation(client, job, field, value, status) {
 async function processJob(client, job) {
   const payload = job.payload && typeof job.payload === 'object' ? job.payload : {};
   const existing = await hasExistingTranslation(client, job);
+  const glossary = await loadGlossary(client, job.locale);
   const translated = {};
   let needsReview = false;
 
-  for (const field of FIELDS) {
+  for (const field of fieldsFor(job.entity_type)) {
     const source = typeof payload[field] === 'string' ? payload[field] : '';
     if (!source.trim()) continue;
 
@@ -95,9 +104,9 @@ async function processJob(client, job) {
       continue;
     }
 
-    const properNouns = [payload.ville, payload.quartier, payload.pays]
+    const properNouns = PROTECTION_FIELDS.map((key) => payload[key])
       .filter((value) => typeof value === 'string' && value.trim().length > 0);
-    const protectedText = protectText(source, properNouns);
+    const protectedText = protectText(source, properNouns, glossary);
     const raw = await translate(protectedText.text, job.locale);
     const value = protectedText.restore(raw);
     translated[field] = value;

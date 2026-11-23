@@ -7,6 +7,7 @@ import { imageUrlSchema } from './imageUrl';
 export const escapadeQuerySchema = z
   .object({
     market: marketSchema,
+    lang: z.enum(['fr', 'en', 'es']).optional(),
   })
   .strict();
 

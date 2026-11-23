@@ -6,6 +6,7 @@ import { requirePermission, requireSuperadmin } from '../middleware/adminPermiss
 import { idParamsSchema } from '../validations/common';
 import { eventQuerySchema, eventCreateSchema, eventUpdateSchema } from '../validations/event';
 import { EVENT_COLUMNS } from '../utils/selects';
+import { attachTranslations, enqueueTranslations, resolveLocale } from '../i18n/translations';
 
 const router = Router();
 
@@ -52,7 +53,7 @@ router.get('/', requireAdminForPast, async (req: Request, res: Response, next: N
       .order('event_date', { ascending: true })
       .order('id', { ascending: true });
     if (error) throw error;
-    res.json(data);
+    res.json(await attachTranslations(data ?? [], 'event', resolveLocale(req.query.lang)));
   } catch (err) {
     next(err);
   }
@@ -72,6 +73,7 @@ router.post('/', requireAdminAuth, requirePermission('evenements'), async (req: 
       .select(EVENT_COLUMNS)
       .single();
     if (error) throw error;
+    if (data?.id) void enqueueTranslations('event', data.id, data as Record<string, unknown>);
     res.status(201).json(data);
   } catch (err) {
     next(err);
@@ -100,6 +102,7 @@ router.put('/:id', requireAdminAuth, requirePermission('evenements'), async (req
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Événement introuvable' });
+    void enqueueTranslations('event', data.id, data as Record<string, unknown>);
     res.json(data);
   } catch (err) {
     next(err);

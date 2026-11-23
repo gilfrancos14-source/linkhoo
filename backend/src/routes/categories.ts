@@ -6,6 +6,7 @@ import { requireGerantMarket } from '../middleware/requireGerantMarket';
 import { idParamsSchema, marketQuerySchema } from '../validations/common';
 import { categoryCreateSchema, categoryUpdateSchema } from '../validations/category';
 import { CATEGORY_COLUMNS } from '../utils/selects';
+import { attachTranslations, enqueueTranslations, resolveLocale } from '../i18n/translations';
 
 const router = Router();
 
@@ -23,7 +24,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
     const { data, error } = await query;
     if (error) throw error;
-    res.json(data);
+    res.json(await attachTranslations(data ?? [], 'category', resolveLocale(req.query.lang)));
   } catch (err) {
     next(err);
   }
@@ -49,6 +50,7 @@ router.post('/', requireClerkAuth, async (req: Request, res: Response, next: Nex
       .select(CATEGORY_COLUMNS)
       .single();
     if (error) throw error;
+    if (data?.id) void enqueueTranslations('category', data.id, data as Record<string, unknown>);
     res.status(201).json(data);
   } catch (err) {
     next(err);
@@ -85,6 +87,7 @@ router.put('/:id', requireClerkAuth, async (req: Request, res: Response, next: N
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Catégorie introuvable' });
+    void enqueueTranslations('category', data.id, data as Record<string, unknown>);
     res.json(data);
   } catch (err) {
     next(err);

@@ -72,4 +72,4 @@ $COMPOSE ps
 echo
 echo "Déploiement terminé. Prochaine étape :"
 echo "  - vérifier le site public : curl -I https://$(grep -E '^APP_PUBLIC_URL=' "$ENV_FILE" | cut -d= -f2-)"
-echo "  - ou lancer le contrôle complet : ./deploy/smoke.sh https://<domaine>"
+echo "  - ou lancer le contrôle complet : ./deploy/smoke.sh https://linkehoo.com"

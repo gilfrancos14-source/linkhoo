@@ -1,29 +1,25 @@
 import { createHash } from 'crypto';
 import { supabaseAdmin } from '../config/supabase';
+import { fieldsFor, PROTECTION_FIELDS, TRANSLATABLE_FIELDS } from './fields';
 
 /**
- * Internationalisation des contenus de la base (phase 1 : chambres).
+ * Internationalisation des contenus de la base.
  *
  * Les colonnes d'origine restent en français : c'est la source et le fallback.
- * Les traductions NLLB sont stockées dans `translations`, et les demandes sont
- * mises en file dans `translation_jobs` pour ne jamais bloquer l'enregistrement.
+ * Les traductions OPUS-MT sont stockées dans `translations`, et les demandes
+ * sont mises en file dans `translation_jobs` sans bloquer l'enregistrement.
  */
 
 export type ContentLocale = 'fr' | 'en' | 'es';
 
 export const TRANSLATION_LOCALES: readonly ContentLocale[] = ['en', 'es'];
 
-/** Champs textuels traduisibles d'une chambre. */
-export const ROOM_TRANSLATABLE_FIELDS = [
-  'title',
-  'subtitle',
-  'info',
-  'description',
-  'conditions',
-  'capacity',
-] as const;
+export { TRANSLATABLE_FIELDS } from './fields';
 
-export type RoomTranslatableField = (typeof ROOM_TRANSLATABLE_FIELDS)[number];
+/** Conservé pour compatibilité avec la phase 1. */
+export const ROOM_TRANSLATABLE_FIELDS = TRANSLATABLE_FIELDS.room;
+
+export type RoomTranslatableField = string;
 
 export function resolveLocale(raw: unknown): ContentLocale {
   const value = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
@@ -32,17 +28,16 @@ export function resolveLocale(raw: unknown): ContentLocale {
 }
 
 /** Empreinte du texte source : sert de cache pour ne jamais traduire deux fois la même phrase. */
-export function sourceHash(fields: Record<string, unknown>): string {
-  const source = ROOM_TRANSLATABLE_FIELDS.map((field) => String(fields[field] ?? '')).join('\u0000');
+export function sourceHash(fields: Record<string, unknown>, entityType = 'room'): string {
+  const source = fieldsFor(entityType)
+    .map((field) => String(fields[field] ?? ''))
+    .join('\u0000');
   return createHash('sha256').update(source).digest('hex');
 }
 
-/** Champs non traduits mais utiles au worker pour protéger les noms propres. */
-const PROTECTION_FIELDS = ['ville', 'quartier', 'pays'] as const;
-
-function pickFields(fields: Record<string, unknown>): Record<string, string> {
+function pickFields(entityType: string, fields: Record<string, unknown>): Record<string, string> {
   const picked: Record<string, string> = {};
-  for (const field of [...ROOM_TRANSLATABLE_FIELDS, ...PROTECTION_FIELDS]) {
+  for (const field of [...fieldsFor(entityType), ...PROTECTION_FIELDS]) {
     if (typeof fields[field] === 'string') picked[field] = fields[field] as string;
   }
   return picked;
@@ -93,7 +88,7 @@ export async function attachTranslations<T extends { id?: unknown }>(
     const translated = byId.get(String(row.id));
     if (!translated) return row;
     const merged = { ...row } as Record<string, unknown>;
-    for (const field of ROOM_TRANSLATABLE_FIELDS) {
+    for (const field of fieldsFor(entityType)) {
       if (translated[field]) merged[field] = translated[field];
     }
     return merged as T;
@@ -109,9 +104,9 @@ export async function enqueueTranslations(
   entityId: string,
   fields: Record<string, unknown>,
 ): Promise<void> {
-  const payload = pickFields(fields);
-  if (Object.keys(payload).length === 0) return;
-  const hash = sourceHash(fields);
+  const payload = pickFields(entityType, fields);
+  if (fieldsFor(entityType).every((field) => typeof fields[field] !== 'string')) return;
+  const hash = sourceHash(fields, entityType);
 
   for (const locale of TRANSLATION_LOCALES) {
     try {

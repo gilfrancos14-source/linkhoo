@@ -116,7 +116,7 @@ docker compose -f docker-compose.prod.yml run --rm api1 node dist/db/migrateCli.
 ## 3 bis. Pré-vol (à lancer juste avant)
 
 ```bash
-./deploy/preflight.sh le-domaine.fr
+./deploy/preflight.sh linkehoo.com
 ```
 
 Le script vérifie la RAM, le disque, Docker, Nginx, les ports, le pare-feu, le
@@ -153,20 +153,20 @@ cd backend && npm run model:preload
 ## 4. Nginx et TLS
 
 ```bash
-sed -i 's/ILEHYA_DOMAIN/le-domaine.fr/g' deploy/nginx/ilehya.conf
+# Le domaine linkehoo.com est déjà renseigné dans la config fournie.
 sudo cp deploy/nginx/ilehya.conf /etc/nginx/sites-available/ilehya
 sudo ln -s /etc/nginx/sites-available/ilehya /etc/nginx/sites-enabled/
 
 # Premier certificat : on commence en HTTP, Certbot bascule en HTTPS.
-sudo certbot --nginx -d le-domaine.fr -d www.le-domaine.fr
+sudo certbot --nginx -d linkehoo.com -d www.linkehoo.com
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
 Puis, dans `backend/.env.prod` :
 
 ```
-STORAGE_PUBLIC_BASE_URL=https://le-domaine.fr/media
-STORAGE_SIGNED_BASE_URL=https://le-domaine.fr/api/media
+STORAGE_PUBLIC_BASE_URL=https://linkehoo.com/media
+STORAGE_SIGNED_BASE_URL=https://linkehoo.com/api/media
 ```
 
 Et relancer l'API pour qu'elle reprenne les nouvelles URLs :
@@ -221,15 +221,15 @@ Commandes de vérification (les écritures admin exigent un en-tête `Origin`
 conforme à `ALLOWED_ORIGINS`, sinon l'API répond 403 — garde anti-CSRF) :
 
 ```bash
-curl -s https://<domaine>/api/health
-curl -s -X POST https://<domaine>/api/admin/login \
-  -H 'Content-Type: application/json' -H "Origin: https://<domaine>" \
+curl -s https://linkehoo.com/api/health
+curl -s -X POST https://linkehoo.com/api/admin/login \
+  -H 'Content-Type: application/json' -H "Origin: https://linkehoo.com" \
   -c /tmp/admin.cookie \
   -d '{"email":"...","password":"..."}'
-curl -s https://<domaine>/api/admin/stats -b /tmp/admin.cookie
+curl -s https://linkehoo.com/api/admin/stats -b /tmp/admin.cookie
 ```
 
-- [ ] `https://<domaine>/api/health` → `{"status":"ok"}`
+- [ ] `https://linkehoo.com/api/health` → `{"status":"ok"}`
 - [ ] Inscription client, connexion admin, réservation de bout en bout
 - [ ] Téléversement d'une photo → visible dans la liste des chambres
 - [ ] Paiement pawaPay **live** + callback reçu

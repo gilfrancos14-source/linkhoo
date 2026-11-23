@@ -581,5 +581,11 @@
         "mali": "Mali"
       }
     }
+  },
+  "translationReport": {
+    "button": "Report a translation",
+    "placeholder": "Suggested translation",
+    "send": "Send",
+    "thanks": "Thank you, your suggestion has been saved."
   }
 }

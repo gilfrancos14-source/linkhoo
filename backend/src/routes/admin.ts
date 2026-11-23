@@ -28,6 +28,7 @@ import {
   adminCookieOptions,
 } from '../utils/adminCookie';
 import { logAdminAction } from '../utils/adminAudit';
+import { saveCorrection } from '../i18n/corrections';
 import { setPayoutVerification } from '../payments/service/payout';
 import {
   listAdminRefunds,
@@ -131,6 +132,114 @@ router.get('/stats', requireAdminAuth, requirePermission('stats'), async (req: R
     const { data, error } = await supabaseAdmin.rpc('admin_stats', { p_period: period.data });
     if (error) throw error;
     res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Traductions automatiques à revoir (aller-retour douteux). */
+router.get('/translations/review', requireAdminAuth, requirePermission('stats'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const locale = z.enum(['en', 'es']).safeParse(req.query.locale ?? 'en');
+    if (!locale.success) return res.status(400).json({ error: 'Langue invalide' });
+
+    // On ne remonte que les contenus signalés par l'aller-retour du worker,
+    // pas toutes les traductions automatiques.
+    const { data: flagged, error: jobsError } = await (supabaseAdmin as any)
+      .from('translation_jobs')
+      .select('entity_type, entity_id')
+      .eq('status', 'review')
+      .eq('locale', locale.data)
+      .order('id', { ascending: false })
+      .limit(100);
+    if (jobsError) throw jobsError;
+
+    const ids = [...new Set((flagged ?? []).map((job: any) => job.entity_id))] as string[];
+    if (ids.length === 0) {
+      res.json([]);
+      return;
+    }
+
+    const { data, error } = await (supabaseAdmin as any)
+      .from('translations')
+      .select('entity_type, entity_id, locale, field, value, status, source_hash, updated_at')
+      .eq('locale', locale.data)
+      .in('entity_id', ids)
+      .order('updated_at', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    res.json(data ?? []);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Termes du glossaire (le worker les protège avant traduction). */
+router.get('/translations/glossary', requireAdminAuth, requirePermission('stats'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const locale = z.enum(['en', 'es']).safeParse(req.query.locale ?? 'en');
+    if (!locale.success) return res.status(400).json({ error: 'Langue invalide' });
+    const { data, error } = await (supabaseAdmin as any)
+      .from('translation_glossary')
+      .select('source_term, target_term')
+      .eq('locale', locale.data)
+      .order('source_term', { ascending: true });
+    if (error) throw error;
+    res.json(data ?? []);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put('/translations/glossary', requireAdminAuth, requirePermission('stats'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = z
+      .object({
+        sourceTerm: z.string().trim().min(1).max(200),
+        locale: z.enum(['en', 'es']),
+        targetTerm: z.string().trim().min(1).max(200),
+      })
+      .strict()
+      .safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Terme invalide' });
+    const { error } = await (supabaseAdmin as any)
+      .from('translation_glossary')
+      .upsert({
+        source_term: parsed.data.sourceTerm,
+        locale: parsed.data.locale,
+        target_term: parsed.data.targetTerm,
+        updated_at: new Date().toISOString(),
+      });
+    if (error) throw error;
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Correction définitive d'une traduction par un administrateur. */
+router.put('/translations', requireAdminAuth, requirePermission('stats'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = z
+      .object({
+        entityType: z.enum(['room', 'category', 'banner', 'event', 'destination', 'escapade']),
+        entityId: z.string().trim().min(1).max(200),
+        locale: z.enum(['en', 'es']),
+        field: z.string().trim().min(1).max(50),
+        value: z.string().trim().min(1).max(2000),
+      })
+      .strict()
+      .safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Correction invalide' });
+
+    await saveCorrection(
+      parsed.data.entityType,
+      parsed.data.entityId,
+      parsed.data.locale,
+      parsed.data.field,
+      parsed.data.value,
+    );
+    res.status(204).send();
   } catch (err) {
     next(err);
   }

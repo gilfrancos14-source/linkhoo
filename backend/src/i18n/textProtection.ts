@@ -30,9 +30,24 @@ function makeToken(index: number): string {
   return `ZTOK${index}Z`;
 }
 
-export function protectText(input: string, protectedTerms: readonly string[] = []): ProtectedText {
+export function protectText(
+  input: string,
+  protectedTerms: readonly string[] = [],
+  replacements: Readonly<Record<string, string>> = {},
+): ProtectedText {
   const values: string[] = [];
   let text = String(input ?? '');
+
+  // Glossaire configurable : on remplace par la valeur cible choisie par l'admin.
+  for (const [source, target] of Object.entries(replacements)) {
+    const value = String(source ?? '').trim();
+    if (value.length < 2) continue;
+    const escaped = value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    text = text.replace(new RegExp(escaped, 'gi'), () => {
+      const index = values.push(String(target)) - 1;
+      return makeToken(index);
+    });
+  }
 
   // Villes, quartiers et pays viennent de la fiche : ce sont des noms propres
   // que le modèle a tendance à reformuler (ex. « Cocody » → « 5ody »).

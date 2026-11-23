@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Vérifications de pré-lancement (porte go/no-go).
 #
-# Usage :  ./deploy/smoke.sh https://le-domaine.fr
+# Usage :  ./deploy/smoke.sh https://linkehoo.com
 #
 # Le script ne modifie rien : il vérifie que le site répond, que l'API est
 # joignable, que les données sont là et que le stockage est servi.

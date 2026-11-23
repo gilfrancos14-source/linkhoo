@@ -7,6 +7,7 @@ import { useHomePath } from '../hooks/useHomePath';
 import { useFavorites } from '../contexts/FavoritesContext';
 import LandingHeader from '../components/landing/LandingHeader';
 import LandingFooter from '../components/landing/LandingFooter';
+import TranslationReport from '../components/TranslationReport';
 import { MAQUETTE_NAV_ITEMS } from '../maquette/nav';
 import { fetchCategoriesByMarket, type Category } from '../data/categories';
 import { fetchRoomById, type Room } from '../data/rooms';
@@ -833,6 +834,12 @@ export default function RoomDetailMaq7() {
             <h1 className="mt-2 text-3xl font-extrabold leading-tight lg:text-3xl">
               {room.title}
             </h1>
+            <TranslationReport
+              entityId={room.id}
+              entityType="room"
+              field="title"
+              currentValue={room.title}
+            />
 
             <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-mute">
               <span className="inline-flex items-center gap-1.5">

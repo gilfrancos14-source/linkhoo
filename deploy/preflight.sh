@@ -100,7 +100,7 @@ if [ -n "$DOMAIN" ]; then
     ok "$DOMAIN → $RESOLVED"
   fi
 else
-  warn "Aucun domaine fourni : ./deploy/preflight.sh le-domaine.fr"
+  warn "Aucun domaine fourni : ./deploy/preflight.sh linkehoo.com"
 fi
 
 echo

@@ -177,6 +177,25 @@ export interface AdminStats {
   };
 }
 
+export interface TranslationReviewItem {
+  entity_type: string;
+  entity_id: string;
+  locale: 'en' | 'es';
+  field: string;
+  value: string;
+  status: string;
+  source_hash: string;
+  updated_at: string;
+}
+
+export interface TranslationCorrection {
+  entityType: string;
+  entityId: string;
+  locale: 'en' | 'es';
+  field: string;
+  value: string;
+}
+
 export interface AdminGerant {
   id: string;
   email: string;
@@ -484,6 +503,30 @@ export const apiAdmin = {
 
   getStats: (period: 'all' | 'month' | 'quarter' | 'year' = 'all') =>
     adminRequest<AdminStats>(`/admin/stats?period=${period}`),
+
+  listTranslationReview: (locale: 'en' | 'es') =>
+    adminRequest<TranslationReviewItem[]>(`/admin/translations/review?locale=${locale}`),
+
+  correctTranslation: (payload: TranslationCorrection) =>
+    adminRequest<void>('/admin/translations', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+
+  listGlossary: (locale: 'en' | 'es') =>
+    adminRequest<Array<{ source_term: string; target_term: string }>>(
+      `/admin/translations/glossary?locale=${locale}`,
+    ),
+
+  saveGlossaryTerm: (payload: {
+    sourceTerm: string;
+    locale: 'en' | 'es';
+    targetTerm: string;
+  }) =>
+    adminRequest<void>('/admin/translations/glossary', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
 
   changePassword: (currentPassword: string, newPassword: string) =>
     adminRequest<{ message: string }>('/admin/change-password', {

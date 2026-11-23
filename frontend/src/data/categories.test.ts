@@ -5,7 +5,11 @@ const mocks = vi.hoisted(() => ({
   cachedGet: vi.fn<(path: string) => Promise<unknown>>(),
 }));
 
-vi.mock('../lib/api', () => ({ cachedGet: mocks.cachedGet }));
+vi.mock('../lib/api', () => ({
+  cachedGet: mocks.cachedGet,
+  // La langue est ajoutée par withLang en production ; on garde le chemin brut ici.
+  withLang: (path: string) => path,
+}));
 
 const ciCategories: Category[] = [
   { id: 'ci-1', title: 'Chambres moins chères', img: '/images/a.jpg', alt: 'Abordables', market: 'CI' },

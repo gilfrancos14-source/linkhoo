@@ -8,6 +8,7 @@ const imageUrlSchema = z.string().trim().min(1).max(2048);
 export const destinationQuerySchema = z
   .object({
     market: marketSchema,
+    lang: z.enum(['fr', 'en', 'es']).optional(),
   })
   .strict();
 

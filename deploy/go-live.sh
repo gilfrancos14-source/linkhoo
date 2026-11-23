@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Déploiement COMPLET en production — Ilehya.
 #
-# Usage :  ./deploy/go-live.sh <domaine>     ex: ./deploy/go-live.sh ilehya.fr
+# Usage :  ./deploy/go-live.sh <domaine>     ex: ./deploy/go-live.sh linkehoo.com
 #
 # Enchaîne, dans l'ordre et en s'arrêtant à la première erreur :
 #   0. contrôle d'environnement (pré-vol)
@@ -44,7 +44,7 @@ echo "Commit déployé : $(git rev-parse --short HEAD)"
 step "4/6 Configuration Nginx"
 # Ne remplacer le fichier que si nginx -t passe, sinon on garde l'ancien.
 sudo cp deploy/nginx/ilehya.conf /etc/nginx/sites-available/ilehya
-sudo sed -i "s/ILEHYA_DOMAIN/${DOMAIN}/g" /etc/nginx/sites-available/ilehya
+sudo sed -i "s/linkehoo\.com/${DOMAIN}/g" /etc/nginx/sites-available/ilehya
 if sudo nginx -t; then
   sudo systemctl reload nginx
   echo "Nginx rechargé avec succès."

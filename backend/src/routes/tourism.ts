@@ -11,6 +11,7 @@ import {
 } from '../validations/tourism';
 import { partitionDestinations, upcomingEventCities, upcomingWindow, type DestinationRecord } from '../utils/tourism';
 import { TOURISM_COLUMNS } from '../utils/selects';
+import { attachTranslations, enqueueTranslations, resolveLocale } from '../i18n/translations';
 
 const router = Router();
 
@@ -56,7 +57,12 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       (destinationsResult.data ?? []) as unknown as DestinationRecord[],
       upcoming,
     );
-    res.json({ big, small });
+    const locale = resolveLocale(req.query.lang);
+    const [translatedBig, translatedSmall] = await Promise.all([
+      attachTranslations(big, 'destination', locale),
+      attachTranslations(small, 'destination', locale),
+    ]);
+    res.json({ big: translatedBig, small: translatedSmall });
   } catch (err) {
     next(err);
   }
@@ -75,6 +81,7 @@ router.post('/', requireAdminAuth, requirePermission('destinations'), async (req
       .select(TOURISM_COLUMNS)
       .single();
     if (error) throw error;
+    if (data?.id) void enqueueTranslations('destination', data.id, data as Record<string, unknown>);
     res.status(201).json(data);
   } catch (err) {
     next(err);
@@ -97,6 +104,7 @@ router.put('/:id', requireAdminAuth, requirePermission('destinations'), async (r
       .maybeSingle();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Destination introuvable' });
+    void enqueueTranslations('destination', data.id, data as Record<string, unknown>);
     res.json(data);
   } catch (err) {
     next(err);

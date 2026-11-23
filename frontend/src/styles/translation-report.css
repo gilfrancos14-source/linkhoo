@@ -1,0 +1,47 @@
+.translation-report__toggle {
+  margin-top: 0.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--sky, #2563eb);
+  font: inherit;
+  font-size: 0.75rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.translation-report {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.translation-report input {
+  flex: 1 1 220px;
+  min-width: 0;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.translation-report input:focus {
+  outline: none;
+  border-color: var(--sky, #2563eb);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--sky, #2563eb) 15%, transparent);
+}
+
+.translation-report button {
+  padding: 0.5rem 0.9rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--gradient-primary, #2563eb);
+  color: #fff;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}

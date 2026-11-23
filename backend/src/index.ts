@@ -16,6 +16,7 @@ import bannersRouter from './routes/banners';
 import eventsRouter from './routes/events';
 import tourismRouter from './routes/tourism';
 import escapadesRouter from './routes/escapades';
+import translationsRouter from './routes/translations';
 import reservationsRouter from './routes/reservations';
 import newsletterRouter from './routes/newsletter';
 import contactRouter from './routes/contact';
@@ -121,7 +122,7 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || defaultOrigins)
   .filter(Boolean);
 
 if (isProduction && allowedOrigins.length === 0) {
-  console.error('[FATAL] ALLOWED_ORIGINS manquant ou vide : définissez la liste des origines autorisées (ex: https://app.ilehya.com)');
+  console.error('[FATAL] ALLOWED_ORIGINS manquant ou vide : définissez la liste des origines autorisées (ex: https://linkehoo.com)');
   process.exit(1);
 }
 
@@ -151,7 +152,7 @@ if (imageCheckModeError) {
 if (isProduction && !process.env.STORAGE_PUBLIC_BASE_URL?.trim()) {
   console.error(
     '[FATAL] STORAGE_PUBLIC_BASE_URL manquant en production : ' +
-      'définissez la base publique des photos (ex. https://le-domaine.fr/media).',
+      'définissez la base publique des photos (ex. https://linkehoo.com/media).',
   );
   process.exit(1);
 }
@@ -310,6 +311,7 @@ app.use('/api/banners', bannersRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/tourism', tourismRouter);
 app.use('/api/escapades', escapadesRouter);
+app.use('/api/translations', translationsRouter);
 app.use('/api/reservations', reservationsRouter);
 app.use('/api/newsletter', newsletterRouter);
 app.use('/api/contact', contactRouter);

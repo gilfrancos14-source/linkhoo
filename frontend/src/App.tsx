@@ -66,6 +66,7 @@ const AdminReservationsPage = lazy(() => import('./pages/admin/AdminReservations
 const AdminPayoutsPage = lazy(() => import('./pages/admin/AdminPayoutsPage'));
 const AdminPromotionsPage = lazy(() => import('./pages/admin/AdminPromotionsPage'));
 const AdminEquipePage = lazy(() => import('./pages/admin/AdminEquipePage'));
+const AdminTranslationsPage = lazy(() => import('./pages/admin/AdminTranslationsPage'));
 
 function RouteFallback() {
   return (
@@ -106,6 +107,7 @@ const adminSectionRoutes = (
       <Route path="escapades" element={<AdminEscapadesPage />} />
       <Route path="promotions" element={<AdminPromotionsPage />} />
       <Route path="equipe" element={<AdminEquipePage />} />
+      <Route path="traductions" element={<AdminTranslationsPage />} />
     </Route>
   </>
 );
