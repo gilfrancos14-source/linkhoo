@@ -127,6 +127,9 @@ vi.mock('./lib/api', () => ({
   setAuthTokenGetter: mocks.setAuthTokenGetter,
   clearApiCache: vi.fn(),
   withLang: (path: string) => path,
+  apiDiscover: {
+    localRooms: vi.fn(async () => ({ market: null, rooms: [] })),
+  },
   cachedGet: mocks.autoFn,
   parseJsonBody: mocks.autoFn,
   request: mocks.autoFn,

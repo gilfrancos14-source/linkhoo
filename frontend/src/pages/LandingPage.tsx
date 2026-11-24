@@ -4,6 +4,7 @@ import LandingCountries from '../components/landing/LandingCountries';
 import LandingFooter from '../components/landing/LandingFooter';
 import LandingHeader from '../components/landing/LandingHeader';
 import LandingHero from '../components/landing/LandingHero';
+import LandingLocalRooms from '../components/landing/LandingLocalRooms';
 import LandingReviews from '../components/landing/LandingReviews';
 import LandingSlider from '../components/landing/LandingSlider';
 import LandingTopBar from '../components/landing/LandingTopBar';
@@ -29,6 +30,9 @@ export default function LandingPage() {
         <LandingHero country={country} onCountryChange={setCountry} />
         <AnimatedSection>
           <LandingCountries country={country} onCountryChange={setCountry} />
+        </AnimatedSection>
+        <AnimatedSection>
+          <LandingLocalRooms />
         </AnimatedSection>
         <AnimatedSection>
           <LandingSlider />

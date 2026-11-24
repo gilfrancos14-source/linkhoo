@@ -7,11 +7,15 @@ import LandingPage from './LandingPage';
 const mocks = vi.hoisted(() => ({
   featuredReviews: vi.fn(),
   cachedGet: vi.fn(),
+  localRooms: vi.fn(async () => ({ market: null, rooms: [] })),
 }));
 
 vi.mock('../lib/api', () => ({
   apiReviews: {
     featured: mocks.featuredReviews,
+  },
+  apiDiscover: {
+    localRooms: mocks.localRooms,
   },
   cachedGet: mocks.cachedGet,
 }));

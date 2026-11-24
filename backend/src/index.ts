@@ -32,6 +32,7 @@ import premiumRouter from './routes/premium';
 import paymentsRouter from './routes/payments';
 import payoutsRouter from './routes/payouts';
 import receiptsRouter from './routes/receipts';
+import discoverRouter from './routes/discover';
 import adminRouter from './routes/admin';
 import authRouter from './routes/auth';
 import promotionRouter from './routes/promotionRoutes';
@@ -328,6 +329,7 @@ app.use('/api/messages', messagesRouter);
 app.use('/api/premium', premiumRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/receipts', receiptsRouter);
+app.use('/api/discover', discoverRouter);
 app.use('/api/payouts', requireClerkAuth, payoutsRouter);
 // Le parser pawaPay (avec `verify`) est monté plus haut, avant le global.
 // Ici on ne monte que le router : `req.rawBody` est déjà peuplé.

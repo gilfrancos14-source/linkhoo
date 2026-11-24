@@ -93,6 +93,13 @@
     "language": {
       "choose": "Choose language",
       "interfaceTitle": "Interface language"
+    },
+    "localRooms": {
+      "eyebrow": "Local picks · {{country}}",
+      "title": "Places to rent near you",
+      "subtitle": "Discover a selection of available rentals in {{country}}, chosen from your location.",
+      "viewAll": "See all rentals in {{country}}",
+      "from": "From"
     }
   },
   "navigation": {

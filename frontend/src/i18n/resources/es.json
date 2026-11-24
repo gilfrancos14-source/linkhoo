@@ -93,6 +93,13 @@
     "language": {
       "choose": "Elegir idioma",
       "interfaceTitle": "Idioma de la interfaz"
+    },
+    "localRooms": {
+      "eyebrow": "Selección local · {{country}}",
+      "title": "Alojamientos cerca de ti",
+      "subtitle": "Descubre una selección de alojamientos disponibles en {{country}}, elegida según tu ubicación.",
+      "viewAll": "Ver todos los alojamientos en {{country}}",
+      "from": "Desde"
     }
   },
   "navigation": {

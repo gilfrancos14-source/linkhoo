@@ -352,6 +352,17 @@ export const apiFavorites = {
 };
 
 // ── Banners ──
+/** Logements suggérés d'après le pays du visiteur (géolocalisation IP). */
+export interface LocalRoomsResponse {
+  market: MarketCode | null;
+  rooms: RoomData[];
+}
+
+export const apiDiscover = {
+  localRooms: (limit = 4) =>
+    cachedGet<LocalRoomsResponse>(withLang(`/discover/local-rooms?limit=${limit}`)),
+};
+
 export interface BannerData {
   id: string;
   section: string;
