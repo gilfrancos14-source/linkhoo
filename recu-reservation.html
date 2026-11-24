@@ -5,380 +5,409 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Reçu de paiement — Linkhoo</title>
   <!--
-    PROTOTYPE — reçu de paiement « premium minimaliste ».
-    Données de démonstration réalistes. Le backend remplacera ces valeurs par
-    les siennes au moment de générer le reçu (voir les noms de champs ci-dessous).
+    Reçu inspiré du modèle recu.jpg présent à la racine du projet.
+    Les valeurs affichées sont des données de démonstration réalistes (client, logement,
+    réservation, paiement pawaPay) telles que l'application les stocke.
+    Le backend remplacera chaque valeur par les champs réels au moment de
+    générer le reçu (voir les commentaires `data-` sur les éléments).
   -->
   <style>
     :root {
-      --ink: #14151a;
-      --ink-2: #434750;
-      --muted: #9095a0;
-      --line: #e8e8e4;
-      --paper: #ffffff;
-      --canvas: #f6f6f3;
-      --accent: #6d3fd9;
-      --emerald: #0f9d6e;
-      --emerald-soft: #eefaf4;
+      --navy: #0e2b45;
+      --navy-2: #123c5c;
+      --orange: #f59416;
+      --orange-2: #f7a32a;
+      --ink: #1c2b3a;
+      --muted: #7c8896;
+      --line: #d9e0e7;
+      --paper: #fff;
+      --canvas: #eceef0;
       --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-      --serif: 'Times New Roman', Georgia, serif;
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      padding: 40px 20px 72px;
+      padding: 40px 20px 70px;
       background: var(--canvas);
       color: var(--ink);
       font-family: var(--sans);
       font-size: 13px;
-      line-height: 1.6;
+      line-height: 1.5;
       -webkit-font-smoothing: antialiased;
     }
 
     .toolbar {
-      max-width: 800px;
-      margin: 0 auto 20px;
+      max-width: 900px;
+      margin: 0 auto 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      color: var(--muted);
+      color: #78828e;
       font-size: 11px;
-      letter-spacing: .02em;
     }
 
     .toolbar button {
-      border: 1px solid #dcdcd7;
-      background: var(--paper);
+      border: 1px solid #cfd5db;
+      background: #fff;
       color: var(--ink);
       border-radius: 999px;
       padding: 9px 18px;
       font: inherit;
       font-weight: 600;
       cursor: pointer;
-      transition: border-color .2s, background .2s;
     }
 
-    .toolbar button:hover { border-color: var(--ink); background: #fff; }
+    .toolbar button:hover { border-color: var(--navy); }
 
-    .sheet {
-      max-width: 800px;
+    .receipt {
+      max-width: 900px;
       margin: 0 auto;
       background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: 20px;
+      box-shadow: 0 22px 60px rgba(14, 43, 69, .16);
+      border-radius: 3px;
       overflow: hidden;
-      box-shadow: 0 24px 70px rgba(20, 21, 26, .06);
     }
 
-    .top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      padding: 28px 48px;
-      border-bottom: 1px solid var(--line);
+    /* ── Bandeaux avec coupes diagonales ── */
+    .top-band, .bottom-band { display: flex; height: 62px; width: 100%; }
+
+    .top-band .navy {
+      width: 44%;
+      background: var(--navy);
+      clip-path: polygon(0 0, 100% 0, calc(100% - 58px) 100%, 0 100%);
     }
 
-    .brand { display: flex; align-items: center; gap: 12px; }
-    .brand img { width: 38px; height: 38px; border-radius: 9px; object-fit: cover; }
-    .brand b { display: block; font-size: 12px; letter-spacing: .26em; font-weight: 700; }
-    .brand span { display: block; font-size: 10px; color: var(--muted); letter-spacing: .04em; }
+    .top-band .gap { width: 26px; background: var(--paper); }
+    .top-band .orange { flex: 1; background: var(--orange); }
 
-    .status {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 7px 14px;
-      border-radius: 999px;
-      background: var(--emerald-soft);
-      color: #07694a;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .14em;
+    .bottom-band { height: 52px; margin-top: 6px; }
+
+    .bottom-band .orange {
+      width: 46%;
+      background: var(--orange);
+      clip-path: polygon(0 0, calc(100% - 54px) 0, 100% 100%, 0 100%);
     }
 
-    .status::before {
-      content: '';
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--emerald);
+    .bottom-band .gap { width: 26px; background: var(--paper); }
+
+    .bottom-band .navy {
+      flex: 1;
+      background: var(--navy);
+      clip-path: polygon(54px 0, 100% 0, 100% 100%, 0 100%);
     }
 
-    .hero {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 32px;
-      padding: 52px 48px 40px;
-    }
-
-    .eyebrow {
-      margin: 0 0 12px;
-      color: var(--accent);
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .2em;
-      text-transform: uppercase;
-    }
-
-    h1 {
-      margin: 0;
-      font-family: var(--serif);
-      font-size: 40px;
-      font-weight: 400;
-      line-height: 1.1;
-      letter-spacing: -.025em;
-    }
-
-    .hero p {
-      margin: 12px 0 0;
-      color: var(--ink-2);
-      font-size: 12px;
-    }
-
-    .amount { text-align: right; flex-shrink: 0; }
-    .amount .label { margin-bottom: 4px; }
-    .amount strong {
-      display: block;
-      font-family: var(--serif);
-      font-size: 34px;
-      font-weight: 400;
-      letter-spacing: -.02em;
-      font-variant-numeric: tabular-nums;
-      line-height: 1.1;
-    }
-    .amount small { color: var(--muted); font-size: 10px; }
-
-    .label {
-      color: var(--muted);
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: .16em;
-      text-transform: uppercase;
-    }
-
-    .meta {
+    /* ── En-tête ── */
+    .head {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: 190px 1fr 200px;
+      align-items: start;
       gap: 24px;
-      padding: 22px 48px;
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-      background: #fcfcfb;
+      padding: 26px 42px 22px;
     }
 
-    .meta span.value {
-      display: block;
-      margin-top: 5px;
-      font-size: 12px;
-      font-weight: 600;
-      font-variant-numeric: tabular-nums;
-    }
+    .brand { display: flex; align-items: center; gap: 10px; padding-top: 6px; }
+    .brand img { width: 42px; height: 42px; object-fit: cover; border-radius: 3px; }
+    .brand b { display: block; font-size: 12px; letter-spacing: .12em; color: var(--navy); }
+    .brand span { display: block; font-size: 8px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
 
-    .mono { font-family: 'SFMono-Regular', Consolas, 'Courier New', monospace; font-size: 11px; }
-
-    .content { padding: 40px 48px 44px; }
-
-    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
-
-    .cols h2, .block h2 {
-      margin: 0 0 14px;
-      color: var(--muted);
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: .16em;
+    .title { text-align: center; }
+    .title h1 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: .06em;
       text-transform: uppercase;
     }
 
-    .cols p { margin: 2px 0; color: var(--ink-2); font-size: 12px; }
-    .cols p strong { color: var(--ink); font-weight: 600; }
+    .title p { margin: 6px 0 0; color: var(--ink); font-size: 10px; }
+    .title p span { color: var(--muted); margin: 0 5px; }
 
-    .block { margin-top: 38px; }
-
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    td { padding: 11px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-    td:first-child { color: var(--muted); width: 46%; }
-    td:last-child { text-align: right; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
-    tr:last-child td { border-bottom: 0; }
-
-    .total {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      margin-top: 18px;
-      padding-top: 18px;
-      border-top: 1px solid var(--ink);
+    .company {
+      font-size: 10px;
+      line-height: 1.55;
+      color: var(--ink);
     }
 
-    .total span { font-size: 12px; font-weight: 600; }
-    .total strong { font-family: var(--serif); font-size: 24px; font-weight: 400; font-variant-numeric: tabular-nums; }
+    .company strong { display: block; color: var(--navy); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+    .company .date { margin-top: 12px; padding-top: 6px; border-top: 1px dotted var(--line); font-weight: 700; }
+
+    .rule { height: 14px; background: var(--orange); }
+
+    /* ── Corps ── */
+    .body { padding: 30px 42px 36px; }
+
+    .row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 18px; font-size: 12px; }
+    .row .k { color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; white-space: nowrap; }
+    .row .v { font-weight: 700; color: var(--navy); }
+    .row .v.mono { font-family: 'SFMono-Regular', Consolas, 'Courier New', monospace; font-size: 11px; }
+    .row .leaders { flex: 1; border-bottom: 1px dotted var(--line); transform: translateY(-3px); }
+    .row .spacer { width: 28px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 26px; }
+
+    .section { margin-top: 18px; }
+    .section h2 {
+      margin: 0 0 10px;
+      color: var(--navy);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .field { display: flex; align-items: baseline; margin: 12px 0; font-size: 12px; }
+    .field label { color: var(--ink); font-weight: 600; white-space: nowrap; }
+    .field .dots { flex: 1; border-bottom: 1px dotted var(--line); margin: 0 8px; transform: translateY(-3px); }
+    .field b { color: var(--navy); font-weight: 700; text-align: right; }
+
+    .amount-box {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 26px;
+      font-size: 12px;
+    }
+
+    .amount-box .box {
+      display: inline-block;
+      min-width: 220px;
+      padding: 9px 14px;
+      border: 1px solid var(--navy);
+      border-radius: 2px;
+      color: var(--navy);
+      font-weight: 800;
+      font-size: 15px;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: .02em;
+    }
+
+    .signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-top: 42px;
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .signatures .line {
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 10px;
+      color: var(--ink);
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .signatures strong { color: var(--navy); }
 
     .note {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-      margin-top: 38px;
-      padding: 18px 20px;
-      border: 1px solid #e3efe8;
-      border-radius: 12px;
-      background: var(--emerald-soft);
-      color: #0d5c43;
-      font-size: 11px;
-      line-height: 1.7;
-    }
-
-    .note svg { flex-shrink: 0; margin-top: 2px; }
-
-    footer {
-      padding: 26px 48px 30px;
-      border-top: 1px solid var(--line);
-      background: #fcfcfb;
-      color: var(--muted);
+      margin-top: 32px;
+      padding: 12px 16px;
+      border-left: 3px solid var(--orange);
+      background: #fffaf2;
+      color: #7a5a24;
       font-size: 10px;
       line-height: 1.7;
     }
 
-    footer a { color: var(--ink-2); text-decoration: none; border-bottom: 1px solid var(--line); }
-    footer .lines { display: flex; justify-content: space-between; gap: 20px; }
-    footer .fine { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 9px; }
+    footer {
+      padding: 14px 42px 20px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.6;
+    }
 
-    @media (max-width: 640px) {
+    @media (max-width: 720px) {
       body { padding: 12px 10px 40px; }
-      .top, .hero, .meta, .content, footer { padding-left: 22px; padding-right: 22px; }
-      .hero { flex-direction: column; align-items: flex-start; padding-top: 36px; }
-      .amount { text-align: left; }
-      .meta { grid-template-columns: 1fr 1fr; gap: 18px; }
-      .cols { grid-template-columns: 1fr; gap: 28px; }
-      .toolbar { flex-direction: column; align-items: stretch; }
-      footer .lines { flex-direction: column; gap: 4px; }
+      .head { grid-template-columns: 1fr; gap: 16px; padding: 22px 20px; }
+      .title { text-align: left; }
+      .title h1 { font-size: 23px; }
+      .body { padding: 24px 20px 30px; }
+      .grid-2, .grid-3, .signatures { grid-template-columns: 1fr; gap: 18px; }
+      .row { flex-wrap: wrap; }
+      .field label { font-size: 11px; }
+      .top-band .navy { width: 54%; }
+      footer { padding: 14px 20px 18px; }
     }
 
     @media print {
       body { background: #fff; padding: 0; }
       .toolbar { display: none !important; }
-      .sheet { border: 0; border-radius: 0; box-shadow: none; max-width: none; }
-      .status, .meta, .note, footer { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      @page { size: A4; margin: 12mm; }
+      .receipt { max-width: none; box-shadow: none; }
+      .top-band, .bottom-band, .rule, .note { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      @page { size: A4 landscape; margin: 10mm; }
     }
   </style>
 </head>
 <body>
   <div class="toolbar">
-    <span>Prototype — données de démonstration</span>
+    <span>Modèle de reçu Linkhoo — données de démonstration</span>
     <button type="button" onclick="window.print()">Télécharger en PDF</button>
   </div>
 
-  <div class="sheet">
-    <div class="top">
+  <div class="receipt">
+    <div class="top-band">
+      <div class="navy"></div>
+      <div class="gap"></div>
+      <div class="orange"></div>
+    </div>
+
+    <div class="head">
       <div class="brand">
         <img src="logo.jpg" alt="">
         <div>
           <b>LINKHOO</b>
-          <span>Location de logements en Afrique de l'Ouest</span>
+          <span>Location Afrique</span>
         </div>
       </div>
-      <span class="status">PAYÉ</span>
-    </div>
 
-    <div class="hero">
-      <div>
-        <p class="eyebrow">Reçu n° RCP-2026-001847</p>
+      <div class="title">
         <h1>Reçu de paiement</h1>
-        <p>Paiement reçu le 24 novembre 2026 à 09:42 · Réservation RES-8F3C21AB</p>
+        <p>Abidjan +225 07 12 45 78 <span>·</span> contact@linkehoo.com <span>·</span> linkehoo.com</p>
       </div>
-      <div class="amount">
-        <div class="label">Total payé</div>
-        <strong>189 000 FCFA</strong>
-        <small>Montant TTC · pawaPay</small>
+
+      <div class="company">
+        <strong>Linkhoo</strong>
+        Abidjan, Cocody<br>
+        Côte d'Ivoire<br>
+        <div class="date">Date : <span>24 nov. 2026</span></div>
       </div>
     </div>
 
-    <div class="meta">
-      <div>
-        <div class="label">Référence</div>
-        <span class="value mono">PAY-2026-11-24001847</span>
-      </div>
-      <div>
-        <div class="label">Date</div>
-        <span class="value">24 nov. 2026</span>
-      </div>
-      <div>
-        <div class="label">Statut</div>
-        <span class="value" style="color:#0f9d6e;">Payé intégralement</span>
-      </div>
-      <div>
-        <div class="label">Transaction</div>
-        <span class="value mono">PP-8K3M2X9Q4L</span>
-      </div>
-    </div>
+    <div class="rule"></div>
 
-    <div class="content">
-      <div class="cols">
-        <div>
-          <h2>Payé par</h2>
-          <p><strong>Awa Koffi</strong></p>
-          <p>awa.koffi@exemple.ci</p>
-          <p>+225 07 12 45 78</p>
+    <div class="body">
+      <div class="row">
+        <span class="k">N° de reçu</span>
+        <span class="v" data-field="receipt_number">RCP-2026-001847</span>
+        <span class="leaders"></span>
+        <span class="spacer"></span>
+        <span class="k">Réf. paiement</span>
+        <span class="v mono" data-field="payment_reference">PAY-2026-11-24001847</span>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Reçu avec remerciements de</label>
+          <span class="dots"></span>
+          <b data-field="client_name">Awa Koffi</b>
         </div>
-        <div>
-          <h2>Logement</h2>
-          <p><strong>Appartement Cocody — Vue lagon</strong></p>
-          <p>Maison Bloom · Hôte vérifié</p>
-          <p>Cocody, Abidjan — Côte d'Ivoire</p>
+        <div class="field">
+          <label>Réservation</label>
+          <span class="dots"></span>
+          <b class="mono" data-field="reservation_id">RES-8F3C21AB</b>
         </div>
       </div>
 
-      <div class="block">
-        <h2>Votre séjour</h2>
-        <table role="presentation">
-          <tr><td>Arrivée</td><td>Samedi 12 décembre 2026 · 14:00</td></tr>
-          <tr><td>Départ</td><td>Vendredi 18 décembre 2026 · 11:00</td></tr>
-          <tr><td>Durée</td><td>6 nuits</td></tr>
-          <tr><td>Voyageur</td><td>Awa Koffi</td></tr>
-        </table>
+      <div class="grid-2">
+        <div class="field">
+          <label>Montant</label>
+          <span class="dots"></span>
+          <b data-field="amount">189 000 FCFA</b>
+        </div>
+        <div class="field">
+          <label>En lettres</label>
+          <span class="dots"></span>
+          <b>Cent quatre-vingt-neuf mille francs CFA</b>
+        </div>
       </div>
 
-      <div class="block">
-        <h2>Détail du paiement</h2>
-        <table role="presentation">
-          <tr><td>Prix du séjour</td><td>180 000 FCFA</td></tr>
-          <tr><td>Frais de service Linkhoo</td><td>9 000 FCFA</td></tr>
-          <tr><td>Moyen de paiement</td><td>Mobile Money · MTN MoMo</td></tr>
-          <tr><td>ID de transaction pawaPay</td><td class="mono">PP-8K3M2X9Q4L</td></tr>
-        </table>
-        <div class="total">
-          <span>Total payé</span>
-          <strong>189 000 FCFA</strong>
+      <div class="section">
+        <h2>Pour / Logement</h2>
+        <div class="grid-2">
+          <div class="field">
+            <label>Motif</label>
+            <span class="dots"></span>
+            <b data-field="room_title">Appartement Cocody — Vue lagon</b>
+          </div>
+          <div class="field">
+            <label>Marché</label>
+            <span class="dots"></span>
+            <b data-field="market">Abidjan, Côte d'Ivoire (CI)</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Séjour &amp; règlement</h2>
+        <div class="grid-3">
+          <div class="field">
+            <label>Arrivée</label>
+            <span class="dots"></span>
+            <b data-field="check_in">12 déc. 2026</b>
+          </div>
+          <div class="field">
+            <label>Départ</label>
+            <span class="dots"></span>
+            <b data-field="check_out">18 déc. 2026</b>
+          </div>
+          <div class="field">
+            <label>Durée</label>
+            <span class="dots"></span>
+            <b data-field="duration">6 nuits</b>
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="field">
+            <label>Compte / Moyen</label>
+            <span class="dots"></span>
+            <b data-field="payment_method">MTN MoMo</b>
+          </div>
+          <div class="field">
+            <label>Payé</label>
+            <span class="dots"></span>
+            <b data-field="paid">189 000 FCFA</b>
+          </div>
+          <div class="field">
+            <label>Reste dû</label>
+            <span class="dots"></span>
+            <b data-field="due">0 FCFA</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="amount-box">
+        <strong>Total réglé =</strong>
+        <span class="box" data-field="total_paid">189 000 FCFA</span>
+        <span>Transaction pawaPay <b class="mono" data-field="provider_payment_id">PP-8K3M2X9Q4L</b></span>
+      </div>
+
+      <div class="signatures">
+        <div>
+          <div class="line" data-field="host_name">Maison Bloom — Hôte vérifié</div>
+          Reçu par l'hôte / le logement
+        </div>
+        <div style="text-align:right;">
+          <div class="line">Linkhoo — Paiement validé</div>
+          <strong>Signature autorisée</strong>
         </div>
       </div>
 
       <div class="note">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle><path d="M8 12l3 3 5-5"></path>
-        </svg>
-        <div>
-          Ce reçu atteste du règlement intégral de la réservation <strong>RES-8F3C21AB</strong>.
-          Aucun paiement supplémentaire ne sera demandé sur place. Conservez ce document
-          pour vos justificatifs ; il peut être téléchargé en PDF depuis le bouton ci-dessus.
-        </div>
+        Ce reçu atteste du règlement intégral de la réservation <b>RES-8F3C21AB</b>. Aucun
+        paiement supplémentaire ne sera demandé sur place. Conservez ce document comme
+        justificatif ; il peut être téléchargé en PDF depuis le bouton ci-dessus.
       </div>
     </div>
 
-    <footer>
-      <div class="lines">
-        <div><strong>Linkhoo</strong> — Plateforme de location de logements en Afrique de l'Ouest.</div>
-        <div>Une question ? <a href="mailto:contact@linkhoo.com">contact@linkhoo.com</a> · <a href="https://linkehoo.com">linkehoo.com</a></div>
-      </div>
-      <p class="fine">
-        Reçu électronique généré automatiquement, valable sans signature. Les données personnelles
-        qu'il contient sont destinées au seul titulaire de la réservation, conformément à notre
-        politique de confidentialité. Merci de ne pas le transmettre à un tiers.
-      </p>
-    </footer>
+    <div class="bottom-band">
+      <div class="orange"></div>
+      <div class="gap"></div>
+      <div class="navy"></div>
+    </div>
   </div>
+
+  <footer style="max-width:900px;margin:0 auto;">
+    Reçu électronique généré automatiquement par Linkhoo, valable sans signature manuscrite.
+    Données personnelles réservées au titulaire de la réservation — politique de confidentialité disponible sur
+    <a href="https://linkehoo.com/ci/politique-de-confidentialite">linkehoo.com</a>.
+  </footer>
 </body>
 </html>
