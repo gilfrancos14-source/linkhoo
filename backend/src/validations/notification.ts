@@ -15,6 +15,9 @@ const notificationTypeSchema = z.enum([
   'payout_details_verified',
   'payout_paid',
   'payout_failed',
+  // Messagerie et relance admin (services/gerantNotifications.ts).
+  'message_received',
+  'payout_retry_started',
 ]);
 
 export const notificationCreateSchema = z

@@ -348,7 +348,7 @@ describe('DashboardPage', () => {
         clientName: 'Aïcha Diallo',
         clientEmail: 'aicha@ilehya.ci',
         clientPhone: '+225 01 01 01 01',
-        message: 'Demande de réservation',
+        message: 'Nouvelle demande de réservation du 01/03/2026 au 05/03/2026.',
         date: new Date().toISOString(),
         read: false,
         reservationId: 'res-1',
@@ -362,10 +362,9 @@ describe('DashboardPage', () => {
 
     fireEvent.click(bell);
 
-    expect(await screen.findByText(/Demande de réservation pour/)).toBeInTheDocument();
-    expect(screen.getByText('Studio Ayida')).toBeInTheDocument();
+    expect(await screen.findByText(/Nouvelle demande de réservation/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Demande de réservation/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Nouvelle demande de réservation/ }));
     expect(mocks.markAsRead).toHaveBeenCalledWith('notif-1');
   });
 

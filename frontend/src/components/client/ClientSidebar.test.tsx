@@ -41,4 +41,25 @@ describe('ClientSidebar — en-tête', () => {
       '/ci/compte?view=stays',
     );
   });
+
+  it("n'affiche pas le lien Paramètres et garde la carte d'aide en bas", () => {
+    render(
+      <MemoryRouter>
+        <ClientSidebar />
+      </MemoryRouter>,
+    );
+
+    const sidebar = document.querySelector<HTMLElement>('aside.client-sidebar');
+    if (!sidebar) throw new Error('Sidebar introuvable');
+    const nav = within(sidebar);
+
+    expect(nav.queryByRole('link', { name: 'Paramètres' })).not.toBeInTheDocument();
+    const helpCard = nav.getByText("Besoin d'aide ?").closest('[class*="mt-auto"]');
+    expect(helpCard).not.toBeNull();
+
+    const children = Array.from(sidebar.children);
+    const helpIndex = children.findIndex((el) => el.textContent?.includes("Besoin d'aide ?"));
+    const navIndex = children.findIndex((el) => el.tagName === 'NAV');
+    expect(helpIndex).toBeGreaterThan(navIndex);
+  });
 });

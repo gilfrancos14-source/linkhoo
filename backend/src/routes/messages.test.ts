@@ -31,8 +31,9 @@ let gerants: ChainOrQueue;
 let rooms: ChainOrQueue;
 let conversations: ChainOrQueue;
 let messages: ChainOrQueue;
+let notifications: ChainOrQueue;
 
-type TableName = 'clients' | 'gerants' | 'rooms' | 'conversations' | 'messages';
+type TableName = 'clients' | 'gerants' | 'rooms' | 'conversations' | 'messages' | 'notifications';
 
 function stubTables(tables: Partial<Record<TableName, ChainOrQueue>> = {}): void {
   useSupabaseTables(supabaseAdmin.from, {
@@ -41,6 +42,7 @@ function stubTables(tables: Partial<Record<TableName, ChainOrQueue>> = {}): void
     rooms,
     conversations,
     messages,
+    notifications,
     ...tables,
   });
 }
@@ -75,6 +77,7 @@ beforeEach(() => {
   rooms = fakeChain({ data: null, error: null });
   conversations = fakeChain({ data: null, error: null });
   messages = fakeChain({ data: null, error: null });
+  notifications = fakeChain({ data: null, error: null });
   stubTables();
 });
 
@@ -412,8 +415,10 @@ describe('POST /api/messages/conversations/:id/messages', () => {
       },
       error: null,
     });
+    const notificationChain = fakeChain({ data: null, error: null });
     conversations = [fakeChain({ data: conversationRow, error: null }), updateChain];
     messages = insertChain;
+    notifications = notificationChain;
     stubTables();
 
     const res = await request(app)
@@ -432,6 +437,17 @@ describe('POST /api/messages/conversations/:id/messages', () => {
     );
     expect(updateChain.update).toHaveBeenCalledWith(
       expect.objectContaining({ last_message_at: expect.any(String) }),
+    );
+    // La cloche du gérant reçoit le message du client (non bloquant).
+    await vi.waitFor(() =>
+      expect(notificationChain.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'message_received',
+          gerant_id: 'user_gerant',
+          room_id: 'room-1',
+          message: expect.stringContaining('Jean Kouassi'),
+        }),
+      ),
     );
   });
 

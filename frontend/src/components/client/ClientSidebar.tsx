@@ -32,7 +32,6 @@ function SidebarSprite() {
       <symbol id="cs-msg" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-5.4A8 8 0 1 1 21 12z" /></symbol>
       <symbol id="cs-heart" viewBox="0 0 24 24"><path d="M12 21s-8-5.3-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.7-8 11-8 11z" /></symbol>
       <symbol id="cs-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></symbol>
-      <symbol id="cs-cog" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" /></symbol>
       <symbol id="cs-help" viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2" /><rect x="2.5" y="14" width="4" height="6" rx="1.5" /><rect x="17.5" y="14" width="4" height="6" rx="1.5" /></symbol>
       <symbol id="cs-building" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" /><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01" /></symbol>
       <symbol id="cs-building2" viewBox="0 0 24 24"><path d="M6 22V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M2 22h20M10 8h4M10 12h4M10 16h4" /></symbol>
@@ -64,7 +63,7 @@ export default function ClientSidebar() {
 
   // Détermine l'entrée active. Les vues du compte sont distinguées par le
   // paramètre `view` : sans ça, « Accueil » resterait surligné partout.
-  const isActive = (target: 'overview' | 'stays' | 'messages' | 'favorites' | 'profile' | 'settings') => {
+  const isActive = (target: 'overview' | 'stays' | 'messages' | 'favorites' | 'profile') => {
     if (target === 'messages') return pathname.startsWith(`${homePath}/messages`);
     if (!pathname.startsWith(`${homePath}/compte`)) return false;
     if (target === 'overview') return view === null || view === 'overview';
@@ -130,16 +129,9 @@ export default function ClientSidebar() {
           >
             <SidebarIcon id="user" />Mon profil
           </Link>
-          <Link
-            to={`${homePath}/compte?view=settings`}
-            className={`nv ${isActive('settings') ? 'on' : ''}`}
-            aria-current={isActive('settings') ? 'page' : undefined}
-          >
-            <SidebarIcon id="cog" />Paramètres
-          </Link>
         </nav>
 
-        <div className="mx-[18px] mt-[56px] rounded-xl border border-[#e6ebf5] bg-[#f5f8ff] p-3">
+        <div className="mx-[18px] mb-6 mt-auto rounded-xl border border-[#e6ebf5] bg-[#f5f8ff] p-3">
           <div className="flex gap-3">
             <SidebarIcon id="help" className="mt-1 !h-8 !w-8 flex-none text-[#1d3f8f]" />
             <div>
@@ -154,7 +146,7 @@ export default function ClientSidebar() {
           </Link>
         </div>
 
-        <div className="mt-auto pb-12 text-center [@media(max-height:820px)]:hidden">
+        <div className="mt-6 pb-12 text-center [@media(max-height:820px)]:hidden">
           <div className="flex items-end justify-center gap-0.5 text-blue-400">
             <SidebarIcon id="building" className="!h-10 !w-10 stroke-[1.2]" />
             <SidebarIcon id="building2" className="!h-16 !w-16 stroke-[1.2]" />

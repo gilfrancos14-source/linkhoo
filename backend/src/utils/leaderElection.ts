@@ -22,7 +22,6 @@ import { createClient, type RedisClientType } from 'redis';
 
 const LOCK_KEY = 'ilehya:jobs:leader';
 const LOCK_TTL_MS = 30_000;
-const RENEW_INTERVAL_MS = 10_000;
 const RETRY_INTERVAL_MS = 15_000;
 
 let client: RedisClientType | null = null;

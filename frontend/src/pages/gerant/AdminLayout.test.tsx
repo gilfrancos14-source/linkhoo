@@ -100,7 +100,7 @@ function makeNotif(overrides: Partial<Notification> = {}): Notification {
     clientName: 'Koffi',
     clientEmail: 'koffi@mail.ci',
     clientPhone: '+225010203040',
-    message: 'Demande de réservation',
+    message: 'Nouvelle demande de réservation du 01/03/2026 au 05/03/2026.',
     date: new Date().toISOString(),
     read: false,
     reservationId: 'res-1',
@@ -410,8 +410,7 @@ describe('notifications', () => {
     renderLayout();
     await openNotifications();
 
-    expect(screen.getByText(/Demande de réservation pour/)).toBeInTheDocument();
-    expect(screen.getByText('Studio Ayida')).toBeInTheDocument();
+    expect(screen.getByText(/Nouvelle demande de réservation/)).toBeInTheDocument();
     expect(screen.getByText('À l\'instant')).toBeInTheDocument();
     expect(screen.getByText('Réservation en attente')).toBeInTheDocument();
   });
@@ -438,7 +437,7 @@ describe('notifications', () => {
     renderLayout();
     await openNotifications();
 
-    await userEvent.click(screen.getByRole('button', { name: /Demande de réservation/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Nouvelle demande de réservation/ }));
 
     expect(mocks.markAsRead).toHaveBeenCalledWith('n1');
     await waitFor(() => expect(mocks.getNotifications).toHaveBeenCalledTimes(2));

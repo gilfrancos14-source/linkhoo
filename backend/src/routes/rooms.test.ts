@@ -56,7 +56,7 @@ let rooms: FakeChain;
 let gerants: FakeChain;
 let reservations: FakeChain;
 
-type TableName = 'rooms' | 'gerants' | 'reservations';
+type TableName = 'rooms' | 'gerants' | 'reservations' | 'translations';
 
 function stubPublic(chain: FakeChain): void {
   vi.mocked(supabasePublic.from).mockReturnValue(chain as never);

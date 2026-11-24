@@ -126,8 +126,9 @@ describe('Sécurité des réservations', () => {
       .select('*')
       .eq('id', id)
       .single();
-    expect(confirmed.statut).toBe('confirmee');
-    expect(confirmed.payment_status).toBe('unpaid');
+    expect(confirmed).not.toBeNull();
+    expect(confirmed!.statut).toBe('confirmee');
+    expect(confirmed!.payment_status).toBe('unpaid');
 
     // Reculer responded_at de 25h pour simuler le délai dépassé
     const { error: backdateError } = await supabaseAdmin
@@ -148,7 +149,8 @@ describe('Sécurité des réservations', () => {
       .select('*')
       .eq('id', id)
       .single();
-    expect(cancelled.statut).toBe('annulee');
-    expect(cancelled.annulee_reason).toBe('payment_timeout');
+    expect(cancelled).not.toBeNull();
+    expect(cancelled!.statut).toBe('annulee');
+    expect(cancelled!.annulee_reason).toBe('payment_timeout');
   });
 });
