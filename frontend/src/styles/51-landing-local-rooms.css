@@ -1,193 +1,281 @@
-/* Section « À louer près de chez vous » de la landing (géolocalisation IP). */
+/* Calqué sur d1.png : bandeau blanc, titre gras + flèche circulaire,
+   flèches de carrousel en haut à droite, cartes photo arrondies avec cœur,
+   badge « Coup de cœur » et tuile « Tout afficher ». */
 
 .acc-local {
-  padding: 44px 0 52px;
+  padding: 26px 0 34px;
   background: #fff;
 }
 
 .acc-local--neighbor {
-  background: var(--acc-soft, #f6f5fb);
+  background: #fff;
+  border-top: 1px solid #f0f0ee;
 }
 
 .acc-local__head {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 28px;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 
-.acc-local__eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 10px;
-  color: var(--acc-brand);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+.acc-local__heading {
+  min-width: 0;
 }
 
 .acc-local__title {
-  margin: 0 0 8px;
-  color: var(--acc-navy);
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.acc-local__subtitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin: 0;
-  color: var(--acc-ink, #14122b);
-  opacity: 0.68;
-  font-size: 14px;
+  color: #16202f;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .acc-local__all {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   flex-shrink: 0;
-  padding: 10px 16px;
-  border: 1px solid var(--acc-line, #ebe9f3);
-  border-radius: 999px;
-  color: var(--acc-navy);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: border-color 0.2s, color 0.2s;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #16202f;
+  transition: background 0.2s, color 0.2s;
 }
 
 .acc-local__all:hover {
-  border-color: var(--acc-brand);
-  color: var(--acc-brand);
+  background: #16202f;
+  color: #fff;
 }
 
+.acc-local__nav {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.acc-local__nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #46505e;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  transition: background 0.2s, color 0.2s;
+}
+
+.acc-local__nav-btn:hover {
+  background: #e8eaee;
+  color: #16202f;
+}
+
+/* Carrousel horizontal (identique sur PC, tablette et mobile). */
 .acc-local__grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  padding: 2px 2px 8px;
+  margin: 0 -2px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.acc-local__grid::-webkit-scrollbar {
+  display: none;
 }
 
 .acc-local__card {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--acc-line, #ebe9f3);
-  border-radius: 16px;
-  background: #fff;
+  flex: 0 0 200px;
+  width: 200px;
+  scroll-snap-align: start;
   color: inherit;
   text-decoration: none;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.acc-local__card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 14px 30px rgba(14, 20, 51, 0.09);
 }
 
 .acc-local__media {
-  aspect-ratio: 16 / 10;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
-  background: var(--acc-soft, #f6f5fb);
+  border-radius: 12px;
+  background: #f4f4f2;
 }
 
 .acc-local__media img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
-  transition: transform 0.3s;
+  transition: transform 0.35s ease;
 }
 
 .acc-local__card:hover .acc-local__media img {
   transform: scale(1.04);
 }
 
-.acc-local__placeholder {
-  display: flex;
+.acc-local__badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  max-width: 110px;
+  padding: 7px 9px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #1d2734;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.25;
+  box-shadow: 0 2px 6px rgba(16, 24, 40, 0.08);
+}
+
+.acc-local__heart {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
-  color: var(--acc-brand);
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+
+.acc-local__heart--active {
+  color: #ef4444;
 }
 
 .acc-local__body {
-  padding: 10px 12px 12px;
-}
-
-.acc-local__place {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0 0 5px;
-  color: var(--acc-navy);
-  opacity: 0.6;
-  font-size: 10px;
+  padding: 9px 2px 0;
 }
 
 .acc-local__name {
-  margin: 0 0 7px;
-  color: var(--acc-navy);
-  font-size: 12.5px;
+  margin: 0 0 3px;
+  color: #16202f;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1.3;
-  min-height: 2.4em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .acc-local__price {
   margin: 0;
-  color: var(--acc-navy);
-  opacity: 0.7;
-  font-size: 10px;
+  color: #2f6fed;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
-.acc-local__price strong {
-  color: var(--acc-brand);
-  font-size: 12.5px;
-  opacity: 1;
+/* Tuile « Tout afficher » avec photos empilées, comme sur d1.png. */
+.acc-local__showall {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 200px;
+  width: 200px;
+  align-self: stretch;
+  min-height: 178px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(16, 24, 40, 0.08);
+  color: #16202f;
+  text-decoration: none;
+  scroll-snap-align: start;
+  transition: box-shadow 0.2s;
 }
 
-/* Tablette et mobile : carousel horizontal avec défilement tactile, comme
-   les cartes de la page marché. Les cartes gardent une largeur fixe et
-   s'alignent sur le doigt grâce à `scroll-snap`. */
-@media (max-width: 1024px) {
-  .acc-local__grid {
-    display: flex;
-    grid-template-columns: none;
-    gap: 16px;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-    padding: 2px 4px 12px;
-    margin: 0 -4px;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
+.acc-local__showall:hover {
+  box-shadow: 0 8px 22px rgba(16, 24, 40, 0.12);
+}
 
-  .acc-local__grid::-webkit-scrollbar {
-    display: none;
-  }
+.acc-local__stack {
+  position: relative;
+  display: block;
+  width: 120px;
+  height: 92px;
+  margin-bottom: 16px;
+}
 
-  .acc-local__card {
-    flex: 0 0 62%;
-    max-width: 250px;
-    scroll-snap-align: start;
-  }
+.acc-local__stack-img {
+  position: absolute;
+  width: 78px;
+  height: 62px;
+  border: 3px solid #fff;
+  border-radius: 10px;
+  object-fit: cover;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.14);
+}
+
+.acc-local__stack-img--1 {
+  left: 4px;
+  top: 14px;
+  transform: rotate(-10deg);
+}
+
+.acc-local__stack-img--2 {
+  left: 24px;
+  top: 4px;
+  transform: rotate(4deg);
+  z-index: 2;
+}
+
+.acc-local__stack-img--3 {
+  left: 42px;
+  top: 16px;
+  transform: rotate(12deg);
+}
+
+.acc-local__showall-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.acc-local__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 @media (max-width: 640px) {
   .acc-local {
-    padding: 36px 0 44px;
+    padding: 20px 0 28px;
   }
 
-  .acc-local__head {
-    flex-direction: column;
-    align-items: flex-start;
+  .acc-local__title {
+    font-size: 17px;
   }
 
-  .acc-local__card {
-    flex-basis: 78%;
+  .acc-local__card,
+  .acc-local__showall {
+    flex-basis: 76%;
+    width: 76%;
   }
 }

@@ -57,9 +57,11 @@ describe('LandingLocalRooms', () => {
 
     renderSection();
 
-    expect(await screen.findByRole('heading', { name: /près de chez vous/i })).toBeInTheDocument();
-    expect(screen.getByText('Studio Cocody')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Studio Cocody/ })).toHaveAttribute(
+    expect(
+      await screen.findByRole('heading', { name: /Logements disponibles/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/^Appartement · Abidjan$/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Appartement · Abidjan/ })).toHaveAttribute(
       'href',
       '/ci/chambre/room-1',
     );
@@ -99,7 +101,7 @@ describe('LandingLocalRooms — pays voisin', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('Studio Lomé')).toBeInTheDocument();
+    expect(await screen.findByText(/^Appartement · Lomé$/)).toBeInTheDocument();
     expect(mocks.neighborRooms).toHaveBeenCalled();
     expect(mocks.localRooms).not.toHaveBeenCalled();
     expect(screen.getByRole('link', { name: /Voir les logements au/ })).toHaveAttribute(

@@ -96,17 +96,31 @@
     },
     "localRooms": {
       "eyebrow": "Local picks · {{country}}",
-      "title": "Places to rent near you",
+      "title": "Places to rent · {{country}}",
       "subtitle": "Discover a selection of available rentals in {{country}}, chosen from your location.",
       "viewAll": "See all rentals in {{country}}",
-      "from": "From"
+      "from": "From",
+      "property": "Apartment",
+      "currency": "FCFA",
+      "night": "night",
+      "badge": "Travelers’ favourite",
+      "showAll": "Show all",
+      "prev": "Previous places",
+      "next": "Next places"
     },
     "neighborRooms": {
       "eyebrow": "Nearby · {{country}}",
-      "title": "Rentals available in {{country}}",
+      "title": "Places to rent · {{country}}",
       "subtitle": "The closest neighbouring country to you also has rentals available. Have a look.",
       "viewAll": "See rentals in {{country}}",
-      "from": "From"
+      "from": "From",
+      "property": "Apartment",
+      "currency": "FCFA",
+      "night": "night",
+      "badge": "Travelers’ favourite",
+      "showAll": "Show all",
+      "prev": "Previous places",
+      "next": "Next places"
     }
   },
   "navigation": {

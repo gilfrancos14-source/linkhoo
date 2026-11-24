@@ -96,17 +96,31 @@
     },
     "localRooms": {
       "eyebrow": "Selección local · {{country}}",
-      "title": "Alojamientos cerca de ti",
+      "title": "Alojamientos disponibles · {{country}}",
       "subtitle": "Descubre una selección de alojamientos disponibles en {{country}}, elegida según tu ubicación.",
       "viewAll": "Ver todos los alojamientos en {{country}}",
-      "from": "Desde"
+      "from": "Desde",
+      "property": "Apartamento",
+      "currency": "FCFA",
+      "night": "noche",
+      "badge": "Favorito de viajeros",
+      "showAll": "Ver todo",
+      "prev": "Alojamientos anteriores",
+      "next": "Alojamientos siguientes"
     },
     "neighborRooms": {
       "eyebrow": "Cerca de ti · {{country}}",
-      "title": "Alojamientos disponibles en {{country}}",
+      "title": "Alojamientos disponibles · {{country}}",
       "subtitle": "El país vecino más cercano a ti también tiene alojamientos disponibles. Descúbrelos aquí.",
       "viewAll": "Ver alojamientos en {{country}}",
-      "from": "Desde"
+      "from": "Desde",
+      "property": "Apartamento",
+      "currency": "FCFA",
+      "night": "noche",
+      "badge": "Favorito de viajeros",
+      "showAll": "Ver todo",
+      "prev": "Alojamientos anteriores",
+      "next": "Alojamientos siguientes"
     }
   },
   "navigation": {
