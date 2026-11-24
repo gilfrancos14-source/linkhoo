@@ -5,401 +5,379 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Reçu de paiement — Linkhoo</title>
   <!--
-    MODÈLE DE REÇU DE PAIEMENT (aperçu local).
-    Les champs {{ENTITE}} sont destinés à être remplacés par le backend au
-    moment de l'envoi du mail de confirmation de paiement.
-
-    Usage navigateur : ouvrir ce fichier, bouton « Télécharger / Imprimer ».
-    Usage e-mail : renderer le même gabarit avec les valeurs réelles puis
-    inliner les styles (ou reprendre la structure tableaux ci-dessous, déjà
-    compatible avec la plupart des clients mail).
+    PROTOTYPE — reçu de paiement « premium minimaliste ».
+    Données de démonstration réalistes. Le backend remplacera ces valeurs par
+    les siennes au moment de générer le reçu (voir les noms de champs ci-dessous).
   -->
   <style>
     :root {
-      --brand: #6d3fd9;
-      --brand-dark: #5b3fd6;
-      --sky: #2563eb;
-      --ink: #0f172a;
-      --ink-2: #334155;
-      --muted: #64748b;
-      --line: #e8eaf1;
-      --soft: #f6f5fb;
-      --success: #059669;
-      --success-bg: #ecfdf5;
+      --ink: #14151a;
+      --ink-2: #434750;
+      --muted: #9095a0;
+      --line: #e8e8e4;
+      --paper: #ffffff;
+      --canvas: #f6f6f3;
+      --accent: #6d3fd9;
+      --emerald: #0f9d6e;
+      --emerald-soft: #eefaf4;
+      --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      --serif: 'Times New Roman', Georgia, serif;
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      padding: 32px 16px 64px;
-      background: #f3f5fa;
+      padding: 40px 20px 72px;
+      background: var(--canvas);
       color: var(--ink);
-      font-family: 'Poppins', 'Segoe UI', Arial, Helvetica, sans-serif;
-      font-size: 14px;
-      line-height: 1.55;
+      font-family: var(--sans);
+      font-size: 13px;
+      line-height: 1.6;
       -webkit-font-smoothing: antialiased;
     }
 
     .toolbar {
-      max-width: 760px;
-      margin: 0 auto 18px;
+      max-width: 800px;
+      margin: 0 auto 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 11px;
+      letter-spacing: .02em;
     }
 
     .toolbar button {
-      border: 0;
-      border-radius: 8px;
-      padding: 10px 16px;
-      background: var(--brand);
-      color: #fff;
+      border: 1px solid #dcdcd7;
+      background: var(--paper);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 9px 18px;
       font: inherit;
       font-weight: 600;
       cursor: pointer;
-      box-shadow: 0 4px 14px rgba(109, 63, 217, .25);
+      transition: border-color .2s, background .2s;
     }
 
-    .toolbar button:hover { background: var(--brand-dark); }
+    .toolbar button:hover { border-color: var(--ink); background: #fff; }
 
     .sheet {
-      max-width: 760px;
+      max-width: 800px;
       margin: 0 auto;
-      background: #fff;
-      border-radius: 18px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 20px;
       overflow: hidden;
-      box-shadow: 0 18px 50px rgba(15, 23, 42, .10);
+      box-shadow: 0 24px 70px rgba(20, 21, 26, .06);
     }
 
-    .masthead {
-      padding: 34px 40px 30px;
-      background: linear-gradient(120deg, #0e1433 0%, #1b2350 60%, #2b2163 100%);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      position: relative;
-    }
-
-    .masthead img {
-      width: 62px;
-      height: 62px;
-      border-radius: 12px;
-      object-fit: cover;
-      background: #fff;
-      flex-shrink: 0;
-    }
-
-    .masthead .brand {
-      font-size: 11px;
-      letter-spacing: .22em;
-      text-transform: uppercase;
-      opacity: .72;
-      margin: 0 0 2px;
-    }
-
-    .masthead h1 {
-      margin: 0;
-      font-size: 25px;
-      font-weight: 600;
-      letter-spacing: -.02em;
-    }
-
-    .masthead .sub {
-      margin: 4px 0 0;
-      font-size: 12px;
-      opacity: .78;
-    }
-
-    .paid {
-      margin-left: auto;
-      align-self: flex-start;
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      padding: 7px 13px;
-      border-radius: 999px;
-      background: var(--success-bg);
-      color: #065f46;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .12em;
-      white-space: nowrap;
-    }
-
-    .paid::before {
-      content: '';
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--success);
-    }
-
-    .content { padding: 36px 40px 30px; }
-
-    .ref-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px 36px;
-      padding-bottom: 24px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .ref-bar div { min-width: 150px; }
-
-    .label {
-      display: block;
-      color: var(--muted);
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: .12em;
-      margin-bottom: 3px;
-    }
-
-    .value { font-size: 13px; font-weight: 600; color: var(--ink); }
-    .value.mono { font-family: 'Courier New', monospace; letter-spacing: .03em; }
-
-    .columns {
-      display: flex;
-      gap: 40px;
-      padding: 26px 0;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .columns > div { flex: 1; }
-
-    .columns p { margin: 2px 0; color: var(--ink-2); font-size: 13px; }
-
-    .section-title {
-      margin: 28px 0 14px;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .12em;
-      color: var(--brand);
-    }
-
-    table.details {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    table.details td {
-      padding: 9px 0;
-      border-bottom: 1px dashed var(--line);
-      vertical-align: top;
-    }
-
-    table.details td:first-child { color: var(--muted); width: 44%; }
-    table.details td:last-child { color: var(--ink); font-weight: 600; text-align: right; }
-
-    table.amounts {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 8px;
-      font-size: 13px;
-    }
-
-    table.amounts td {
-      padding: 8px 0;
-      color: var(--ink-2);
-      border-bottom: 1px solid var(--line);
-    }
-
-    table.amounts td:last-child { text-align: right; font-weight: 600; color: var(--ink); }
-
-    .total-row {
+    .top {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-top: 18px;
-      padding: 18px 20px;
-      border-radius: 12px;
-      background: var(--soft);
-      border: 1px solid #ebe9f3;
+      gap: 20px;
+      padding: 28px 48px;
+      border-bottom: 1px solid var(--line);
     }
 
-    .total-row .label { margin: 0; color: var(--ink-2); font-size: 11px; }
-    .total-row strong { font-size: 22px; color: var(--brand); }
-    .total-row small { display: block; color: var(--muted); font-weight: 400; font-size: 11px; text-align: right; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand img { width: 38px; height: 38px; border-radius: 9px; object-fit: cover; }
+    .brand b { display: block; font-size: 12px; letter-spacing: .26em; font-weight: 700; }
+    .brand span { display: block; font-size: 10px; color: var(--muted); letter-spacing: .04em; }
 
-    .notice {
-      margin-top: 24px;
-      padding: 14px 16px;
-      border-left: 3px solid var(--sky);
-      border-radius: 0 8px 8px 0;
-      background: #eff6ff;
-      color: #1e40af;
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: var(--emerald-soft);
+      color: #07694a;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .14em;
+    }
+
+    .status::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--emerald);
+    }
+
+    .hero {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 32px;
+      padding: 52px 48px 40px;
+    }
+
+    .eyebrow {
+      margin: 0 0 12px;
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 40px;
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: -.025em;
+    }
+
+    .hero p {
+      margin: 12px 0 0;
+      color: var(--ink-2);
       font-size: 12px;
     }
 
-    footer {
-      padding: 22px 40px 28px;
-      background: #fafbfe;
-      border-top: 1px solid var(--line);
+    .amount { text-align: right; flex-shrink: 0; }
+    .amount .label { margin-bottom: 4px; }
+    .amount strong {
+      display: block;
+      font-family: var(--serif);
+      font-size: 34px;
+      font-weight: 400;
+      letter-spacing: -.02em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+    .amount small { color: var(--muted); font-size: 10px; }
+
+    .label {
       color: var(--muted);
-      font-size: 11px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
     }
 
-    footer strong { color: var(--ink-2); }
-    footer a { color: var(--brand); text-decoration: none; }
-
-    .legal {
-      margin-top: 10px;
-      padding-top: 10px;
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      padding: 22px 48px;
       border-top: 1px solid var(--line);
-      font-size: 10px;
-      line-height: 1.6;
+      border-bottom: 1px solid var(--line);
+      background: #fcfcfb;
     }
 
-    @media (max-width: 620px) {
+    .meta span.value {
+      display: block;
+      margin-top: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .mono { font-family: 'SFMono-Regular', Consolas, 'Courier New', monospace; font-size: 11px; }
+
+    .content { padding: 40px 48px 44px; }
+
+    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+
+    .cols h2, .block h2 {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .cols p { margin: 2px 0; color: var(--ink-2); font-size: 12px; }
+    .cols p strong { color: var(--ink); font-weight: 600; }
+
+    .block { margin-top: 38px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    td { padding: 11px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+    td:first-child { color: var(--muted); width: 46%; }
+    td:last-child { text-align: right; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+    tr:last-child td { border-bottom: 0; }
+
+    .total {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--ink);
+    }
+
+    .total span { font-size: 12px; font-weight: 600; }
+    .total strong { font-family: var(--serif); font-size: 24px; font-weight: 400; font-variant-numeric: tabular-nums; }
+
+    .note {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-top: 38px;
+      padding: 18px 20px;
+      border: 1px solid #e3efe8;
+      border-radius: 12px;
+      background: var(--emerald-soft);
+      color: #0d5c43;
+      font-size: 11px;
+      line-height: 1.7;
+    }
+
+    .note svg { flex-shrink: 0; margin-top: 2px; }
+
+    footer {
+      padding: 26px 48px 30px;
+      border-top: 1px solid var(--line);
+      background: #fcfcfb;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.7;
+    }
+
+    footer a { color: var(--ink-2); text-decoration: none; border-bottom: 1px solid var(--line); }
+    footer .lines { display: flex; justify-content: space-between; gap: 20px; }
+    footer .fine { margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: 9px; }
+
+    @media (max-width: 640px) {
       body { padding: 12px 10px 40px; }
-      .masthead, .content, footer { padding-left: 20px; padding-right: 20px; }
-      .masthead { flex-wrap: wrap; }
-      .paid { margin-left: 0; }
-      .columns { flex-direction: column; gap: 18px; }
+      .top, .hero, .meta, .content, footer { padding-left: 22px; padding-right: 22px; }
+      .hero { flex-direction: column; align-items: flex-start; padding-top: 36px; }
+      .amount { text-align: left; }
+      .meta { grid-template-columns: 1fr 1fr; gap: 18px; }
+      .cols { grid-template-columns: 1fr; gap: 28px; }
       .toolbar { flex-direction: column; align-items: stretch; }
+      footer .lines { flex-direction: column; gap: 4px; }
     }
 
     @media print {
       body { background: #fff; padding: 0; }
       .toolbar { display: none !important; }
-      .sheet { max-width: none; box-shadow: none; border-radius: 0; }
-      .masthead { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .paid, .total-row, .notice, footer { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .sheet { border: 0; border-radius: 0; box-shadow: none; max-width: none; }
+      .status, .meta, .note, footer { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       @page { size: A4; margin: 12mm; }
     }
   </style>
 </head>
 <body>
   <div class="toolbar">
-    <span>Aperçu du reçu — les champs entre accolades seront remplacés par les données réelles.</span>
-    <button type="button" onclick="window.print()">Télécharger / Imprimer (PDF)</button>
+    <span>Prototype — données de démonstration</span>
+    <button type="button" onclick="window.print()">Télécharger en PDF</button>
   </div>
 
   <div class="sheet">
-    <header class="masthead">
-      <img src="logo.jpg" alt="Logo Linkhoo">
-      <div>
-        <p class="brand">Linkhoo</p>
-        <h1>Reçu de paiement</h1>
-        <p class="sub">Location de logements en Afrique de l'Ouest</p>
+    <div class="top">
+      <div class="brand">
+        <img src="logo.jpg" alt="">
+        <div>
+          <b>LINKHOO</b>
+          <span>Location de logements en Afrique de l'Ouest</span>
+        </div>
       </div>
-      <span class="paid">PAYÉ</span>
-    </header>
+      <span class="status">PAYÉ</span>
+    </div>
+
+    <div class="hero">
+      <div>
+        <p class="eyebrow">Reçu n° RCP-2026-001847</p>
+        <h1>Reçu de paiement</h1>
+        <p>Paiement reçu le 24 novembre 2026 à 09:42 · Réservation RES-8F3C21AB</p>
+      </div>
+      <div class="amount">
+        <div class="label">Total payé</div>
+        <strong>189 000 FCFA</strong>
+        <small>Montant TTC · pawaPay</small>
+      </div>
+    </div>
+
+    <div class="meta">
+      <div>
+        <div class="label">Référence</div>
+        <span class="value mono">PAY-2026-11-24001847</span>
+      </div>
+      <div>
+        <div class="label">Date</div>
+        <span class="value">24 nov. 2026</span>
+      </div>
+      <div>
+        <div class="label">Statut</div>
+        <span class="value" style="color:#0f9d6e;">Payé intégralement</span>
+      </div>
+      <div>
+        <div class="label">Transaction</div>
+        <span class="value mono">PP-8K3M2X9Q4L</span>
+      </div>
+    </div>
 
     <div class="content">
-      <div class="ref-bar">
+      <div class="cols">
         <div>
-          <span class="label">Référence de paiement</span>
-          <span class="value mono">{{PAYMENT_REFERENCE}}</span>
+          <h2>Payé par</h2>
+          <p><strong>Awa Koffi</strong></p>
+          <p>awa.koffi@exemple.ci</p>
+          <p>+225 07 12 45 78</p>
         </div>
         <div>
-          <span class="label">Date du paiement</span>
-          <span class="value">{{PAID_AT}}</span>
-        </div>
-        <div>
-          <span class="label">Référence de réservation</span>
-          <span class="value mono">{{RESERVATION_ID}}</span>
-        </div>
-        <div>
-          <span class="label">Statut</span>
-          <span class="value" style="color:#059669;">Payé intégralement</span>
+          <h2>Logement</h2>
+          <p><strong>Appartement Cocody — Vue lagon</strong></p>
+          <p>Maison Bloom · Hôte vérifié</p>
+          <p>Cocody, Abidjan — Côte d'Ivoire</p>
         </div>
       </div>
 
-      <div class="columns">
-        <div>
-          <span class="label">Payé par</span>
-          <p><strong>{{CLIENT_NAME}}</strong></p>
-          <p>{{CLIENT_EMAIL}}</p>
-          <p>{{CLIENT_PHONE}}</p>
-        </div>
-        <div>
-          <span class="label">Prestataire / Logement</span>
-          <p><strong>{{ROOM_TITLE}}</strong></p>
-          <p>{{HOST_NAME}}</p>
-          <p>{{MARKET_LABEL}} — {{CITY}}</p>
+      <div class="block">
+        <h2>Votre séjour</h2>
+        <table role="presentation">
+          <tr><td>Arrivée</td><td>Samedi 12 décembre 2026 · 14:00</td></tr>
+          <tr><td>Départ</td><td>Vendredi 18 décembre 2026 · 11:00</td></tr>
+          <tr><td>Durée</td><td>6 nuits</td></tr>
+          <tr><td>Voyageur</td><td>Awa Koffi</td></tr>
+        </table>
+      </div>
+
+      <div class="block">
+        <h2>Détail du paiement</h2>
+        <table role="presentation">
+          <tr><td>Prix du séjour</td><td>180 000 FCFA</td></tr>
+          <tr><td>Frais de service Linkhoo</td><td>9 000 FCFA</td></tr>
+          <tr><td>Moyen de paiement</td><td>Mobile Money · MTN MoMo</td></tr>
+          <tr><td>ID de transaction pawaPay</td><td class="mono">PP-8K3M2X9Q4L</td></tr>
+        </table>
+        <div class="total">
+          <span>Total payé</span>
+          <strong>189 000 FCFA</strong>
         </div>
       </div>
 
-      <h2 class="section-title">Détails du séjour</h2>
-      <table class="details" role="presentation">
-        <tr>
-          <td>Logement</td>
-          <td>{{ROOM_TITLE}}</td>
-        </tr>
-        <tr>
-          <td>Arrivée</td>
-          <td>{{DATE_DEBUT}}</td>
-        </tr>
-        <tr>
-          <td>Départ</td>
-          <td>{{DATE_FIN}}</td>
-        </tr>
-        <tr>
-          <td>Durée</td>
-          <td>{{DUREE}}</td>
-        </tr>
-        <tr>
-          <td>Nom du client</td>
-          <td>{{CLIENT_NAME}}</td>
-        </tr>
-      </table>
-
-      <h2 class="section-title">Détails du paiement</h2>
-      <table class="amounts" role="presentation">
-        <tr>
-          <td>Montant du séjour</td>
-          <td>{{AMOUNT}} {{CURRENCY}}</td>
-        </tr>
-        <tr>
-          <td>Contre-valeur (XOF)</td>
-          <td>{{AMOUNT_XOF}} FCFA</td>
-        </tr>
-        <tr>
-          <td>Frais de service Linkhoo</td>
-          <td>{{PLATFORM_FEE}} {{CURRENCY}}</td>
-        </tr>
-        <tr>
-          <td>Moyen de paiement</td>
-          <td>pawaPay · {{PAYMENT_METHOD}}</td>
-        </tr>
-        <tr>
-          <td>ID de transaction</td>
-          <td class="mono">{{PROVIDER_PAYMENT_ID}}</td>
-        </tr>
-      </table>
-
-      <div class="total-row">
+      <div class="note">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle><path d="M8 12l3 3 5-5"></path>
+        </svg>
         <div>
-          <span class="label">Total payé</span>
-          <strong>{{AMOUNT}} {{CURRENCY}}</strong>
+          Ce reçu atteste du règlement intégral de la réservation <strong>RES-8F3C21AB</strong>.
+          Aucun paiement supplémentaire ne sera demandé sur place. Conservez ce document
+          pour vos justificatifs ; il peut être téléchargé en PDF depuis le bouton ci-dessus.
         </div>
-        <small>{{AMOUNT_XOF}} FCFA<br>Reçu n° {{RECEIPT_NUMBER}}</small>
-      </div>
-
-      <div class="notice">
-        Ce reçu atteste du paiement intégral de la réservation {{RESERVATION_ID}}.
-        Il peut être téléchargé au format PDF via le bouton « Imprimer » de votre navigateur.
-        Aucun paiement supplémentaire ne sera demandé sur place.
       </div>
     </div>
 
     <footer>
-      <p><strong>Linkhoo</strong> — Plateforme de location de logements en Afrique de l'Ouest.</p>
-      <p>Une question sur ce paiement ? <a href="mailto:contact@linkhoo.com">contact@linkhoo.com</a> · <a href="{{APP_PUBLIC_URL}}">{{APP_PUBLIC_URL}}</a></p>
-      <div class="legal">
-        Ce document est un reçu électronique généré automatiquement. Il est valable sans signature.
-        Les données personnelles qu'il contient sont destinées au seul titulaire de la réservation,
-        conformément à notre politique de confidentialité. Merci de ne pas le transmettre à un tiers.
+      <div class="lines">
+        <div><strong>Linkhoo</strong> — Plateforme de location de logements en Afrique de l'Ouest.</div>
+        <div>Une question ? <a href="mailto:contact@linkhoo.com">contact@linkhoo.com</a> · <a href="https://linkehoo.com">linkehoo.com</a></div>
       </div>
+      <p class="fine">
+        Reçu électronique généré automatiquement, valable sans signature. Les données personnelles
+        qu'il contient sont destinées au seul titulaire de la réservation, conformément à notre
+        politique de confidentialité. Merci de ne pas le transmettre à un tiers.
+      </p>
     </footer>
   </div>
 </body>
