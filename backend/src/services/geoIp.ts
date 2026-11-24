@@ -84,17 +84,29 @@ export async function lookupCountry(ip: string): Promise<string | null> {
   return code;
 }
 
+/**
+ * Repli développement : une IP locale (127.0.0.1) ne donne aucun pays. Pour
+ * que la section landing soit visible immédiatement sur localhost, on prend
+ * le marché CI. Jamais en production, ni dans les tests (NODE_ENV=test).
+ */
+function devFallback(): { market: MarketCode | null; countryCode: string | null } {
+  const env = process.env.NODE_ENV;
+  if (!env || env === 'development') return { market: 'CI', countryCode: 'CI' };
+  return { market: null, countryCode: null };
+}
+
 /** Résout le marché Linkhoo correspondant au pays du visiteur. */
 export async function marketFromRequest(req: Request): Promise<{
   market: MarketCode | null;
   countryCode: string | null;
 }> {
   const ip = clientIp(req);
-  if (!ip) return { market: null, countryCode: null };
+  if (!ip) return devFallback();
 
   const countryCode = await lookupCountry(ip);
-  return {
-    countryCode,
-    market: countryCode ? COUNTRY_TO_MARKET[countryCode] ?? null : null,
-  };
+  const market = countryCode ? COUNTRY_TO_MARKET[countryCode] ?? null : null;
+  if (market) return { countryCode, market };
+  // Pays connu mais hors marché : on garde le code pays (utile au debug), le
+  // marché reste nul sauf en développement où l'on force l'aperçu CI.
+  return { countryCode, market: devFallback().market };
 }

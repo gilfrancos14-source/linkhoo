@@ -16,6 +16,7 @@ describe('geoIp', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   it('ignore les IP privées et locales', () => {
@@ -51,6 +52,15 @@ describe('geoIp', () => {
     expect(await marketFromRequest(reqWithIp('8.8.8.8'))).toEqual({
       countryCode: 'US',
       market: null,
+    });
+  });
+
+  it('affiche le marché CI par défaut en développement', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+
+    expect(await marketFromRequest(reqWithIp('127.0.0.1'))).toEqual({
+      market: 'CI',
+      countryCode: 'CI',
     });
   });
 
