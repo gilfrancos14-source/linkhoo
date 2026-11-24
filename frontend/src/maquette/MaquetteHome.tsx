@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { MarketCode } from '../config/markets';
 import CategoriesSection from './CategoriesSection';
 import EscapadesSection from './EscapadesSection';
@@ -18,6 +19,7 @@ import {
   buildPromos,
   buildReviews,
   buildTourism,
+  type TranslateFn,
 } from './viewModel';
 
 interface MaquetteHomeProps {
@@ -26,9 +28,20 @@ interface MaquetteHomeProps {
 }
 
 export default function MaquetteHome({ market, data }: MaquetteHomeProps) {
+  const { t } = useTranslation();
+  // `t` d'i18next a des surcharges très strictes ; notre surface est
+  // volontairement réduite à (clé, options) -> chaîne pour le view model.
+  const translate = t as unknown as TranslateFn;
+
   const banners = useMemo(() => buildBanners(data.banners), [data.banners]);
-  const popular = useMemo(() => buildPopularCards(data.popular), [data.popular]);
-  const promos = useMemo(() => buildPromos(data.rooms), [data.rooms]);
+  const popular = useMemo(
+    () => buildPopularCards(data.popular, translate),
+    [data.popular, translate],
+  );
+  const promos = useMemo(
+    () => buildPromos(data.rooms, new Date(), translate),
+    [data.rooms, translate],
+  );
   const categories = useMemo(
     () => buildCategoryCards(data.categories, data.rooms),
     [data.categories, data.rooms],

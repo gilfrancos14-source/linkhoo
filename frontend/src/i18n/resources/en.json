@@ -125,7 +125,22 @@
     "closeSelection": "Close selection",
     "noPromo": "No active promotion",
     "noProperty": "No property available for this offer at the moment.",
-    "perNight": "/night"
+    "perNight": "/night",
+    "group_promo_15": {
+      "title": "Villas and apartments",
+      "text": "Spacious stays at reduced prices",
+      "description": "Save 15% on a selection of spacious villas and apartments."
+    },
+    "group_promo_10": {
+      "title": "Family getaways",
+      "text": "Comfortable homes for the whole family",
+      "description": "Save 10% on comfortable homes to share with the family."
+    },
+    "group_promo_5": {
+      "title": "Last minute",
+      "text": "The last available deals to grab",
+      "description": "Save 5% on the last available deals."
+    }
   },
   "popular": {
     "title": "Our most requested properties",
@@ -134,7 +149,10 @@
     "prev": "Previous properties",
     "next": "Next properties",
     "removeFavorite": "Remove {{title}} from favorites",
-    "saveFavorite": "Save {{title}}"
+    "saveFavorite": "Save {{title}}",
+    "bedrooms_one": "{{count}} bedroom",
+    "bedrooms_other": "{{count}} bedrooms",
+    "bathrooms": "{{count}} bath"
   },
   "hero": {
     "chooseDate": "Choose a date",

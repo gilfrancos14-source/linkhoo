@@ -43,6 +43,16 @@
         // et génèrent des /api/...?market=CONTACT en 400.
         if (!/^(ci|bj|sn|tg|cm|bf|cg|ga|gn|ml|ne|cd)$/.test(slug)) return;
         var market = slug.toUpperCase();
+        // La langue doit faire partie de l'URL prefetchée : `withLang()` dans
+        // src/lib/api.ts construit la même clé, sinon tout est re-téléchargé.
+        var lang = '';
+        try {
+          var stored = (localStorage.getItem('language') || '').split('-')[0];
+          if (stored === 'en' || stored === 'es') lang = stored;
+        } catch (_) { /* stockage indisponible : on reste en français */ }
+        function localized(p) {
+          return lang ? p + (p.indexOf('?') !== -1 ? '&' : '?') + 'lang=' + lang : p;
+        }
         var paths = path === '/'
           ? ['/categories?market=CI']
           : [
@@ -56,7 +66,8 @@
               '/reviews/featured',
             ];
         var map = new Map();
-        paths.forEach(function (apiPath) {
+        paths.forEach(function (rawPath) {
+          var apiPath = localized(rawPath);
           // La clé inclut /api : c'est la clé lue par takePrefetched() dans
           // src/lib/api.ts, qui reçoit des chemins sans préfixe.
           var pending = fetch('/api' + apiPath, { cache: 'no-cache' })

@@ -7,6 +7,7 @@ export const TRANSLATABLE_FIELDS: Readonly<Record<string, readonly string[]>> = 
   event: ['title', 'description'],
   destination: ['title', 'description'],
   escapade: ['description'],
+  review: ['commentaire'],
 };
 
 /** Noms propres et valeurs que le modèle ne doit pas reformuler. */

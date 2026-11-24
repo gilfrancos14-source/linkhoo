@@ -120,7 +120,22 @@
     "closeSelection": "Cerrar selección",
     "noPromo": "Sin promoción activa",
     "noProperty": "No hay propiedad disponible para esta oferta por el momento.",
-    "perNight": "/noche"
+    "perNight": "/noche",
+    "group_promo_15": {
+      "title": "Villas y apartamentos",
+      "text": "Estancias amplias a precio reducido",
+      "description": "Ahorra un 15% en una selección de villas y apartamentos amplios."
+    },
+    "group_promo_10": {
+      "title": "Escapadas en familia",
+      "text": "Alojamientos cómodos para toda la familia",
+      "description": "Ahorra un 10% en alojamientos cómodos para compartir en familia."
+    },
+    "group_promo_5": {
+      "title": "Última hora",
+      "text": "Las últimas disponibilidades por aprovechar",
+      "description": "Ahorra un 5% en las últimas disponibilidades."
+    }
   },
   "popular": {
     "title": "Nuestras propiedades más solicitadas",
@@ -129,7 +144,10 @@
     "prev": "Propiedades anteriores",
     "next": "Propiedades siguientes",
     "removeFavorite": "Quitar {{title}} de favoritos",
-    "saveFavorite": "Guardar {{title}}"
+    "saveFavorite": "Guardar {{title}}",
+    "bedrooms_one": "{{count}} habitación",
+    "bedrooms_other": "{{count}} habitaciones",
+    "bathrooms": "{{count}} baño"
   },
   "hero": {
     "chooseDate": "Elige una fecha",

@@ -12,6 +12,9 @@ import type {
 } from '../lib/api';
 import type { MaquetteBannerSection } from './maquetteApi';
 
+/** Fonction de traduction passée par la page (i18next `t`). */
+export type TranslateFn = (key: string, options?: Record<string, unknown>) => string;
+
 export interface BannerSlide {
   id: string;
   image: string;
@@ -202,8 +205,8 @@ function priceOf(room: RoomData): string {
   return priceWithCurrency(room.price_num || room.price, room.price_unit);
 }
 
-function unitOf(room: RoomData): string {
-  return room.price_unit || '/nuit';
+function unitOf(room: RoomData, translate?: TranslateFn): string {
+  return room.price_unit || (translate ? translate('promos.perNight') : '/nuit');
 }
 
 function locationOf(room: RoomData): string {
@@ -217,18 +220,28 @@ function initialsOf(name: string): string {
   return (`${first.charAt(0)}${last.charAt(0)}`).toUpperCase() || '?';
 }
 
-export function buildPopularCards(rooms: RoomData[] | null): PopularCard[] {
+export function buildPopularCards(
+  rooms: RoomData[] | null,
+  translate?: TranslateFn,
+): PopularCard[] {
   if (!rooms) return [];
   return rooms.slice(0, 5).map((room) => {
     const meta: { icon: string; label: string }[] = [];
     if (room.chambres > 0) {
       meta.push({
         icon: 'fa-bed',
-        label: `${room.chambres} chambre${room.chambres > 1 ? 's' : ''}`,
+        label: translate
+          ? translate('popular.bedrooms', { count: room.chambres })
+          : `${room.chambres} chambre${room.chambres > 1 ? 's' : ''}`,
       });
     }
     if (room.douches > 0) {
-      meta.push({ icon: 'fa-shower', label: `${room.douches} sdb` });
+      meta.push({
+        icon: 'fa-shower',
+        label: translate
+          ? translate('popular.bathrooms', { count: room.douches })
+          : `${room.douches} sdb`,
+      });
     }
     return {
       id: room.id,
@@ -238,7 +251,7 @@ export function buildPopularCards(rooms: RoomData[] | null): PopularCard[] {
       title: room.title,
       meta,
       price: priceOf(room),
-      unit: unitOf(room),
+      unit: unitOf(room, translate),
     };
   });
 }
@@ -268,24 +281,35 @@ function miniCardOf(room: RoomData): PromoMiniCard {
   };
 }
 
-export function buildPromos(rooms: RoomData[] | null, now = new Date()): PromoCard[] {
+export function buildPromos(
+  rooms: RoomData[] | null,
+  now = new Date(),
+  translate?: TranslateFn,
+): PromoCard[] {
   const catalogue = rooms ?? [];
   const active = catalogue.filter((room) => isPromoActive(room, now));
 
   return PROMO_GROUPS.map((group) => {
     const groupRooms = active.filter((room) => room.promo_group === group.key);
     const first = groupRooms[0];
+    const title = translate
+      ? translate(`promos.${group.key}.title`)
+      : group.title;
+    const text = translate ? translate(`promos.${group.key}.text`) : group.text;
+    const description = translate
+      ? translate(`promos.${group.key}.description`)
+      : group.description;
 
     return {
       key: group.key,
       badge: group.badge,
       badgeClassName: group.badgeClassName,
-      title: group.title,
-      text: group.text,
+      title,
+      text,
       image: first?.img ?? group.fallbackImage,
-      alt: first?.alt || group.title,
-      featureTitle: group.featureTitle,
-      description: group.description,
+      alt: first?.alt || title,
+      featureTitle: title,
+      description,
       rooms: groupRooms.slice(0, 3).map(miniCardOf),
     };
   });

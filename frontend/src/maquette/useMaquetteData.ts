@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { MarketCode } from '../config/markets';
 import type { BannerData, TourismPartition } from '../lib/api';
 import {
@@ -39,6 +40,11 @@ function asTourism(value: TourismPartition): TourismPartition {
 }
 
 export function useMaquetteData(market: MarketCode): MaquetteData {
+  const { i18n } = useTranslation();
+  // `withLang()` inclut la langue dans l'URL (donc dans la clé de cache) : en
+  // relançant l'effet à chaque changement de langue, on recharge les contenus
+  // de la base sans rechargement de page.
+  const language = i18n.language.split('-')[0];
   const [data, setData] = useState<MaquetteData>(EMPTY_MAQUETTE_DATA);
 
   useEffect(() => {
@@ -120,7 +126,7 @@ export function useMaquetteData(market: MarketCode): MaquetteData {
     return () => {
       alive = false;
     };
-  }, [market]);
+  }, [market, language]);
 
   return data;
 }

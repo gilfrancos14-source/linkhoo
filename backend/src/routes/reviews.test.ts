@@ -36,7 +36,13 @@ let reviews: FakeChain;
 let clients: FakeChain;
 let reservations: FakeChain;
 
-type TableName = 'rooms' | 'reviews' | 'clients' | 'reservations';
+type TableName =
+  | 'rooms'
+  | 'reviews'
+  | 'clients'
+  | 'reservations'
+  | 'translations'
+  | 'translation_jobs';
 
 function stubTables(tables: Partial<Record<TableName, FakeChain | FakeChain[]>> = {}): void {
   useSupabaseTables(supabaseAdmin.from, {
@@ -213,6 +219,33 @@ describe('GET /api/reviews/featured', () => {
     expect(res.body[0].room_avg).toBe(4.5);
     expect(stats.in).toHaveBeenCalledWith('room_id', ['room-1']);
   });
+
+  it('applique la traduction du commentaire quand lang=en', async () => {
+    const featured = fakeChain({
+      data: [
+        {
+          id: 'r1',
+          room_id: 'room-1',
+          client_name: 'Awa',
+          commentaire: 'Super séjour',
+          room: { title: 'Studio', ville: 'Abidjan', market: 'CI' },
+        },
+      ],
+      error: null,
+    });
+    const stats = fakeChain({ data: [], error: null });
+    const translations = fakeChain({
+      data: [{ entity_id: 'r1', field: 'commentaire', value: 'Great stay' }],
+      error: null,
+    });
+    stubTables({ reviews: [featured, stats], translations });
+
+    const res = await request(app).get('/api/reviews/featured?lang=en');
+
+    expect(res.status).toBe(200);
+    expect(res.body[0].commentaire).toBe('Great stay');
+    expect(translations.eq).toHaveBeenCalledWith('entity_type', 'review');
+  });
 });
 
 describe('POST /api/reviews', () => {
@@ -345,6 +378,43 @@ describe('POST /api/reviews', () => {
         note_gerant: 4,
         commentaire: 'Très bon séjour',
       }),
+    );
+  });
+
+  it('201 : met le commentaire en file de traduction', async () => {
+    clients = fakeChain({ data: clientRow, error: null });
+    reservations = fakeChain({
+      data: {
+        id: 'res-1',
+        client_email: 'jean@example.ci',
+        room_id: 'room-1',
+        statut: 'confirmee',
+      },
+      error: null,
+    });
+    rooms = fakeChain({ data: { gerant_id: null }, error: null });
+    const created = fakeChain({
+      data: { id: 'r-new', room_id: 'room-1', commentaire: 'Très bon séjour' },
+      error: null,
+    });
+    const jobs = fakeChain({ data: null, error: null });
+    stubTables({
+      reviews: [fakeChain({ data: null, error: null }), created],
+      translation_jobs: jobs,
+    });
+
+    const res = await request(app)
+      .post('/api/reviews')
+      .set('Authorization', clerkBearer('user_1'))
+      .send(VALID_BODY);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(res.status).toBe(201);
+    expect(jobs.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ entity_type: 'review', entity_id: 'r-new', locale: 'en' }),
+    );
+    expect(jobs.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ entity_type: 'review', entity_id: 'r-new', locale: 'es' }),
     );
   });
 

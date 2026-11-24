@@ -126,6 +126,7 @@ vi.mock('./lib/api', () => ({
   REQUEST_TIMEOUT_MS: 15_000,
   setAuthTokenGetter: mocks.setAuthTokenGetter,
   clearApiCache: vi.fn(),
+  withLang: (path: string) => path,
   cachedGet: mocks.autoFn,
   parseJsonBody: mocks.autoFn,
   request: mocks.autoFn,

@@ -6,7 +6,7 @@ const router = Router();
 
 const reportSchema = z
   .object({
-    entityType: z.enum(['room', 'category', 'banner', 'event', 'destination', 'escapade']),
+    entityType: z.enum(['room', 'category', 'banner', 'event', 'destination', 'escapade', 'review']),
     entityId: z.string().trim().min(1).max(200),
     locale: z.enum(['en', 'es']),
     field: z.string().trim().min(1).max(50),

@@ -16,6 +16,7 @@ import {
   buildPromos,
   buildReviews,
   buildTourism,
+  type TranslateFn,
 } from './viewModel';
 
 function makeRoom(overrides: Partial<RoomData> = {}): RoomData {
@@ -329,5 +330,52 @@ describe('buildReviews', () => {
     expect(reviews).toHaveLength(2);
     expect(reviews[0]).toMatchObject({ initials: 'AK', rating: 5, city: 'Abidjan' });
     expect(reviews[1].rating).toBe(4);
+  });
+});
+
+describe('internationalisation du view model', () => {
+  const translate: TranslateFn = (key, options) => {
+    const dict: Record<string, string> = {
+      'promos.promo_15.title': 'Villas and apartments',
+      'promos.promo_15.text': 'Spacious stays at reduced prices',
+      'promos.promo_15.description': 'Save 15% on spacious villas.',
+      'promos.promo_10.title': 'Family getaways',
+      'promos.promo_10.text': 'Comfortable homes for the family',
+      'promos.promo_10.description': 'Save 10% on family homes.',
+      'promos.promo_5.title': 'Last minute',
+      'promos.promo_5.text': 'The last deals to grab',
+      'promos.promo_5.description': 'Save 5% on last deals.',
+      'promos.perNight': '/night',
+    };
+    if (key === 'popular.bedrooms') {
+      const count = Number(options?.count ?? 0);
+      return `${count} bedroom${count > 1 ? 's' : ''}`;
+    }
+    if (key === 'popular.bathrooms') return `${options?.count} bath`;
+    return dict[key] ?? key;
+  };
+
+  it('traduit les groupes promotionnels et leur texte de repli', () => {
+    const promos = buildPromos([], new Date('2026-11-24'), translate);
+
+    expect(promos[0]).toMatchObject({
+      title: 'Villas and apartments',
+      text: 'Spacious stays at reduced prices',
+      description: 'Save 15% on spacious villas.',
+      alt: 'Villas and apartments',
+    });
+  });
+
+  it('traduit les métadonnées des cartes et le prix par défaut', () => {
+    const cards = buildPopularCards(
+      [makeRoom({ price_unit: '' })],
+      translate,
+    );
+
+    expect(cards[0].meta).toEqual([
+      { icon: 'fa-bed', label: '2 bedrooms' },
+      { icon: 'fa-shower', label: '1 bath' },
+    ]);
+    expect(cards[0].unit).toBe('/night');
   });
 });

@@ -8,6 +8,7 @@ import {
   apiRooms,
   apiTourism,
   cachedGet,
+  withLang,
   type BannerData,
   type EscapadeData,
   type EventData,
@@ -44,7 +45,8 @@ export const maquetteApi = {
   banners: (market: MarketCode) => apiBanners.list(market),
   popular: (market: MarketCode) => apiRooms.getPopular(market),
   rooms: (market: MarketCode) => apiRooms.list(market),
-  categories: (market: MarketCode) => cachedGet<Category[]>(`/categories?market=${market}`),
+  categories: (market: MarketCode) =>
+    cachedGet<Category[]>(withLang(`/categories?market=${market}`)),
   events: (market: MarketCode) => apiEvents.list(market),
   tourism: (market: MarketCode) => apiTourism.list(market),
   escapades: (market: MarketCode) => apiEscapades.list(market),

@@ -3,6 +3,7 @@ import { supabaseAdmin } from '../config/supabase';
 import { requireClerkAuth } from '../middleware/clerkAuth';
 import { createClientLimiter } from '../utils/rateLimiters';
 import { reviewCreateSchema, reviewRoomQuerySchema } from '../validations/review';
+import { attachTranslations, enqueueTranslations, resolveLocale } from '../i18n/translations';
 import {
   fetchRoomReviewStats,
   type RoomReviewStats,
@@ -35,7 +36,11 @@ router.get('/', reviewsLimiter, async (req: Request, res: Response, next: NextFu
       .order('created_at', { ascending: false });
     if (error) throw error;
 
-    const reviews = roomReviews || [];
+    const reviews = await attachTranslations(
+      roomReviews || [],
+      'review',
+      resolveLocale(req.query.lang),
+    );
     // Moyenne + histogramme des notes : logique backend (une seule source de
     // vérité, partagée avec les cartes de la landing via `fetchRoomReviewStats`).
     const stats = await fetchRoomReviewStats([roomId]).catch(
@@ -98,7 +103,7 @@ router.get('/mine', requireClerkAuth, async (req: Request, res: Response, next: 
 });
 
 // GET /api/reviews/featured — derniers avis publics commentés (accueil)
-router.get('/featured', reviewsLimiter, async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/featured', reviewsLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { data, error } = await supabaseAdmin
       .from('reviews')
@@ -111,7 +116,11 @@ router.get('/featured', reviewsLimiter, async (_req: Request, res: Response, nex
       .limit(6);
     if (error) throw error;
 
-    const rows = Array.isArray(data) ? data : [];
+    const rows = await attachTranslations(
+      Array.isArray(data) ? data : [],
+      'review',
+      resolveLocale(req.query.lang),
+    );
     const roomIds = rows
       .map((row) => row.room_id)
       .filter((id): id is string => typeof id === 'string' && id.length > 0);
@@ -201,6 +210,10 @@ router.post('/', requireClerkAuth, async (req: Request, res: Response, next: Nex
       .select('id, room_id, gerant_id, client_name, reservation_id, note_appartement, note_gerant, commentaire, created_at')
       .single();
     if (error) throw error;
+
+    if (data?.id) {
+      void enqueueTranslations('review', data.id, data as Record<string, unknown>);
+    }
 
     res.status(201).json(data);
   } catch (err) {

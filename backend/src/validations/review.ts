@@ -13,5 +13,6 @@ export const reviewCreateSchema = z
 export const reviewRoomQuerySchema = z
   .object({
     room_id: idSchema,
+    lang: z.enum(['fr', 'en', 'es']).optional(),
   })
   .strict();

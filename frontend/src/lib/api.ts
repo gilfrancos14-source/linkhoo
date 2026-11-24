@@ -996,9 +996,12 @@ export interface FeaturedReviewData {
 
 export const apiReviews = {
   listByRoom: (roomId: string) =>
-    request<RoomReviewsResponse>(`/reviews?room_id=${encodeURIComponent(roomId)}`, { public: true }),
+    request<RoomReviewsResponse>(
+      withLang(`/reviews?room_id=${encodeURIComponent(roomId)}`),
+      { public: true },
+    ),
   listMine: () => request<ReviewData[]>('/reviews/mine'),
-  featured: () => cachedGet<FeaturedReviewData[]>('/reviews/featured'),
+  featured: () => cachedGet<FeaturedReviewData[]>(withLang('/reviews/featured')),
   create: (data: {
     reservation_id: string;
     note_appartement: number;
