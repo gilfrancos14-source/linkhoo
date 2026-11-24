@@ -1,4 +1,8 @@
 {
+  "metadata": {
+    "title": "Linkhoo — Furnished rooms, apartments & hotels in West Africa",
+    "description": "Find the ideal place for your next stay in West Africa: rooms, apartments and villas to rent directly, with no middleman."
+  },
   "landing": {
     "topbar": {
       "offlineMessage": "You are currently offline. Some features may be limited.",
@@ -9,7 +13,11 @@
       "brandAria": "Linkhoo — back to home",
       "searchAria": "Search",
       "menuAria": "Menu",
-      "mainNav": "Main navigation"
+      "mainNav": "Main navigation",
+      "bannerAlt": "Promotional banner",
+      "bannerAria": "Promotional banners",
+      "slidesAria": "Slides",
+      "slideAria": "Banner {{index}}"
     },
     "hero": {
       "eyebrow": "Rooms, apartments, villas and more",
@@ -363,7 +371,49 @@
     "offlineMode": "Offline Mode",
     "syncData": "Sync Data",
     "notifications": "Notifications",
-    "cacheCleared": "Cache Cleared"
+    "cacheCleared": "Cache cleared",
+    "settings": "PWA settings",
+    "application": "App",
+    "offline": "Offline",
+    "cache": "Cache",
+    "install": "Install",
+    "badgeNew": "New",
+    "badgeRecommended": "Recommended",
+    "pushTitle": "Push notifications",
+    "pushDescription": "Get instant notifications about your bookings, messages and Linkhoo news.",
+    "enable": "Enable",
+    "enabling": "Enabling...",
+    "refuse": "Decline",
+    "offlineTitle": "Offline synchronization",
+    "syncing": "Syncing...",
+    "pending": "{{count}} pending",
+    "upToDate": "Up to date",
+    "never": "Never",
+    "synced": "Synced:",
+    "failures": "Failures:",
+    "lastSync": "Last sync:",
+    "pendingRequests": "Pending requests:",
+    "attempt_one": "{{count}} attempt",
+    "attempt_other": "{{count}} attempts",
+    "more_one": "+{{count}} more",
+    "more_other": "+{{count}} more",
+    "syncNow": "Sync now",
+    "retry": "Retry ({{count}})",
+    "clear": "Clear",
+    "installTitle": "Install the app",
+    "installDescription": "Install Linkhoo on your device for faster access and push notifications.",
+    "installing": "Installing...",
+    "later": "Later",
+    "cacheTitle": "Cache management",
+    "totalCaches": "Total caches:",
+    "usedSpace": "Space used:",
+    "showDetails": "View details",
+    "hideDetails": "Hide details",
+    "items_one": "{{count}} item",
+    "items_other": "{{count}} items",
+    "optimizing": "Optimizing...",
+    "optimize": "Optimize cache",
+    "clearAll": "Clear all"
   },
   "footer": {
     "about": "About Us",

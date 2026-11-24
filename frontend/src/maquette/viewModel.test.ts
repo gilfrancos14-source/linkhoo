@@ -16,6 +16,7 @@ import {
   buildPromos,
   buildReviews,
   buildTourism,
+  formatMaquetteDate,
   type TranslateFn,
 } from './viewModel';
 
@@ -377,5 +378,13 @@ describe('internationalisation du view model', () => {
       { icon: 'fa-shower', label: '1 bath' },
     ]);
     expect(cards[0].unit).toBe('/night');
+  });
+});
+
+describe('formatMaquetteDate', () => {
+  it('utilise la locale demandée', () => {
+    expect(formatMaquetteDate('2026-12-05', 'en')).toContain('Dec');
+    expect(formatMaquetteDate('2026-12-05', 'es')).toMatch(/dic/i);
+    expect(formatMaquetteDate('2026-12-05', 'fr')).toMatch(/déc|dec/i);
   });
 });

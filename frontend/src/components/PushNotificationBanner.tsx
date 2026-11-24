@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 
 interface PushNotificationBannerProps {
@@ -6,6 +7,7 @@ interface PushNotificationBannerProps {
 }
 
 const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({ onPermissionChange }) => {
+  const { t } = useTranslation();
   const { permission, requestPermission, supported } = usePushNotifications();
   const [showBanner, setShowBanner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -55,11 +57,8 @@ const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({ onPermi
           </svg>
         </div>
         <div className="notification-text">
-          <h3>Notifications Push</h3>
-          <p>
-            Recevez des notifications instantanées sur vos réservations, 
-            messages et actualités d'Ileyha Location.
-          </p>
+          <h3>{t('pwa.pushTitle')}</h3>
+          <p>{t('pwa.pushDescription')}</p>
         </div>
         <div className="notification-actions">
           <button 
@@ -67,14 +66,14 @@ const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({ onPermi
             disabled={isLoading}
             className="btn btn-primary"
           >
-            {isLoading ? 'Activation...' : 'Activer'}
+            {isLoading ? t('pwa.enabling') : t('pwa.enable')}
           </button>
           <button 
             onClick={handleDismiss}
             className="btn btn-secondary"
             disabled={isLoading}
           >
-            Refuser
+            {t('pwa.refuse')}
           </button>
         </div>
       </div>

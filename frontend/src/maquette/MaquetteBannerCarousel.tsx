@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { BannerSlide } from './viewModel';
 
 interface MaquetteBannerCarouselProps {
@@ -11,6 +12,7 @@ function isExternal(link: string): boolean {
 }
 
 export default function MaquetteBannerCarousel({ banners }: MaquetteBannerCarouselProps) {
+  const { t } = useTranslation();
   const trackRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [active, setActive] = useState(0);
@@ -85,7 +87,7 @@ export default function MaquetteBannerCarousel({ banners }: MaquetteBannerCarous
     <div
       className="relative w-full sm:w-[380px] lg:w-[460px] shrink-0 rounded-2xl overflow-hidden bg-slate-100"
       role="region"
-      aria-label="Bannières promotionnelles"
+      aria-label={t('landing.header.bannerAria')}
       onMouseEnter={stopAuto}
       onMouseLeave={startAuto}
       onTouchStart={stopAuto}
@@ -131,7 +133,7 @@ export default function MaquetteBannerCarousel({ banners }: MaquetteBannerCarous
         <div
           className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5"
           role="tablist"
-          aria-label="Diapositives"
+          aria-label={t('landing.header.slidesAria')}
         >
           {banners.map((banner, index) => (
             <button
@@ -140,7 +142,7 @@ export default function MaquetteBannerCarousel({ banners }: MaquetteBannerCarous
               className={`w-1.5 h-1.5 rounded-full transition ${
                 index === active ? 'bg-white scale-125' : 'bg-white/50'
               }`}
-              aria-label={`Bannière ${index + 1}`}
+              aria-label={t('landing.header.slideAria', { index: index + 1 })}
               aria-selected={index === active}
               role="tab"
               onClick={() => {

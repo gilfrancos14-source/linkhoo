@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCacheManager } from '../hooks/useCacheManager';
 
 interface CacheManagerProps {
@@ -12,6 +13,7 @@ const CacheManager: React.FC<CacheManagerProps> = ({
   autoOptimize = true,
   optimizeThreshold = 80 
 }) => {
+  const { t } = useTranslation();
   const { 
     stats, 
     isLoading, 
@@ -99,7 +101,7 @@ const CacheManager: React.FC<CacheManagerProps> = ({
         <button 
           onClick={toggleVisibility}
           className="cache-toggle-btn"
-          title="Gestion du cache"
+          title={t('pwa.cacheTitle')}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 11H5m14 0a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2m14 0V9a2 2 0 0 0-2-2M5 11V9a2 2 0 0 1 2-2m0 0V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2M7 7h10"></path>
@@ -114,7 +116,7 @@ const CacheManager: React.FC<CacheManagerProps> = ({
     <div className={`cache-manager ${className}`}>
       <div className="cache-header">
         <div className="cache-title">
-          <h3>Gestion du cache</h3>
+          <h3>{t('pwa.cacheTitle')}</h3>
           <div className="cache-usage">
             <div className="usage-bar">
               <div 
@@ -164,11 +166,11 @@ const CacheManager: React.FC<CacheManagerProps> = ({
         <div className="cache-stats">
           <div className="stats-overview">
             <div className="stat-item">
-              <span className="stat-label">Total caches:</span>
+              <span className="stat-label">{t('pwa.totalCaches')}</span>
               <span className="stat-value">{stats.totalCaches}</span>
             </div>
             <div className="stat-item">
-              <span className="stat-label">Espace utilisé:</span>
+              <span className="stat-label">{t('pwa.usedSpace')}</span>
               <span className="stat-value">{formatSize(stats.totalSize)}</span>
             </div>
           </div>
@@ -177,7 +179,7 @@ const CacheManager: React.FC<CacheManagerProps> = ({
             onClick={() => setShowDetails(!showDetails)}
             className="btn btn-link details-toggle"
           >
-            {showDetails ? 'Masquer les détails' : 'Voir les détails'}
+            {showDetails ? t('pwa.hideDetails') : t('pwa.showDetails')}
           </button>
 
           {showDetails && (
@@ -187,7 +189,7 @@ const CacheManager: React.FC<CacheManagerProps> = ({
                   <div key={name} className="cache-item">
                     <div className="cache-name">{name}</div>
                     <div className="cache-info">
-                      <span className="cache-count">{cache.count} éléments</span>
+                      <span className="cache-count">{t('pwa.items', { count: cache.count })}</span>
                       <span className="cache-size">{formatSize(cache.size)}</span>
                     </div>
                     <div className="cache-actions">
@@ -218,7 +220,7 @@ const CacheManager: React.FC<CacheManagerProps> = ({
           {isLoading ? (
             <>
               <span className="spinner"></span>
-              Optimisation...
+              {t('pwa.optimizing')}
             </>
           ) : (
             <>
@@ -226,7 +228,7 @@ const CacheManager: React.FC<CacheManagerProps> = ({
                 <polyline points="23 4 23 10 17 10"></polyline>
                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
               </svg>
-              Optimiser le cache
+              {t('pwa.optimize')}
             </>
           )}
         </button>
@@ -240,7 +242,7 @@ const CacheManager: React.FC<CacheManagerProps> = ({
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
           </svg>
-          Tout effacer
+          {t('pwa.clearAll')}
         </button>
       </div>
     </div>

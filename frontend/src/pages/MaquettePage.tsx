@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import LandingFooter from '../components/landing/LandingFooter';
 import MarketHeader from '../components/landing/MarketHeader';
@@ -13,9 +14,24 @@ import { useMaquetteData } from '../maquette/useMaquetteData';
  */
 export default function MaquettePage() {
   const { market } = useMarket();
+  const { t } = useTranslation();
   const data = useMaquetteData(market);
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Metadata traduites : le HTML statique reste en français pour le premier
+  // rendu, puis on les synchronise avec la langue active (SEO + partage).
+  useEffect(() => {
+    document.title = t('metadata.title');
+    const description = t('metadata.description');
+    let meta = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'description';
+      document.head.appendChild(meta);
+    }
+    meta.content = description;
+  }, [t]);
 
   // Depuis une autre page (fiche chambre, page légale…), la barre de navigation
   // renvoie ici avec une intention : atteindre une section ou le champ de

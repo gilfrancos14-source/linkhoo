@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import PushNotificationBanner from './PushNotificationBanner';
 import OfflineQueueStatus from './OfflineQueueStatus';
 import InstallPrompt from './InstallPrompt';
@@ -27,6 +28,7 @@ const PWAControlPanel: React.FC<PWAControlPanelProps> = ({
   autoShow = true,
   variant = 'floating'
 }) => {
+  const { t } = useTranslation();
   const { permission: pushPermission } = usePushNotifications();
   const { status: offlineStatus } = useOfflineQueue();
   const { stats: cacheStats } = useCacheManager();
@@ -65,7 +67,7 @@ const PWAControlPanel: React.FC<PWAControlPanelProps> = ({
   const getTabBadge = (tab: 'notifications' | 'offline' | 'cache' | 'install') => {
     switch (tab) {
       case 'notifications':
-        return pushPermission === 'default' ? 'Nouveau' : '';
+        return pushPermission === 'default' ? t('pwa.badgeNew') : '';
       case 'offline':
         return offlineStatus.pendingRequests.length > 0 
           ? `${offlineStatus.pendingRequests.length}` 
@@ -77,7 +79,7 @@ const PWAControlPanel: React.FC<PWAControlPanelProps> = ({
           ? `${Math.round(cacheStats.totalSize / 1024 / 1024)}MB` 
           : '';
       case 'install':
-        return 'Recommandé';
+        return t('pwa.badgeRecommended');
       default:
         return '';
     }
@@ -126,14 +128,14 @@ const PWAControlPanel: React.FC<PWAControlPanelProps> = ({
             type="button"
             onClick={toggleVisibility}
             className="pwa-inline-toggle-btn"
-            title="Paramètres PWA"
-            aria-label="Paramètres PWA"
+            title={t('pwa.settings')}
+            aria-label={t('pwa.settings')}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="3"></circle>
               <path d="M12 1v6m0 6v6m-9-9h6m6 0h6m-2.6-7.4l4.2 4.2m-4.2 7.4l4.2-4.2M3.4 16.6l4.2-4.2m0 7.4l-4.2-4.2"></path>
             </svg>
-            <span>Application</span>
+            <span>{t('pwa.application')}</span>
           </button>
         </div>
       );
@@ -143,7 +145,7 @@ const PWAControlPanel: React.FC<PWAControlPanelProps> = ({
         <button 
           onClick={toggleVisibility}
           className="control-panel-toggle-btn"
-          title="Paramètres PWA"
+          title={t('pwa.settings')}
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
@@ -157,7 +159,7 @@ const PWAControlPanel: React.FC<PWAControlPanelProps> = ({
   return (
     <div className={`pwa-control-panel ${className}`}>
       <div className="control-panel-header">
-        <h3>Paramètres PWA</h3>
+        <h3>{t('pwa.settings')}</h3>
         <button 
           onClick={toggleVisibility}
           className="close-btn"
@@ -176,7 +178,7 @@ const PWAControlPanel: React.FC<PWAControlPanelProps> = ({
             onClick={() => setActiveTab('notifications')}
           >
             {getTabIcon('notifications')}
-            Notifications
+            {t('pwa.notifications')}
             {getTabBadge('notifications') && (
               <span className="tab-badge">{getTabBadge('notifications')}</span>
             )}
@@ -189,7 +191,7 @@ const PWAControlPanel: React.FC<PWAControlPanelProps> = ({
             onClick={() => setActiveTab('offline')}
           >
             {getTabIcon('offline')}
-            Hors-ligne
+            {t('pwa.offline')}
             {getTabBadge('offline') && (
               <span className="tab-badge">{getTabBadge('offline')}</span>
             )}
@@ -202,7 +204,7 @@ const PWAControlPanel: React.FC<PWAControlPanelProps> = ({
             onClick={() => setActiveTab('cache')}
           >
             {getTabIcon('cache')}
-            Cache
+            {t('pwa.cache')}
             {getTabBadge('cache') && (
               <span className="tab-badge">{getTabBadge('cache')}</span>
             )}
@@ -215,7 +217,7 @@ const PWAControlPanel: React.FC<PWAControlPanelProps> = ({
             onClick={() => setActiveTab('install')}
           >
             {getTabIcon('install')}
-            Installer
+            {t('pwa.install')}
             {getTabBadge('install') && (
               <span className="tab-badge">{getTabBadge('install')}</span>
             )}

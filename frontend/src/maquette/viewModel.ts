@@ -129,7 +129,10 @@ const EMPTY_BANNERS: BannerSlides = {
   events: [],
 };
 
-export function buildBanners(banners: BannerData[] | null): BannerSlides {
+export function buildBanners(
+  banners: BannerData[] | null,
+  translate?: TranslateFn,
+): BannerSlides {
   if (!banners) return EMPTY_BANNERS;
 
   const slides: BannerSlides = {
@@ -146,7 +149,9 @@ export function buildBanners(banners: BannerData[] | null): BannerSlides {
     slides[section].push({
       id: banner.id,
       image: banner.img,
-      alt: banner.alt || 'Bannière promotionnelle',
+      alt:
+        banner.alt ||
+        (translate ? translate('landing.header.bannerAlt') : 'Bannière promotionnelle'),
       link: banner.link,
     });
   }
@@ -320,15 +325,21 @@ function dateOf(isoDate: string): Date {
   return new Date(year, (month || 1) - 1, day || 1);
 }
 
-export function formatMaquetteDate(isoDate: string): string {
-  return dateOf(isoDate).toLocaleDateString('fr-FR', {
+const DATE_LOCALES: Record<string, string> = {
+  fr: 'fr-FR',
+  en: 'en-US',
+  es: 'es-ES',
+};
+
+export function formatMaquetteDate(isoDate: string, locale = 'fr'): string {
+  return dateOf(isoDate).toLocaleDateString(DATE_LOCALES[locale] ?? 'fr-FR', {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   });
 }
 
-export function buildEvents(events: EventData[] | null): {
+export function buildEvents(events: EventData[] | null, locale = 'fr'): {
   cities: CityEventCard[];
   featured: FeaturedEvent | null;
   featuredEvents: FeaturedEvent[];
@@ -366,7 +377,7 @@ export function buildEvents(events: EventData[] | null): {
     alt: event.alt || event.title,
     title: event.title,
     city: event.city,
-    date: formatMaquetteDate(event.event_date),
+    date: formatMaquetteDate(event.event_date, locale),
     description: event.description,
   }));
 

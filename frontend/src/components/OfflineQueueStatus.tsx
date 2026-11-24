@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useOfflineQueue } from '../hooks/useOfflineQueue';
 
 interface OfflineQueueStatusProps {
@@ -6,6 +7,9 @@ interface OfflineQueueStatusProps {
 }
 
 const OfflineQueueStatus: React.FC<OfflineQueueStatusProps> = ({ className = '' }) => {
+  const { i18n, t } = useTranslation();
+  const locale = i18n.language.split('-')[0];
+  const localeMap: Record<string, string> = { fr: 'fr-FR', en: 'en-US', es: 'es-ES' };
   const { status, syncAll, retryFailed, clearQueue } = useOfflineQueue();
   const [isVisible, setIsVisible] = useState(false);
 
@@ -39,32 +43,32 @@ const OfflineQueueStatus: React.FC<OfflineQueueStatusProps> = ({ className = '' 
   };
 
   const formatTime = (date: Date | null) => {
-    if (!date) return 'Jamais';
-    return date.toLocaleTimeString('fr-FR', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    if (!date) return t('pwa.never');
+    return date.toLocaleTimeString(localeMap[locale] ?? 'fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
   return (
     <div className={`offline-queue-status ${className}`}>
       <div className="queue-header">
-        <h3>Synchronisation hors-ligne</h3>
+        <h3>{t('pwa.offlineTitle')}</h3>
         <div className="queue-status">
           {status.isSyncing ? (
             <span className="status syncing">
               <span className="status-dot"></span>
-              Synchronisation...
+              {t('pwa.syncing')}
             </span>
           ) : status.pendingRequests.length > 0 ? (
             <span className="status pending">
               <span className="status-dot"></span>
-              {status.pendingRequests.length} en attente
+              {t('pwa.pending', { count: status.pendingRequests.length })}
             </span>
           ) : (
             <span className="status idle">
               <span className="status-dot"></span>
-              À jour
+              {t('pwa.upToDate')}
             </span>
           )}
         </div>
@@ -72,22 +76,22 @@ const OfflineQueueStatus: React.FC<OfflineQueueStatusProps> = ({ className = '' 
 
       <div className="queue-stats">
         <div className="stat-item">
-          <span className="stat-label">Synchronisés:</span>
+          <span className="stat-label">{t('pwa.synced')}</span>
           <span className="stat-value success">{status.totalSynced}</span>
         </div>
         <div className="stat-item">
-          <span className="stat-label">Échecs:</span>
+          <span className="stat-label">{t('pwa.failures')}</span>
           <span className="stat-value error">{status.totalFailed}</span>
         </div>
         <div className="stat-item">
-          <span className="stat-label">Dernière synchro:</span>
+          <span className="stat-label">{t('pwa.lastSync')}</span>
           <span className="stat-value">{formatTime(status.lastSync)}</span>
         </div>
       </div>
 
       {status.pendingRequests.length > 0 && (
         <div className="queue-items">
-          <h4>Requêtes en attente:</h4>
+          <h4>{t('pwa.pendingRequests')}</h4>
           <div className="queue-list">
             {status.pendingRequests.slice(0, 3).map((request) => (
               <div key={request.id} className="queue-item">
@@ -99,16 +103,16 @@ const OfflineQueueStatus: React.FC<OfflineQueueStatusProps> = ({ className = '' 
                 <div className="item-url">
                   <div className="url-path">{new URL(request.url).pathname}</div>
                   <div className="url-time">
-                    {new Date(request.timestamp).toLocaleTimeString('fr-FR', { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
+                    {new Date(request.timestamp).toLocaleTimeString(
+                      localeMap[locale] ?? 'fr-FR',
+                      { hour: '2-digit', minute: '2-digit' },
+                    )}
                   </div>
                 </div>
                 <div className="item-retries">
                   {request.retries > 0 && (
                     <span className="retries-badge">
-                      {request.retries} tentative{request.retries > 1 ? 's' : ''}
+                      {t('pwa.attempt', { count: request.retries })}
                     </span>
                   )}
                 </div>
@@ -116,7 +120,7 @@ const OfflineQueueStatus: React.FC<OfflineQueueStatusProps> = ({ className = '' 
             ))}
             {status.pendingRequests.length > 3 && (
               <div className="queue-more">
-                +{status.pendingRequests.length - 3} autre{status.pendingRequests.length - 3 > 1 ? 's' : ''}
+                {t('pwa.more', { count: status.pendingRequests.length - 3 })}
               </div>
             )}
           </div>
@@ -132,7 +136,7 @@ const OfflineQueueStatus: React.FC<OfflineQueueStatusProps> = ({ className = '' 
           {status.isSyncing ? (
             <>
               <span className="spinner"></span>
-              Synchronisation...
+              {t('pwa.syncing')}
             </>
           ) : (
             <>
@@ -140,7 +144,7 @@ const OfflineQueueStatus: React.FC<OfflineQueueStatusProps> = ({ className = '' 
                 <polyline points="23 4 23 10 17 10"></polyline>
                 <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
               </svg>
-              Synchroniser maintenant
+              {t('pwa.syncNow')}
             </>
           )}
         </button>
@@ -154,7 +158,7 @@ const OfflineQueueStatus: React.FC<OfflineQueueStatusProps> = ({ className = '' 
               <polyline points="1 4 1 10 7 10"></polyline>
               <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
             </svg>
-            Réessayer ({status.totalFailed})
+            {t('pwa.retry', { count: status.totalFailed })}
           </button>
         )}
         
@@ -167,7 +171,7 @@ const OfflineQueueStatus: React.FC<OfflineQueueStatusProps> = ({ className = '' 
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
           </svg>
-          Effacer
+          {t('pwa.clear')}
         </button>
       </div>
     </div>

@@ -28,12 +28,16 @@ interface MaquetteHomeProps {
 }
 
 export default function MaquetteHome({ market, data }: MaquetteHomeProps) {
-  const { t } = useTranslation();
+  const { i18n, t } = useTranslation();
+  const language = i18n.language.split('-')[0];
   // `t` d'i18next a des surcharges très strictes ; notre surface est
   // volontairement réduite à (clé, options) -> chaîne pour le view model.
   const translate = t as unknown as TranslateFn;
 
-  const banners = useMemo(() => buildBanners(data.banners), [data.banners]);
+  const banners = useMemo(
+    () => buildBanners(data.banners, translate),
+    [data.banners, translate],
+  );
   const popular = useMemo(
     () => buildPopularCards(data.popular, translate),
     [data.popular, translate],
@@ -46,7 +50,10 @@ export default function MaquetteHome({ market, data }: MaquetteHomeProps) {
     () => buildCategoryCards(data.categories, data.rooms),
     [data.categories, data.rooms],
   );
-  const events = useMemo(() => buildEvents(data.events), [data.events]);
+  const events = useMemo(
+    () => buildEvents(data.events, language),
+    [data.events, language],
+  );
   const tourism = useMemo(() => buildTourism(data.tourism, data.rooms), [data.tourism, data.rooms]);
   const escapades = useMemo(() => buildEscapades(data.escapades), [data.escapades]);
   const reviews = useMemo(() => buildReviews(data.reviews, market), [data.reviews, market]);

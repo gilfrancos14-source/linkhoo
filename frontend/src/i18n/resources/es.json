@@ -1,4 +1,8 @@
 {
+  "metadata": {
+    "title": "Linkhoo — Habitaciones, apartamentos y hoteles en África Occidental",
+    "description": "Encuentra el lugar ideal para tu próxima estancia en África Occidental: habitaciones, apartamentos y villas en alquiler directo, sin intermediarios."
+  },
   "landing": {
     "topbar": {
       "offlineMessage": "Estás sin conexión. Algunas funciones pueden estar limitadas.",
@@ -9,7 +13,11 @@
       "brandAria": "Linkhoo — volver al inicio",
       "searchAria": "Buscar",
       "menuAria": "Menú",
-      "mainNav": "Navegación principal"
+      "mainNav": "Navegación principal",
+      "bannerAlt": "Bandera promocional",
+      "bannerAria": "Banderas promocionales",
+      "slidesAria": "Diapositivas",
+      "slideAria": "Bandera {{index}}"
     },
     "hero": {
       "eyebrow": "Habitaciones, apartamentos, villas y mucho más",
@@ -358,7 +366,49 @@
     "offlineMode": "Modo sin conexión",
     "syncData": "Sincronizar datos",
     "notifications": "Notificaciones",
-    "cacheCleared": "Caché borrada"
+    "cacheCleared": "Caché borrada",
+    "settings": "Ajustes PWA",
+    "application": "Aplicación",
+    "offline": "Sin conexión",
+    "cache": "Caché",
+    "install": "Instalar",
+    "badgeNew": "Nuevo",
+    "badgeRecommended": "Recomendado",
+    "pushTitle": "Notificaciones push",
+    "pushDescription": "Recibe notificaciones al instante sobre tus reservas, mensajes y novedades de Linkhoo.",
+    "enable": "Activar",
+    "enabling": "Activando...",
+    "refuse": "Rechazar",
+    "offlineTitle": "Sincronización sin conexión",
+    "syncing": "Sincronizando...",
+    "pending": "{{count}} pendientes",
+    "upToDate": "Al día",
+    "never": "Nunca",
+    "synced": "Sincronizados:",
+    "failures": "Fallos:",
+    "lastSync": "Última sincronización:",
+    "pendingRequests": "Solicitudes pendientes:",
+    "attempt_one": "{{count}} intento",
+    "attempt_other": "{{count}} intentos",
+    "more_one": "+{{count}} otro",
+    "more_other": "+{{count}} otros",
+    "syncNow": "Sincronizar ahora",
+    "retry": "Reintentar ({{count}})",
+    "clear": "Borrar",
+    "installTitle": "Instalar la aplicación",
+    "installDescription": "Instala Linkhoo en tu dispositivo para acceder más rápido y recibir notificaciones push.",
+    "installing": "Instalando...",
+    "later": "Más tarde",
+    "cacheTitle": "Gestión de la caché",
+    "totalCaches": "Cachés totales:",
+    "usedSpace": "Espacio usado:",
+    "showDetails": "Ver detalles",
+    "hideDetails": "Ocultar detalles",
+    "items_one": "{{count}} elemento",
+    "items_other": "{{count}} elementos",
+    "optimizing": "Optimizando...",
+    "optimize": "Optimizar la caché",
+    "clearAll": "Borrar todo"
   },
   "footer": {
     "about": "Acerca de nosotros",

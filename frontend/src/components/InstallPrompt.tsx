@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
 
 interface InstallPromptProps {
@@ -14,6 +15,7 @@ const InstallPrompt: React.FC<InstallPromptProps> = ({
   maxShowCount = 3,
   delay = 5000 
 }) => {
+  const { t } = useTranslation();
   const { 
     isInstallable, 
     isInstalled, 
@@ -95,11 +97,8 @@ const InstallPrompt: React.FC<InstallPromptProps> = ({
         </div>
         
         <div className="install-text">
-          <h3>Installer l'application</h3>
-          <p>
-            Installez Ileyha Location sur votre appareil pour accéder 
-            plus rapidement et recevoir des notifications push.
-          </p>
+          <h3>{t('pwa.installTitle')}</h3>
+          <p>{t('pwa.installDescription')}</p>
         </div>
         
         <div className="install-actions">
@@ -111,7 +110,7 @@ const InstallPrompt: React.FC<InstallPromptProps> = ({
             {isInstalling ? (
               <>
                 <span className="spinner"></span>
-                Installation...
+                {t('pwa.installing')}
               </>
             ) : (
               <>
@@ -120,7 +119,7 @@ const InstallPrompt: React.FC<InstallPromptProps> = ({
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                Installer
+                {t('pwa.install')}
               </>
             )}
           </button>
@@ -133,7 +132,7 @@ const InstallPrompt: React.FC<InstallPromptProps> = ({
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
-            Plus tard
+            {t('pwa.later')}
           </button>
         </div>
       </div>

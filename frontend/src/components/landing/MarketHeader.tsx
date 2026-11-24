@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMarket } from '../../contexts/MarketContext';
 import { MAQUETTE_NAV_ITEMS } from '../../maquette/nav';
@@ -15,6 +16,7 @@ import LandingHeader from './LandingHeader';
  */
 export default function MarketHeader() {
   const { market } = useMarket();
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -61,7 +63,7 @@ export default function MarketHeader() {
       items={MAQUETTE_NAV_ITEMS}
       onItemClick={onItemClick}
       brandTo={homePath}
-      account={{ to: `${homePath}/compte`, label: 'Mon espace' }}
+      account={{ to: `${homePath}/compte`, label: t('footer.mySpace') }}
     />
   );
 }
