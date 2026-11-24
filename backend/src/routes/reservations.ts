@@ -28,6 +28,7 @@ import { PawapayApiError } from '../payments/pawapay/client';
 import { startBookingPayment, confirmBookingPayment } from '../payments/service/booking';
 import { requestReservationRefund } from '../payments/service/refund';
 import type { RefundOutcome } from '../payments/service/refund';
+import { notifyClientReservationDecision } from '../services/clientNotifications';
 
 const router = Router();
 const clientLimiter = createClientLimiter({ prefix: 'reservations' });
@@ -425,7 +426,7 @@ router.patch('/:id', requireClerkAuth, async (req: Request, res: Response, next:
 
     const { data: currentReservation, error: fetchError } = await supabaseAdmin
       .from('reservations')
-      .select('id, room_id, date_debut, date_fin, statut, payment_status')
+      .select('id, room_id, room_title, client_email, date_debut, date_fin, statut, payment_status')
       .eq('id', parsedParams.data.id)
       .maybeSingle();
     if (fetchError) throw fetchError;
@@ -485,6 +486,20 @@ router.patch('/:id', requireClerkAuth, async (req: Request, res: Response, next:
       data = updated;
     }
     if (!data) return res.status(404).json({ error: 'Réservation introuvable' });
+
+    // Le client est informé de la décision du gérant (cloche + e-mail).
+    // Fire-and-forget : une panne de notification ne change pas la réponse.
+    if (
+      parsedBody.data.statut === 'confirmee' ||
+      parsedBody.data.statut === 'annulee'
+    ) {
+      void notifyClientReservationDecision({
+        clientEmail: currentReservation.client_email,
+        confirmed: parsedBody.data.statut === 'confirmee',
+        roomId: currentReservation.room_id,
+        roomTitle: currentReservation.room_title,
+      });
+    }
 
     const refund =
       parsedBody.data.statut === 'annulee'

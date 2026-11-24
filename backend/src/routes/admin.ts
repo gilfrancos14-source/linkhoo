@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import bcrypt from 'bcrypt';
 import { supabaseAdmin } from '../config/supabase';
 import { publishNotificationChanged } from '../utils/realtime';
+import { sendClientNotificationEmail } from '../services/mailer';
 import { requireAdminAuth, signAdminToken } from '../middleware/requireAdminAuth';
 import { requirePermission, requireSuperadmin } from '../middleware/adminPermissions';
 import { ADMIN_PERMISSIONS } from '../config/adminPermissions';
@@ -40,6 +41,7 @@ import { PawapayConfigError } from '../payments/pawapay/config';
 import { PawapayApiError } from '../payments/pawapay/client';
 import { payoutVerificationSchema } from '../validations/payments';
 import { listAdminPayouts, retryAdminPayout } from '../payments/service/payoutAdmin';
+import { notifyGerantPayoutRetry } from '../services/gerantNotifications';
 import { z } from 'zod';
 
 const promoGroupSchema = z.object({
@@ -976,6 +978,12 @@ router.post('/reservations/:id/check-availability', requireAdminAuth, requirePer
         message: `Désolé, "${reservation.room_title}" n'est pas disponible.`,
       });
       void publishNotificationChanged('client');
+      void sendClientNotificationEmail({
+        to: reservation.client_email,
+        subject: 'Votre réservation a été refusée',
+        title: 'Votre réservation a été refusée',
+        message: `Désolé, "${reservation.room_title}" n'est pas disponible.`,
+      });
 
       return res.json({ statut: 'annulee', reason: 'chambre_non_disponible' });
     }
@@ -1017,6 +1025,16 @@ router.post('/reservations/:id/check-availability', requireAdminAuth, requirePer
       message: notifMessage,
     });
     void publishNotificationChanged('client');
+    void sendClientNotificationEmail({
+      to: reservation.client_email,
+      subject: notifType === 'reservation_confirmed'
+        ? 'Votre réservation est confirmée'
+        : 'Votre réservation a été refusée',
+      title: notifType === 'reservation_confirmed'
+        ? 'Votre réservation est confirmée'
+        : 'Votre réservation a été refusée',
+      message: notifMessage,
+    });
 
     res.json({ statut: newStatut, reason: hasConflict ? 'conflit_dates' : null });
   } catch (err) {
@@ -1157,6 +1175,12 @@ router.post(
       if (!parsedParams.success) return res.status(400).json({ error: 'Identifiant invalide' });
 
       const payout = await retryAdminPayout(parsedParams.data.id);
+      void notifyGerantPayoutRetry({
+        gerantId: payout.gerant_clerk_user_id,
+        reference: payout.reference,
+        amount: payout.net_amount,
+        currency: payout.currency,
+      });
       res.json({ payout });
     } catch (err) {
       if (err instanceof PaymentServiceError) {

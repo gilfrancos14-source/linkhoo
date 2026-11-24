@@ -2,7 +2,21 @@ import { apiNotifications } from './api';
 
 export interface Notification {
   id: string;
-  type: 'reservation' | 'reservation_confirmed' | 'reservation_rejected' | 'verification_submitted' | 'verification_approved' | 'verification_rejected' | 'reservation_cancelled';
+  type:
+    | 'reservation'
+    | 'reservation_confirmed'
+    | 'reservation_rejected'
+    | 'verification_submitted'
+    | 'verification_approved'
+    | 'verification_rejected'
+    | 'reservation_cancelled'
+    | 'payout_scheduled'
+    | 'payout_details_required'
+    | 'payout_details_verified'
+    | 'payout_paid'
+    | 'payout_failed'
+    | 'message_received'
+    | 'payout_retry_started';
   roomTitle: string;
   roomId: string;
   clientName: string;
@@ -42,7 +56,14 @@ export async function markAllAsRead(): Promise<void> {
 
 export interface ClientNotification {
   id: string;
-  type: 'reservation_confirmed' | 'reservation_rejected';
+  type:
+    | 'reservation_confirmed'
+    | 'reservation_rejected'
+    | 'reservation_cancelled'
+    | 'payment_succeeded'
+    | 'payment_failed'
+    | 'payment_refunded'
+    | 'new_message';
   roomTitle: string;
   roomId: string;
   clientEmail: string;

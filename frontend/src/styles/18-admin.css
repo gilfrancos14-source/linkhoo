@@ -4858,6 +4858,12 @@
   color: #991b1b;
 }
 
+.client-notif--info {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+
 .client-notif__icon {
   flex-shrink: 0;
   margin-top: 2px;
@@ -4869,6 +4875,10 @@
 
 .client-notif--error .client-notif__icon {
   color: #dc2626;
+}
+
+.client-notif--info .client-notif__icon {
+  color: #2563eb;
 }
 
 .client-notif__body {

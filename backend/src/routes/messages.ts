@@ -5,6 +5,8 @@ import { requireClerkAuth } from '../middleware/clerkAuth';
 import { requireProfile } from '../middleware/requireProfile';
 import { createClientLimiter } from '../utils/rateLimiters';
 import { containsPhoneNumber } from '../utils/phoneInText';
+import { notifyClientNewMessage } from '../services/clientNotifications';
+import { notifyGerantNewMessage } from '../services/gerantNotifications';
 import {
   conversationCreateSchema,
   conversationParamsSchema,
@@ -404,6 +406,25 @@ router.post(
         .update({ last_message_at: now })
         .eq('id', conversation.id);
       if (updateError) throw updateError;
+
+      // Un message de l'hôte alimente la cloche du client, et un message du
+      // client celle du gérant (jamais d'e-mail : la messagerie n'est pas un
+      // flux de notifications).
+      if (role === 'gerant') {
+        void notifyClientNewMessage({
+          clientEmail: conversation.client_email,
+          roomId: conversation.room_id,
+          body: parsedBody.data.body,
+        });
+      } else {
+        void notifyGerantNewMessage({
+          gerantId: conversation.gerant_id,
+          clientName: conversation.client_name,
+          clientEmail: conversation.client_email,
+          roomId: conversation.room_id,
+          body: parsedBody.data.body,
+        });
+      }
 
       res.status(201).json(data);
     } catch (err) {

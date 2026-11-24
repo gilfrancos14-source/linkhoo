@@ -11,6 +11,7 @@ import { supabaseAdmin } from '../../config/supabase';
 import { premiumDaysFromMetadata } from '../premiumPlans';
 import { processPawapayWebhook } from '../pawapay/webhooks';
 import { logger } from '../../lib/logger';
+import { notifyClientWebhookPayment } from '../../services/clientNotifications';
 
 export interface ApplyEventResult {
   readonly handled: boolean;
@@ -100,6 +101,9 @@ export async function claimSucceededPayment(input: ClaimSucceededInput): Promise
 export async function applyPawapayEvent(body: unknown): Promise<ApplyEventResult> {
   try {
     const result = await processPawapayWebhook(body);
+    // Le client est informé de la transition réellement appliquée (statut relu
+    // en base). Non bloquant et idempotent : les webhooks rejoués sont ignorés.
+    if (result.handled) void notifyClientWebhookPayment(body);
     return { handled: result.handled, reason: result.reason };
   } catch (error) {
     logger.error(`Erreur lors du traitement de l'événement pawaPay`, { error });

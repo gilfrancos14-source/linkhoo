@@ -155,3 +155,93 @@ export async function sendContactEmail(input: ContactMessageInput): Promise<void
     clearTimeout(timer);
   }
 }
+
+// ── E-mails transactionnels envoyés au client ──
+//
+// Même transport que le formulaire de contact (Resend REST), mais l'échec est
+// non bloquant : l'appelant envoie la notification « fire and forget » après
+// avoir commité la notification en base. Le mail est donc un complément, jamais
+// la source de vérité (la cloche/bannière reste le canal principal).
+
+export interface ClientNotificationEmailInput {
+  readonly to: string;
+  readonly subject: string;
+  readonly title: string;
+  readonly message: string;
+  /** Chemin interne uniquement (jamais une URL arbitraire). */
+  readonly actionPath?: string;
+  readonly actionLabel?: string;
+}
+
+function safeActionUrl(actionPath?: string): string | null {
+  if (!actionPath) return null;
+  // On n'accepte qu'un chemin local : évite l'injection de lien externe ou de
+  // `javascript:` dans un mail transactionnel.
+  if (!/^\/[A-Za-z0-9/?=&._-]*$/.test(actionPath)) return null;
+  const base = (process.env.APP_PUBLIC_URL ?? '').replace(/\/+$/, '');
+  return base ? `${base}${actionPath}` : null;
+}
+
+export function buildClientNotificationEmail(input: ClientNotificationEmailInput): ContactEmail {
+  const subject = sanitizeHeaderValue(`[Linkhoo] ${input.subject}`);
+  const actionUrl = safeActionUrl(input.actionPath);
+  const actionLabel = actionUrl ? (input.actionLabel ?? 'Voir sur Linkhoo') : null;
+
+  const html = [
+    '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#12263a;max-width:600px;">',
+    '<h2 style="margin:0 0 16px;font-size:19px;">' + escapeHtml(input.title) + '</h2>',
+    '<p style="margin:0 0 16px;line-height:1.6;">' + escapeHtml(input.message) + '</p>',
+    actionUrl
+      ? '<p style="margin:20px 0;"><a href="' + escapeHtml(actionUrl) +
+        '" style="display:inline-block;padding:11px 18px;background:#6d3fd9;color:#fff;text-decoration:none;border-radius:6px;">' +
+        escapeHtml(actionLabel as string) + '</a></p>'
+      : '',
+    '<p style="margin:24px 0 0;color:#6b7a88;font-size:12px;">Cet e-mail a été envoyé par Linkhoo. Merci de ne pas y répondre.</p>',
+    '</div>',
+  ].join('\n');
+
+  const text = [
+    input.title,
+    '',
+    input.message,
+    actionUrl ? `\n${actionLabel} : ${actionUrl}` : '',
+    '',
+    'Cet e-mail a été envoyé par Linkhoo. Merci de ne pas y répondre.',
+  ].join('\n');
+
+  return { subject, html, text };
+}
+
+/** Envoi non bloquant : absence de clé ou erreur réseau => simple avertissement. */
+export async function sendClientNotificationEmail(
+  input: ClientNotificationEmailInput,
+): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  const from = process.env.MAIL_FROM ?? 'Linkhoo <no-reply@linkhoo.com>';
+  const { subject, html, text } = buildClientNotificationEmail(input);
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SEND_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(RESEND_API_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ from, to: [input.to], subject, html, text }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      console.warn(`[mailer] Échec e-mail client ${res.status} : ${detail.slice(0, 180)}`);
+    }
+  } catch (err) {
+    console.warn('[mailer] Échec e-mail client :', err instanceof Error ? err.message : err);
+  } finally {
+    clearTimeout(timer);
+  }
+}

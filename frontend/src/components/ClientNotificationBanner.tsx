@@ -8,6 +8,37 @@ const clerkConfigured = Boolean(clerkKey && clerkKey.startsWith('pk_'));
 
 const POLL_INTERVAL_MS = 30_000;
 
+const TITLES: Record<ClientNotification['type'], string> = {
+  reservation_confirmed: 'Réservation confirmée',
+  reservation_rejected: 'Réservation non disponible',
+  reservation_cancelled: 'Réservation annulée',
+  payment_succeeded: 'Paiement confirmé',
+  payment_failed: 'Paiement non abouti',
+  payment_refunded: 'Remboursement effectué',
+  new_message: 'Nouveau message de votre hôte',
+};
+
+function tone(type: ClientNotification['type']): 'success' | 'error' | 'info' {
+  if (['reservation_confirmed', 'payment_succeeded', 'payment_refunded'].includes(type)) {
+    return 'success';
+  }
+  if (['reservation_rejected', 'reservation_cancelled', 'payment_failed'].includes(type)) {
+    return 'error';
+  }
+  return 'info';
+}
+
+function BannerIcon({ type }: { type: ClientNotification['type'] }) {
+  const stroke = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  if (tone(type) === 'success') {
+    return <svg width="20" height="20" viewBox="0 0 24 24" {...stroke}><circle cx="12" cy="12" r="10" /><path d="M8 12l3 3 5-5" /></svg>;
+  }
+  if (tone(type) === 'error') {
+    return <svg width="20" height="20" viewBox="0 0 24 24" {...stroke}><circle cx="12" cy="12" r="10" /><path d="M15 9l-6 6M9 9l6 6" /></svg>;
+  }
+  return <svg width="20" height="20" viewBox="0 0 24 24" {...stroke}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>;
+}
+
 export default function ClientNotificationBanner() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const getTokenRef = useRef(getToken);
@@ -64,22 +95,12 @@ export default function ClientNotificationBanner() {
   return (
     <div className="client-notif-container">
       {visible.map((n) => (
-        <div key={n.id} className={`client-notif client-notif--${n.type === 'reservation_confirmed' ? 'success' : 'error'}`}>
+        <div key={n.id} className={`client-notif client-notif--${tone(n.type)}`}>
           <div className="client-notif__icon">
-            {n.type === 'reservation_confirmed' ? (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/>
-              </svg>
-            ) : (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/>
-              </svg>
-            )}
+            <BannerIcon type={n.type} />
           </div>
           <div className="client-notif__body">
-            <p className="client-notif__title">
-              {n.type === 'reservation_confirmed' ? 'Réservation confirmée' : 'Réservation non disponible'}
-            </p>
+            <p className="client-notif__title">{TITLES[n.type]}</p>
             <p className="client-notif__text">{n.message}</p>
           </div>
           <button className="client-notif__close" onClick={() => handleDismiss(n)} aria-label="Fermer">

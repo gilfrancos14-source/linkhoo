@@ -20,6 +20,37 @@ function timeAgo(iso: string): string {
   return `Il y a ${d} j`;
 }
 
+const TITLES: Record<ClientNotification['type'], string> = {
+  reservation_confirmed: 'Réservation confirmée',
+  reservation_rejected: 'Réservation refusée',
+  reservation_cancelled: 'Réservation annulée',
+  payment_succeeded: 'Paiement confirmé',
+  payment_failed: 'Paiement non abouti',
+  payment_refunded: 'Remboursement effectué',
+  new_message: 'Nouveau message',
+};
+
+function tone(type: ClientNotification['type']): 'success' | 'error' | 'info' {
+  if (['reservation_confirmed', 'payment_succeeded', 'payment_refunded'].includes(type)) {
+    return 'success';
+  }
+  if (['reservation_rejected', 'reservation_cancelled', 'payment_failed'].includes(type)) {
+    return 'error';
+  }
+  return 'info';
+}
+
+function NotificationIcon({ type }: { type: ClientNotification['type'] }) {
+  const stroke = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  if (tone(type) === 'success') {
+    return <svg width="18" height="18" viewBox="0 0 24 24" {...stroke}><circle cx="12" cy="12" r="10" /><path d="M8 12l3 3 5-5" /></svg>;
+  }
+  if (tone(type) === 'error') {
+    return <svg width="18" height="18" viewBox="0 0 24 24" {...stroke}><circle cx="12" cy="12" r="10" /><path d="M15 9l-6 6M9 9l6 6" /></svg>;
+  }
+  return <svg width="18" height="18" viewBox="0 0 24 24" {...stroke}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>;
+}
+
 /** Cloche de notifications du header de l'espace client. */
 export default function ClientNotificationBell() {
   const { isLoaded, isSignedIn, getToken } = useAuth();
@@ -144,26 +175,13 @@ export default function ClientNotificationBell() {
                     className="notif-item__main"
                     onClick={() => void handleRead(n)}
                   >
-                    <div className="notif-item__icon">
-                      {n.type === 'reservation_confirmed' ? (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="10" />
-                          <path d="M8 12l3 3 5-5" />
-                        </svg>
-                      ) : (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="10" />
-                          <path d="M15 9l-6 6M9 9l6 6" />
-                        </svg>
-                      )}
+                    <div className={`notif-item__icon notif-item__icon--${tone(n.type)}`}>
+                      <NotificationIcon type={n.type} />
                     </div>
                     <div className="notif-item__body">
                       <p className="notif-item__text">
-                        {n.type === 'reservation_confirmed' ? (
-                          <>Réservation <strong>confirmée</strong> pour <strong>{n.roomTitle}</strong></>
-                        ) : (
-                          <>Réservation <strong>non disponible</strong> pour <strong>{n.roomTitle}</strong></>
-                        )}
+                        <strong>{TITLES[n.type]}</strong>
+                        {n.roomTitle ? <> — {n.roomTitle}</> : null}
                       </p>
                       <span className="notif-item__dates">{n.message}</span>
                       <span className="notif-item__time">{timeAgo(n.date)}</span>

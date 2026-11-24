@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildContactEmail, escapeHtml, sendContactEmail } from './mailer';
+import {
+  buildClientNotificationEmail,
+  buildContactEmail,
+  escapeHtml,
+  sendContactEmail,
+} from './mailer';
 import type { ContactMessageInput } from '../validations/contact';
 
 const input: ContactMessageInput = {
@@ -37,6 +42,46 @@ describe('buildContactEmail', () => {
     expect(email.html).not.toContain('<script>');
     expect(email.html).toContain('&lt;script&gt;');
     expect(email.text).toContain('<script>'); // le texte brut garde la saisie
+  });
+});
+
+describe('buildClientNotificationEmail', () => {
+  beforeEach(() => {
+    process.env.APP_PUBLIC_URL = 'https://linkehoo.com';
+  });
+
+  afterEach(() => {
+    delete process.env.APP_PUBLIC_URL;
+  });
+
+  it('construit le sujet, le corps et le lien d’action', () => {
+    const email = buildClientNotificationEmail({
+      to: 'client@exemple.ci',
+      subject: 'Votre paiement est confirmé',
+      title: 'Votre paiement est confirmé',
+      message: 'Merci, tout est bon.',
+      actionPath: '/ci/suivi-reservation',
+      actionLabel: 'Suivre ma réservation',
+    });
+
+    expect(email.subject).toBe('[Linkhoo] Votre paiement est confirmé');
+    expect(email.html).toContain('https://linkehoo.com/ci/suivi-reservation');
+    expect(email.html).toContain('Suivre ma réservation');
+    expect(email.text).toContain('Merci, tout est bon.');
+  });
+
+  it('échappe le message et refuse une URL d’action externe', () => {
+    const email = buildClientNotificationEmail({
+      to: 'client@exemple.ci',
+      subject: 'Test',
+      title: 'Test',
+      message: '<script>alert(1)</script>',
+      actionPath: 'https://autre-site.fr',
+    });
+
+    expect(email.html).not.toContain('<script>');
+    expect(email.html).toContain('&lt;script&gt;');
+    expect(email.html).not.toContain('autre-site.fr');
   });
 });
 
