@@ -41,13 +41,13 @@ export default defineConfig({
     pool: 'vmThreads',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
-    // Les 84 fichiers lancés en parallèle saturent la machine : certains tests
-    // à minuterie (suggestions, debounce) dépassent alors le délai par défaut
-    // et échouent sans raison. 4 workers : plus lent mais stable (chaque
-    // worker jsdom consomme beaucoup de mémoire).
+    // jsdom coûte ~7 s à créer par fichier. Mesuré sur cette suite :
+    // 4 workers = ~464 s, 6 workers = ~352 s, 8 workers = ~371 s (contention
+    // mémoire). 6 est le meilleur compromis. `isolate: false` a été écarté :
+    // il ne gagne rien et fait fuiter l'état i18n entre fichiers.
     testTimeout: 30_000,
     hookTimeout: 90_000,
-    maxWorkers: 4,
+    maxWorkers: 6,
     coverage: {
       provider: 'v8',
       reporter: ['text-summary', 'text'],

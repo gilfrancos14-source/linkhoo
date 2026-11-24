@@ -359,8 +359,22 @@ export interface LocalRoomsResponse {
 }
 
 export const apiDiscover = {
-  localRooms: (limit = 4) =>
-    cachedGet<LocalRoomsResponse>(withLang(`/discover/local-rooms?limit=${limit}`)),
+  localRooms: (limit = 4) => {
+    // Aperçu local uniquement : une IP de développement (127.0.0.1) ne donne
+    // aucun pays. Le backend n'honore `market` QUE hors production, donc ce
+    // paramètre ne peut pas être utilisé par un visiteur en ligne.
+    const override =
+      import.meta.env.DEV && typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('market')
+        : null;
+    const suffix =
+      override && /^[A-Za-z]{2}$/.test(override)
+        ? `&market=${encodeURIComponent(override.toUpperCase())}`
+        : '';
+    return cachedGet<LocalRoomsResponse>(
+      withLang(`/discover/local-rooms?limit=${limit}${suffix}`),
+    );
+  },
 };
 
 export interface BannerData {
