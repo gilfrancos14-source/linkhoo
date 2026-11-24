@@ -111,3 +111,16 @@ describe('nearestMarketFromRequest', () => {
     expect(result.market).toBe('TG');
   });
 });
+
+it('en production, ne devine pas le voisin sans coordonnées IP', async () => {
+  vi.stubGlobal('fetch', vi.fn());
+  vi.stubEnv('NODE_ENV', 'production');
+  vi.mocked(fetch).mockResolvedValue({
+    ok: true,
+    json: async () => ({ success: true, country_code: 'CI' }),
+  });
+
+  const result = await nearestMarketFromRequest(reqWithIp('123.45.67.88'));
+
+  expect(result).toEqual({ market: null, ownMarket: 'CI' });
+});

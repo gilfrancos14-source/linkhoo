@@ -99,7 +99,10 @@ export async function lookupGeo(ip: string): Promise<GeoInfo> {
     });
   }
 
-  geoCache.set(key, info, CACHE_TTL_SECONDS);
+  // Un échec réseau ne doit pas masquer la section pendant 24 h : on retente
+  // rapidement. Une réponse réussie (même « pays inconnu ») garde le TTL long.
+  const failed = info === EMPTY_GEO;
+  geoCache.set(key, info, failed ? 300 : CACHE_TTL_SECONDS);
   return info;
 }
 
@@ -144,9 +147,12 @@ export async function nearestMarketFromRequest(req: Request): Promise<{
   const origin = ownMarket ?? devMarket;
   if (!origin) return { market: null, ownMarket };
 
+  // Production : on n'invente aucune position. Sans coordonnées issues de
+  // l'IP, il n'y a pas de « pays le plus proche » fiable → on masque la
+  // section plutôt que de prendre le centre du pays par défaut.
   const center = MARKETS.find((item) => item.code === origin)?.center;
-  const lat = geo.latitude ?? center?.lat;
-  const lng = geo.longitude ?? center?.lng;
+  const lat = geo.latitude ?? (dev ? center?.lat : undefined);
+  const lng = geo.longitude ?? (dev ? center?.lng : undefined);
   if (lat === undefined || lng === undefined) return { market: null, ownMarket };
 
   let best: MarketCode | null = null;
