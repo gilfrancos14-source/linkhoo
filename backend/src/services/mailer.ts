@@ -212,6 +212,48 @@ export function buildClientNotificationEmail(input: ClientNotificationEmailInput
   return { subject, html, text };
 }
 
+export interface ReceiptEmailInput {
+  readonly to: string;
+  readonly clientName: string;
+  readonly amount: string;
+  readonly reservationId: string;
+  /** URL signée servie par /api/receipts/:token. */
+  readonly receiptUrl: string;
+}
+
+export function buildReceiptEmail(input: ReceiptEmailInput): ContactEmail {
+  const subject = sanitizeHeaderValue('[Linkhoo] Votre reçu de paiement Linkhoo');
+  const url = input.receiptUrl.startsWith('https://') ? input.receiptUrl : '';
+  const safeUrl = escapeHtml(url);
+
+  const html = [
+    '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#12263a;max-width:600px;">',
+    '<h2 style="margin:0 0 16px;font-size:19px;">Votre paiement est confirmé</h2>',
+    `<p style="margin:0 0 8px;">Bonjour ${escapeHtml(input.clientName)},</p>`,
+    `<p style="margin:0 0 18px;line-height:1.6;">Votre réservation <strong>${escapeHtml(input.reservationId)}</strong> a été réglée (${escapeHtml(input.amount)}). Vous pouvez télécharger ou imprimer votre reçu en PDF :</p>`,
+    safeUrl
+      ? `<p style="margin:24px 0;"><a href="${safeUrl}" style="display:inline-block;padding:12px 20px;background:#f7941d;color:#0d2c46;text-decoration:none;border-radius:6px;font-weight:bold;">Télécharger mon reçu</a></p>`
+      : '',
+    '<p style="margin:18px 0 0;color:#6b7a88;font-size:12px;">Ce lien est personnel et valable 90 jours. Si le bouton ne fonctionne pas, copiez cette adresse dans votre navigateur :</p>',
+    `<p style="margin:6px 0;color:#6b7a88;font-size:11px;word-break:break-all;">${safeUrl}</p>`,
+    '<p style="margin:24px 0 0;color:#6b7a88;font-size:12px;">Une question ? contact@linkhoo.com</p>',
+    '</div>',
+  ].join('\n');
+
+  const text = [
+    'Votre paiement est confirmé',
+    '',
+    `Bonjour ${input.clientName},`,
+    `Votre réservation ${input.reservationId} a été réglée (${input.amount}).`,
+    'Téléchargez votre reçu :',
+    url,
+    '',
+    'Une question ? contact@linkhoo.com',
+  ].join('\n');
+
+  return { subject, html, text };
+}
+
 /** Envoi non bloquant : absence de clé ou erreur réseau => simple avertissement. */
 export async function sendClientNotificationEmail(
   input: ClientNotificationEmailInput,
@@ -241,6 +283,38 @@ export async function sendClientNotificationEmail(
     }
   } catch (err) {
     console.warn('[mailer] Échec e-mail client :', err instanceof Error ? err.message : err);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** E-mail de confirmation de paiement avec le lien du reçu PDF. Non bloquant. */
+export async function sendReceiptEmail(input: ReceiptEmailInput): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return;
+
+  const from = process.env.MAIL_FROM ?? 'Linkhoo <no-reply@linkhoo.com>';
+  const { subject, html, text } = buildReceiptEmail(input);
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), SEND_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(RESEND_API_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ from, to: [input.to], subject, html, text }),
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      console.warn(`[mailer] Échec e-mail reçu ${res.status} : ${detail.slice(0, 180)}`);
+    }
+  } catch (err) {
+    console.warn('[mailer] Échec e-mail reçu :', err instanceof Error ? err.message : err);
   } finally {
     clearTimeout(timer);
   }

@@ -19,6 +19,7 @@ import { supabaseAdmin } from '../config/supabase';
 import { logger } from '../lib/logger';
 import { publishNotificationChanged } from '../utils/realtime';
 import { sendClientNotificationEmail } from './mailer';
+import { sendPaymentReceiptEmail } from './receipt';
 
 export type ClientNotificationType =
   | 'reservation_confirmed'
@@ -47,6 +48,8 @@ export interface NotifyClientInput {
   readonly roomId?: string | null;
   readonly roomTitle?: string | null;
   readonly actionPath?: string;
+  /** Le reçu envoie déjà son propre e-mail : évite le doublon. */
+  readonly skipEmail?: boolean;
 }
 
 /** Crée une notification client. Retourne false si ignorée (doublon/erreur). */
@@ -80,7 +83,7 @@ export async function notifyClient(input: NotifyClientInput): Promise<boolean> {
     publishNotificationChanged('client');
 
     const subject = EMAIL_SUBJECTS[input.type];
-    if (subject) {
+    if (subject && !input.skipEmail) {
       void sendClientNotificationEmail({
         to: input.clientEmail,
         subject,
@@ -206,7 +209,11 @@ async function notifyClientFromPayment(reference: string): Promise<void> {
     roomId: reservation?.room_id as string | undefined,
     roomTitle: reservation?.room_title as string | undefined,
     actionPath: `/${market}/suivi-reservation`,
+    skipEmail: type === 'payment_succeeded',
   });
+
+  // Le paiement réussi déclenche l'e-mail avec le reçu téléchargeable.
+  if (type === 'payment_succeeded') void sendPaymentReceiptEmail(payment.reference);
 }
 
 /** Remboursement pawaPay réussi, identifié par son ID provider. */

@@ -36,6 +36,8 @@ COPY --from=build /app/dist ./dist
 # Les migrations SQL sont embarquées : `node dist/db/migrateCli.js` doit
 # pouvoir les lire depuis l'image.
 COPY supabase ./supabase
+# Gabarit HTML du reçu de paiement (lu à l'exécution par src/routes/receipts.ts).
+COPY templates ./templates
 
 # Le stockage des fichiers (photos, documents de vérification) est un volume.
 RUN mkdir -p /app/storage && chown -R node:node /app/storage

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildClientNotificationEmail,
   buildContactEmail,
+  buildReceiptEmail,
   escapeHtml,
   sendContactEmail,
 } from './mailer';
@@ -82,6 +83,37 @@ describe('buildClientNotificationEmail', () => {
     expect(email.html).not.toContain('<script>');
     expect(email.html).toContain('&lt;script&gt;');
     expect(email.html).not.toContain('autre-site.fr');
+  });
+});
+
+describe('buildReceiptEmail', () => {
+  it('présente le montant, la réservation et le lien du reçu', () => {
+    const email = buildReceiptEmail({
+      to: 'awa@exemple.ci',
+      clientName: 'Awa Koffi',
+      amount: '189 000 FCFA',
+      reservationId: 'RES-8F3C21AB',
+      receiptUrl: 'https://linkehoo.com/api/receipts/jeton.signé.ici',
+    });
+
+    expect(email.subject).toBe('[Linkhoo] Votre reçu de paiement Linkhoo');
+    expect(email.html).toContain('Télécharger mon reçu');
+    expect(email.html).toContain('https://linkehoo.com/api/receipts/jeton.signé.ici');
+    expect(email.text).toContain('189 000 FCFA');
+    expect(email.text).toContain('RES-8F3C21AB');
+  });
+
+  it('ignore une URL de reçu non HTTPS', () => {
+    const email = buildReceiptEmail({
+      to: 'awa@exemple.ci',
+      clientName: 'Awa',
+      amount: '1 FCFA',
+      reservationId: 'RES-1',
+      receiptUrl: 'javascript:alert(1)',
+    });
+
+    expect(email.html).not.toContain('Télécharger mon reçu');
+    expect(email.html).not.toContain('javascript:');
   });
 });
 
