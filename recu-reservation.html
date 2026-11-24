@@ -13,9 +13,9 @@
   -->
   <style>
     :root {
-      --navy: #0e2b45;
+      --navy: #0d2c46;
       --navy-2: #123c5c;
-      --orange: #f59416;
+      --orange: #f7941d;
       --orange-2: #f7a32a;
       --ink: #1c2b3a;
       --muted: #7c8896;
@@ -71,32 +71,52 @@
       overflow: hidden;
     }
 
-    /* ── Bandeaux avec coupes diagonales ── */
-    .top-band, .bottom-band { display: flex; height: 62px; width: 100%; }
+    /* ── Bandeaux avec coupes diagonales ──
+       Le losange blanc est une bande parallèle inclinée de 20 px, décalée de
+       56 px entre le haut et le bas. Les blocs de couleur se chevauchent de
+       56 px (margin négative) pour que les trois bords restent alignés. */
+    .top-band, .bottom-band { display: flex; height: 40px; width: 100%; }
 
     .top-band .navy {
-      width: 44%;
+      width: 34%;
       background: var(--navy);
-      clip-path: polygon(0 0, 100% 0, calc(100% - 58px) 100%, 0 100%);
+      clip-path: polygon(0 0, 100% 0, calc(100% - 56px) 100%, 0 100%);
     }
 
-    .top-band .gap { width: 26px; background: var(--paper); }
-    .top-band .orange { flex: 1; background: var(--orange); }
+    .top-band .white {
+      width: 76px;
+      margin-left: -56px;
+      background: var(--paper);
+      clip-path: polygon(56px 0, 100% 0, 20px 100%, 0 100%);
+    }
 
-    .bottom-band { height: 52px; margin-top: 6px; }
+    .top-band .orange {
+      flex: 1;
+      margin-left: -56px;
+      background: var(--orange);
+      clip-path: polygon(56px 0, 100% 0, 100% 100%, 0 100%);
+    }
+
+    .bottom-band { height: 40px; margin-top: 6px; }
 
     .bottom-band .orange {
-      width: 46%;
+      width: 64%;
       background: var(--orange);
-      clip-path: polygon(0 0, calc(100% - 54px) 0, 100% 100%, 0 100%);
+      clip-path: polygon(0 0, calc(100% - 56px) 0, 100% 100%, 0 100%);
     }
 
-    .bottom-band .gap { width: 26px; background: var(--paper); }
+    .bottom-band .white {
+      width: 76px;
+      margin-left: -56px;
+      background: var(--paper);
+      clip-path: polygon(0 0, 20px 0, 76px 100%, 56px 100%);
+    }
 
     .bottom-band .navy {
       flex: 1;
+      margin-left: -56px;
       background: var(--navy);
-      clip-path: polygon(54px 0, 100% 0, 100% 100%, 0 100%);
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 56px 100%);
     }
 
     /* ── En-tête ── */
@@ -135,7 +155,7 @@
     .company strong { display: block; color: var(--navy); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
     .company .date { margin-top: 12px; padding-top: 6px; border-top: 1px dotted var(--line); font-weight: 700; }
 
-    .rule { height: 14px; background: var(--orange); }
+    .rule { height: 8px; background: var(--orange); }
 
     /* ── Corps ── */
     .body { padding: 30px 42px 36px; }
@@ -233,7 +253,14 @@
       .grid-2, .grid-3, .signatures { grid-template-columns: 1fr; gap: 18px; }
       .row { flex-wrap: wrap; }
       .field label { font-size: 11px; }
-      .top-band .navy { width: 54%; }
+      .top-band .navy { width: 42%; }
+      .top-band .white, .bottom-band .white { width: 56px; }
+      .top-band .white, .top-band .orange, .bottom-band .navy { margin-left: -40px; }
+      .top-band .navy { clip-path: polygon(0 0, 100% 0, calc(100% - 40px) 100%, 0 100%); }
+      .top-band .white { clip-path: polygon(40px 0, 100% 0, 16px 100%, 0 100%); }
+      .bottom-band .orange { clip-path: polygon(0 0, calc(100% - 40px) 0, 100% 100%, 0 100%); }
+      .bottom-band .white { clip-path: polygon(0 0, 16px 0, 56px 100%, 40px 100%); }
+      .bottom-band .navy { clip-path: polygon(0 0, 100% 0, 100% 100%, 40px 100%); }
       footer { padding: 14px 20px 18px; }
     }
 
@@ -255,7 +282,7 @@
   <div class="receipt">
     <div class="top-band">
       <div class="navy"></div>
-      <div class="gap"></div>
+      <div class="white"></div>
       <div class="orange"></div>
     </div>
 
@@ -399,7 +426,7 @@
 
     <div class="bottom-band">
       <div class="orange"></div>
-      <div class="gap"></div>
+      <div class="white"></div>
       <div class="navy"></div>
     </div>
   </div>
