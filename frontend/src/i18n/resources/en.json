@@ -121,6 +121,20 @@
       "showAll": "Show all",
       "prev": "Previous places",
       "next": "Next places"
+    },
+    "weekendRooms": {
+      "eyebrow": "Weekend",
+      "title": "Available this weekend · {{country}}",
+      "subtitle": "Places free on Saturday and Sunday in another nearby market.",
+      "viewAll": "See rentals in {{country}}",
+      "from": "From",
+      "property": "Apartment",
+      "currency": "FCFA",
+      "night": "night",
+      "badge": "Travelers’ favourite",
+      "showAll": "Show all",
+      "prev": "Previous places",
+      "next": "Next places"
     }
   },
   "navigation": {

@@ -121,6 +121,20 @@
       "showAll": "Tout afficher",
       "prev": "Logements précédents",
       "next": "Logements suivants"
+    },
+    "weekendRooms": {
+      "eyebrow": "Week-end",
+      "title": "Disponibles ce week-end · {{country}}",
+      "subtitle": "Logements libres samedi et dimanche dans un autre marché proche de vous.",
+      "viewAll": "Voir les logements en {{country}}",
+      "from": "À partir de",
+      "property": "Appartement",
+      "currency": "FCFA",
+      "night": "nuit",
+      "badge": "Coup de cœur voyageurs",
+      "showAll": "Tout afficher",
+      "prev": "Logements précédents",
+      "next": "Logements suivants"
     }
   },
   "navigation": {

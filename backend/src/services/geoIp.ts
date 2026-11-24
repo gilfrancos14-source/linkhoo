@@ -128,14 +128,14 @@ function distanceKm(
 }
 
 /**
- * Marché voisin du visiteur : le plus proche géographiquement, en excluant le
- * sien (déjà présenté dans la section au-dessus). En développement, l'IP est
+ * Marchés voisins du visiteur, classés du plus proche au plus éloigné, en
+ * excluant le sien (déjà présenté plus haut). En développement, l'IP est
  * locale : on part d'Abidjan et on exclut la Côte d'Ivoire.
  */
-export async function nearestMarketFromRequest(req: Request): Promise<{
-  market: MarketCode | null;
-  ownMarket: MarketCode | null;
-}> {
+export async function nearestMarketsFromRequest(
+  req: Request,
+  count = 3,
+): Promise<{ markets: MarketCode[]; ownMarket: MarketCode | null }> {
   const ip = clientIp(req);
   const geo = ip ? await lookupGeo(ip) : EMPTY_GEO;
   const ownMarket = geo.countryCode
@@ -145,7 +145,7 @@ export async function nearestMarketFromRequest(req: Request): Promise<{
   const dev = !env || env === 'development';
   const devMarket: MarketCode | null = dev ? 'CI' : null;
   const origin = ownMarket ?? devMarket;
-  if (!origin) return { market: null, ownMarket };
+  if (!origin) return { markets: [], ownMarket };
 
   // Production : on n'invente aucune position. Sans coordonnées issues de
   // l'IP, il n'y a pas de « pays le plus proche » fiable → on masque la
@@ -153,19 +153,28 @@ export async function nearestMarketFromRequest(req: Request): Promise<{
   const center = MARKETS.find((item) => item.code === origin)?.center;
   const lat = geo.latitude ?? (dev ? center?.lat : undefined);
   const lng = geo.longitude ?? (dev ? center?.lng : undefined);
-  if (lat === undefined || lng === undefined) return { market: null, ownMarket };
+  if (lat === undefined || lng === undefined) return { markets: [], ownMarket };
 
-  let best: MarketCode | null = null;
-  let bestDistance = Number.POSITIVE_INFINITY;
-  for (const item of MARKETS) {
-    if (item.code === (ownMarket ?? devMarket)) continue;
-    const distance = distanceKm(lat, lng, item.center.lat, item.center.lng);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      best = item.code;
-    }
-  }
-  return { market: best, ownMarket };
+  const exclude = ownMarket ?? devMarket;
+  const sorted = MARKETS.filter((item) => item.code !== exclude)
+    .map((item) => ({
+      code: item.code,
+      distance: distanceKm(lat, lng, item.center.lat, item.center.lng),
+    }))
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, count)
+    .map((item) => item.code);
+
+  return { markets: sorted, ownMarket };
+}
+
+/** Marché voisin le plus proche (1ᵉʳ de la liste classée). */
+export async function nearestMarketFromRequest(req: Request): Promise<{
+  market: MarketCode | null;
+  ownMarket: MarketCode | null;
+}> {
+  const { markets, ownMarket } = await nearestMarketsFromRequest(req, 1);
+  return { market: markets[0] ?? null, ownMarket };
 }
 
 /**

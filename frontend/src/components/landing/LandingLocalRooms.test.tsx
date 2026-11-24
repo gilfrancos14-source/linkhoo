@@ -6,12 +6,14 @@ import LandingLocalRooms from './LandingLocalRooms';
 const mocks = vi.hoisted(() => ({
   localRooms: vi.fn(),
   neighborRooms: vi.fn(),
+  weekendRooms: vi.fn(),
 }));
 
 vi.mock('../../lib/api', () => ({
   apiDiscover: {
     localRooms: mocks.localRooms,
     neighborRooms: mocks.neighborRooms,
+    weekendRooms: mocks.weekendRooms,
   },
 }));
 
@@ -28,6 +30,7 @@ describe('LandingLocalRooms', () => {
     vi.clearAllMocks();
     mocks.localRooms.mockResolvedValue({ market: null, rooms: [] });
     mocks.neighborRooms.mockResolvedValue({ market: null, rooms: [] });
+    mocks.weekendRooms.mockResolvedValue({ market: null, rooms: [] });
   });
 
   afterEach(() => cleanup());
@@ -108,5 +111,44 @@ describe('LandingLocalRooms — pays voisin', () => {
       'href',
       '/tg',
     );
+  });
+});
+
+describe('LandingLocalRooms — week-end', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.localRooms.mockResolvedValue({ market: null, rooms: [] });
+    mocks.neighborRooms.mockResolvedValue({ market: null, rooms: [] });
+    mocks.weekendRooms.mockResolvedValue({
+      market: 'BF',
+      rooms: [
+        {
+          id: 'room-bf',
+          title: 'Studio Ouaga',
+          img: '/images/room.jpg',
+          alt: 'Studio',
+          ville: 'Ouagadougou',
+          quartier: 'Centre',
+          price: '12000',
+        },
+      ],
+    });
+  });
+
+  afterEach(() => cleanup());
+
+  it('affiche les logements disponibles le week-end dans le 2ᵉ marché', async () => {
+    render(
+      <MemoryRouter>
+        <LandingLocalRooms variant="weekend" />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: /Disponibles ce week-end/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/^Appartement · Ouagadougou$/)).toBeInTheDocument();
+    expect(mocks.weekendRooms).toHaveBeenCalled();
+    expect(mocks.neighborRooms).not.toHaveBeenCalled();
   });
 });

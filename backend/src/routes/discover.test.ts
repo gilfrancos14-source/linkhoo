@@ -1,8 +1,12 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import discoverRouter from './discover';
+import discoverRouter, { nextWeekendDates } from './discover';
 import { supabaseAdmin, supabasePublic } from '../config/supabase';
-import { marketFromRequest, nearestMarketFromRequest } from '../services/geoIp';
+import {
+  marketFromRequest,
+  nearestMarketFromRequest,
+  nearestMarketsFromRequest,
+} from '../services/geoIp';
 import {
   buildTestApp,
   fakeChain,
@@ -17,6 +21,7 @@ vi.mock('../config/supabase', async () => {
 vi.mock('../services/geoIp', () => ({
   marketFromRequest: vi.fn(),
   nearestMarketFromRequest: vi.fn(),
+  nearestMarketsFromRequest: vi.fn(),
 }));
 
 const app = buildTestApp('/api/discover', discoverRouter);
@@ -95,5 +100,54 @@ describe('GET /api/discover/neighbor-rooms', () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ market: null, rooms: [] });
+  });
+});
+
+describe('nextWeekendDates', () => {
+  it('prend le samedi et le dimanche à venir', () => {
+    expect(nextWeekendDates(new Date('2026-11-23T10:00:00Z'))).toEqual({
+      arrivee: '2026-11-28',
+      depart: '2026-11-30',
+    });
+  });
+
+  it('conserve le week-end en cours le samedi, attend le suivant le dimanche', () => {
+    expect(nextWeekendDates(new Date('2026-11-28T10:00:00Z')).arrivee).toBe('2026-11-28');
+    expect(nextWeekendDates(new Date('2026-11-29T10:00:00Z')).arrivee).toBe('2026-12-05');
+  });
+});
+
+describe('GET /api/discover/weekend-rooms', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useSupabaseTables(supabasePublic.from, {
+      rooms: fakeChain({
+        data: [
+          { ...ROOM, id: 'libre' },
+          { ...ROOM, id: 'occupe' },
+        ],
+        error: null,
+      }),
+    });
+    useSupabaseTables(supabaseAdmin.from, {
+      reservations: fakeChain({
+        data: [{ room_id: 'occupe' }],
+        error: null,
+      }),
+    });
+  });
+
+  it('prend le 2ᵉ marché et exclut les chambres réservées le week-end', async () => {
+    vi.mocked(nearestMarketsFromRequest).mockResolvedValue({
+      markets: ['TG', 'BJ'],
+      ownMarket: 'CI',
+    });
+
+    const res = await request(app).get('/api/discover/weekend-rooms?limit=2');
+
+    expect(res.status).toBe(200);
+    expect(res.body.market).toBe('BJ');
+    expect(res.body.rooms).toHaveLength(1);
+    expect(res.body.rooms[0].id).toBe('libre');
   });
 });

@@ -377,6 +377,8 @@ export const apiDiscover = {
   },
   neighborRooms: (limit = 4) =>
     cachedGet<LocalRoomsResponse>(withLang(`/discover/neighbor-rooms?limit=${limit}`)),
+  weekendRooms: (limit = 4) =>
+    cachedGet<LocalRoomsResponse>(withLang(`/discover/weekend-rooms?limit=${limit}`)),
 };
 
 export interface BannerData {

@@ -10,7 +10,7 @@ import '../../styles/51-landing-local-rooms.css';
 
 interface Props {
   limit?: number;
-  variant?: 'local' | 'neighbor';
+  variant?: 'local' | 'neighbor' | 'weekend';
 }
 
 /**
@@ -20,7 +20,12 @@ interface Props {
  */
 export default function LandingLocalRooms({ limit = 4, variant = 'local' }: Props) {
   const { t } = useTranslation();
-  const keys = variant === 'neighbor' ? 'landing.neighborRooms' : 'landing.localRooms';
+  const keys =
+    variant === 'neighbor'
+      ? 'landing.neighborRooms'
+      : variant === 'weekend'
+        ? 'landing.weekendRooms'
+        : 'landing.localRooms';
   const favorites = useFavorites();
   const gridRef = useRef<HTMLDivElement>(null);
   const [market, setMarket] = useState<string | null>(null);
@@ -29,7 +34,11 @@ export default function LandingLocalRooms({ limit = 4, variant = 'local' }: Prop
   useEffect(() => {
     let alive = true;
     const loader =
-      variant === 'neighbor' ? apiDiscover.neighborRooms : apiDiscover.localRooms;
+      variant === 'neighbor'
+        ? apiDiscover.neighborRooms
+        : variant === 'weekend'
+          ? apiDiscover.weekendRooms
+          : apiDiscover.localRooms;
     loader(limit)
       .then((data) => {
         if (!alive || !data?.market || !Array.isArray(data.rooms)) return;

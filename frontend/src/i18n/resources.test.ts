@@ -39,6 +39,8 @@ describe('ressources i18n', () => {
       'landing.localRooms.viewAll',
       'landing.neighborRooms.title',
       'landing.neighborRooms.viewAll',
+      'landing.weekendRooms.title',
+      'landing.weekendRooms.showAll',
       'api.timeout',
       'api.newsletterInvalidEmail',
       'markets.CI',

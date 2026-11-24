@@ -38,6 +38,9 @@ export default function LandingPage() {
           <LandingLocalRooms variant="neighbor" />
         </AnimatedSection>
         <AnimatedSection>
+          <LandingLocalRooms variant="weekend" />
+        </AnimatedSection>
+        <AnimatedSection>
           <LandingSlider />
         </AnimatedSection>
         <AnimatedSection>

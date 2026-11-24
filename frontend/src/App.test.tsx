@@ -130,6 +130,7 @@ vi.mock('./lib/api', () => ({
   apiDiscover: {
     localRooms: vi.fn(async () => ({ market: null, rooms: [] })),
     neighborRooms: vi.fn(async () => ({ market: null, rooms: [] })),
+    weekendRooms: vi.fn(async () => ({ market: null, rooms: [] })),
   },
   cachedGet: mocks.autoFn,
   parseJsonBody: mocks.autoFn,

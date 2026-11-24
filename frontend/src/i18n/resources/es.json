@@ -121,6 +121,20 @@
       "showAll": "Ver todo",
       "prev": "Alojamientos anteriores",
       "next": "Alojamientos siguientes"
+    },
+    "weekendRooms": {
+      "eyebrow": "Fin de semana",
+      "title": "Disponibles este fin de semana · {{country}}",
+      "subtitle": "Alojamientos libres el sábado y domingo en otro mercado cercano a ti.",
+      "viewAll": "Ver alojamientos en {{country}}",
+      "from": "Desde",
+      "property": "Apartamento",
+      "currency": "FCFA",
+      "night": "noche",
+      "badge": "Favorito de viajeros",
+      "showAll": "Ver todo",
+      "prev": "Alojamientos anteriores",
+      "next": "Alojamientos siguientes"
     }
   },
   "navigation": {

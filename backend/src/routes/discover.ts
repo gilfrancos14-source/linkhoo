@@ -1,12 +1,17 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { supabasePublic } from '../config/supabase';
+import { supabaseAdmin, supabasePublic } from '../config/supabase';
 import type { MarketCode } from '../config/markets';
 import { ROOM_COLUMNS } from '../utils/selects';
 import { createClientLimiter } from '../utils/rateLimiters';
 import { SecureCache } from '../utils/SecureCache';
 import { attachTranslations, resolveLocale } from '../i18n/translations';
-import { marketFromRequest, nearestMarketFromRequest } from '../services/geoIp';
+import {
+  marketFromRequest,
+  nearestMarketFromRequest,
+  nearestMarketsFromRequest,
+} from '../services/geoIp';
+import { fetchAllRows } from '../utils/fetchAll';
 import { logger } from '../lib/logger';
 
 const router = Router();
@@ -22,6 +27,25 @@ const querySchema = z
     market: z.string().length(2).optional(),
   })
   .strict();
+
+/**
+ * Prochain week-end complet : samedi → lundi (nuits de samedi et dimanche).
+ * Si l'on est déjà samedi, on prend le week-end en cours ; dimanche, on attend
+ * le samedi suivant pour pouvoir proposer les deux jours.
+ */
+export function nextWeekendDates(now = new Date()): { arrivee: string; depart: string } {
+  const day = now.getUTCDay(); // 0 = dimanche, 6 = samedi
+  const delta = day === 6 ? 0 : day === 0 ? 6 : 6 - day;
+  const saturday = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + delta),
+  );
+  const monday = new Date(saturday);
+  monday.setUTCDate(monday.getUTCDate() + 2);
+  return {
+    arrivee: saturday.toISOString().slice(0, 10),
+    depart: monday.toISOString().slice(0, 10),
+  };
+}
 
 interface DiscoverResponse {
   market: MarketCode | null;
@@ -118,6 +142,67 @@ router.get('/neighbor-rooms', discoverLimiter, async (req: Request, res: Respons
       'room',
       locale,
     );
+    const payload: DiscoverResponse = { market, rooms };
+    responseCache.set(cacheKey, payload, 300);
+    return res.json(payload);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/discover/weekend-rooms — logements libres samedi ET dimanche dans
+ * le 2ᵉ marché le plus proche (le 1ᵉʳ est déjà montré dans /neighbor-rooms).
+ */
+router.get('/weekend-rooms', discoverLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = querySchema.safeParse(req.query);
+    if (!parsed.success) return res.status(400).json({ error: 'Paramètres invalides' });
+
+    const limit = parsed.data.limit ?? 4;
+    const locale = resolveLocale(parsed.data.lang);
+    const { markets } = await nearestMarketsFromRequest(req, 2);
+    const market = markets[1] ?? null;
+    if (!market) return res.json(EMPTY);
+
+    const { arrivee, depart } = nextWeekendDates();
+    const cacheKey = `weekend-rooms:${market}:${locale}:${limit}:${arrivee}`;
+    const cached = responseCache.get<DiscoverResponse>(cacheKey);
+    if (cached) return res.json(cached);
+
+    // Même règle que /api/rooms/available : une réservation non annulée qui
+    // chevauche [samedi, lundi[ bloque la chambre.
+    const overlapping = await fetchAllRows<{ room_id: string | null }>((from, to) =>
+      supabaseAdmin
+        .from('reservations')
+        .select('room_id')
+        .neq('statut', 'annulee')
+        .lt('date_debut', depart)
+        .gt('date_fin', arrivee)
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
+    const blocked = new Set(
+      overlapping.map((row) => row.room_id).filter((id): id is string => Boolean(id)),
+    );
+
+    const rows = await fetchAllRows<Record<string, unknown>>((from, to) =>
+      supabasePublic
+        .from('rooms')
+        .select(ROOM_COLUMNS)
+        .eq('market', market)
+        .eq('disponible', true)
+        .not('img', 'is', null)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to),
+    );
+    const rooms = await attachTranslations(
+      rows.filter((room) => !blocked.has(String(room.id))).slice(0, limit),
+      'room',
+      locale,
+    );
+
     const payload: DiscoverResponse = { market, rooms };
     responseCache.set(cacheKey, payload, 300);
     return res.json(payload);
