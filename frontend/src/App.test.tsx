@@ -129,6 +129,7 @@ vi.mock('./lib/api', () => ({
   withLang: (path: string) => path,
   apiDiscover: {
     localRooms: vi.fn(async () => ({ market: null, rooms: [] })),
+    neighborRooms: vi.fn(async () => ({ market: null, rooms: [] })),
   },
   cachedGet: mocks.autoFn,
   parseJsonBody: mocks.autoFn,

@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Request } from 'express';
-import { clientIp, lookupCountry, marketFromRequest } from './geoIp';
+import {
+  clientIp,
+  lookupCountry,
+  marketFromRequest,
+  nearestMarketFromRequest,
+} from './geoIp';
 
 function reqWithIp(ip: string): Request {
   return { ip, socket: { remoteAddress: ip } } as unknown as Request;
@@ -72,5 +77,37 @@ describe('geoIp', () => {
       countryCode: null,
       market: null,
     });
+  });
+});
+
+describe('nearestMarketFromRequest', () => {
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    fetchMock.mockReset();
+    vi.stubEnv('NODE_ENV', 'production');
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it('choisit le pays voisin le plus proche en excluant le sien', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        country_code: 'CI',
+        latitude: 5.36,
+        longitude: -4.008,
+      }),
+    });
+
+    const result = await nearestMarketFromRequest(reqWithIp('123.45.67.77'));
+
+    expect(result.ownMarket).toBe('CI');
+    expect(result.market).toBe('TG');
   });
 });

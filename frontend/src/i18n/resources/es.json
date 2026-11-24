@@ -100,6 +100,13 @@
       "subtitle": "Descubre una selección de alojamientos disponibles en {{country}}, elegida según tu ubicación.",
       "viewAll": "Ver todos los alojamientos en {{country}}",
       "from": "Desde"
+    },
+    "neighborRooms": {
+      "eyebrow": "Cerca de ti · {{country}}",
+      "title": "Alojamientos disponibles en {{country}}",
+      "subtitle": "El país vecino más cercano a ti también tiene alojamientos disponibles. Descúbrelos aquí.",
+      "viewAll": "Ver alojamientos en {{country}}",
+      "from": "Desde"
     }
   },
   "navigation": {

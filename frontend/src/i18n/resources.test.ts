@@ -37,6 +37,8 @@ describe('ressources i18n', () => {
       'pwa.items_other',
       'landing.localRooms.title',
       'landing.localRooms.viewAll',
+      'landing.neighborRooms.title',
+      'landing.neighborRooms.viewAll',
       'api.timeout',
       'api.newsletterInvalidEmail',
       'markets.CI',

@@ -5,6 +5,10 @@
   background: #fff;
 }
 
+.acc-local--neighbor {
+  background: var(--acc-soft, #f6f5fb);
+}
+
 .acc-local__head {
   display: flex;
   align-items: flex-end;

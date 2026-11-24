@@ -14,7 +14,7 @@ import { createHash } from 'crypto';
 import { isIP } from 'net';
 import type { Request } from 'express';
 import { SecureCache } from '../utils/SecureCache';
-import type { MarketCode } from '../config/markets';
+import { MARKETS, type MarketCode } from '../config/markets';
 import { logger } from '../lib/logger';
 
 const GEO_URL = 'https://ipwho.is';
@@ -54,15 +54,25 @@ function cacheKey(ip: string): string {
 interface GeoResponse {
   readonly success?: boolean;
   readonly country_code?: string;
+  readonly latitude?: number;
+  readonly longitude?: number;
 }
 
-/** Retourne le code ISO du pays, ou null si introuvable/indisponible. */
-export async function lookupCountry(ip: string): Promise<string | null> {
+export interface GeoInfo {
+  readonly countryCode: string | null;
+  readonly latitude: number | null;
+  readonly longitude: number | null;
+}
+
+const EMPTY_GEO: GeoInfo = { countryCode: null, latitude: null, longitude: null };
+
+/** Pays + coordonnées de l'IP, mis en cache sous l'IP hachée. */
+export async function lookupGeo(ip: string): Promise<GeoInfo> {
   const key = cacheKey(ip);
-  const cached = geoCache.get<string | null>(key);
+  const cached = geoCache.get<GeoInfo>(key);
   if (cached !== undefined) return cached;
 
-  let code: string | null = null;
+  let info: GeoInfo = EMPTY_GEO;
   try {
     const res = await fetch(`${GEO_URL}/${encodeURIComponent(ip)}`, {
       headers: { Accept: 'application/json' },
@@ -70,8 +80,17 @@ export async function lookupCountry(ip: string): Promise<string | null> {
     });
     if (res.ok) {
       const body = (await res.json()) as GeoResponse;
-      if (body.success && typeof body.country_code === 'string') {
-        code = body.country_code.trim().toUpperCase();
+      if (body.success) {
+        const lat = Number(body.latitude);
+        const lng = Number(body.longitude);
+        info = {
+          countryCode:
+            typeof body.country_code === 'string'
+              ? body.country_code.trim().toUpperCase()
+              : null,
+          latitude: body.latitude !== undefined && Number.isFinite(lat) ? lat : null,
+          longitude: body.longitude !== undefined && Number.isFinite(lng) ? lng : null,
+        };
       }
     }
   } catch (error) {
@@ -80,8 +99,67 @@ export async function lookupCountry(ip: string): Promise<string | null> {
     });
   }
 
-  geoCache.set(key, code, CACHE_TTL_SECONDS);
-  return code;
+  geoCache.set(key, info, CACHE_TTL_SECONDS);
+  return info;
+}
+
+/** Retourne le code ISO du pays, ou null si introuvable/indisponible. */
+export async function lookupCountry(ip: string): Promise<string | null> {
+  return (await lookupGeo(ip)).countryCode;
+}
+
+/** Distance grande cercle (haversine) en km. */
+function distanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(a));
+}
+
+/**
+ * Marché voisin du visiteur : le plus proche géographiquement, en excluant le
+ * sien (déjà présenté dans la section au-dessus). En développement, l'IP est
+ * locale : on part d'Abidjan et on exclut la Côte d'Ivoire.
+ */
+export async function nearestMarketFromRequest(req: Request): Promise<{
+  market: MarketCode | null;
+  ownMarket: MarketCode | null;
+}> {
+  const ip = clientIp(req);
+  const geo = ip ? await lookupGeo(ip) : EMPTY_GEO;
+  const ownMarket = geo.countryCode
+    ? COUNTRY_TO_MARKET[geo.countryCode] ?? null
+    : null;
+  const env = process.env.NODE_ENV;
+  const dev = !env || env === 'development';
+  const devMarket: MarketCode | null = dev ? 'CI' : null;
+  const origin = ownMarket ?? devMarket;
+  if (!origin) return { market: null, ownMarket };
+
+  const center = MARKETS.find((item) => item.code === origin)?.center;
+  const lat = geo.latitude ?? center?.lat;
+  const lng = geo.longitude ?? center?.lng;
+  if (lat === undefined || lng === undefined) return { market: null, ownMarket };
+
+  let best: MarketCode | null = null;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (const item of MARKETS) {
+    if (item.code === (ownMarket ?? devMarket)) continue;
+    const distance = distanceKm(lat, lng, item.center.lat, item.center.lng);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = item.code;
+    }
+  }
+  return { market: best, ownMarket };
 }
 
 /**

@@ -6,7 +6,7 @@ import { ROOM_COLUMNS } from '../utils/selects';
 import { createClientLimiter } from '../utils/rateLimiters';
 import { SecureCache } from '../utils/SecureCache';
 import { attachTranslations, resolveLocale } from '../i18n/translations';
-import { marketFromRequest } from '../services/geoIp';
+import { marketFromRequest, nearestMarketFromRequest } from '../services/geoIp';
 import { logger } from '../lib/logger';
 
 const router = Router();
@@ -78,6 +78,48 @@ router.get('/local-rooms', discoverLimiter, async (req: Request, res: Response, 
     if (process.env.NODE_ENV === 'development') {
       logger.info('[discover] logements locaux servis', { market, count: rooms.length });
     }
+    return res.json(payload);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * GET /api/discover/neighbor-rooms — offres du marché voisin (le plus proche
+ * géographiquement, hors pays du visiteur). Même contrat que /local-rooms.
+ */
+router.get('/neighbor-rooms', discoverLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = querySchema.safeParse(req.query);
+    if (!parsed.success) return res.status(400).json({ error: 'Paramètres invalides' });
+
+    const limit = parsed.data.limit ?? 4;
+    const locale = resolveLocale(parsed.data.lang);
+    const { market } = await nearestMarketFromRequest(req);
+    if (!market) return res.json(EMPTY);
+
+    const cacheKey = `neighbor-rooms:${market}:${locale}:${limit}`;
+    const cached = responseCache.get<DiscoverResponse>(cacheKey);
+    if (cached) return res.json(cached);
+
+    const { data, error } = await supabasePublic
+      .from('rooms')
+      .select(ROOM_COLUMNS)
+      .eq('market', market)
+      .eq('disponible', true)
+      .not('img', 'is', null)
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
+      .limit(limit);
+    if (error) throw error;
+
+    const rooms = await attachTranslations(
+      Array.isArray(data) ? data : [],
+      'room',
+      locale,
+    );
+    const payload: DiscoverResponse = { market, rooms };
+    responseCache.set(cacheKey, payload, 300);
     return res.json(payload);
   } catch (err) {
     next(err);

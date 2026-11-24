@@ -5,10 +5,14 @@ import LandingLocalRooms from './LandingLocalRooms';
 
 const mocks = vi.hoisted(() => ({
   localRooms: vi.fn(),
+  neighborRooms: vi.fn(),
 }));
 
 vi.mock('../../lib/api', () => ({
-  apiDiscover: { localRooms: mocks.localRooms },
+  apiDiscover: {
+    localRooms: mocks.localRooms,
+    neighborRooms: mocks.neighborRooms,
+  },
 }));
 
 function renderSection() {
@@ -23,6 +27,7 @@ describe('LandingLocalRooms', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.localRooms.mockResolvedValue({ market: null, rooms: [] });
+    mocks.neighborRooms.mockResolvedValue({ market: null, rooms: [] });
   });
 
   afterEach(() => cleanup());
@@ -61,6 +66,45 @@ describe('LandingLocalRooms', () => {
     expect(screen.getByRole('link', { name: /Voir tous les logements/ })).toHaveAttribute(
       'href',
       '/ci',
+    );
+  });
+});
+
+describe('LandingLocalRooms — pays voisin', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.localRooms.mockResolvedValue({ market: null, rooms: [] });
+    mocks.neighborRooms.mockResolvedValue({
+      market: 'TG',
+      rooms: [
+        {
+          id: 'room-tg',
+          title: 'Studio Lomé',
+          img: '/images/room.jpg',
+          alt: 'Studio',
+          ville: 'Lomé',
+          quartier: 'Centre',
+          price: '15000',
+        },
+      ],
+    });
+  });
+
+  afterEach(() => cleanup());
+
+  it('affiche les logements du pays voisin', async () => {
+    render(
+      <MemoryRouter>
+        <LandingLocalRooms variant="neighbor" />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Studio Lomé')).toBeInTheDocument();
+    expect(mocks.neighborRooms).toHaveBeenCalled();
+    expect(mocks.localRooms).not.toHaveBeenCalled();
+    expect(screen.getByRole('link', { name: /Voir les logements au/ })).toHaveAttribute(
+      'href',
+      '/tg',
     );
   });
 });

@@ -35,6 +35,9 @@ export default function LandingPage() {
           <LandingLocalRooms />
         </AnimatedSection>
         <AnimatedSection>
+          <LandingLocalRooms variant="neighbor" />
+        </AnimatedSection>
+        <AnimatedSection>
           <LandingSlider />
         </AnimatedSection>
         <AnimatedSection>
