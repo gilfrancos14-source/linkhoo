@@ -17,7 +17,10 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ compact = false }) 
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const current = LANGUAGES.find((l) => l.code === i18n.language) ?? LANGUAGES[0];
+  // Le détecteur peut renvoyer `en-US` / `es-ES` : on compare sur la langue
+  // de base, sinon le menu affiche FR alors que l'anglais est actif.
+  const baseLanguage = (i18n.language || 'fr').split('-')[0];
+  const current = LANGUAGES.find((l) => l.code === baseLanguage) ?? LANGUAGES[0];
 
   const handleLanguageChange = (code: string) => {
     void i18n.changeLanguage(code);
@@ -62,7 +65,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ compact = false }) 
           <div className="language-globe-menu" role="menu" aria-label={t('landing.language.choose')}>
             <span className="language-globe-menu__title">{t('landing.language.interfaceTitle')}</span>
             {LANGUAGES.map((lang) => {
-              const active = i18n.language === lang.code;
+              const active = baseLanguage === lang.code;
               return (
                 <button
                   key={lang.code}

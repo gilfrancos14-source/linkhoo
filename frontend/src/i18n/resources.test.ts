@@ -35,6 +35,13 @@ describe('ressources i18n', () => {
       'pwa.pushDescription',
       'pwa.attempt_other',
       'pwa.items_other',
+      'api.timeout',
+      'api.newsletterInvalidEmail',
+      'markets.CI',
+      'markets.CD',
+      'country.inFeminine',
+      'country.ofMasculine',
+      'country.sentenceFeminine',
     ]) {
       for (const [locale, resources] of Object.entries(locales)) {
         const value = key

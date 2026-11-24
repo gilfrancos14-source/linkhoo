@@ -50,7 +50,9 @@ export default function LandingCountries({ country, onCountryChange }: LandingCo
                 onClick={() => onCountryChange(item)}
               >
                 <span className="acc-flag" style={{ background: item.flag }} aria-hidden="true" />
-                <span className="acc-country-card__name">{item.label}</span>
+                <span className="acc-country-card__name">
+                  {t(`markets.${item.code}`, { defaultValue: item.label })}
+                </span>
                 {selected && (
                   <span className="acc-country-card__arrow">
                     <Icon name="arrowRight" size={14} />
@@ -64,7 +66,9 @@ export default function LandingCountries({ country, onCountryChange }: LandingCo
               to={`/${country.marketSlug ?? country.code.toLowerCase()}`}
               className="acc-country-continue"
             >
-              {t('landing.countries.continue', { country: country.label })}
+              {t('landing.countries.continue', {
+                country: t(`markets.${country.code}`, { defaultValue: country.label }),
+              })}
               <Icon name="arrowRight" size={16} aria-hidden="true" />
             </Link>
           )}

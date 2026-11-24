@@ -27,7 +27,7 @@ export default function TranslationReport({
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
-  if (i18n.language === 'fr') return null;
+  if ((i18n.language || 'fr').split('-')[0] === 'fr') return null;
 
   if (!open) {
     return (

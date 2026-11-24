@@ -1,4 +1,34 @@
 {
+  "api": {
+    "timeout": "Request timed out. Check your connection and try again.",
+    "error": "API error ({{status}})",
+    "newsletterInvalidEmail": "Invalid email address.",
+    "rateLimited": "Too many requests, please try again later."
+  },
+  "markets": {
+    "CI": "Ivory Coast",
+    "BJ": "Benin",
+    "SN": "Senegal",
+    "TG": "Togo",
+    "CM": "Cameroon",
+    "BF": "Burkina Faso",
+    "CG": "Congo",
+    "GA": "Gabon",
+    "GN": "Guinea",
+    "ML": "Mali",
+    "NE": "Niger",
+    "CD": "DR Congo"
+  },
+  "country": {
+    "inFeminine": "in {{country}}",
+    "inMasculine": "in {{country}}",
+    "ofFeminine": "of {{country}}",
+    "ofMasculine": "of {{country}}",
+    "withArticleFeminine": "{{country}}",
+    "withArticleMasculine": "{{country}}",
+    "sentenceFeminine": "{{country}}",
+    "sentenceMasculine": "{{country}}"
+  },
   "metadata": {
     "title": "Linkhoo — Furnished rooms, apartments & hotels in West Africa",
     "description": "Find the ideal place for your next stay in West Africa: rooms, apartments and villas to rent directly, with no middleman."

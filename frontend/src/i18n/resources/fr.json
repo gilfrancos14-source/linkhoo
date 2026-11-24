@@ -1,4 +1,34 @@
 {
+  "api": {
+    "timeout": "Délai dépassé. Vérifiez votre connexion puis réessayez.",
+    "error": "Erreur API ({{status}})",
+    "newsletterInvalidEmail": "Adresse email invalide.",
+    "rateLimited": "Trop de requêtes, veuillez réessayer plus tard."
+  },
+  "markets": {
+    "CI": "Côte d'Ivoire",
+    "BJ": "Bénin",
+    "SN": "Sénégal",
+    "TG": "Togo",
+    "CM": "Cameroun",
+    "BF": "Burkina Faso",
+    "CG": "Congo",
+    "GA": "Gabon",
+    "GN": "Guinée",
+    "ML": "Mali",
+    "NE": "Niger",
+    "CD": "RDC"
+  },
+  "country": {
+    "inFeminine": "en {{country}}",
+    "inMasculine": "au {{country}}",
+    "ofFeminine": "de la {{country}}",
+    "ofMasculine": "du {{country}}",
+    "withArticleFeminine": "la {{country}}",
+    "withArticleMasculine": "le {{country}}",
+    "sentenceFeminine": "La {{country}}",
+    "sentenceMasculine": "Le {{country}}"
+  },
   "metadata": {
     "title": "Linkhoo — Location d'appartements non meublés & hôtel",
     "description": "Trouvez le lieu idéal pour votre prochain séjour en Afrique de l'Ouest : chambres, appartements et villas à louer en direct, sans intermédiaire."

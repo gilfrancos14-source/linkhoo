@@ -68,6 +68,10 @@ export async function attachTranslations<T extends { id?: unknown }>(
       .select('entity_id, field, value')
       .eq('entity_type', entityType)
       .eq('locale', locale)
+      // Les traductions `review` sont des doutes détectés par l'aller-retour
+      // FR→EN→FR : elles ne doivent jamais être servies publiquement. Tant
+      // qu'elles ne sont pas corrigées, le FR d'origine reste affiché.
+      .neq('status', 'review')
       .in('entity_id', ids);
     data = Array.isArray(result.data) ? (result.data as unknown as TranslationRow[]) : [];
   } catch (err) {

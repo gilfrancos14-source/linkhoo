@@ -1,4 +1,34 @@
 {
+  "api": {
+    "timeout": "Tiempo de espera agotado. Comprueba tu conexión e inténtalo de nuevo.",
+    "error": "Error de API ({{status}})",
+    "newsletterInvalidEmail": "Dirección de correo no válida.",
+    "rateLimited": "Demasiadas solicitudes, inténtalo de nuevo más tarde."
+  },
+  "markets": {
+    "CI": "Costa de Marfil",
+    "BJ": "Benín",
+    "SN": "Senegal",
+    "TG": "Togo",
+    "CM": "Camerún",
+    "BF": "Burkina Faso",
+    "CG": "Congo",
+    "GA": "Gabón",
+    "GN": "Guinea",
+    "ML": "Mali",
+    "NE": "Níger",
+    "CD": "RDC"
+  },
+  "country": {
+    "inFeminine": "en {{country}}",
+    "inMasculine": "en {{country}}",
+    "ofFeminine": "de {{country}}",
+    "ofMasculine": "de {{country}}",
+    "withArticleFeminine": "{{country}}",
+    "withArticleMasculine": "{{country}}",
+    "sentenceFeminine": "{{country}}",
+    "sentenceMasculine": "{{country}}"
+  },
   "metadata": {
     "title": "Linkhoo — Habitaciones, apartamentos y hoteles en África Occidental",
     "description": "Encuentra el lugar ideal para tu próxima estancia en África Occidental: habitaciones, apartamentos y villas en alquiler directo, sin intermediarios."

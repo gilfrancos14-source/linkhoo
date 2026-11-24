@@ -64,7 +64,10 @@ describe('createClientLimiter', () => {
 
     const blocked = await request(app).post('/write');
     expect(blocked.status).toBe(429);
-    expect(blocked.body).toEqual({ error: 'Trop de requêtes, veuillez réessayer plus tard' });
+    expect(blocked.body).toEqual({
+      error: 'Trop de requêtes, veuillez réessayer plus tard',
+      code: 'RATE_LIMITED',
+    });
     expect(blocked.headers['retry-after']).toBeDefined();
   });
 

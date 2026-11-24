@@ -1,7 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { COUNTRIES } from '../components/landing/data';
 import type { MarketCode } from '../config/markets';
 
 interface HeroSectionProps {
@@ -32,13 +31,14 @@ function openDatePicker(input: HTMLInputElement | null) {
 export default function HeroSection({ market }: HeroSectionProps) {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
-  const country = COUNTRIES.find((item) => item.code === market) ?? COUNTRIES[0];
   const lang = (i18n.language || 'fr').split('-')[0];
-  const countryPhrase = lang === 'fr'
-    ? (['CI', 'GN', 'CD'].includes(market) ? `en ${country.label}` : `au ${country.label}`)
-    : lang === 'es'
-      ? `en ${country.label}`
-      : `in ${country.label}`;
+  const countryName = t(`markets.${market}`);
+  // Le genre du nom français est une propriété du marché, pas de la langue.
+  const feminine = ['CI', 'GN', 'CD'].includes(market);
+  const countryPhrase = t(
+    feminine ? 'country.inFeminine' : 'country.inMasculine',
+    { country: countryName },
+  );
   const locale = lang === 'en' ? 'en-US' : lang === 'es' ? 'es-ES' : 'fr-FR';
   const [destination, setDestination] = useState('');
   const [arrivee, setArrivee] = useState('');
@@ -63,7 +63,7 @@ export default function HeroSection({ market }: HeroSectionProps) {
     >
       <div className="absolute inset-0 z-0">
         <img
-          alt={t('hero.countryView', { country: country.label })}
+          alt={t('hero.countryView', { country: countryName })}
           className="w-full h-full object-cover object-center filter brightness-[0.78]"
           src="/images/hero-city.webp"
           srcSet="/images/hero-city-800.webp 800w, /images/hero-city.webp 1280w"
@@ -79,7 +79,7 @@ export default function HeroSection({ market }: HeroSectionProps) {
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-semibold mb-4">
             <i className="fa-solid fa-location-dot text-[#FF5E1E]"></i>
-            <span>{country.label}</span>
+            <span>{countryName}</span>
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-[2.6rem] font-extrabold leading-[1.15] tracking-tight">
             {t('hero.title')} <span className="text-[#FF7A00]">{t('hero.titleHighlight')}</span>
@@ -90,7 +90,7 @@ export default function HeroSection({ market }: HeroSectionProps) {
         </div>
         <div className="absolute right-8 top-16 hidden lg:block text-right select-none pointer-events-none transform -rotate-6">
           <p className="font-handwriting text-3xl sm:text-4xl text-white font-bold drop-shadow-lg tracking-wide">
-            {country.label},
+            {countryName},
             <br />
             <span className="text-2xl text-amber-200">{t('hero.emotion')}</span>
           </p>

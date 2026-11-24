@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { COUNTRIES } from '../components/landing/data';
 import type { MarketCode } from '../config/markets';
 import type { TourismCard, TourismView } from './viewModel';
 
@@ -10,28 +9,25 @@ interface TourismSectionProps {
 }
 
 export default function TourismSection({ market, view }: TourismSectionProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   if (!view) return null;
 
-  const country = COUNTRIES.find((item) => item.code === market) ?? COUNTRIES[0];
-  const lang = (i18n.language || 'fr').split('-')[0];
+  const countryName = t(`markets.${market}`);
   const feminine = ['CI', 'GN', 'CD'].includes(market);
-  const countryOf = lang === 'fr'
-    ? (feminine ? `de la ${country.label}` : `du ${country.label}`)
-    : lang === 'es'
-      ? `de ${country.label}`
-      : `of ${country.label}`;
-  const countryWithArticle = lang === 'fr'
-    ? (feminine ? `la ${country.label}` : `le ${country.label}`)
-    : country.label;
-  const countryAt = lang === 'fr'
-    ? (feminine ? `en ${country.label}` : `au ${country.label}`)
-    : lang === 'es'
-      ? `en ${country.label}`
-      : `in ${country.label}`;
-  const countrySentence = lang === 'fr'
-    ? `${feminine ? 'La' : 'Le'} ${country.label}`
-    : country.label;
+  const countryOf = t(feminine ? 'country.ofFeminine' : 'country.ofMasculine', {
+    country: countryName,
+  });
+  const countryWithArticle = t(
+    feminine ? 'country.withArticleFeminine' : 'country.withArticleMasculine',
+    { country: countryName },
+  );
+  const countryAt = t(feminine ? 'country.inFeminine' : 'country.inMasculine', {
+    country: countryName,
+  });
+  const countrySentence = t(
+    feminine ? 'country.sentenceFeminine' : 'country.sentenceMasculine',
+    { country: countryName },
+  );
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" data-purpose="tourism-section">

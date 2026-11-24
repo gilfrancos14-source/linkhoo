@@ -1,5 +1,6 @@
 import MaquetteBannerCarousel from './MaquetteBannerCarousel';
 import { useTranslation } from 'react-i18next';
+import TranslationReport from '../components/TranslationReport';
 import type { BannerSlide, CategoryCard } from './viewModel';
 
 interface CategoriesSectionProps {
@@ -74,6 +75,12 @@ export default function CategoriesSection({ cards, banners }: CategoriesSectionP
                 <p className="text-[10px] text-slate-400">
                   {card.count} {t('categories.property', { count: card.count })}
                 </p>
+                <TranslationReport
+                  entityId={card.id}
+                  entityType="category"
+                  field="title"
+                  currentValue={card.title}
+                />
               </div>
             );
           })}

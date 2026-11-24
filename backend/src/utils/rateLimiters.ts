@@ -67,7 +67,10 @@ export const createClientLimiter = (options: { limit?: number; prefix: string })
     // Clé par utilisateur connecté : une IP partagée ne fait plus se bloquer
     // des utilisateurs distincts entre eux.
     keyGenerator: userOrIpKey,
-    message: { error: 'Trop de requêtes, veuillez réessayer plus tard' },
+    message: {
+      error: 'Trop de requêtes, veuillez réessayer plus tard',
+      code: 'RATE_LIMITED',
+    },
     // Les limites ne visent que les écritures : un GET (section avis de la
     // home, liste de notifications pollée toutes les 30 s…) ne doit jamais
     // renvoyer de 429 à un utilisateur qui navigue normalement.

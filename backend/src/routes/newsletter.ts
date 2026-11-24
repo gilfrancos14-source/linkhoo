@@ -15,7 +15,10 @@ router.post('/', newsletterLimiter, async (req: Request, res: Response, next: Ne
   try {
     const parsedBody = newsletterSubscribeSchema.safeParse(req.body);
     if (!parsedBody.success) {
-      return res.status(400).json({ error: 'Adresse email invalide' });
+      return res.status(400).json({
+        error: 'Adresse email invalide',
+        code: 'NEWSLETTER_INVALID_EMAIL',
+      });
     }
 
     const { email, market } = parsedBody.data;

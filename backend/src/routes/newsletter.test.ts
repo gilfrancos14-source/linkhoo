@@ -29,7 +29,10 @@ describe('POST /api/newsletter', () => {
     const res = await request(app).post('/api/newsletter').send({ email: 'pas-un-email' });
 
     expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: 'Adresse email invalide' });
+    expect(res.body).toEqual({
+      error: 'Adresse email invalide',
+      code: 'NEWSLETTER_INVALID_EMAIL',
+    });
     expect(supabaseAdmin.from).not.toHaveBeenCalled();
   });
 
@@ -39,7 +42,10 @@ describe('POST /api/newsletter', () => {
       .send({ email: 'lecteur@exemple.ci', source: 'pied-de-page' });
 
     expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: 'Adresse email invalide' });
+    expect(res.body).toEqual({
+      error: 'Adresse email invalide',
+      code: 'NEWSLETTER_INVALID_EMAIL',
+    });
     expect(supabaseAdmin.from).not.toHaveBeenCalled();
   });
 

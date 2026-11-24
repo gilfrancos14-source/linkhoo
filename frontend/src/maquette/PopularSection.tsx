@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { MarketCode } from '../config/markets';
 import { useFavorites } from '../contexts/FavoritesContext';
+import TranslationReport from '../components/TranslationReport';
 import MaquetteBannerCarousel from './MaquetteBannerCarousel';
 import type { BannerSlide, PopularCard } from './viewModel';
 
@@ -116,6 +117,14 @@ export default function PopularSection({ market, cards, banners }: PopularSectio
                     <span className="text-[10px] text-slate-500 ml-1">{card.unit}</span>
                   </div>
                 )}
+                <div onClick={(event) => event.stopPropagation()}>
+                  <TranslationReport
+                    entityId={card.id}
+                    entityType="room"
+                    field="title"
+                    currentValue={card.title}
+                  />
+                </div>
               </div>
             </article>
           ))}

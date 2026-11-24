@@ -4,7 +4,7 @@ import Icon from './icons';
 import PWAControlPanel from '../PWAControlPanel';
 import { useHomePath } from '../../hooks/useHomePath';
 import { useMarket } from '../../contexts/MarketContext';
-import { apiNewsletter } from '../../lib/api';
+import { ApiError, apiNewsletter } from '../../lib/api';
 import { isValidEmail } from '../../utils/validators';
 import { useTranslation } from 'react-i18next';
 
@@ -54,9 +54,19 @@ export default function LandingFooter() {
       setEmail('');
       setNote(t('footer.newsletterSuccess'));
     } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : t('footer.newsletterError'),
-      );
+      // Le backend renvoie des codes stables : on les mappe sur des clés
+      // traduites plutôt que d'afficher un message français brut.
+      const code =
+        err instanceof ApiError && err.detail && typeof err.detail === 'object'
+          ? (err.detail as { code?: unknown }).code
+          : undefined;
+      const key =
+        code === 'NEWSLETTER_INVALID_EMAIL'
+          ? 'api.newsletterInvalidEmail'
+          : code === 'RATE_LIMITED'
+            ? 'api.rateLimited'
+            : null;
+      setSubmitError(t(key ?? 'footer.newsletterError'));
     } finally {
       setSubmitting(false);
     }

@@ -52,21 +52,21 @@ describe('attachTranslations', () => {
   });
 
   it('remplace les champs traduits et garde le français manquant', async () => {
-    useSupabaseTables(supabaseAdmin.from, {
-      translations: fakeChain({
-        data: [
-          { entity_id: 'r1', field: 'title', value: 'English Studio' },
-          { entity_id: 'r1', field: 'description', value: 'Nice place' },
-        ],
-        error: null,
-      }),
+    const translations = fakeChain({
+      data: [
+        { entity_id: 'r1', field: 'title', value: 'English Studio' },
+        { entity_id: 'r1', field: 'description', value: 'Nice place' },
+      ],
+      error: null,
     });
+    useSupabaseTables(supabaseAdmin.from, { translations });
 
     const result = await attachTranslations(rows, 'room', 'en');
 
     expect(result[0]).toMatchObject({ title: 'English Studio', description: 'Nice place' });
     expect(result[1]).toMatchObject({ title: 'Villa Française', description: 'Autre description' });
     expect(supabaseAdmin.from).toHaveBeenCalledWith('translations');
+    expect(translations.neq).toHaveBeenCalledWith('status', 'review');
   });
 });
 

@@ -189,13 +189,17 @@ export async function request<T>(path: string, options?: RequestOptions): Promis
     signal: rest.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   }).catch((e: unknown) => {
     if (e instanceof Error && e.name === 'TimeoutError') {
-      throw new Error('Délai dépassé. Vérifiez votre connexion puis réessayez.');
+      throw new Error(i18n.t('api.timeout'));
     }
     throw e;
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new ApiError(body.error || `API error ${res.status}`, res.status, body);
+    throw new ApiError(
+      body.error || i18n.t('api.error', { status: res.status }),
+      res.status,
+      body,
+    );
   }
   // Toute mutation invalide le cache public : une création/édition ne doit
   // jamais être masquée par une réponse mise en cache 60 s plus tôt.

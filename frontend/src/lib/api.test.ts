@@ -190,17 +190,17 @@ describe('request', () => {
   it("throw 'API error <status>' quand le corps n'a pas de message", async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ message: 'autre clé' }, 404));
 
-    await expect(api.request('/ping')).rejects.toThrow('API error 404');
+    await expect(api.request('/ping')).rejects.toThrow('Erreur API (404)');
   });
 
   it("throw 'API error <status>' sur un corps non JSON ou vide", async () => {
     fetchMock.mockResolvedValueOnce(new Response('<html>500</html>', { status: 500 }));
 
-    await expect(api.request('/ping')).rejects.toThrow('API error 500');
+    await expect(api.request('/ping')).rejects.toThrow('Erreur API (500)');
 
     fetchMock.mockResolvedValueOnce(new Response('', { status: 503 }));
 
-    await expect(api.request('/ping')).rejects.toThrow('API error 503');
+    await expect(api.request('/ping')).rejects.toThrow('Erreur API (503)');
   });
 
   it('ne lit pas le corps d’une réponse 204 (DELETE sans contenu)', async () => {
@@ -867,6 +867,6 @@ describe("propagation d'erreurs par namespace", () => {
   it.each(cases)('%s rejette avec API error <status> sans message', async (_name, call) => {
     fetchMock.mockResolvedValueOnce(new Response('', { status: 502 }));
 
-    await expect(call()).rejects.toThrow('API error 502');
+    await expect(call()).rejects.toThrow('Erreur API (502)');
   });
 });
