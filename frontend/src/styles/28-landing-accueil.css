@@ -127,10 +127,17 @@
 
 /* ---------- En-tÃªte ---------- */
 .acc-header {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 30;
   background: #fff;
   border-bottom: 1px solid #eeecf5;
+}
+
+/* L'en-tête reste en place pendant que les sections défilent dessous. Les
+   ancres internes tiennent compte de sa hauteur pour ne pas passer dessous. */
+#ou-louer {
+  scroll-margin-top: 73px;
 }
 
 .acc-header__inner {
