@@ -28,7 +28,7 @@ export default function SectionHeading({
       </div>
       {linkLabel && to && (
         <Link
-          className="text-xs sm:text-sm font-bold text-slate-800 hover:text-[#FF5E1E] flex items-center gap-1 group"
+          className="text-xs sm:text-sm font-bold text-slate-800 hover:text-[color:var(--market-accent)] flex items-center gap-1 group"
           to={to}
         >
           <span>{linkLabel}</span>

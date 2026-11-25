@@ -28,10 +28,6 @@ vi.mock('../utils/realtime', () => ({
   publishNotificationChanged: vi.fn(async () => {}),
 }));
 
-// GéoIP neutralisée : pas d'appel réseau dans les tests.
-const countryOfIpMock = vi.hoisted(() => vi.fn());
-vi.mock('../utils/geoIp', () => ({ countryOfIp: countryOfIpMock }));
-
 const app = buildTestApp('/api/admin', adminRouter);
 
 const ADMIN_HASH = bcrypt.hashSync('Admin123!', 4);
@@ -75,7 +71,6 @@ function auth(token?: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  countryOfIpMock.mockResolvedValue(null);
   process.env.ADMIN_JWT_SECRET = 'secret-de-test';
   gerants = fakeChain({ data: null, error: null });
   rooms = fakeChain({ data: null, error: null });
@@ -333,7 +328,12 @@ describe('GET /api/admin/gerants', () => {
 
     const res = await request(app).get('/api/admin/gerants').set(auth(adminToken()));
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([{ id: 'g1' }]);
+    expect(res.body).toEqual([{
+      id: 'g1',
+      signup_country: null,
+      signup_country_name: null,
+      ip_market_mismatch: false,
+    }]);
   });
 
   it('200 : applique les filtres market et verification_status', async () => {
@@ -355,6 +355,47 @@ describe('GET /api/admin/gerants', () => {
 
     await request(app).get('/api/admin/gerants?market=XX').set(auth(adminToken()));
     expect(gerants.eq).not.toHaveBeenCalledWith('market', 'XX');
+  });
+
+  it('200 : lit le pays stocké au bootstrap et signale un écart de marché', async () => {
+    gerants = fakeChain({
+      data: [
+        { id: 'g1', market: 'CI', signup_country: 'BJ', signup_country_name: 'Bénin' },
+        { id: 'g2', market: 'BJ', signup_country: 'BJ', signup_country_name: 'Bénin' },
+      ],
+      error: null,
+    });
+    stubTables();
+
+    const res = await request(app).get('/api/admin/gerants').set(auth(adminToken()));
+
+    expect(res.status).toBe(200);
+    expect(gerants.select).toHaveBeenCalledWith(expect.stringContaining('signup_country'));
+    // L'IP brute n'est plus exposée dans la réponse admin.
+    expect(gerants.select).not.toHaveBeenCalledWith(expect.stringContaining('signup_ip'));
+    expect(res.body).toMatchObject([
+      { id: 'g1', signup_country: 'BJ', signup_country_name: 'Bénin', ip_market_mismatch: true },
+      { id: 'g2', signup_country: 'BJ', signup_country_name: 'Bénin', ip_market_mismatch: false },
+    ]);
+  });
+
+  it('200 : pays null quand le bootstrap n\'a pas pu résoudre l\'IP', async () => {
+    gerants = fakeChain({
+      data: [
+        { id: 'g1', market: 'CI', signup_country: null, signup_country_name: null },
+        { id: 'g2', market: 'BJ' },
+      ],
+      error: null,
+    });
+    stubTables();
+
+    const res = await request(app).get('/api/admin/gerants').set(auth(adminToken()));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject([
+      { id: 'g1', signup_country: null, signup_country_name: null, ip_market_mismatch: false },
+      { id: 'g2', signup_country: null, signup_country_name: null, ip_market_mismatch: false },
+    ]);
   });
 });
 
@@ -653,13 +694,19 @@ describe('GET /api/admin/verification/pending', () => {
     expect(gerants.in).toHaveBeenCalledWith('verification_status', ['pending', 'under_review']);
   });
 
-  it('200 : signale un pays IP différent du marché déclaré', async () => {
+  it('200 : signale un pays stocké différent du marché déclaré', async () => {
     gerants = fakeChain({
-      data: [{ id: 'g2', market: 'CI', signup_ip: '197.1.2.3', verification_status: 'pending', verification_submitted_at: FUTURE }],
+      data: [{
+        id: 'g2',
+        market: 'CI',
+        signup_country: 'BJ',
+        signup_country_name: 'Bénin',
+        verification_status: 'pending',
+        verification_submitted_at: FUTURE,
+      }],
       error: null,
     });
     stubTables();
-    countryOfIpMock.mockResolvedValue({ countryCode: 'BJ', country: 'Bénin' });
 
     const res = await request(app)
       .get('/api/admin/verification/pending')

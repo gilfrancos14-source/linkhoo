@@ -397,6 +397,10 @@ describe('POST /api/auth/bootstrap', () => {
 
       expect(res.status).toBe(201);
       expect(inserted.insert).toHaveBeenCalled();
+      expect(inserted.insert).toHaveBeenCalledWith(expect.objectContaining({
+        signup_country: 'CI',
+        signup_country_name: "Côte d'Ivoire",
+      }));
       expect(geoMock.countryOfIp).toHaveBeenCalled();
     });
 

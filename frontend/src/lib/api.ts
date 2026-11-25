@@ -245,6 +245,8 @@ export interface RoomData {
   pays: string;
   ville: string;
   quartier: string;
+  /** Lien Google Maps du logement (facultatif). */
+  maps_url?: string | null;
   chambres: number;
   douches: number;
   disponible: boolean;

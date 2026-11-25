@@ -56,7 +56,7 @@ export default function TourismSection({ market, view }: TourismSectionProps) {
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/40 to-transparent"></div>
           <div className="relative z-10 max-w-xl">
-            <span className="inline-block px-2.5 py-0.5 bg-[#FF5E1E] text-white text-[10px] font-bold uppercase tracking-wider rounded-md mb-2">
+            <span className="inline-block px-2.5 py-0.5 bg-[color:var(--market-accent)] text-white text-[10px] font-bold uppercase tracking-wider rounded-md mb-2">
               {t('tourism.badge')}
             </span>
             <h3 className="text-2xl sm:text-3xl font-extrabold leading-tight">
@@ -72,19 +72,19 @@ export default function TourismSection({ market, view }: TourismSectionProps) {
             </p>
             <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/20 text-center sm:text-left">
               <div className="flex items-center gap-2">
-                <i className="fa-solid fa-umbrella-beach text-[#FF5E1E] text-lg"></i>
+                <i className="fa-solid fa-umbrella-beach text-[color:var(--market-accent)] text-lg"></i>
                 <span className="text-[10px] font-medium text-slate-200">
                   {t('tourism.beach')}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <i className="fa-solid fa-monument text-[#FF5E1E] text-lg"></i>
+                <i className="fa-solid fa-monument text-[color:var(--market-accent)] text-lg"></i>
                 <span className="text-[10px] font-medium text-slate-200">
                   {t('tourism.culture')}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <i className="fa-solid fa-utensils text-[#FF5E1E] text-lg"></i>
+                <i className="fa-solid fa-utensils text-[color:var(--market-accent)] text-lg"></i>
                 <span className="text-[10px] font-medium text-slate-200">
                   {t('tourism.gastronomy')}
                 </span>
@@ -135,7 +135,7 @@ function TourismHighlights({ view }: { view: TourismView }) {
                 aria-pressed={selected}
                 className={`bg-white rounded-xl p-2 border text-center transition ${
                   selected
-                    ? 'border-[#FF5E1E] ring-1 ring-[#FF5E1E]'
+                    ? 'border-[color:var(--market-accent)] ring-1 ring-[color:var(--market-accent)]'
                     : 'border-slate-100 hover:border-slate-200'
                 }`}
                 onClick={() => setSelectedId((current) => (current === card.id ? null : card.id))}

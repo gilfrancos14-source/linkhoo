@@ -34,8 +34,8 @@
 /* Pied de page éditorial réutilisé de l'accueil : on lui fournit uniquement
    les variables --acc-* dont LandingFooter dépend (cf. .search-footer-scope). */
 .room-detail-footer-scope {
-  --acc-brand: #6d3fd9;
-  --acc-brand-2: #5b3fd6;
+  --acc-brand: var(--market-accent);
+  --acc-brand-2: var(--market-accent-dark);
   --acc-ink: #14122b;
   --acc-navy: #0e1433;
   --acc-line: #ebe9f3;

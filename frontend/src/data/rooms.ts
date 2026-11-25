@@ -20,6 +20,8 @@ export interface Room {
   pays: string;
   ville: string;
   quartier: string;
+  /** Lien Google Maps du logement, saisi par le gérant. */
+  mapsUrl?: string | null;
   chambres: number;
   douches: number;
   disponible: boolean;
@@ -66,6 +68,7 @@ export function mapRoom(d: RoomData): Room {
     pays: d.pays,
     ville: d.ville,
     quartier: d.quartier,
+    mapsUrl: d.maps_url ?? null,
     chambres: d.chambres,
     douches: d.douches,
     disponible: d.disponible,
@@ -185,6 +188,7 @@ export async function createRoom(data: Omit<Room, 'id'>): Promise<Room> {
     pays: data.pays,
     ville: data.ville,
     quartier: data.quartier,
+    maps_url: data.mapsUrl?.trim() || null,
     chambres: data.chambres,
     douches: data.douches,
     disponible: data.disponible,
@@ -218,6 +222,7 @@ export async function updateRoom(id: string, updates: Partial<Room>): Promise<vo
   if (updates.pays !== undefined) payload.pays = updates.pays;
   if (updates.ville !== undefined) payload.ville = updates.ville;
   if (updates.quartier !== undefined) payload.quartier = updates.quartier;
+  if (updates.mapsUrl !== undefined) payload.maps_url = updates.mapsUrl?.trim() || null;
   if (updates.chambres !== undefined) payload.chambres = updates.chambres;
   if (updates.douches !== undefined) payload.douches = updates.douches;
   if (updates.disponible !== undefined) payload.disponible = updates.disponible;

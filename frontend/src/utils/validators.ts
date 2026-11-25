@@ -258,6 +258,42 @@ const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/;
 const URL_RE = /(?:https?:\/\/|www\.)\S+|(?:wa\.me|t\.me|bit\.ly|tinyurl\.com)\S*/;
 const HANDLE_RE = /@[a-z0-9._]{3,}/;
 
+/**
+ * Miroir de `backend/src/utils/googleMaps.ts` (isGoogleMapsUrl) : contrôle
+ * affiché avant l'envoi. Le serveur refait la vérification, c'est lui le
+ * filet de sécurité — ici on évite juste un aller-retour inutile.
+ */
+export function isGoogleMapsLink(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    try {
+      url = new URL(`https://${trimmed}`);
+    } catch {
+      return false;
+    }
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+
+  const host = url.hostname.toLowerCase();
+  const short = host === 'maps.app.goo.gl' || host === 'goo.gl';
+  const google =
+    host === 'google.com' ||
+    host.endsWith('.google.com') ||
+    /^([a-z0-9-]+\.)?google\.[a-z]{2,3}(\.[a-z]{2})?$/.test(host);
+  if (short) return true;
+  if (!google) return false;
+  return (
+    host.startsWith('maps.') ||
+    /\/maps\b/i.test(url.pathname) ||
+    Boolean(url.searchParams.get('q') || url.searchParams.get('query'))
+  );
+}
+
 export function containsPhoneNumber(value: string): boolean {
   const norm = normalize(value);
   const hasKeyword = KEYWORD_RE.test(norm);

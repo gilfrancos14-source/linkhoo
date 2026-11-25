@@ -756,6 +756,37 @@ describe('POST /api/rooms', () => {
       expect.objectContaining({ gerant_id: 'user_1', title: 'Studio cocooning' }),
     );
   });
+
+  it('201 : persiste le lien Google Maps fourni à la création', async () => {
+    const mapsUrl = 'https://maps.app.goo.gl/abc123';
+    rooms = fakeChain({
+      data: { id: 'r1', ...validRoom, maps_url: mapsUrl, gerant_id: 'user_1' },
+      error: null,
+    });
+    stubTables({});
+
+    const res = await request(app)
+      .post('/api/rooms')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ ...validRoom, maps_url: mapsUrl });
+
+    expect(res.status).toBe(201);
+    expect(rooms.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ maps_url: mapsUrl }),
+    );
+  });
+
+  it('400 : refuse un lien de localisation hors Google Maps', async () => {
+    stubTables({});
+
+    const res = await request(app)
+      .post('/api/rooms')
+      .set('Authorization', clerkBearer('user_1'))
+      .send({ ...validRoom, maps_url: 'https://exemple.com/plan' });
+
+    expect(res.status).toBe(400);
+    expect(rooms.insert).not.toHaveBeenCalled();
+  });
 });
 
 describe('PUT /api/rooms/:id', () => {

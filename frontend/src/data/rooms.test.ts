@@ -8,6 +8,7 @@ import {
   fetchRoomsByMarket,
   getQuartiersFromRooms,
   getVillesFromRooms,
+  mapRoom,
   toggleRoom,
   updateRoom,
   type Room,
@@ -165,6 +166,7 @@ describe('fetchRoomsByMarket', () => {
       hostResponseAnswered: 0,
       hostResponseTotal: 0,
       imageLabels: null,
+      mapsUrl: null,
     });
   });
 
@@ -304,6 +306,27 @@ describe('createRoom', () => {
     );
     expect(created.id).toBe('room-new');
     expect(created.isPopular).toBe(true);
+  });
+
+  it('envoie le lien Google Maps dans le payload snake_case', async () => {
+    const mapsUrl = 'https://maps.app.goo.gl/abc123';
+    mocks.create.mockResolvedValue(apiRoom({ id: 'room-new', maps_url: mapsUrl }));
+
+    const { id: _ignored, ...payload } = mapRoom(apiRoom({ maps_url: mapsUrl }));
+    await createRoom(payload);
+
+    expect(mocks.create).toHaveBeenCalledWith(
+      expect.objectContaining({ maps_url: mapsUrl }),
+    );
+  });
+
+  it('convertit un lien vide en null', async () => {
+    mocks.create.mockResolvedValue(apiRoom({ id: 'room-new' }));
+
+    const { id: _ignored, ...payload } = mapRoom(apiRoom());
+    await createRoom({ ...payload, mapsUrl: '' });
+
+    expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ maps_url: null }));
   });
 });
 

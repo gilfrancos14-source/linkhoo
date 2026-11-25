@@ -98,8 +98,8 @@ export default function PromosSection({ market, cards, banners }: PromosSectionP
             role="button"
             tabIndex={0}
             aria-pressed={selected?.key === card.key}
-            className={`${cardSpan} bg-white rounded-2xl overflow-hidden border shadow-sm flex flex-col justify-between group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5E1E] ${
-              selected?.key === card.key ? 'border-[#FF5E1E]' : 'border-slate-100'
+            className={`${cardSpan} bg-white rounded-2xl overflow-hidden border shadow-sm flex flex-col justify-between group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--market-accent)] ${
+              selected?.key === card.key ? 'border-[color:var(--market-accent)]' : 'border-slate-100'
             }`}
             onClick={() => selectCard(card)}
             onKeyDown={(event) => {
@@ -134,8 +134,8 @@ export default function PromosSection({ market, cards, banners }: PromosSectionP
               <span
                 className={`mt-4 w-full py-2 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition ${
                   selected?.key === card.key
-                    ? 'bg-[#FF5E1E]'
-                    : 'bg-slate-900 group-hover:bg-[#FF5E1E]'
+                    ? 'bg-[color:var(--market-accent)]'
+                    : 'bg-slate-900 group-hover:bg-[color:var(--market-accent)]'
                 }`}
               >
                 <span>{card.rooms.length > 0 ? t('promos.viewProperties') : t('promos.noOffer')}</span>
@@ -225,7 +225,7 @@ export default function PromosSection({ market, cards, banners }: PromosSectionP
                     <span className="block text-[10px] font-bold text-slate-800 truncate">
                       {room.title}
                     </span>
-                    <span className="block text-[9px] font-extrabold text-[#FF5E1E]">
+                    <span className="block text-[9px] font-extrabold text-[color:var(--market-accent)]">
                       {room.price} <span className="text-slate-400 font-normal">{t('promos.perNight')}</span>
                     </span>
                   </button>
@@ -238,7 +238,7 @@ export default function PromosSection({ market, cards, banners }: PromosSectionP
                   <span
                     key={room.id}
                     className={`w-1.5 h-1.5 rounded-full ${
-                      index === 0 ? 'bg-[#FF5E1E]' : 'bg-slate-300'
+                      index === 0 ? 'bg-[color:var(--market-accent)]' : 'bg-slate-300'
                     }`}
                   />
                 ))}

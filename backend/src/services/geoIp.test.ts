@@ -118,7 +118,7 @@ it('en production, ne devine pas le voisin sans coordonnées IP', async () => {
   vi.mocked(fetch).mockResolvedValue({
     ok: true,
     json: async () => ({ success: true, country_code: 'CI' }),
-  });
+  } as unknown as Response);
 
   const result = await nearestMarketFromRequest(reqWithIp('123.45.67.88'));
 

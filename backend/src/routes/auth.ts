@@ -4,7 +4,7 @@ import { supabaseAdmin } from '../config/supabase';
 import { bootstrapSchema, type AuthRole } from '../validations/auth';
 import { emailSchema } from '../validations/common';
 import { phoneMatchesMarket } from '../utils/phoneMarket';
-import { countryOfIp } from '../utils/geoIp';
+import { countryOfIp, type GeoResult } from '../utils/geoIp';
 
 const router = Router();
 
@@ -12,19 +12,25 @@ const router = Router();
  * Contrôle géographique au bootstrap d'un compte gérant.
  *
  * L'IP vient de `req.ip` (fiable en production si TRUST_PROXY est configuré).
- * Quand le pays ne peut pas être résolu (localhost, VPN, service ip-api
+ * Quand le pays ne peut pas être résolu (localhost, VPN, service geoIP
  * indisponible), on autorise et on journalise : un contrôle de sécurité ne
  * doit jamais reposer sur une information incertaine.
  *
- * @returns true si l'accès est autorisé, false si la réponse 403 a été envoyée.
+ * @returns `allowed: false` si la réponse 403 a été envoyée ; `geo` est le
+ *   résultat résolu, conservé pour être stocké une fois pour toutes sur le
+ *   profil (l'admin le lit ensuite sans nouvel appel réseau).
  */
-async function gerantCountryAllowed(req: Request, res: Response, market: string): Promise<boolean> {
+async function gerantCountryAllowed(
+  req: Request,
+  res: Response,
+  market: string,
+): Promise<{ allowed: boolean; geo: GeoResult | null }> {
   const ip = req.ip ?? null;
   const geo = await countryOfIp(ip);
 
   if (!geo) {
     console.warn(`[geo] Contrôle ignoré : pays inconnu pour ${ip ?? 'IP absente'} (marché ${market}).`);
-    return true;
+    return { allowed: true, geo: null };
   }
 
   if (geo.countryCode.toUpperCase() !== market.toUpperCase()) {
@@ -37,10 +43,10 @@ async function gerantCountryAllowed(req: Request, res: Response, market: string)
       country: geo.countryCode,
       market,
     });
-    return false;
+    return { allowed: false, geo };
   }
 
-  return true;
+  return { allowed: true, geo };
 }
 
 function getClerkClient() {
@@ -218,7 +224,10 @@ router.post('/bootstrap', async (req: Request, res: Response, next: NextFunction
       }
 
       // Le pays de l'IP doit correspondre au marché déclaré (nouvelle inscription).
-      if (!(await gerantCountryAllowed(req, res, market))) return;
+      // Le résultat est persisté ici : l'administration n'aura aucun appel
+      // geoIP à faire lors de l'affichage de la liste des gérants.
+      const countryCheck = await gerantCountryAllowed(req, res, market);
+      if (!countryCheck.allowed) return;
 
       const { error } = await supabaseAdmin.from('gerants').insert({
         clerk_user_id: authUserId,
@@ -228,6 +237,8 @@ router.post('/bootstrap', async (req: Request, res: Response, next: NextFunction
         market,
         phone,
         signup_ip: req.ip ?? null,
+        signup_country: countryCheck.geo?.countryCode ?? null,
+        signup_country_name: countryCheck.geo?.country ?? null,
       });
       if (error) throw error;
     } else if (existing.market !== market) {
@@ -242,7 +253,7 @@ router.post('/bootstrap', async (req: Request, res: Response, next: NextFunction
     } else {
       // Gérant existant : on compare au marché du profil (source de vérité),
       // pas seulement à celui de l'URL.
-      if (!(await gerantCountryAllowed(req, res, existing.market))) return;
+      if (!(await gerantCountryAllowed(req, res, existing.market)).allowed) return;
     }
 
     await setClerkRole(identity.clerk, authUserId, 'gerant');

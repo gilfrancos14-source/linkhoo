@@ -34,6 +34,25 @@ const validRoom = {
 };
 
 describe('roomCreateSchema', () => {
+  it('accepte un lien Google Maps facultatif', () => {
+    const parsed = roomCreateSchema.safeParse({
+      ...validRoom,
+      maps_url: 'https://www.google.com/maps/place/Test/@5.3,4.0,17z',
+    });
+    expect(parsed.success).toBe(true);
+    expect(roomCreateSchema.safeParse({ ...validRoom, maps_url: null }).success).toBe(true);
+    expect(roomCreateSchema.safeParse(validRoom).success).toBe(true);
+  });
+
+  it('refuse une URL qui n’est pas un lien Google Maps', () => {
+    expect(
+      roomCreateSchema.safeParse({ ...validRoom, maps_url: 'https://exemple.com/maps' }).success,
+    ).toBe(false);
+    expect(
+      roomCreateSchema.safeParse({ ...validRoom, maps_url: 'javascript:alert(1)' }).success,
+    ).toBe(false);
+  });
+
   it('accepte au maximum trois images', () => {
     const images = ['a', 'b', 'c'].map((n) => `${MEDIA}/${n}.webp`);
     expect(roomCreateSchema.safeParse({ ...validRoom, images }).success).toBe(true);

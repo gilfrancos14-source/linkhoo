@@ -132,6 +132,7 @@ function Host({ entry, Page = RegisterRolePage, showPage = true }: HostProps) {
         <Route path="/inscription" element={page} />
         <Route path="/inscription/client/*" element={page} />
         <Route path="/inscription/gerant/*" element={page} />
+        <Route path="/:market/gerant" element={<div data-testid="gerant-home">Espace gérant</div>} />
         <Route path="/:market" element={<div data-testid="home">Accueil du marché</div>} />
         <Route path="/" element={<div data-testid="root-home">Accueil racine</div>} />
       </Routes>
@@ -154,6 +155,7 @@ function setupUser() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  sessionStorage.clear();
   mocks.isLoaded = true;
   mocks.isSignedIn = false;
   mocks.getToken.mockResolvedValue('session-token');
@@ -303,6 +305,7 @@ describe('RegisterRolePage — configuration Clerk', () => {
   });
 
   it("configure Clerk sur le chemin d'inscription gérant de bj", () => {
+    sessionStorage.setItem('linkhoo:signup-phone:BJ', '+22997000000');
     renderPage('/bj/inscription/gerant');
 
     const signup = screen.getByTestId('clerk-signup');
@@ -319,6 +322,52 @@ describe('RegisterRolePage — configuration Clerk', () => {
     const signup = screen.getByTestId('clerk-signup');
     expect(signup).toHaveAttribute('data-card', 'none');
     expect(signup).toHaveAttribute('data-bg', 'transparent');
+  });
+});
+
+describe('RegisterRolePage — popup téléphone gérant', () => {
+  it('ouvre le popup et bloque Clerk lors d’une arrivée directe sur /gerant', () => {
+    renderPage('/ci/inscription/gerant');
+
+    expect(screen.getByRole('dialog', { name: 'Numéro de téléphone' })).toBeInTheDocument();
+    expect(screen.queryByTestId('clerk-signup')).not.toBeInTheDocument();
+  });
+
+  it('refuse un numéro invalide puis autorise Clerk après un numéro valide', async () => {
+    renderPage('/ci/inscription/gerant');
+    const user = setupUser();
+    const input = screen.getByLabelText(/Numéro · indicatif/);
+
+    await user.type(input, '123');
+    await user.click(screen.getByRole('button', { name: 'Continuer' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Numéro invalide/);
+    expect(screen.queryByTestId('clerk-signup')).not.toBeInTheDocument();
+
+    await user.clear(input);
+    await user.type(input, '+2250700000000');
+    await user.click(screen.getByRole('button', { name: 'Continuer' }));
+
+    expect(await screen.findByTestId('clerk-signup')).toHaveAttribute('data-role', 'gerant');
+    expect(sessionStorage.getItem('linkhoo:signup-phone:CI')).toBe('+2250700000000');
+  });
+
+  it('retrouve le numéro enregistré après un remontage de la page', () => {
+    sessionStorage.setItem('linkhoo:signup-phone:CI', '+2250700000000');
+
+    renderPage('/ci/inscription/gerant');
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByTestId('clerk-signup')).toBeInTheDocument();
+  });
+
+  it('annuler ramène vers l’inscription client et efface le numéro', async () => {
+    renderPage('/ci/inscription/gerant');
+    const user = setupUser();
+
+    await user.click(screen.getByRole('button', { name: 'Annuler' }));
+
+    expect(await screen.findByTestId('pathname')).toHaveTextContent('/ci/inscription/client');
+    expect(sessionStorage.getItem('linkhoo:signup-phone:CI')).toBeNull();
   });
 });
 
@@ -367,9 +416,12 @@ describe('RegisterRolePage — sélection du rôle', () => {
     const signupBefore = screen.getByTestId('clerk-signup');
 
     await user.click(screen.getByRole('tab', { name: 'Je suis gérant' }));
-
     expect(await screen.findByRole('heading', { level: 1, name: 'Rejoignez les gérants Linkhoo' })).toBeInTheDocument();
-    expect(screen.getByTestId('clerk-signup')).not.toBe(signupBefore);
+
+    await user.type(screen.getByLabelText(/Numéro · indicatif/), '+2250700000000');
+    await user.click(screen.getByRole('button', { name: 'Continuer' }));
+
+    expect(await screen.findByTestId('clerk-signup')).not.toBe(signupBefore);
   });
 });
 
@@ -403,25 +455,36 @@ describe('RegisterRolePage — bootstrap d’un utilisateur connecté', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/ci$/);
   });
 
-  it('bootstrap le rôle gérant du marché bj puis redirige vers /bj', async () => {
+  it('bootstrap le rôle gérant du marché bj puis ouvre son espace', async () => {
     mocks.isSignedIn = true;
+    mocks.bootstrap.mockResolvedValue({ role: 'gerant', profile_role: 'gerant', clerk_role: 'gerant' });
 
     renderPage('/bj/inscription/gerant');
 
-    expect(await screen.findByTestId('home')).toBeInTheDocument();
+    expect(await screen.findByTestId('gerant-home')).toBeInTheDocument();
     expect(mocks.bootstrap).toHaveBeenCalledWith({ role: 'gerant', market: 'BJ' });
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/bj$/);
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/bj/gerant');
   });
 
-  it('redirige même quand le bootstrap échoue', async () => {
+  it('ne redirige pas vers /compte quand le bootstrap échoue', async () => {
     mocks.isSignedIn = true;
     mocks.bootstrap.mockRejectedValue(new Error('bootstrap en échec'));
 
-    renderPage('/ci/inscription/client');
+    renderPage('/ci/inscription/gerant');
 
-    expect(await screen.findByTestId('home')).toBeInTheDocument();
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/ci$/);
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Inscription gerant impossible/);
+    expect(screen.queryByTestId('home')).not.toBeInTheDocument();
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/ci/inscription/gerant');
+  });
+
+  it('refuse un bootstrap qui renvoie le rôle client pour une inscription gérant', async () => {
+    mocks.isSignedIn = true;
+    mocks.bootstrap.mockResolvedValue({ role: 'client', profile_role: 'client', clerk_role: 'client' });
+
+    renderPage('/ci/inscription/gerant');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/déjà enregistré comme client/);
+    expect(screen.queryByTestId('home')).not.toBeInTheDocument();
   });
 
   it('n’appelle bootstrap qu’une seule fois par rendu connecté', async () => {

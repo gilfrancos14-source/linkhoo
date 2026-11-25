@@ -9,7 +9,7 @@
 // migrations d'installation (0001, 0002, 0004, 0016, 0017).
 
 export const ROOM_COLUMNS =
-  'id, title, subtitle, info, price, price_num, price_unit, img, alt, images, image_labels, description, capacity, category, market, pays, ville, quartier, chambres, douches, disponible, date_dispo, conditions, gerant_id, promo_group, promo_start, promo_end, is_popular, created_at, updated_at';
+  'id, title, subtitle, info, price, price_num, price_unit, img, alt, images, image_labels, description, capacity, category, market, pays, ville, quartier, maps_url, chambres, douches, disponible, date_dispo, conditions, gerant_id, promo_group, promo_start, promo_end, is_popular, created_at, updated_at';
 
 export const CATEGORY_COLUMNS = 'id, title, img, alt, market';
 

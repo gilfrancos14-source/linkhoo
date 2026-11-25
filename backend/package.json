@@ -13,6 +13,7 @@
     "migrate:audit": "tsx src/db/auditConstraints.ts",
     "migrate:security": "tsx scripts/migrate-reservation-security.ts",
     "db:clear-demo": "tsx scripts/clear-demo-data.ts",
+    "db:backfill-signup-country": "tsx src/scripts/backfillSignupCountry.ts",
     "seed:demo": "tsx src/seedDemo.ts",
     "clean:rooms:phones": "tsx src/scripts/cleanPhonesInRooms.ts",
     "test": "vitest run",

@@ -2,6 +2,90 @@
    Register — 2 colonnes : infos à gauche, formulaire à droite
    ========================================================================== */
 
+/* Popup téléphone : bloque l'inscription gérant jusqu'au numéro valide. */
+.register-phone-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.register-phone-modal__dialog {
+  width: 100%;
+  max-width: 420px;
+  padding: 1.6rem;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+}
+
+.register-phone-modal__dialog h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+}
+
+.register-phone-modal__dialog p {
+  margin: 0 0 1rem;
+  color: var(--muted, #64748b);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.register-phone-modal__dialog form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.register-phone-modal__dialog label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.register-phone-modal__dialog input {
+  height: 44px;
+  padding: 0 0.8rem;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+.register-phone-modal__error {
+  color: #b91c1c !important;
+  font-weight: 600;
+}
+
+.register-phone-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.register-phone-modal__actions button {
+  min-height: 42px;
+  padding: 0 1rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.register-phone-modal__cancel {
+  border: 1px solid var(--line, #e2e8f0);
+  background: #fff;
+  color: var(--ink, #0f172a);
+}
+
+.register-phone-modal__submit {
+  border: 0;
+  background: #2563eb;
+  color: #fff;
+}
+
 .register-page {
   min-height: 100vh;
   min-height: 100dvh;
@@ -19,6 +103,44 @@
   grid-template-columns: 1fr 1fr;
   min-height: 100vh;
   min-height: 100dvh;
+}
+
+.register-page__phone-edit {
+  display: block;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.register-page__error {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.9rem;
+}
+
+.register-page__error p {
+  margin: 0 0 0.6rem;
+}
+
+.register-page__error button {
+  padding: 0.45rem 0.9rem;
+  border: 0;
+  border-radius: 8px;
+  background: #dc2626;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 /* ── Colonne gauche : infos ── */

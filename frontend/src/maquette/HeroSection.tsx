@@ -2,6 +2,9 @@ import { useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { MarketCode } from '../config/markets';
+import HeroArrivalScene from './HeroArrivalScene';
+import './hero-arrival.css';
+import './hero-reveal.css';
 
 interface HeroSectionProps {
   market: MarketCode;
@@ -58,62 +61,44 @@ export default function HeroSection({ market }: HeroSectionProps) {
 
   return (
     <section
-      className="relative min-h-[350px] bg-slate-900 text-white flex flex-col justify-center overflow-hidden"
+      className={`relative min-h-[350px] bg-white text-slate-900 flex flex-col justify-center overflow-hidden${market === 'CI' ? ' hero-reveal-on' : ''}`}
       data-purpose="hero-section"
     >
-      <div className="absolute inset-0 z-0">
-        <img
-          alt={t('hero.countryView', { country: countryName })}
-          className="w-full h-full object-cover object-center filter brightness-[0.78]"
-          src="/images/hero-city.webp"
-          srcSet="/images/hero-city-800.webp 800w, /images/hero-city.webp 1280w"
-          sizes="100vw"
-          width={1280}
-          height={1601}
-          fetchPriority="high"
-          decoding="async"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0E1A2D] via-black/40 to-black/30"></div>
-      </div>
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 w-full">
         <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-semibold mb-4">
-            <i className="fa-solid fa-location-dot text-[#FF5E1E]"></i>
+          <div className="hero-reveal hero-reveal--1 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold mb-4">
+            <i className="fa-solid fa-location-dot text-[color:var(--market-accent)]"></i>
             <span>{countryName}</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-[2.6rem] font-extrabold leading-[1.15] tracking-tight">
-            {t('hero.title')} <span className="text-[#FF7A00]">{t('hero.titleHighlight')}</span>
+          <h1 className="hero-reveal hero-reveal--2 text-3xl sm:text-4xl lg:text-[2.6rem] font-extrabold leading-[1.15] tracking-tight">
+            {t('hero.title')} <span className="text-[color:var(--market-accent)]">{t('hero.titleHighlight')}</span>
           </h1>
-          <p className="mt-4 text-base sm:text-lg text-slate-200 font-normal leading-relaxed max-w-2xl">
+          <p className="hero-reveal hero-reveal--3 mt-4 text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-2xl">
             {t('hero.subtitle', { countryPhrase })}
           </p>
         </div>
-        <div className="absolute right-8 top-16 hidden lg:block text-right select-none pointer-events-none transform -rotate-6">
-          <p className="font-handwriting text-3xl sm:text-4xl text-white font-bold drop-shadow-lg tracking-wide">
-            {countryName},
-            <br />
-            <span className="text-2xl text-amber-200">{t('hero.emotion')}</span>
-          </p>
+        <div className="hero-reveal hero-reveal--6 absolute right-6 top-4 hidden lg:block w-[320px] select-none pointer-events-none">
+          <HeroArrivalScene />
         </div>
         <div className="mt-5" data-purpose="hero-search-tabs">
-          <div className="inline-flex rounded-t-xl overflow-hidden shadow-sm">
+          <div className="hero-reveal hero-reveal--4 inline-flex rounded-t-xl overflow-hidden shadow-sm">
             <button
               type="button"
-              className="bg-[#FF5E1E] text-white px-6 py-2.5 min-h-[44px] text-xs sm:text-sm font-bold flex items-center gap-2"
+              className="bg-[color:var(--market-accent)] text-white px-6 py-2.5 min-h-[44px] text-xs sm:text-sm font-bold flex items-center gap-2"
             >
               <i className="fa-solid fa-umbrella-beach"></i>
               <span>{t('hero.tabStay')}</span>
             </button>
             <button
               type="button"
-              className="bg-white/95 hover:bg-white text-slate-700 px-6 py-2.5 min-h-[44px] text-xs sm:text-sm font-semibold flex items-center gap-2 transition backdrop-blur-sm"
+              className="bg-white hover:bg-slate-50 text-slate-700 px-6 py-2.5 min-h-[44px] text-xs sm:text-sm font-semibold flex items-center gap-2 transition border border-slate-200"
             >
               <i className="fa-solid fa-car"></i>
               <span>{t('hero.tabCar')}</span>
             </button>
           </div>
           <form
-            className="bg-white rounded-b-2xl rounded-tr-2xl p-3 sm:p-4 shadow-2xl text-slate-800 grid grid-cols-1 md:grid-cols-12 gap-3 items-center"
+            className="hero-reveal hero-reveal--5 bg-white rounded-b-2xl rounded-tr-2xl p-3 sm:p-4 shadow-2xl text-slate-800 grid grid-cols-1 md:grid-cols-12 gap-3 items-center"
             onSubmit={handleSubmit}
           >
             <div className="md:col-span-4 flex items-center gap-3 px-4 py-2.5 border-b md:border-b-0 md:border-r border-slate-200">
@@ -186,7 +171,7 @@ export default function HeroSection({ market }: HeroSectionProps) {
             <div className="md:col-span-2">
               <button
                 type="submit"
-                className="w-full h-12 bg-[#FF5E1E] hover:bg-[#ea4f11] text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm shadow-md shadow-orange-500/30 transition"
+                className="w-full h-12 bg-[color:var(--market-accent)] hover:bg-[color:var(--market-accent-dark)] text-white font-bold rounded-xl flex items-center justify-center gap-2 text-sm shadow-md shadow-orange-500/30 transition"
               >
                 <i className="fa-solid fa-magnifying-glass"></i>
                 <span>{t('hero.search')}</span>

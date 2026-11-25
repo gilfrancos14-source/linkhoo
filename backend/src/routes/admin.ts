@@ -20,7 +20,6 @@ import { isQualifiedGerant } from '../utils/gerantQualification';
 import { fetchAllRows } from '../utils/fetchAll';
 import { isMarketCode } from '../config/markets';
 import { isAccessibleVerificationPath } from '../utils/verificationStorage';
-import { countryOfIp } from '../utils/geoIp';
 import { GERANT_COLUMNS, VERIFICATION_DOCUMENT_COLUMNS } from '../utils/gerantSelect';
 import { NOTIFICATION_COLUMNS, ROOM_COLUMNS } from '../utils/selects';
 import {
@@ -51,6 +50,41 @@ const promoGroupSchema = z.object({
 }).strict();
 
 const router = Router();
+
+type GerantGeoFields = {
+  /** Pays résolu AU BOOTSTRAP et stocké en base (aucun appel réseau ici). */
+  signup_country?: string | null;
+  signup_country_name?: string | null;
+  market?: string | null;
+};
+
+type GerantGeoEnrichment = {
+  signup_country: string | null;
+  signup_country_name: string | null;
+  ip_market_mismatch: boolean;
+};
+
+/** Indice géographique partagé entre la liste des gérants et la file de
+ * vérification. Le pays est une donnée stockée à l'inscription : l'admin ne
+ * fait aucune résolution IP, donc aucun appel au service geoIP et aucun quota à
+ * respecter, quelle que soit la taille de la liste.
+ */
+function withSignupCountry<T extends GerantGeoFields>(
+  rows: readonly T[],
+): Array<T & GerantGeoEnrichment> {
+  return rows.map((row) => {
+    const country = row.signup_country ?? null;
+    return {
+      ...row,
+      signup_country: country,
+      signup_country_name: row.signup_country_name ?? null,
+      // Vrai si le pays de l'IP diffère du marché déclaré.
+      ip_market_mismatch: Boolean(
+        country && row.market && country.toUpperCase() !== row.market.toUpperCase(),
+      ),
+    };
+  });
+}
 
 router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -467,7 +501,7 @@ router.get('/gerants', requireAdminAuth, requirePermission('gerants'), async (re
     const runQuery = (from: number, to: number) => {
       let query = supabaseAdmin
         .from('gerants')
-        .select('id, email, nom, prenom, phone, market, is_verified, verified_at, verification_requested_at, verification_status, verification_rejection_reason, verification_submitted_at, verification_reviewed_at, is_premium, property_maps_url, property_lat, property_lng, payout_method, payout_phone, payout_provider, payout_bank_code, payout_bank_name, payout_account_number, payout_holder_name, payout_verified_at, created_at')
+        .select('id, email, nom, prenom, phone, market, signup_country, signup_country_name, is_verified, verified_at, verification_requested_at, verification_status, verification_rejection_reason, verification_submitted_at, verification_reviewed_at, is_premium, property_maps_url, property_lat, property_lng, payout_method, payout_phone, payout_provider, payout_bank_code, payout_bank_name, payout_account_number, payout_holder_name, payout_verified_at, created_at')
         .order('created_at', { ascending: false })
         // created_at n'est pas unique : sans second critère, deux pages
         // peuvent se chevaucher ou se sauter des lignes.
@@ -488,7 +522,7 @@ router.get('/gerants', requireAdminAuth, requirePermission('gerants'), async (re
     };
 
     const data = await fetchAllRows<any>(runQuery);
-    res.json(data);
+    res.json(withSignupCountry(data));
   } catch (err) {
     next(err);
   }
@@ -894,25 +928,14 @@ router.get('/verification/pending', requireAdminAuth, requirePermission('gerants
     const rows = await fetchAllRows<any>((from, to) =>
       supabaseAdmin
         .from('gerants')
-        .select('id, email, nom, prenom, phone, market, signup_ip, verification_status, verification_submitted_at, property_maps_url, property_lat, property_lng')
+        .select('id, email, nom, prenom, phone, market, signup_country, signup_country_name, verification_status, verification_submitted_at, property_maps_url, property_lat, property_lng')
         .in('verification_status', ['pending', 'under_review'])
         .order('verification_submitted_at', { ascending: true })
         .order('id', { ascending: true })
         .range(from, to));
 
-    // Indice géographique : pays estimé à partir de l'IP d'inscription.
-    // Non bloquant (geoIp retourne null silencieusement si indisponible).
-    const enriched = await Promise.all(rows.map(async (row) => {
-      const geo = await countryOfIp(row.signup_ip);
-      return {
-        ...row,
-        signup_country: geo?.countryCode ?? null,
-        signup_country_name: geo?.country ?? null,
-        // Vrai si l'IP est dans un pays DIFFÉRENT du marché déclaré.
-        ip_market_mismatch: Boolean(geo && geo.countryCode !== row.market),
-      };
-    }));
-    res.json(enriched);
+    // Même signal géographique que la liste des gérants, sans appel réseau.
+    res.json(withSignupCountry(rows));
   } catch (err) {
     next(err);
   }

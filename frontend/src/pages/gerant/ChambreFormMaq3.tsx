@@ -6,7 +6,11 @@ import { createRoom, updateRoom, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import { roomSubtitle } from '../../lib/roomDisplay';
 import { apiRooms, apiUpload } from '../../lib/api';
-import { containsPhoneNumber, PHONE_IN_TEXT_ERROR } from '../../utils/validators';
+import {
+  containsPhoneNumber,
+  isGoogleMapsLink,
+  PHONE_IN_TEXT_ERROR,
+} from '../../utils/validators';
 import {
   MAX_PHOTOS,
   emptyForm,
@@ -158,6 +162,9 @@ export default function ChambreFormMaq3({ onPreviewChange, room }: ChambreFormMa
     if (!form.description.trim()) next.description = 'La description est requise';
     else if (containsPhoneNumber(form.description)) next.description = PHONE_IN_TEXT_ERROR;
     if (!form.category) next.category = 'Choisissez une catégorie';
+    if (form.mapsUrl.trim() && !isGoogleMapsLink(form.mapsUrl)) {
+      next.mapsUrl = 'Entrez un lien Google Maps valide';
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -241,6 +248,7 @@ export default function ChambreFormMaq3({ onPreviewChange, room }: ChambreFormMa
         pays: marketPays[market] || 'Bénin',
         ville: form.ville,
         quartier: form.quartier,
+        mapsUrl: form.mapsUrl.trim() || null,
         chambres: form.chambres,
         douches: form.douches,
         disponible: true,
@@ -455,6 +463,25 @@ export default function ChambreFormMaq3({ onPreviewChange, room }: ChambreFormMa
                   onChange={(event) => update('quartier', event.target.value)}
                 />
                 {errors.quartier && <p className="err">{errors.quartier}</p>}
+              </div>
+
+              <div className="md:col-span-2">
+                <label htmlFor="maq3-maps" className="lbl">
+                  Lien Google Maps (facultatif)
+                </label>
+                <input
+                  id="maq3-maps"
+                  type="url"
+                  className={`input ${errors.mapsUrl ? 'is-invalid' : ''}`}
+                  placeholder="https://maps.app.goo.gl/…"
+                  value={form.mapsUrl}
+                  onChange={(event) => update('mapsUrl', event.target.value)}
+                />
+                {errors.mapsUrl && <p className="err">{errors.mapsUrl}</p>}
+                <p className="hint">
+                  <Icon id="info" />
+                  Collez le lien de partage Google Maps de l’appartement pour aider les clients à le trouver.
+                </p>
               </div>
             </div>
 

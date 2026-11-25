@@ -230,4 +230,30 @@ describe('AjouterChambreMaq3', () => {
     );
     expect(await screen.findByText(/a été ajoutée avec succès/)).toBeInTheDocument();
   });
+
+  it('enregistre le lien Google Maps saisi à l’étape 1', async () => {
+    renderPage();
+    await screen.findByRole('option', { name: 'Appartements' });
+    setText(screen.getByLabelText(/lien google maps/i), 'https://maps.app.goo.gl/abc123');
+    await fillStep1();
+    await fillStep2();
+
+    fireEvent.change(document.querySelector<HTMLInputElement>('input[type="file"]')!, {
+      target: { files: [new File(['x'], 'photo.jpg', { type: 'image/jpeg' })] },
+    });
+    await act(async () => {});
+    await userEvent.click(screen.getByRole('button', { name: /enregistrer la chambre/i }));
+
+    await waitFor(() => expect(mocks.createRoom).toHaveBeenCalledTimes(1));
+    expect(mocks.createRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ mapsUrl: 'https://maps.app.goo.gl/abc123' }),
+    );
+  });
+
+  it('refuse un lien de localisation hors Google Maps', async () => {
+    renderPage();
+    setText(screen.getByLabelText(/lien google maps/i), 'https://exemple.com/maps');
+    await userEvent.click(screen.getByRole('button', { name: /suivant/i }));
+    expect(screen.getByText('Entrez un lien Google Maps valide')).toBeInTheDocument();
+  });
 });

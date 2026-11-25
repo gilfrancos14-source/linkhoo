@@ -9,7 +9,7 @@ interface CategoriesSectionProps {
 }
 
 const BADGES = [
-  { className: 'bg-[#FF5E1E]', icon: 'fa-building' },
+  { className: 'bg-[color:var(--market-accent)]', icon: 'fa-building' },
   { className: 'bg-cyan-600', icon: 'fa-tree-city' },
   { className: 'bg-amber-500', icon: 'fa-house' },
   { className: 'bg-indigo-600', icon: 'fa-bed' },

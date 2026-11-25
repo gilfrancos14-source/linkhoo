@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import Icon from './icons';
 import { COUNTRIES, type Country } from './data';
 import { AnimatedSection, slideInFromBottomVariants } from '../../lib/animations';
+import HeroArrivalScene from '../../maquette/HeroArrivalScene';
+import '../../maquette/hero-arrival.css';
+import '../../maquette/hero-reveal.css';
 
 interface LandingHeroProps {
   country: Country | null;
@@ -55,40 +57,30 @@ export default function LandingHero({ country, onCountryChange }: LandingHeroPro
   };
 
   return (
-    <section className="acc-hero" id="accueil">
+    <section className="acc-hero hero-reveal-on" id="accueil">
       <div className="acc-container acc-hero__inner">
+        <div className="acc-hero__art hero-reveal hero-reveal--5 hidden lg:block" aria-hidden="true">
+          <HeroArrivalScene />
+        </div>
         <AnimatedSection variants={slideInFromBottomVariants}>
             <div>
-              <p className="acc-hero__eyebrow">
+              <p className="acc-hero__eyebrow hero-reveal hero-reveal--1">
                 {t('landing.hero.eyebrow')}
               </p>
-              <motion.h1
-                className="acc-hero__title"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-              >
+              <h1 className="acc-hero__title hero-reveal hero-reveal--2">
                 <span className="acc-hero__title-brand">{t('landing.hero.titleBrand')}</span>
                 {t('landing.hero.titleRest')}
-              </motion.h1>
-              <motion.p
-                className="acc-hero__sub"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-              >
+              </h1>
+              <p className="acc-hero__sub hero-reveal hero-reveal--3">
                 {t('landing.hero.subtitle')}
-              </motion.p>
+              </p>
             </div>
           </AnimatedSection>
 
-        <motion.form
-          className="acc-hero-search"
+        <form
+          className="acc-hero-search hero-reveal hero-reveal--4"
           onSubmit={handleSubmit}
           role="search"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
         >
           <label className="acc-search-field" htmlFor="acc-search-keyword">
             <Icon name="search" size={20} />
@@ -161,7 +153,7 @@ export default function LandingHero({ country, onCountryChange }: LandingHeroPro
           <button type="submit" className="acc-search-submit" aria-label={t('landing.hero.searchAria')}>
             <Icon name="search" size={24} />
           </button>
-        </motion.form>
+        </form>
       </div>
     </section>
   );

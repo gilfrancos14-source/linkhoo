@@ -49,6 +49,16 @@
   --sky-600: #2563eb;
   --sky-900: #1e3a5f;
   --admin-card: #ffffff;
+
+  /* Accent du site : violet par défaut (pages sans marché), remplacé par la
+     couleur dominante du drapeau dès qu'un segment de marché est présent. */
+  --market-accent: #6d3fd9;
+  --market-accent-dark: #5b3fd6;
+}
+
+[data-market] {
+  --market-accent: var(--sky);
+  --market-accent-dark: var(--sky-dark);
 }
 
 /* ---------- Market themes ---------- */

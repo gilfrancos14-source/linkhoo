@@ -38,6 +38,8 @@ export interface FormData {
   description: string;
   ville: string;
   quartier: string;
+  /** Lien de partage Google Maps du logement (facultatif). */
+  mapsUrl: string;
   priceNum: number;
   priceUnit: '/ mois' | '/ nuit';
   conditions: string;
@@ -52,6 +54,7 @@ export const emptyForm: FormData = {
   description: '',
   ville: '',
   quartier: '',
+  mapsUrl: '',
   priceNum: 0,
   priceUnit: '/ mois',
   conditions: '',
@@ -80,6 +83,7 @@ export function formFromRoom(room: Room): FormData {
     description: room.description,
     ville: room.ville,
     quartier: room.quartier,
+    mapsUrl: room.mapsUrl ?? '',
     priceNum: room.priceNum,
     priceUnit: room.priceUnit === '/ nuit' ? '/ nuit' : '/ mois',
     conditions: room.conditions,

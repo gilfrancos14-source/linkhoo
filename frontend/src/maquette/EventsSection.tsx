@@ -13,10 +13,10 @@ interface EventsSectionProps {
 }
 
 const CITY_BADGES = [
-  { className: 'bg-[#FF5E1E]', icon: 'fa-location-dot' },
+  { className: 'bg-[color:var(--market-accent)]', icon: 'fa-location-dot' },
   { className: 'bg-amber-500', icon: 'fa-masks-theater' },
   { className: 'bg-orange-600', icon: 'fa-landmark' },
-  { className: 'bg-[#FF5E1E]', icon: 'fa-water' },
+  { className: 'bg-[color:var(--market-accent)]', icon: 'fa-water' },
 ] as const;
 
 export default function EventsSection({ market, cities, featuredEvents, banners }: EventsSectionProps) {
@@ -145,7 +145,7 @@ export default function EventsSection({ market, cities, featuredEvents, banners 
                     <i className="fa-solid fa-xmark"></i>
                   </button>
                 </div>
-                <div className="flex items-center gap-1.5 text-[11px] text-[#FF5E1E] font-semibold mb-1">
+                <div className="flex items-center gap-1.5 text-[11px] text-[color:var(--market-accent)] font-semibold mb-1">
                   <i className="fa-regular fa-clock"></i>
                   <span>{featured.date}</span>
                 </div>
@@ -153,7 +153,7 @@ export default function EventsSection({ market, cities, featuredEvents, banners 
               </div>
               <div className="mt-3 flex items-center justify-between">
                 <Link
-                  className="px-3 py-1.5 bg-[#0E1A2D] hover:bg-[#FF5E1E] !text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition"
+                  className="px-3 py-1.5 bg-[#0E1A2D] hover:bg-[color:var(--market-accent)] !text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition"
                   to={search(featured.city)}
                 >
                   <span>{t('events.viewProperties')}</span>

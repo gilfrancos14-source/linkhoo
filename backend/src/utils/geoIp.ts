@@ -1,9 +1,11 @@
 /**
  * Résolution IP → pays (gratuit, sans clé, sans dépendance).
  *
- * Utilise ip-api.com (45 req/min, aucun compte requis) avec un cache en
- * mémoire pour ne jamais dépasser le quota. En cas d'indisponibilité ou
- * d'IP invalide, retourne null silencieusement.
+ * Utilise ipwho.is en HTTPS (gratuit, sans clé, sans compte), le même
+ * fournisseur que `services/geoIp.ts` pour le landing. Le gratuit d'
+ * ip-api.com est HTTP-only (HTTPS => 403) : incompatible avec un VPS qui
+ * n'autorise que l'egress HTTPS. Un cache en mémoire limite les appels.
+ * En cas d'indisponibilité ou d'IP invalide, retourne null silencieusement.
  *
  * Deux usages :
  *  - indicateur pays dans le back-office (admin) ;
@@ -11,7 +13,7 @@
  *    marché bloque l'accès, un null est traité en fail-open et journalisé.
  */
 
-interface GeoResult {
+export interface GeoResult {
   countryCode: string;
   country: string;
 }
@@ -38,19 +40,22 @@ export async function countryOfIp(ip: string | null | undefined): Promise<GeoRes
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-    const res = await fetch(
-      `http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,countryCode,country`,
-      { signal: controller.signal },
-    );
+    const res = await fetch(`https://ipwho.is/${encodeURIComponent(ip)}`, {
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    });
     clearTimeout(timer);
     if (res.ok) {
       const data = (await res.json()) as {
-        status?: string;
-        countryCode?: string;
+        success?: boolean;
+        country_code?: string;
         country?: string;
       };
-      if (data.status === 'success' && data.countryCode) {
-        result = { countryCode: data.countryCode, country: data.country ?? data.countryCode };
+      if (data.success && data.country_code) {
+        result = {
+          countryCode: data.country_code.trim().toUpperCase(),
+          country: data.country ?? data.country_code,
+        };
       }
     }
   } catch {

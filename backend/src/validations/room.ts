@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { dateStringSchema, marketSchema, optionalTextSafe, withoutPhoneNumber } from './common';
 import { legacyImageUrlSchema, platformImageUrlSchema } from './imageUrl';
+import { isGoogleMapsUrl } from '../utils/googleMaps';
 
 /**
  * Champs communs création / mise à jour. Les images utilisent ici le schéma
@@ -43,6 +44,17 @@ const roomFields = {
   pays: withoutPhoneNumber(z.string().trim().min(1).max(100)),
   ville: withoutPhoneNumber(z.string().trim().min(1).max(150)),
   quartier: withoutPhoneNumber(z.string().trim().min(1).max(200)),
+  // Lien de partage Google Maps du logement. Facultatif : `null` quand le
+  // gérant ne le renseigne pas. Toute autre URL est refusée (XSS via href).
+  maps_url: z
+    .string()
+    .trim()
+    .max(2000)
+    .refine((value) => isGoogleMapsUrl(value), {
+      message: 'Le lien doit être une URL Google Maps',
+    })
+    .nullable()
+    .optional(),
   chambres: z.number().int().positive().max(100),
   douches: z.number().int().positive().max(100),
   disponible: z.boolean(),

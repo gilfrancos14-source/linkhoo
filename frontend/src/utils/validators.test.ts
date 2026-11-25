@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { containsPhoneNumber, isValidEmail } from './validators';
+import { containsPhoneNumber, isGoogleMapsLink, isValidEmail } from './validators';
+
+describe('isGoogleMapsLink', () => {
+  it('accepte les liens Google Maps et les liens courts', () => {
+    expect(isGoogleMapsLink('https://www.google.com/maps/place/Test/@5.3,4.0,17z')).toBe(true);
+    expect(isGoogleMapsLink('maps.app.goo.gl/abc123')).toBe(true);
+    expect(isGoogleMapsLink('https://maps.google.fr/@48.85,2.29')).toBe(true);
+  });
+
+  it('rejette les autres sites et les schémas non HTTP', () => {
+    expect(isGoogleMapsLink('https://exemple.com/maps')).toBe(false);
+    expect(isGoogleMapsLink('javascript:alert(1)')).toBe(false);
+    expect(isGoogleMapsLink('')).toBe(false);
+  });
+});
 
 describe('isValidEmail', () => {
   it('accepte les adresses valides', () => {
