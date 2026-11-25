@@ -10,6 +10,21 @@ import { legacyImageUrlSchema, platformImageUrlSchema } from './imageUrl';
  * l'annonce (voir `routes/rooms.ts`), donc aucune nouvelle URL historique ne
  * peut être injectée.
  */
+/** Types de pièces autorisés pour légender une photo de logement. */
+export const ROOM_IMAGE_LABELS = [
+  'chambre',
+  'salon',
+  'douche',
+  'cuisine',
+  'cour',
+] as const;
+
+const roomImageLabelsSchema = z
+  .record(z.string().max(500), z.enum(ROOM_IMAGE_LABELS))
+  .refine((labels) => Object.keys(labels).length <= 20, {
+    message: 'Trop de libellés de photos',
+  });
+
 const roomFields = {
   title: withoutPhoneNumber(z.string().trim().min(1).max(200)),
   subtitle: optionalTextSafe(300),
@@ -20,6 +35,7 @@ const roomFields = {
   img: legacyImageUrlSchema,
   alt: optionalTextSafe(300),
   images: z.array(legacyImageUrlSchema).min(1).max(3),
+  image_labels: roomImageLabelsSchema.optional().default({}),
   description: withoutPhoneNumber(z.string().trim().min(1).max(10000)),
   capacity: optionalTextSafe(100),
   category: withoutPhoneNumber(z.string().trim().min(1).max(200)),

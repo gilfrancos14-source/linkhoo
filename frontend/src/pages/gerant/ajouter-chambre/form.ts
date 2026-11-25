@@ -1,5 +1,24 @@
 import type { Room } from '../../../data/rooms';
 
+/** Types de pièces que le gérant peut associer à une photo. */
+export const ROOM_IMAGE_LABELS = [
+  'chambre',
+  'salon',
+  'douche',
+  'cuisine',
+  'cour',
+] as const;
+
+export type RoomImageLabel = (typeof ROOM_IMAGE_LABELS)[number];
+
+export const ROOM_IMAGE_LABEL_TEXT: Record<RoomImageLabel, string> = {
+  chambre: 'Chambre',
+  salon: 'Salon',
+  douche: 'Douche',
+  cuisine: 'Cuisine',
+  cour: 'Cour',
+};
+
 export interface PhotoItem {
   /** Fichier choisi par le gérant (absent pour une photo déjà en ligne). */
   file?: File;
@@ -7,6 +26,8 @@ export interface PhotoItem {
   preview: string;
   /** URL d'une photo déjà enregistrée (mode modification). */
   url?: string;
+  /** Type de pièce déclaré par le gérant pour cette photo. */
+  label?: RoomImageLabel;
 }
 
 /** Nombre maximum de photos par appartement. */
@@ -83,5 +104,10 @@ export function photosFromRoom(room: Room): PhotoItem[] {
   room.images.forEach((url) => {
     if (url && !urls.includes(url)) urls.push(url);
   });
-  return urls.slice(0, MAX_PHOTOS).map((url) => ({ preview: url, url }));
+  const labels = room.imageLabels ?? {};
+  return urls.slice(0, MAX_PHOTOS).map((url) => {
+    const stored = labels[url];
+    const label = ROOM_IMAGE_LABELS.find((value) => value === stored);
+    return { preview: url, url, ...(label ? { label } : {}) };
+  });
 }

@@ -9,7 +9,10 @@ import GerantThemeToggle from '../../components/gerant/GerantThemeToggle';
 import MobileMenuButton from '../../components/gerant/MobileMenuButton';
 import { formatPrice } from '../../lib/roomDisplay';
 import '../../styles/35-gerant-maq3.css';
-import type { PreviewSnapshot } from './ajouter-chambre/form';
+import {
+  ROOM_IMAGE_LABEL_TEXT,
+  type PreviewSnapshot,
+} from './ajouter-chambre/form';
 
 function Icon({ id, className = 'i' }: { id: string; className?: string }) {
   return (
@@ -134,8 +137,15 @@ export default function ChambreFormPage({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="grid h-full place-items-center px-4 text-center text-xs text-slate-500">
-                    Ajoutez une photo pour voir l&apos;aperçu
+                  <div className="preview-empty">
+                    <span className="preview-empty__icon">
+                      <Icon id="box" className="i h-6 w-6" />
+                    </span>
+                    <p className="preview-empty__title">Votre aperçu apparaîtra ici</p>
+                    <p className="preview-empty__hint">
+                      Ajoutez au moins une photo pour voir votre logement tel que
+                      les voyageurs le verront.
+                    </p>
                   </div>
                 )}
                 <span className="absolute left-3 top-3 rounded-full bg-emerald-500 px-3 py-1 text-xs font-semibold text-white">Aperçu</span>
@@ -145,9 +155,15 @@ export default function ChambreFormPage({
                   {preview.photos.map((photo, index) => (
                     <div
                       key={`${photo.preview}-${index}`}
-                      className={`h-12 overflow-hidden rounded-lg bg-slate-100 ${index === preview.mainPhotoIndex ? 'ring-2 ring-dash-brand ring-offset-1' : ''}`}
+                      className={`relative h-12 overflow-hidden rounded-lg bg-slate-100 ${index === preview.mainPhotoIndex ? 'ring-2 ring-dash-brand ring-offset-1' : ''}`}
+                      title={photo.label ? ROOM_IMAGE_LABEL_TEXT[photo.label] : 'Photo sans type'}
                     >
                       <img src={photo.preview} alt="" className="h-full w-full object-cover" />
+                      {photo.label && (
+                        <span className="preview-thumb__label">
+                          {ROOM_IMAGE_LABEL_TEXT[photo.label]}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>

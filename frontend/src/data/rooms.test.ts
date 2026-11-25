@@ -164,6 +164,7 @@ describe('fetchRoomsByMarket', () => {
       hostResponseRate: null,
       hostResponseAnswered: 0,
       hostResponseTotal: 0,
+      imageLabels: null,
     });
   });
 

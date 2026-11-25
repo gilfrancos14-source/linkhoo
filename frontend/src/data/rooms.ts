@@ -43,6 +43,8 @@ export interface Room {
   hostResponseRate?: number | null;
   hostResponseAnswered?: number;
   hostResponseTotal?: number;
+  /** URL de photo → type de pièce. */
+  imageLabels?: Record<string, string> | null;
 }
 
 export function mapRoom(d: RoomData): Room {
@@ -82,6 +84,7 @@ export function mapRoom(d: RoomData): Room {
     hostResponseRate: d.host_response_rate ?? null,
     hostResponseAnswered: d.host_response_answered ?? 0,
     hostResponseTotal: d.host_response_total ?? 0,
+    imageLabels: d.image_labels ?? null,
   };
 }
 
@@ -191,6 +194,7 @@ export async function createRoom(data: Omit<Room, 'id'>): Promise<Room> {
     promo_group: data.promoGroup ?? null,
     promo_start: data.promoStart ?? null,
     promo_end: data.promoEnd ?? null,
+    image_labels: data.imageLabels ?? {},
   };
   const created = await apiRooms.create(payload);
   return mapRoom(created);
@@ -223,6 +227,7 @@ export async function updateRoom(id: string, updates: Partial<Room>): Promise<vo
   if (updates.promoGroup !== undefined) payload.promo_group = updates.promoGroup;
   if (updates.promoStart !== undefined) payload.promo_start = updates.promoStart;
   if (updates.promoEnd !== undefined) payload.promo_end = updates.promoEnd;
+  if (updates.imageLabels !== undefined) payload.image_labels = updates.imageLabels;
   await apiRooms.update(id, payload);
 }
 

@@ -268,6 +268,8 @@ export interface RoomData {
   host_response_rate?: number | null;
   host_response_answered?: number;
   host_response_total?: number;
+  /** Libellé de chaque photo (URL → type de pièce), saisi par le gérant. */
+  image_labels?: Record<string, string> | null;
 }
 
 /** Chambre favorite : données de la chambre + date d'ajout au favori. */

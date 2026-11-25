@@ -13,6 +13,8 @@ import {
   formFromRoom,
   marketPays,
   photosFromRoom,
+  ROOM_IMAGE_LABELS,
+  ROOM_IMAGE_LABEL_TEXT,
   type FormData,
   type PhotoItem,
   type PreviewSnapshot,
@@ -212,6 +214,12 @@ export default function ChambreFormMaq3({ onPreviewChange, room }: ChambreFormMa
         urls.push(url);
       }
 
+      const imageLabels: Record<string, string> = {};
+      photos.forEach((photo, index) => {
+        const url = urls[index];
+        if (url && photo.label) imageLabels[url] = photo.label;
+      });
+
       const payload: Omit<Room, 'id'> = {
         title: form.title,
         subtitle: roomSubtitle({
@@ -226,6 +234,7 @@ export default function ChambreFormMaq3({ onPreviewChange, room }: ChambreFormMa
         img: urls[mainPhotoIndex] || urls[0] || '',
         alt: form.title,
         images: urls,
+        imageLabels,
         description: form.description,
         category: form.category,
         market,
@@ -640,6 +649,30 @@ export default function ChambreFormMaq3({ onPreviewChange, room }: ChambreFormMa
                     className={`photo-tile ${index === mainPhotoIndex ? 'is-main' : ''}`}
                   >
                     <img src={photo.preview} alt={`Photo ${index + 1}`} />
+                    <select
+                      className="photo-tile__label"
+                      aria-label={`Type de pièce pour la photo ${index + 1}`}
+                      value={photo.label ?? ''}
+                      onClick={(event) => event.stopPropagation()}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        const label = ROOM_IMAGE_LABELS.find((item) => item === value);
+                        setPhotos((prev) =>
+                          prev.map((item, position) =>
+                            position === index
+                              ? { ...item, ...(label ? { label } : { label: undefined }) }
+                              : item,
+                          ),
+                        );
+                      }}
+                    >
+                      <option value="">Type de pièce…</option>
+                      {ROOM_IMAGE_LABELS.map((value) => (
+                        <option key={value} value={value}>
+                          {ROOM_IMAGE_LABEL_TEXT[value]}
+                        </option>
+                      ))}
+                    </select>
                     <div className="photo-tile__actions">
                       {index !== mainPhotoIndex && (
                         <button
