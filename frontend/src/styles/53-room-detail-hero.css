@@ -1,0 +1,210 @@
+/* Première section de la fiche — reproduction de s2.png (Airbnb), adaptée
+   à Linkhoo : titre + Partager/Enregistrer, mosaïque 1+4, sous-titre et badge. */
+
+.room-detail-maq7--hero {
+  background: #fff !important;
+}
+
+.room-detail-maq7 .m7-hero {
+  position: relative;
+  padding: 8px 0 48px;
+}
+
+.room-detail-maq7 .m7-hero__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+
+.room-detail-maq7 .m7-hero__title {
+  margin: 0;
+  color: #222;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.room-detail-maq7 .m7-hero__actions {
+  display: flex;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.room-detail-maq7 .m7-hero__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: #222;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.room-detail-maq7 .m7-hero__action:hover {
+  color: #6d3fd9;
+}
+
+.room-detail-maq7 .m7-hero__action--saved svg {
+  fill: #e11d74;
+  stroke: #e11d74;
+}
+
+/* Mosaïque : une grande photo à gauche, 2×2 à droite. */
+.room-detail-maq7 .m7-hero__gallery {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr);
+  gap: 8px;
+  height: 320px;
+}
+
+.room-detail-maq7 .m7-hero__main,
+.room-detail-maq7 .m7-hero__thumb {
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: #f4f4f2;
+  cursor: pointer;
+}
+
+.room-detail-maq7 .m7-hero__main img,
+.room-detail-maq7 .m7-hero__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.room-detail-maq7 .m7-hero__main img {
+  transition: transform 0.4s ease;
+}
+
+.room-detail-maq7 .m7-hero__main:hover img {
+  transform: scale(1.03);
+}
+
+.room-detail-maq7 .m7-hero__side {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  min-height: 0;
+}
+
+.room-detail-maq7 .m7-hero__side > :first-child:nth-last-child(1) {
+  grid-row: span 2;
+  grid-column: span 2;
+}
+
+.room-detail-maq7 .m7-hero__side > :first-child:nth-last-child(2) {
+  grid-row: span 2;
+}
+
+.room-detail-maq7 .m7-hero__all-photos {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid #222;
+  border-radius: 8px;
+  background: #fff;
+  color: #222;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.room-detail-maq7 .m7-hero__meta {
+  margin-top: 22px;
+  padding-right: 260px;
+}
+
+.room-detail-maq7 .m7-hero__subtitle {
+  margin: 0 0 5px;
+  color: #222;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.room-detail-maq7 .m7-hero__facts {
+  margin: 0;
+  color: #717171;
+  font-size: 14px;
+}
+
+.room-detail-maq7 .m7-hero__fees {
+  position: absolute;
+  right: 24px;
+  bottom: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  color: #222;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+@media (max-width: 1024px) {
+  .room-detail-maq7 .m7-hero__gallery {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    height: 300px;
+  }
+
+  .room-detail-maq7 .m7-hero__meta {
+    padding-right: 0;
+  }
+
+  .room-detail-maq7 .m7-hero__fees {
+    position: static;
+    display: inline-flex;
+    margin-top: 18px;
+  }
+}
+
+@media (max-width: 700px) {
+  .room-detail-maq7 .m7-hero__top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .room-detail-maq7 .m7-hero__title {
+    font-size: 22px;
+  }
+
+  .room-detail-maq7 .m7-hero__gallery {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .room-detail-maq7 .m7-hero__main {
+    height: 240px;
+  }
+
+  .room-detail-maq7 .m7-hero__side {
+    display: none;
+  }
+
+  .room-detail-maq7 .m7-hero__subtitle {
+    font-size: 18px;
+  }
+}

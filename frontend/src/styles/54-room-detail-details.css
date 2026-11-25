@@ -1,0 +1,282 @@
+/* Deuxième section de la fiche — points forts + réservation (s3.png). */
+
+.room-detail-maq7 .m7-details {
+  border-top: 1px solid #ebebeb;
+  padding-top: 28px;
+}
+
+.room-detail-maq7 .m7-details__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 40px;
+}
+
+@media (min-width: 1024px) {
+  .room-detail-maq7 .m7-details__grid {
+    grid-template-columns: minmax(0, 1fr) 372px;
+    gap: 48px;
+  }
+}
+
+/* Bandeau des points forts */
+.room-detail-maq7 .m7-highlights {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  background: #fff;
+}
+
+@media (min-width: 700px) {
+  .room-detail-maq7 .m7-highlights {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.room-detail-maq7 .m7-highlights__cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 86px;
+  padding: 14px 16px;
+  border-right: 1px solid #ebebeb;
+}
+
+.room-detail-maq7 .m7-highlights__cell:last-child {
+  border-right: 0;
+}
+
+.room-detail-maq7 .m7-highlights__cell strong {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.room-detail-maq7 .m7-highlights__cell--rating {
+  display: block;
+  padding-top: 20px;
+  text-align: center;
+}
+
+.room-detail-maq7 .m7-highlights__cell--rating strong {
+  display: block;
+  font-size: 20px;
+}
+
+.room-detail-maq7 .m7-highlights__stars {
+  color: #222;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.room-detail-maq7 .m7-highlights__cell--reviews {
+  display: block;
+  padding-top: 20px;
+  text-align: center;
+}
+
+.room-detail-maq7 .m7-highlights__cell--reviews strong {
+  display: block;
+  font-size: 20px;
+}
+
+.room-detail-maq7 .m7-highlights__cell--reviews span {
+  color: #717171;
+  font-size: 12px;
+}
+
+/* Lignes de détails */
+.room-detail-maq7 .m7-detail-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.room-detail-maq7 .m7-detail-row__icon,
+.room-detail-maq7 .m7-detail-row__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #f7f7f7;
+  color: #222;
+}
+
+.room-detail-maq7 .m7-detail-row__avatar {
+  background: #ffd9e8;
+  color: #e11d74;
+}
+
+.room-detail-maq7 .m7-detail-row strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #222;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.room-detail-maq7 .m7-detail-row p {
+  margin: 0;
+  color: #717171;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.room-detail-maq7 .m7-details__more {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 28px;
+  color: #717171;
+  font-size: 13px;
+}
+
+/* Carte de réservation */
+.room-detail-maq7 .m7-details__right {
+  position: relative;
+  padding-top: 46px;
+}
+
+.room-detail-maq7 .m7-fees-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border: 1px solid #eeeeee;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  color: #222;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.room-detail-maq7 .m7-book {
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  background: #fff;
+  padding: 24px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+.room-detail-maq7 .m7-book__price {
+  margin: 0 0 18px;
+  color: #222;
+  font-size: 14px;
+}
+
+.room-detail-maq7 .m7-book__price strong {
+  font-size: 20px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.room-detail-maq7 .m7-book__dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid #b0b0b0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.room-detail-maq7 .m7-book__dates label {
+  display: block;
+  padding: 10px 12px;
+  border-right: 1px solid #b0b0b0;
+}
+
+.room-detail-maq7 .m7-book__dates label:nth-child(2) {
+  border-right: 0;
+}
+
+.room-detail-maq7 .m7-book__dates .m7-book__guests {
+  grid-column: 1 / -1;
+  border-top: 1px solid #b0b0b0;
+  border-right: 0;
+}
+
+.room-detail-maq7 .m7-book__dates span {
+  display: block;
+  color: #222;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.room-detail-maq7 .m7-book__dates input,
+.room-detail-maq7 .m7-book__dates select {
+  width: 100%;
+  margin-top: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #222;
+  font-size: 14px;
+  outline: none;
+}
+
+.room-detail-maq7 .m7-book__cta {
+  width: 100%;
+  height: 48px;
+  margin-top: 18px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #e61e4d, #d70466);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.room-detail-maq7 .m7-book__cta:hover {
+  background: linear-gradient(90deg, #d70466, #b60057);
+}
+
+.room-detail-maq7 .m7-book__notice {
+  margin: 10px 0 0;
+  color: #6d3fd9;
+  font-size: 12px;
+}
+
+.room-detail-maq7 .m7-book__disclaimer {
+  margin: 14px 0 0;
+  color: #222;
+  font-size: 13px;
+  text-align: center;
+}
+
+.room-detail-maq7 .m7-report {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px auto 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #222;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+@media (max-width: 1023px) {
+  .room-detail-maq7 .m7-details__right {
+    padding-top: 0;
+  }
+
+  .room-detail-maq7 .m7-fees-badge {
+    position: static;
+    margin-bottom: 16px;
+  }
+}
