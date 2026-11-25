@@ -18,6 +18,8 @@ import '../styles/53-room-detail-hero.css';
 import '../styles/54-room-detail-details.css';
 import '../styles/55-room-detail-dates.css';
 import '../styles/56-room-detail-rating.css';
+import '../styles/57-room-detail-host.css';
+import '../styles/58-room-detail-reviews.css';
 
 const pad2 = (value: number) => String(value).padStart(2, '0');
 
@@ -71,6 +73,8 @@ function RoomDetailContent() {
   const [guests, setGuests] = useState(1);
   const [bookingNotice, setBookingNotice] = useState('');
   const [reported, setReported] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [expandedReviews, setExpandedReviews] = useState<ReadonlySet<string>>(new Set());
   const [monthOffset, setMonthOffset] = useState(0);
   const today = useMemo(() => new Date(), []);
   const todayISO = toISODate(today);
@@ -129,6 +133,24 @@ function RoomDetailContent() {
       : 0;
   const priceText = room ? formatPrice(room.priceNum || room.price) : '';
 
+  const reviewLanguage = i18n.language.split('-')[0];
+  const reviewLocale =
+    reviewLanguage === 'en' ? 'en-US' : reviewLanguage === 'es' ? 'es-ES' : 'fr-FR';
+  const reviewDistribution = [...(reviews?.room_distribution ?? [])].sort(
+    (a, b) => b.note - a.note,
+  );
+  const allReviews = reviews?.reviews ?? [];
+  const visibleReviews = showAllReviews ? allReviews : allReviews.slice(0, 4);
+
+  const toggleReview = (id: string) => {
+    setExpandedReviews((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const months = useMemo(() => {
     const first = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1);
     return [first, new Date(first.getFullYear(), first.getMonth() + 1, 1)];
@@ -186,6 +208,20 @@ function RoomDetailContent() {
     { label: t('roomDetailSection5.location'), value: formatNote(rating - 0.35), icon: 'map' },
     { label: t('roomDetailSection5.value'), value: formatNote(rating - 0.05), icon: 'tag' },
   ];
+
+  const host = room?.gerant;
+  const hostName = host ? `${host.prenom ?? ''} ${host.nom ?? ''}`.trim() : '';
+  const hostInitials =
+    hostName.split(/\s+/).filter(Boolean).slice(0, 2)
+      .map((part) => part.charAt(0).toLocaleUpperCase(locale))
+      .join('') || '?';
+  const isSuperhost = host?.is_superhost ?? false;
+  const hostRatingText = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(reviews?.gerant_avg ?? reviews?.room_avg ?? rating);
+  const hostReviewCount = reviews?.gerant_count ?? reviews?.room_count ?? 0;
+  const experienceMonths = host?.experience_months ?? 0;
 
   const photos = useMemo(() => {
     const list = [room?.img, ...(room?.images ?? [])]
@@ -547,6 +583,174 @@ function RoomDetailContent() {
             ))}
           </div>
         </section>
+
+        {/* Avis des voyageurs — s6.png / s7.png. */}
+        <section className="m7-reviews" aria-label={t('roomDetailReviews.aria')}>
+          <h2 className="m7-reviews__title">{t('roomDetailReviews.title')}</h2>
+
+          <div className="m7-reviews__chips">
+            {reviewDistribution.map((item) => (
+              <span className="m7-reviews__chip" key={item.note}>
+                <Icon name="star" size={15} />
+                <b>{t('roomDetailReviews.stars', { note: item.note })}</b>
+                <span>{item.count}</span>
+              </span>
+            ))}
+          </div>
+
+          <div className="m7-reviews__grid">
+            {visibleReviews.map((review) => {
+              const expanded = expandedReviews.has(review.id);
+              const date = new Date(review.created_at);
+              const dateLabel = Number.isNaN(date.getTime())
+                ? ''
+                : new Intl.DateTimeFormat(reviewLocale, {
+                    month: 'long',
+                    year: 'numeric',
+                  }).format(date);
+              const initials = review.client_name
+                .split(/\s+/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((part) => part.charAt(0).toUpperCase())
+                .join('') || '?';
+              const rating = Math.round(Number(review.note_appartement) || 0);
+
+              return (
+                <article className="m7-review" key={review.id}>
+                  <div className="m7-review__head">
+                    <span className="m7-review__avatar">{initials}</span>
+                    <div>
+                      <strong>{review.client_name}</strong>
+                      <p>{room ? `${room.ville}, ${room.pays}` : t('roomDetailReviews.traveller')}</p>
+                    </div>
+                  </div>
+                  <p className="m7-review__meta">
+                    <span className="m7-review__stars" aria-hidden="true">
+                      {'★'.repeat(Math.max(0, Math.min(5, rating)))}
+                    </span>
+                    <span>
+                      · {dateLabel} · {t('roomDetailReviews.shortStay')}
+                    </span>
+                  </p>
+                  <p className={`m7-review__text${expanded ? ' m7-review__text--open' : ''}`}>
+                    {review.commentaire || t('roomDetailReviews.noComment')}
+                  </p>
+                  {review.commentaire && (
+                    <button
+                      type="button"
+                      className="m7-review__more"
+                      onClick={() => toggleReview(review.id)}
+                    >
+                      {expanded
+                        ? t('roomDetailReviews.readLess')
+                        : t('roomDetailReviews.readMore')}
+                    </button>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="m7-reviews__footer">
+            {allReviews.length > 4 && (
+              <button
+                type="button"
+                className="m7-reviews__show-all"
+                onClick={() => setShowAllReviews((value) => !value)}
+              >
+                {showAllReviews
+                  ? t('roomDetailReviews.showLess', {
+                      count: reviews?.room_count ?? allReviews.length,
+                    })
+                  : t('roomDetailReviews.showAll', {
+                      count: reviews?.room_count ?? allReviews.length,
+                    })}
+              </button>
+            )}
+            <button type="button" className="m7-reviews__how">
+              {t('roomDetailReviews.howItWorks')}
+            </button>
+          </div>
+        </section>
+
+        {/* Présentation de l'hôte — s8.png. */}
+        <section className="m7-host" aria-label={t('roomDetailSection6.aria')}>
+          <h2 className="m7-host__title">{t('roomDetailSection6.title')}</h2>
+          <div className="m7-host__grid">
+            <div className="m7-host__left">
+              <div className="m7-host-card">
+                <div className="m7-host-card__identity">
+                  <div className="m7-host-card__avatar">
+                    {hostInitials}
+                    {host?.is_verified && (
+                      <span className="m7-host-card__verified">
+                        <Icon name="check" size={16} />
+                      </span>
+                    )}
+                  </div>
+                  <p className="m7-host-card__name">{hostName || 'Linkhoo'}</p>
+                  <p className="m7-host-card__status">
+                    <HostKeyIcon />
+                    {t('roomDetailSection6.superhost')}
+                  </p>
+                </div>
+                <div className="m7-host-card__stats">
+                  <div className="m7-host-card__stat">
+                    <strong>{hostReviewCount}</strong>
+                    <span>{t('roomDetailSection6.reviews')}</span>
+                  </div>
+                  <div className="m7-host-card__stat">
+                    <strong>{hostRatingText} ★</strong>
+                    <span>{t('roomDetailSection6.overallRating')}</span>
+                  </div>
+                  <div className="m7-host-card__stat">
+                    <strong>{experienceMonths}</strong>
+                    <span>{t('roomDetailSection6.experience')}</span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="m7-host__languages">
+                <LanguagesIcon />
+                {t('roomDetailSection6.languages')}
+              </p>
+            </div>
+
+            <div className="m7-host__info">
+              <h3>{isSuperhost ? t('roomDetailSection6.superhostTitle', { host: hostName }) : t('roomDetailSection6.hostTitle', { host: hostName })}</h3>
+              <p className="m7-host__intro">{t('roomDetailSection6.superhostText')}</p>
+
+              <div className="m7-host__block">
+                <h3>{t('roomDetailSection6.cohosts')}</h3>
+                <p className="m7-host__cohost">
+                  <span className="m7-host__cohost-avatar">K</span>
+                  Komi Espoir
+                </p>
+              </div>
+
+              <div className="m7-host__block">
+                <h3>{t('roomDetailSection6.hostInfo')}</h3>
+                <p className="m7-host__details">
+                  {t('roomDetailSection6.responseRate')}
+                  <br />
+                  {t('roomDetailSection6.responseTime')}
+                </p>
+              </div>
+
+              <button type="button" className="m7-host__contact">
+                {t('roomDetailSection6.contact')}
+              </button>
+
+              <div className="m7-host__divider" />
+
+              <p className="m7-host__safety">
+                <ShieldIcon />
+                {t('roomDetailSection6.safety')}
+              </p>
+            </div>
+          </div>
+        </section>
       </main>
 
       {/* Le scope fournit les variables --acc-* dont LandingFooter dépend. */}
@@ -568,11 +772,39 @@ function GuestFavouriteLaurel({ className }: { className?: string }) {
           <stop offset="1" stopColor="#242424" />
         </linearGradient>
       </defs>
-      <path d="M33 10C15 36 15 76 44 107" stroke="#2b2b2b" strokeWidth="5" strokeLinecap="round" />
-      <ellipse cx="33" cy="19" rx="10" ry="17" transform="rotate(-8 33 19)" fill="url(#m7-laurel-leaf)" />
-      <ellipse cx="25" cy="46" rx="9" ry="16" transform="rotate(-32 25 46)" fill="url(#m7-laurel-leaf)" />
-      <ellipse cx="29" cy="72" rx="9" ry="15" transform="rotate(-48 29 72)" fill="url(#m7-laurel-leaf)" />
-      <ellipse cx="46" cy="95" rx="16" ry="9" transform="rotate(-18 46 95)" fill="url(#m7-laurel-leaf)" />
+      <path d="M34 10C14 36 14 76 45 107" stroke="#2b2b2b" strokeWidth="6" strokeLinecap="round" />
+      <ellipse cx="34" cy="19" rx="13" ry="18" transform="rotate(-8 34 19)" fill="url(#m7-laurel-leaf)" />
+      <ellipse cx="25" cy="46" rx="12" ry="17" transform="rotate(-32 25 46)" fill="url(#m7-laurel-leaf)" />
+      <ellipse cx="30" cy="72" rx="12" ry="16" transform="rotate(-48 30 72)" fill="url(#m7-laurel-leaf)" />
+      <ellipse cx="47" cy="95" rx="19" ry="10" transform="rotate(-18 47 95)" fill="url(#m7-laurel-leaf)" />
+    </svg>
+  );
+}
+
+function HostKeyIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#717171" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="8" cy="12" r="4" />
+      <path d="m11 15 9 6 2-2-3-3 2-2-3-3-2 2" />
+    </svg>
+  );
+}
+
+function LanguagesIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 12a8 8 0 0 1-8 8H7l-4 3V7a4 4 0 0 1 4-4h6a8 8 0 0 1 8 9Z" />
+      <circle cx="11" cy="11" r="4" />
+      <path d="M7 11h8M11 7c2 2 2 6 0 8M11 7c-2 2-2 6 0 8" />
+    </svg>
+  );
+}
+
+function ShieldIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e61e4d" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3 4 6v6c0 5 3.4 8 8 9 4.6-1 8-4 8-9V6l-8-3Z" />
+      <path d="m9 15 3-6 3 6M10 13h4" />
     </svg>
   );
 }

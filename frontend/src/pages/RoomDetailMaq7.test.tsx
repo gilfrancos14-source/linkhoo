@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { MarketProvider } from '../contexts/MarketContext';
 import RoomDetailMaq7 from './RoomDetailMaq7';
@@ -7,10 +7,20 @@ import RoomDetailMaq7 from './RoomDetailMaq7';
 vi.mock('../lib/api', () => ({
   apiReviews: {
     listByRoom: vi.fn(async () => ({
-      reviews: [],
+      reviews: [
+        { id: 'rv1', client_name: 'Kevin', note_appartement: 5, commentaire: 'Très bon séjour, hôte réactif.', created_at: '2026-10-14T00:00:00Z' },
+        { id: 'rv2', client_name: 'Junior', note_appartement: 5, commentaire: 'Tout était parfait.', created_at: '2026-10-10T00:00:00Z' },
+        { id: 'rv3', client_name: 'Abdalah', note_appartement: 5, commentaire: 'Appartement très bien entretenu.', created_at: '2026-09-20T00:00:00Z' },
+        { id: 'rv4', client_name: 'Etessollim-Ella', note_appartement: 5, commentaire: 'Hôte très accueillant.', created_at: '2026-09-12T00:00:00Z' },
+        { id: 'rv5', client_name: 'Komi Moderan', note_appartement: 5, commentaire: 'Séjour calme et reposant.', created_at: '2026-09-02T00:00:00Z' },
+      ],
       room_avg: 4.85,
       room_count: 13,
-      room_distribution: [],
+      room_distribution: [
+        { note: 5, count: 9 },
+        { note: 4, count: 3 },
+        { note: 3, count: 1 },
+      ],
       gerant_avg: null,
       gerant_count: 0,
     })),
@@ -87,10 +97,15 @@ describe('RoomDetailMaq7 — première section', () => {
     expect(screen.getByRole('button', { name: /Partager/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Enregistrer/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Afficher toutes les photos/ })).toBeInTheDocument();
-    expect(screen.getByText('Coup de cœur voyageurs')).toBeInTheDocument();
+    expect(screen.getAllByText('Coup de cœur voyageurs').length).toBeGreaterThan(0);
     expect(screen.getByText(/Dans le quartier de Cocody à Abidjan/)).toBeInTheDocument();
     expect(screen.getByText(/Aya Kouassi est un hôte exceptionnel/)).toBeInTheDocument();
     expect(screen.getByText(/Superhôte · 8 mois d’expérience/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Les voyageurs en parlent' })).toBeInTheDocument();
+    expect((await screen.findAllByText(/étoiles/)).length).toBeGreaterThan(0);
+    expect(
+      await screen.findByRole('button', { name: /Afficher les 13 commentaires/ }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Réserver' })).toBeInTheDocument();
     expect(screen.getByText(/Aucun montant ne vous sera débité/)).toBeInTheDocument();
     expect(screen.getByRole('banner')).toBeInTheDocument();
@@ -117,15 +132,28 @@ describe('RoomDetailMaq7 — première section', () => {
   });
 
   it('affiche la note globale et le détail des évaluations', async () => {
-    renderPage();
+    const { container } = renderPage();
+    const rating = within(container.querySelector('.m7-rating')!);
 
-    expect(await screen.findByText('4,85')).toBeInTheDocument();
-    expect(screen.getAllByText('Coup de cœur voyageurs').length).toBeGreaterThan(0);
-    expect(screen.getByText(/Ce logement fait partie des Coup de cœur voyageurs/)).toBeInTheDocument();
+    expect(await rating.findByText('4,85')).toBeInTheDocument();
+    expect(rating.getByText('Coup de cœur voyageurs')).toBeInTheDocument();
+    expect(rating.getByText(/Ce logement fait partie des Coup de cœur voyageurs/)).toBeInTheDocument();
     for (const label of ['Évaluation globale', 'Propreté', 'Précision', 'Arrivée', 'Communication', 'Emplacement', 'Qualité-prix']) {
-      expect(screen.getByText(label)).toBeInTheDocument();
+      expect(rating.getByText(label)).toBeInTheDocument();
     }
-    expect(screen.getAllByRole('img', { name: /Évaluation globale/ })).toHaveLength(5);
+    expect(rating.getAllByRole('img', { name: /Évaluation globale/ })).toHaveLength(5);
+  });
+
+  it('affiche la présentation de l’hôte', async () => {
+    const { container } = renderPage();
+    const host = within(container.querySelector('.m7-host')!);
+
+    expect(await host.findByRole('heading', { name: 'Faites connaissance avec votre hôte' })).toBeInTheDocument();
+    expect(host.getByText('Aya Kouassi')).toBeInTheDocument();
+    expect(host.getByText('Aya Kouassi est Superhôte')).toBeInTheDocument();
+    expect(host.getByText('Co-hôtes')).toBeInTheDocument();
+    expect(host.getByRole('button', { name: "Envoyer un message à l'hôte" })).toBeInTheDocument();
+    expect(host.getByText(/Afin de protéger votre paiement/)).toBeInTheDocument();
   });
 
   it('permet de parcourir les mois du calendrier', async () => {

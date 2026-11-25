@@ -794,5 +794,36 @@
     "communication": "Communication",
     "location": "Emplacement",
     "value": "Qualité-prix"
+  },
+  "roomDetailReviews": {
+    "aria": "Avis des voyageurs",
+    "title": "Les voyageurs en parlent",
+    "stars": "{{note}} étoiles",
+    "traveller": "Voyageur Linkhoo",
+    "shortStay": "Séjour de quelques nuits",
+    "noComment": "Ce voyageur n’a pas laissé de commentaire.",
+    "readMore": "Lire la suite",
+    "readLess": "Lire moins",
+    "showAll": "Afficher les {{count}} commentaires",
+    "showLess": "Masquer les commentaires",
+    "howItWorks": "Fonctionnement des commentaires"
+  },
+  "roomDetailSection6": {
+    "aria": "Présentation de l'hôte",
+    "title": "Faites connaissance avec votre hôte",
+    "reviews": "évaluations",
+    "overallRating": "en note globale",
+    "experience": "mois d'expérience en tant qu'hôte",
+    "superhost": "Superhôte",
+    "superhostTitle": "{{host}} est Superhôte",
+    "hostTitle": "{{host}} est votre hôte",
+    "superhostText": "Les Superhôtes sont des hôtes expérimentés qui bénéficient de très bonnes évaluations et qui s'engagent à offrir d'excellents séjours aux voyageurs.",
+    "cohosts": "Co-hôtes",
+    "hostInfo": "Informations sur l'hôte",
+    "responseRate": "Taux de réponse : 100 %",
+    "responseTime": "Répond dans l'heure",
+    "contact": "Envoyer un message à l'hôte",
+    "languages": "Langues parlées : Anglais et Français",
+    "safety": "Afin de protéger votre paiement, utilisez toujours Airbnb pour envoyer de l'argent et communiquer avec les hôtes."
   }
 }

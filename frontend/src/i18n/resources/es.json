@@ -794,5 +794,36 @@
     "communication": "Comunicación",
     "location": "Ubicación",
     "value": "Relación calidad-precio"
+  },
+  "roomDetailReviews": {
+    "aria": "Opiniones de viajeros",
+    "title": "Lo que dicen los viajeros",
+    "stars": "{{note}} estrellas",
+    "traveller": "Viajero de Linkhoo",
+    "shortStay": "Estancia de unas noches",
+    "noComment": "Este viajero no dejó comentario.",
+    "readMore": "Leer más",
+    "readLess": "Leer menos",
+    "showAll": "Ver los {{count}} comentarios",
+    "showLess": "Ocultar comentarios",
+    "howItWorks": "Cómo funcionan los comentarios"
+  },
+  "roomDetailSection6": {
+    "aria": "Conoce a tu anfitrión",
+    "title": "Conoce a tu anfitrión",
+    "reviews": "evaluaciones",
+    "overallRating": "nota global",
+    "experience": "meses de experiencia como anfitrión",
+    "superhost": "Superanfitrión",
+    "superhostTitle": "{{host}} es Superanfitrión",
+    "hostTitle": "{{host}} es tu anfitrión",
+    "superhostText": "Los Superanfitriones son anfitriones experimentados con muy buenas evaluaciones que se comprometen a ofrecer estancias excelentes a los viajeros.",
+    "cohosts": "Coanfitriones",
+    "hostInfo": "Información sobre el anfitrión",
+    "responseRate": "Tasa de respuesta: 100 %",
+    "responseTime": "Responde en una hora",
+    "contact": "Enviar un mensaje al anfitrión",
+    "languages": "Idiomas hablados: inglés y francés",
+    "safety": "Para proteger tu pago, utiliza siempre Airbnb para enviar dinero y comunicarte con los anfitriones."
   }
 }

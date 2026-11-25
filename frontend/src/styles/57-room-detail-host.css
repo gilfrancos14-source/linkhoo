@@ -1,0 +1,232 @@
+/* Cinquième section de la fiche — présentation de l'hôte (s8.png). */
+
+.room-detail-maq7 .m7-host {
+  margin-top: 32px;
+}
+
+.room-detail-maq7 .m7-host__title {
+  margin: 0 0 32px;
+  color: #222;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.room-detail-maq7 .m7-host__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 40px;
+}
+
+@media (min-width: 1024px) {
+  .room-detail-maq7 .m7-host__grid {
+    grid-template-columns: 400px minmax(0, 1fr);
+    gap: 60px;
+  }
+}
+
+/* Carte de l'hôte */
+.room-detail-maq7 .m7-host-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 130px;
+  min-height: 267px;
+  padding: 48px 36px 40px;
+  border: 1px solid #f2f2f2;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.room-detail-maq7 .m7-host-card__identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.room-detail-maq7 .m7-host-card__avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #d9d9d9, #bdbdbd);
+  color: #4a4a4a;
+  font-size: 34px;
+  font-weight: 600;
+}
+
+.room-detail-maq7 .m7-host-card__verified {
+  position: absolute;
+  right: -6px;
+  bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #e61e4d;
+  color: #fff;
+}
+
+.room-detail-maq7 .m7-host-card__name {
+  margin: 14px 0 0;
+  color: #222;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.room-detail-maq7 .m7-host-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  color: #717171;
+  font-size: 13px;
+}
+
+.room-detail-maq7 .m7-host-card__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-top: 2px;
+}
+
+.room-detail-maq7 .m7-host-card__stat + .m7-host-card__stat {
+  padding-top: 18px;
+  border-top: 1px solid #dddddd;
+}
+
+.room-detail-maq7 .m7-host-card__stat strong {
+  display: block;
+  color: #222;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.room-detail-maq7 .m7-host-card__stat span {
+  display: block;
+  margin-top: 5px;
+  color: #222;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+/* Langues parlées */
+.room-detail-maq7 .m7-host__languages {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 30px 0 0;
+  color: #222;
+  font-size: 15px;
+}
+
+/* Colonne droite */
+.room-detail-maq7 .m7-host__info h3 {
+  margin: 0;
+  color: #222;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.room-detail-maq7 .m7-host__intro {
+  margin: 18px 0 0;
+  color: #222;
+  font-size: 15px;
+  line-height: 24px;
+}
+
+.room-detail-maq7 .m7-host__block {
+  margin-top: 39px;
+}
+
+.room-detail-maq7 .m7-host__cohost {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  color: #222;
+  font-size: 15px;
+}
+
+.room-detail-maq7 .m7-host__cohost-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #9a7d63, #5b4436);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.room-detail-maq7 .m7-host__details {
+  margin: 25px 0 0;
+  color: #222;
+  font-size: 15px;
+  line-height: 24px;
+}
+
+.room-detail-maq7 .m7-host__contact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 35px;
+  padding: 14px 24px;
+  border: 0;
+  border-radius: 8px;
+  background: #f2f2f2;
+  color: #222;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.room-detail-maq7 .m7-host__contact:hover {
+  background: #e9e9e9;
+}
+
+.room-detail-maq7 .m7-host__divider {
+  height: 1px;
+  margin-top: 24px;
+  background: #dddddd;
+}
+
+.room-detail-maq7 .m7-host__safety {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 30px 0 0;
+  color: #717171;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.room-detail-maq7 .m7-host__safety svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+@media (max-width: 1023px) {
+  .room-detail-maq7 .m7-host-card {
+    max-width: 400px;
+  }
+}
+
+@media (max-width: 700px) {
+  .room-detail-maq7 .m7-host-card {
+    grid-template-columns: minmax(0, 1fr) 110px;
+    padding: 32px 20px;
+  }
+}

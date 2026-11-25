@@ -794,5 +794,36 @@
     "communication": "Communication",
     "location": "Location",
     "value": "Value"
+  },
+  "roomDetailReviews": {
+    "aria": "Guest reviews",
+    "title": "What travelers are saying",
+    "stars": "{{note}} stars",
+    "traveller": "Linkhoo traveller",
+    "shortStay": "Stay of a few nights",
+    "noComment": "This traveler did not leave a comment.",
+    "readMore": "Read more",
+    "readLess": "Read less",
+    "showAll": "Show all {{count}} reviews",
+    "showLess": "Hide reviews",
+    "howItWorks": "How reviews work"
+  },
+  "roomDetailSection6": {
+    "aria": "Meet your host",
+    "title": "Meet your host",
+    "reviews": "reviews",
+    "overallRating": "overall rating",
+    "experience": "years of hosting experience",
+    "superhost": "Superhost",
+    "superhostTitle": "{{host}} is a Superhost",
+    "hostTitle": "{{host}} is your host",
+    "superhostText": "Superhosts are experienced hosts with great ratings who are committed to providing excellent stays for travelers.",
+    "cohosts": "Co-hosts",
+    "hostInfo": "Host information",
+    "responseRate": "Response rate: 100%",
+    "responseTime": "Responds within an hour",
+    "contact": "Message the host",
+    "languages": "Languages spoken: English and French",
+    "safety": "To protect your payment, always use Airbnb to send money and communicate with hosts."
   }
 }
