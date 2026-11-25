@@ -38,6 +38,7 @@ vi.mock('../../hooks/useGerantChrome', () => ({
 }));
 
 vi.mock('../../lib/api', () => ({
+  apiReservations: { gerantPending: vi.fn(async () => ({ count: 0 })) },
   apiPremium: { initiate: mocks.initiate },
 }));
 

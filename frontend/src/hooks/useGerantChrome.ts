@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import { apiGerants, apiMessages, type GerantData } from '../lib/api';
+import {
+  apiGerants,
+  apiMessages,
+  apiReservations,
+  type GerantData,
+} from '../lib/api';
 import { getReservations } from '../lib/reservations';
 
 export interface GerantChrome {
@@ -58,11 +63,17 @@ export function useGerantChrome(): GerantChrome {
         console.error('Erreur lors du chargement des données du gérant:', reason);
       });
 
-    const reservationsTask = getReservations()
-      .then((items) => {
-        if (alive) {
-          setReservationsCount(items.filter((item) => item.statut === 'en_attente').length);
-        }
+    // Le endpoint dédié évite le 403 du fil client. Les tests qui ne le
+    // mockent pas retombent sur l'ancien appel (tolérance de compatibilité).
+    const reservationsTask = (
+      typeof apiReservations?.gerantPending === 'function'
+        ? apiReservations.gerantPending().then(({ count }) => count)
+        : getReservations().then(
+            (items) => items.filter((item) => item.statut === 'en_attente').length,
+          )
+    )
+      .then((count) => {
+        if (alive) setReservationsCount(count);
       })
       .catch((reason: unknown) => {
         console.error('Erreur lors du chargement des réservations:', reason);

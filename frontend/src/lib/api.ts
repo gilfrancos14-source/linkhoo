@@ -611,6 +611,8 @@ export type ReservationCancelResult = ClientMineReservationData & {
 
 export const apiReservations = {
   list: () => request<ReservationData[]>('/reservations'),
+  /** Demandes en attente du gérant (endpoint dédié, pas le fil client). */
+  gerantPending: () => request<{ count: number }>('/reservations/gerant-pending'),
   listMine: () => request<ClientMineReservationData[]>('/reservations/mine'),
   cancelMine: (id: string) =>
     request<ReservationCancelResult>(`/reservations/${id}/cancel`, { method: 'POST' }),

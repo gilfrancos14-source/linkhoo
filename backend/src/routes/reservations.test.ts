@@ -799,3 +799,18 @@ describe('GET /api/reservations/check', () => {
     expect(reservations.limit).toHaveBeenCalledWith(1000);
   });
 });
+
+describe('GET /api/reservations/gerant-pending', () => {
+  it('renvoie 0 pour un compte qui n’est pas un gérant qualifié', async () => {
+    useSupabaseTables(supabaseAdmin.from, {
+      gerants: fakeChain({ data: null, error: null }),
+    });
+
+    const res = await request(app)
+      .get('/api/reservations/gerant-pending')
+      .set('Authorization', clerkBearer('user_1'));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ count: 0 });
+  });
+});

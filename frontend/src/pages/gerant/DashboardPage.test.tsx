@@ -31,6 +31,7 @@ vi.mock('../../data/categories', () => ({
 }));
 
 vi.mock('../../lib/api', () => ({
+  apiReservations: { gerantPending: vi.fn(async () => ({ count: 0 })) },
   apiGerants: { getMe: mocks.getMe },
   apiMessages: { gerantUnread: mocks.gerantUnread },
   apiPayouts: { getBalance: mocks.getBalance },

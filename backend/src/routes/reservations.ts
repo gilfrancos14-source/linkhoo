@@ -685,6 +685,42 @@ router.post('/payment/confirm', paymentLimiter, async (req: Request, res: Respon
   }
 });
 
+/**
+ * Compteur des demandes en attente pour le gérant connecté. Évite que la
+ * barre latérale appelle `/api/reservations` (réservé aux clients) et
+ * génère un 403 à chaque navigation dans l'espace gérant.
+ */
+router.get('/gerant-pending', requireClerkAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authUserId = req.auth?.userId;
+    if (!authUserId) return res.status(401).json({ error: 'Non autorisé' });
+    if (!(await isQualifiedGerantUser(authUserId))) {
+      return res.json({ count: 0 });
+    }
+
+    const { data: rooms } = await supabaseAdmin
+      .from('rooms')
+      .select('id')
+      .eq('gerant_id', authUserId);
+    const ids = (Array.isArray(rooms) ? rooms : [])
+      .map((row) => row.id)
+      .filter((id): id is string => typeof id === 'string' && id.length > 0);
+    if (ids.length === 0) return res.json({ count: 0 });
+
+    const pending = await fetchAllRows<{ id: string }>((from, to) =>
+      supabaseAdmin
+        .from('reservations')
+        .select('id')
+        .eq('statut', 'en_attente')
+        .in('room_id', ids)
+        .range(from, to),
+    );
+    return res.json({ count: pending.length });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/check', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedQuery = reservationCheckQuerySchema.safeParse(req.query);

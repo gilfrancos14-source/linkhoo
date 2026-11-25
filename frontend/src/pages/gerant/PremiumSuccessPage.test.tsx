@@ -16,6 +16,7 @@ vi.mock('@clerk/clerk-react', () => ({
 }));
 
 vi.mock('../../lib/api', () => ({
+  apiReservations: { gerantPending: vi.fn(async () => ({ count: 0 })) },
   apiPremium: {
     confirm: mocks.confirm,
   },

@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../lib/api', () => ({
+  apiReservations: { gerantPending: vi.fn(async () => ({ count: 0 })) },
   apiGerants: {
     getMe: mocks.getMe,
     getVerificationStatus: mocks.getVerificationStatus,

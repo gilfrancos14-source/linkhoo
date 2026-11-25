@@ -27,6 +27,7 @@ vi.mock('../../lib/reservations', async (importOriginal) => {
 });
 
 vi.mock('../../lib/api', () => ({
+  apiReservations: { gerantPending: vi.fn(async () => ({ count: 0 })) },
   apiGerants: { getMe: mocks.getMe },
   apiMessages: { gerantUnread: mocks.gerantUnread },
 }));
