@@ -56,7 +56,7 @@ let rooms: FakeChain;
 let gerants: FakeChain;
 let reservations: FakeChain;
 
-type TableName = 'rooms' | 'gerants' | 'reservations' | 'translations';
+type TableName = 'rooms' | 'gerants' | 'reservations' | 'translations' | 'categories';
 
 function stubPublic(chain: FakeChain): void {
   vi.mocked(supabasePublic.from).mockReturnValue(chain as never);
@@ -77,6 +77,7 @@ function stubTables(tables: Partial<Record<TableName, FakeChain | FakeChain[]>>)
     rooms,
     gerants,
     reservations,
+    categories: fakeChain({ data: null, error: null }),
     ...tables,
   });
 }
@@ -643,7 +644,11 @@ describe('GET /api/rooms/:id', () => {
       phone: null,
       is_verified: false,
       created_at: '2025-01-02T00:00:00.000Z',
+      is_superhost: false,
+      experience_months: expect.any(Number),
     });
+    expect(res.body.is_guest_favourite).toBe(false);
+    expect(res.body.category_title).toBeNull();
   });
 
   it('200 : expose le gérant vérifié avec ses coordonnées', async () => {
@@ -663,7 +668,25 @@ describe('GET /api/rooms/:id', () => {
       phone: '+2250707070707',
       is_verified: true,
       created_at: '2024-03-12T00:00:00.000Z',
+      is_superhost: true,
+      experience_months: expect.any(Number),
     });
+  });
+
+  it('200 : expose la catégorie et la popularité de la chambre', async () => {
+    stubTables({
+      rooms: fakeChain({
+        data: { id: 'r1', category: 'cat-1', is_popular: true },
+        error: null,
+      }),
+      categories: fakeChain({ data: { title: 'Logement entier' }, error: null }),
+    });
+
+    const res = await request(app).get('/api/rooms/r1');
+
+    expect(res.status).toBe(200);
+    expect(res.body.category_title).toBe('Logement entier');
+    expect(res.body.is_guest_favourite).toBe(true);
   });
 });
 

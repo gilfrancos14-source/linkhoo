@@ -1,0 +1,169 @@
+/* Quatrième section de la fiche — note globale et détail des évaluations
+   (reproduction de s5.png). */
+
+.room-detail-maq7 .m7-rating {
+  margin-top: 40px;
+  padding-top: 64px;
+  border-top: 1px solid #dddddd;
+}
+
+.room-detail-maq7 .m7-rating__hero {
+  text-align: center;
+}
+
+.room-detail-maq7 .m7-rating__score-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.room-detail-maq7 .m7-rating__laurel {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 100px;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.18));
+}
+
+.room-detail-maq7 .m7-rating__laurel--right {
+  transform: scaleX(-1);
+}
+
+.room-detail-maq7 .m7-rating__score {
+  color: #222;
+  font-size: 80px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.room-detail-maq7 .m7-rating__badge {
+  margin: 28px 0 0;
+  color: #222;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.room-detail-maq7 .m7-rating__description {
+  max-width: 390px;
+  margin: 8px auto 0;
+  color: #717171;
+  font-size: 15px;
+  line-height: 24px;
+}
+
+/* Répartition et notes détaillées */
+.room-detail-maq7 .m7-rating__stats {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin-top: 50px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.room-detail-maq7 .m7-rating__stat {
+  min-width: 0;
+  min-height: 78px;
+  padding: 0 16px;
+  border-right: 1px solid #dddddd;
+}
+
+.room-detail-maq7 .m7-rating__stat:first-child {
+  padding-left: 12px;
+}
+
+.room-detail-maq7 .m7-rating__stat:last-child {
+  padding-right: 12px;
+  border-right: 0;
+}
+
+.room-detail-maq7 .m7-rating__stat-title {
+  margin: 0 0 8px;
+  color: #222;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.room-detail-maq7 .m7-rating__stat-value {
+  margin: 0;
+  color: #222;
+  font-size: 14px;
+  line-height: 18px;
+}
+
+.room-detail-maq7 .m7-rating__stat-icon {
+  display: block;
+  margin-top: 22px;
+  color: #222;
+}
+
+.room-detail-maq7 .m7-rating__bars {
+  margin-top: 12px;
+}
+
+.room-detail-maq7 .m7-rating__bar {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr);
+  align-items: center;
+  gap: 2px;
+  height: 12px;
+}
+
+.room-detail-maq7 .m7-rating__bar-label {
+  color: #717171;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.room-detail-maq7 .m7-rating__bar-track {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #dddddd;
+}
+
+.room-detail-maq7 .m7-rating__bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: #222;
+}
+
+@media (max-width: 1023px) {
+  .room-detail-maq7 .m7-rating__stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    row-gap: 28px;
+  }
+
+  .room-detail-maq7 .m7-rating__stat:nth-child(4n) {
+    border-right: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .room-detail-maq7 .m7-rating {
+    padding-top: 42px;
+  }
+
+  .room-detail-maq7 .m7-rating__score {
+    font-size: 64px;
+  }
+
+  .room-detail-maq7 .m7-rating__laurel {
+    width: 44px;
+    height: 80px;
+  }
+
+  .room-detail-maq7 .m7-rating__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .room-detail-maq7 .m7-rating__stat:nth-child(4n) {
+    border-right: 1px solid #dddddd;
+  }
+
+  .room-detail-maq7 .m7-rating__stat:nth-child(2n) {
+    border-right: 0;
+  }
+}

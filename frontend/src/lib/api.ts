@@ -221,6 +221,10 @@ export interface GerantInfo {
   premium_expires_at?: string | null;
   /** Date d'inscription du gérant, affichée « Membre depuis … ». */
   created_at?: string | null;
+  /** Ancienneté calculée côté backend (mois), pour la fiche chambre. */
+  experience_months?: number | null;
+  /** Vrai si le profil est vérifié (badge « Superhôte » de la fiche). */
+  is_superhost?: boolean;
 }
 
 export interface RoomData {
@@ -256,6 +260,10 @@ export interface RoomData {
   promo_group?: string | null;
   promo_start?: string | null;
   promo_end?: string | null;
+  /** Titre de la catégorie, joint par le backend pour la fiche chambre. */
+  category_title?: string | null;
+  /** Popularité calculée depuis `is_popular` (badge « coup de cœur »). */
+  is_guest_favourite?: boolean;
 }
 
 /** Chambre favorite : données de la chambre + date d'ajout au favori. */

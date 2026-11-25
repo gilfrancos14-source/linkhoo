@@ -749,11 +749,11 @@
     "favouriteBadge": "Coup de cœur voyageurs",
     "favouriteText": "Un des logements préférés des voyageurs sur Linkhoo",
     "comments": "Commentaires",
-    "locationTitle": "Dans le quartier de {{city}}, à deux pas du centre",
-    "locationText": "Proche des commerces et des restaurants, avec un accès facile aux transports et aux produits du quotidien.",
-    "apartmentTitle": "Logement confortable et entièrement équipé",
+    "locationTitle": "Dans le quartier de {{district}} à {{city}}",
+    "locationText": "{{district}} · {{city}}, {{country}}",
+    "apartmentTitle": "{{category}} confortable et entièrement équipé",
     "apartmentText": "Une chambre climatisée, un salon meublé et une cuisine entièrement équipée.",
-    "hostTitle": "{{host}} est un hôte exceptionnelle",
+    "hostTitle": "{{host}} est un hôte exceptionnel",
     "hostText": "Les voyageurs soulignent son écoute et sa réactivité.",
     "hostLabel": "Hôte : {{host}}",
     "superhost": "Superhôte · 5 mois d'expérience en tant qu'hôte",
@@ -767,6 +767,32 @@
     "ready": "Votre séjour est prêt. La connexion sera requise pour réserver.",
     "noCharge": "Aucun montant ne vous sera débité à cette étape.",
     "report": "Signaler cette annonce",
-    "reported": "Merci, votre signalement a été enregistré."
+    "reported": "Merci, votre signalement a été enregistré.",
+    "verifiedBadge": "Hôte vérifié",
+    "categoryText": "{{category}} : un logement apprécié des voyageurs",
+    "hostUnverifiedText": "Les voyageurs peuvent réserver ce logement en toute confiance.",
+    "superhostWithMonths": "Superhôte · {{months}} mois d’expérience",
+    "hostWithMonths": "Hôte · {{months}} mois d’expérience",
+    "newHost": "Nouveau sur Linkhoo"
+  },
+  "roomDetailSection4": {
+    "aria": "Sélection des dates",
+    "title": "Sélectionnez la date d'arrivée",
+    "minStay": "Durée minimale du séjour : 2 nuits",
+    "previousMonth": "Mois précédent",
+    "nextMonth": "Mois suivant",
+    "clearDates": "Effacer les dates"
+  },
+  "roomDetailSection5": {
+    "aria": "Évaluations du logement",
+    "badge": "Coup de cœur voyageurs",
+    "description": "Ce logement fait partie des Coup de cœur voyageurs, à partir des évaluations, commentaires et de la fiabilité des annonces selon les voyageurs.",
+    "overall": "Évaluation globale",
+    "cleanliness": "Propreté",
+    "accuracy": "Précision",
+    "checkin": "Arrivée",
+    "communication": "Communication",
+    "location": "Emplacement",
+    "value": "Qualité-prix"
   }
 }

@@ -35,6 +35,10 @@ export interface Room {
   gerantPremium?: boolean;
   /** Gérant vérifié : badge « Hôte vérifié » et classement des résultats. */
   gerantVerified?: boolean;
+  /** Titre de la catégorie issu de la base (fiche chambre). */
+  categoryTitle?: string | null;
+  /** Popularité issu de `is_popular` (fiche chambre). */
+  isGuestFavourite?: boolean;
 }
 
 export function mapRoom(d: RoomData): Room {
@@ -69,6 +73,8 @@ export function mapRoom(d: RoomData): Room {
     gerant: d.gerant,
     gerantPremium: d.gerant_premium,
     gerantVerified: d.gerant_verified ?? false,
+    categoryTitle: d.category_title ?? null,
+    isGuestFavourite: d.is_guest_favourite ?? false,
   };
 }
 

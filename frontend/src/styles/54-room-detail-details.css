@@ -135,8 +135,11 @@
 }
 
 /* Carte de réservation */
+/* Le formulaire reste visible pendant que la colonne gauche défile. */
 .room-detail-maq7 .m7-details__right {
-  position: relative;
+  position: sticky;
+  top: 24px;
+  align-self: start;
   padding-top: 46px;
 }
 
@@ -272,6 +275,7 @@
 
 @media (max-width: 1023px) {
   .room-detail-maq7 .m7-details__right {
+    position: static;
     padding-top: 0;
   }
 

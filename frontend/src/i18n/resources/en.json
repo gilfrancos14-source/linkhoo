@@ -749,9 +749,9 @@
     "favouriteBadge": "Travelers’ favourite",
     "favouriteText": "One of travelers’ favourite homes on Linkhoo",
     "comments": "Reviews",
-    "locationTitle": "In the {{city}} neighbourhood, close to the centre",
-    "locationText": "Close to shops and restaurants, with easy access to transport and everyday essentials.",
-    "apartmentTitle": "Comfortable and fully equipped home",
+    "locationTitle": "In the {{district}} neighbourhood, {{city}}",
+    "locationText": "{{district}} · {{city}}, {{country}}",
+    "apartmentTitle": "Comfortable and fully equipped {{category}}",
     "apartmentText": "An air-conditioned bedroom, a furnished living room and a fully equipped kitchen.",
     "hostTitle": "{{host}} is an exceptional host",
     "hostText": "Guests highlight their responsiveness and communication.",
@@ -767,6 +767,32 @@
     "ready": "Your stay is ready. Signing in will be required to book.",
     "noCharge": "You won’t be charged at this stage.",
     "report": "Report this listing",
-    "reported": "Thank you, your report has been recorded."
+    "reported": "Thank you, your report has been recorded.",
+    "verifiedBadge": "Verified host",
+    "categoryText": "{{category}}: a home guests love",
+    "hostUnverifiedText": "Guests can book this home with confidence.",
+    "superhostWithMonths": "Superhost · {{months}} months of experience",
+    "hostWithMonths": "Host · {{months}} months of experience",
+    "newHost": "New on Linkhoo"
+  },
+  "roomDetailSection4": {
+    "aria": "Date selection",
+    "title": "Select your check-in date",
+    "minStay": "Minimum stay: 2 nights",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "clearDates": "Clear dates"
+  },
+  "roomDetailSection5": {
+    "aria": "Ratings for this home",
+    "badge": "Travelers’ favourite",
+    "description": "This home is a Travelers’ Favourite, based on ratings, reviews and the reliability of listings according to travelers.",
+    "overall": "Overall rating",
+    "cleanliness": "Cleanliness",
+    "accuracy": "Accuracy",
+    "checkin": "Check-in",
+    "communication": "Communication",
+    "location": "Location",
+    "value": "Value"
   }
 }

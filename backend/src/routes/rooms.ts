@@ -74,6 +74,17 @@ interface GerantSignals {
   verifiedIds: ReadonlySet<string>;
 }
 
+/** Champs du profil gérant lus pour la fiche chambre. */
+interface GerantRow {
+  nom?: string | null;
+  prenom?: string | null;
+  phone?: string | null;
+  is_verified?: boolean | null;
+  is_premium?: boolean | null;
+  premium_expires_at?: string | null;
+  created_at?: string | null;
+}
+
 const GERANT_SIGNALS_CACHE_TTL_MS = 90_000;
 const EMPTY_GERANT_SIGNALS: GerantSignals = {
   premiumIds: new Set<string>(),
@@ -440,29 +451,60 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 
     const signals = await loadGerantSignals();
     let gerant = null;
+    let gerantRow: GerantRow | null = null;
     if (data.gerant_id) {
-      const { data: gerantData } = await supabaseAdmin
+      const result = await supabaseAdmin
         .from('gerants')
         .select('nom, prenom, phone, is_verified, is_premium, premium_expires_at, created_at')
         .eq('clerk_user_id', data.gerant_id)
         .maybeSingle();
-      if (gerantData) {
+      gerantRow = (result.data as GerantRow | null) ?? null;
+      if (gerantRow) {
         gerant = {
-          nom: gerantData.nom ?? '',
-          prenom: gerantData.prenom ?? '',
-          phone: gerantData.is_verified ? gerantData.phone : null,
-          is_verified: Boolean(gerantData.is_verified),
-          is_premium: Boolean(gerantData.is_premium),
-          premium_expires_at: gerantData.premium_expires_at,
-          created_at: gerantData.created_at,
+          nom: gerantRow.nom ?? '',
+          prenom: gerantRow.prenom ?? '',
+          phone: gerantRow.is_verified ? gerantRow.phone : null,
+          is_verified: Boolean(gerantRow.is_verified),
+          is_premium: Boolean(gerantRow.is_premium),
+          premium_expires_at: gerantRow.premium_expires_at,
+          created_at: gerantRow.created_at,
         };
       }
     }
 
+    // Catégorie et ancienneté de l'hôte : la page de détail affiche ces
+    // informations, elles doivent venir de la base et non d'un texte codé.
+    let categoryTitle: string | null = null;
+    if (data.category) {
+      const { data: category } = await supabaseAdmin
+        .from('categories')
+        .select('title')
+        .eq('id', data.category)
+        .maybeSingle();
+      categoryTitle = category?.title ?? null;
+    }
+    const experienceMonths = gerantRow?.created_at
+      ? Math.max(
+          0,
+          Math.floor(
+            (Date.now() - new Date(gerantRow.created_at).getTime()) /
+              (30 * 24 * 60 * 60 * 1000),
+          ),
+        )
+      : null;
+
     const [localized] = await attachTranslations([data], 'room', resolveLocale(req.query.lang));
     res.json({
       ...localized,
-      gerant,
+      category_title: categoryTitle,
+      is_guest_favourite: Boolean(data.is_popular),
+      gerant: gerant
+        ? {
+            ...gerant,
+            experience_months: experienceMonths,
+            is_superhost: Boolean(gerantRow?.is_verified),
+          }
+        : null,
       gerant_premium: !!data.gerant_id && signals.premiumIds.has(data.gerant_id),
       gerant_verified: !!data.gerant_id && signals.verifiedIds.has(data.gerant_id),
     });
