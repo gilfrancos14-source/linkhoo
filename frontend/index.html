@@ -20,7 +20,23 @@
   <!-- LCP de l'accueil : le fond du hero (CSS) et l'<img> du hero de marché
        pointent tous deux vers ce fichier — on le lance dès l'analyse du
        document au lieu de l'attendre après la CSS + le JS. -->
-  <link rel="preload" as="image" type="image/webp" href="/images/hero-city.webp" fetchpriority="high" />
+  <script>
+    /* Précharger le hero uniquement sur l'accueil et les pages marché :
+       ailleurs (espace gérant, admin, fiche…) cette image n'est jamais
+       utilisée et le navigateur le signale dans la console. */
+    (function () {
+      var p = location.pathname.replace(/\/+$/, '') || '/';
+      if (p === '/' || /^\/[a-z]{2}$/.test(p)) {
+        var link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'image';
+        link.type = 'image/webp';
+        link.href = '/images/hero-city.webp';
+        link.fetchPriority = 'high';
+        document.head.appendChild(link);
+      }
+    })();
+  </script>
 
   <!-- Pré-ouverture des connexions tierces (DNS + TLS payés une fois) -->
   <link rel="preconnect" href="https://epic-sponge-8933.clerk.accounts.dev" crossorigin />

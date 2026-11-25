@@ -71,6 +71,15 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Un gérant n'a pas de favoris client : appeler l'API renverrait un 403
+    // à chaque navigation dans son espace. On saute l'appel sur ces routes.
+    if (/\/gerant(?:\/|$)|\/admin(?:\/|$)/.test(window.location.pathname)) {
+      setRooms([]);
+      setIds(EMPTY_IDS);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const loaded = await apiFavorites.list();
