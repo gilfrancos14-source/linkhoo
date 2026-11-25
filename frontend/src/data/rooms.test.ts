@@ -161,6 +161,9 @@ describe('fetchRoomsByMarket', () => {
       gerantVerified: false,
       categoryTitle: null,
       isGuestFavourite: false,
+      hostResponseRate: null,
+      hostResponseAnswered: 0,
+      hostResponseTotal: 0,
     });
   });
 

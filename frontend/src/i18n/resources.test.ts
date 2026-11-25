@@ -46,6 +46,7 @@ describe('ressources i18n', () => {
       'roomDetailHero.allFees',
       'roomDetailSection2.reserve',
       'roomDetailSection2.noCharge',
+      'roomDetailSection2.responseRate',
       'roomDetailReviews.title',
       'roomDetailReviews.showAll',
       'api.timeout',

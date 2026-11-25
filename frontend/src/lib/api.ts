@@ -264,6 +264,10 @@ export interface RoomData {
   category_title?: string | null;
   /** Popularité calculée depuis `is_popular` (badge « coup de cœur »). */
   is_guest_favourite?: boolean;
+  /** Taux de réponse calculé côté backend sur les demandes reçues. */
+  host_response_rate?: number | null;
+  host_response_answered?: number;
+  host_response_total?: number;
 }
 
 /** Chambre favorite : données de la chambre + date d'ajout au favori. */

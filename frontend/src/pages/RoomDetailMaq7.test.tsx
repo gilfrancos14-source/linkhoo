@@ -21,8 +21,8 @@ vi.mock('../lib/api', () => ({
         { note: 4, count: 3 },
         { note: 3, count: 1 },
       ],
-      gerant_avg: null,
-      gerant_count: 0,
+      gerant_avg: 4.85,
+      gerant_count: 13,
     })),
   },
   apiNewsletter: { subscribe: vi.fn() },
@@ -56,6 +56,9 @@ vi.mock('../data/rooms', () => ({
     conditions: '',
     categoryTitle: 'Logement entier',
     isGuestFavourite: true,
+    hostResponseRate: 100,
+    hostResponseAnswered: 12,
+    hostResponseTotal: 12,
     gerant: {
       nom: 'Kouassi',
       prenom: 'Aya',
@@ -101,6 +104,7 @@ describe('RoomDetailMaq7 — première section', () => {
     expect(screen.getByText(/Dans le quartier de Cocody à Abidjan/)).toBeInTheDocument();
     expect(screen.getByText(/Aya Kouassi est un hôte exceptionnel/)).toBeInTheDocument();
     expect(screen.getByText(/Superhôte · 8 mois d’expérience/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Taux de réponse : 100 %/).length).toBeGreaterThan(0);
     expect(screen.getByRole('heading', { name: 'Les voyageurs en parlent' })).toBeInTheDocument();
     expect((await screen.findAllByText(/étoiles/)).length).toBeGreaterThan(0);
     expect(
@@ -150,8 +154,10 @@ describe('RoomDetailMaq7 — première section', () => {
 
     expect(await host.findByRole('heading', { name: 'Faites connaissance avec votre hôte' })).toBeInTheDocument();
     expect(host.getByText('Aya Kouassi')).toBeInTheDocument();
-    expect(host.getByText('Aya Kouassi est Superhôte')).toBeInTheDocument();
-    expect(host.getByText('Co-hôtes')).toBeInTheDocument();
+    expect(await host.findByText('Aya Kouassi est Superhôte')).toBeInTheDocument();
+    expect(await host.findByText(/Taux de réponse : 100 %/)).toBeInTheDocument();
+    expect(await host.findByText(/Répond dans l'heure/)).toBeInTheDocument();
+    expect(await host.findByText('Langues parlées : Anglais et Français')).toBeInTheDocument();
     expect(host.getByRole('button', { name: "Envoyer un message à l'hôte" })).toBeInTheDocument();
     expect(host.getByText(/Afin de protéger votre paiement/)).toBeInTheDocument();
   });

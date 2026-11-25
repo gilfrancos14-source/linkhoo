@@ -18,6 +18,7 @@ import {
   resolveLocale,
 } from '../i18n/translations';
 import { fetchAllRows } from '../utils/fetchAll';
+import { hostResponseRate } from '../services/hostResponseRate';
 import { normalizeCity } from '../utils/city';
 import { isPremiumActive } from '../utils/premium';
 import { interleaveRooms, rankWindowRows } from '../utils/rankRooms';
@@ -494,8 +495,12 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       : null;
 
     const [localized] = await attachTranslations([data], 'room', resolveLocale(req.query.lang));
+    const responseStats = await hostResponseRate(data.gerant_id);
     res.json({
       ...localized,
+      host_response_rate: responseStats.rate,
+      host_response_answered: responseStats.answered,
+      host_response_total: responseStats.total,
       category_title: categoryTitle,
       is_guest_favourite: Boolean(data.is_popular),
       gerant: gerant

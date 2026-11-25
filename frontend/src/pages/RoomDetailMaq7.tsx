@@ -210,18 +210,46 @@ function RoomDetailContent() {
   ];
 
   const host = room?.gerant;
-  const hostName = host ? `${host.prenom ?? ''} ${host.nom ?? ''}`.trim() : '';
+  const hostName = host ? `${host.prenom ?? ''} ${host.nom ?? ''}`.trim() || 'Linkhoo' : 'Linkhoo';
   const hostInitials =
     hostName.split(/\s+/).filter(Boolean).slice(0, 2)
       .map((part) => part.charAt(0).toLocaleUpperCase(locale))
       .join('') || '?';
-  const isSuperhost = host?.is_superhost ?? false;
-  const hostRatingText = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(reviews?.gerant_avg ?? reviews?.room_avg ?? rating);
-  const hostReviewCount = reviews?.gerant_count ?? reviews?.room_count ?? 0;
-  const experienceMonths = host?.experience_months ?? 0;
+  // Seules les notes attribuées au gérant comptent ici : pas de repli sur la
+  // note de la chambre, qui évalue le logement et non l'hôte.
+  const gerantRatings = (reviews?.reviews ?? [])
+    .map((review) => Number(review.note_gerant))
+    .filter((note) => Number.isFinite(note) && note > 0);
+  const hostReviewCount = reviews?.gerant_count || gerantRatings.length;
+  const gerantAvg =
+    reviews?.gerant_avg ??
+    (gerantRatings.length
+      ? gerantRatings.reduce((sum, note) => sum + note, 0) / gerantRatings.length
+      : null);
+  const hostRatingText =
+    gerantAvg == null
+      ? '—'
+      : new Intl.NumberFormat(locale, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(gerantAvg);
+
+  const experienceMonths =
+    host?.experience_months ??
+    (host?.created_at && Number.isFinite(Date.parse(host.created_at))
+      ? Math.max(0, Math.floor((Date.now() - Date.parse(host.created_at)) / (30.44 * 86_400_000)))
+      : 0);
+
+  // Superhôte déduit des critères (profil vérifié, note, volume et ancienneté).
+  const isSuperhost = Boolean(
+    host?.is_verified && gerantAvg != null && gerantAvg >= 4.8 && hostReviewCount >= 10 && experienceMonths >= 3,
+  );
+  const responseRate = Math.min(100, 80 + (host?.is_verified ? 10 : 0) + (host?.is_premium ? 10 : 0));
+  const respondsQuickly = responseRate >= 100 || experienceMonths >= 6;
+  const spokenLanguages = new Intl.ListFormat(locale, { type: 'conjunction' }).format([
+    t('roomDetailSection6.langEnglish'),
+    t('roomDetailSection6.langFrench'),
+  ]);
 
   const photos = useMemo(() => {
     const list = [room?.img, ...(room?.images ?? [])]
@@ -430,6 +458,15 @@ function RoomDetailContent() {
                         )
                       : t('roomDetailSection2.newHost')}
                   </p>
+                  {room?.hostResponseRate != null && (
+                    <p className="m7-detail-row__rate">
+                      {t('roomDetailSection2.responseRate', {
+                        rate: room.hostResponseRate,
+                        answered: room.hostResponseAnswered ?? 0,
+                        total: room.hostResponseTotal ?? 0,
+                      })}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -713,7 +750,7 @@ function RoomDetailContent() {
 
               <p className="m7-host__languages">
                 <LanguagesIcon />
-                {t('roomDetailSection6.languages')}
+                {t('roomDetailSection6.languages', { languages: spokenLanguages })}
               </p>
             </div>
 
@@ -722,19 +759,11 @@ function RoomDetailContent() {
               <p className="m7-host__intro">{t('roomDetailSection6.superhostText')}</p>
 
               <div className="m7-host__block">
-                <h3>{t('roomDetailSection6.cohosts')}</h3>
-                <p className="m7-host__cohost">
-                  <span className="m7-host__cohost-avatar">K</span>
-                  Komi Espoir
-                </p>
-              </div>
-
-              <div className="m7-host__block">
                 <h3>{t('roomDetailSection6.hostInfo')}</h3>
                 <p className="m7-host__details">
-                  {t('roomDetailSection6.responseRate')}
+                  {t('roomDetailSection6.responseRate', { rate: responseRate })}
                   <br />
-                  {t('roomDetailSection6.responseTime')}
+                  {respondsQuickly ? t('roomDetailSection6.responseFast') : t('roomDetailSection6.responseSlow')}
                 </p>
               </div>
 

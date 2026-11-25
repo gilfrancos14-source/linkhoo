@@ -971,3 +971,27 @@ describe('PATCH /api/rooms/:id/toggle', () => {
     expect(res.body.disponible).toBe(false);
   });
 });
+
+it('200 : calcule le taux de réponse depuis les demandes traitées', async () => {
+  stubTables({
+    rooms: [
+      fakeChain({ data: { id: 'r1', gerant_id: 'user_1' }, error: null }),
+      fakeChain({ data: [{ id: 'r1' }], error: null }),
+    ],
+    reservations: fakeChain({
+      data: [
+        { responded_at: '2026-01-01T00:00:00Z' },
+        { responded_at: null },
+        { responded_at: '2026-01-03T00:00:00Z' },
+      ],
+      error: null,
+    }),
+  });
+
+  const res = await request(app).get('/api/rooms/r1');
+
+  expect(res.status).toBe(200);
+  expect(res.body.host_response_rate).toBe(67);
+  expect(res.body.host_response_answered).toBe(2);
+  expect(res.body.host_response_total).toBe(3);
+});

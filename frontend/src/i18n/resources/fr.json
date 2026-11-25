@@ -773,7 +773,8 @@
     "hostUnverifiedText": "Les voyageurs peuvent réserver ce logement en toute confiance.",
     "superhostWithMonths": "Superhôte · {{months}} mois d’expérience",
     "hostWithMonths": "Hôte · {{months}} mois d’expérience",
-    "newHost": "Nouveau sur Linkhoo"
+    "newHost": "Nouveau sur Linkhoo",
+    "responseRate": "Taux de réponse : {{rate}} % ({{answered}}/{{total}} demandes)"
   },
   "roomDetailSection4": {
     "aria": "Sélection des dates",
@@ -818,12 +819,14 @@
     "superhostTitle": "{{host}} est Superhôte",
     "hostTitle": "{{host}} est votre hôte",
     "superhostText": "Les Superhôtes sont des hôtes expérimentés qui bénéficient de très bonnes évaluations et qui s'engagent à offrir d'excellents séjours aux voyageurs.",
-    "cohosts": "Co-hôtes",
     "hostInfo": "Informations sur l'hôte",
-    "responseRate": "Taux de réponse : 100 %",
-    "responseTime": "Répond dans l'heure",
+    "responseRate": "Taux de réponse : {{rate}} %",
+    "responseFast": "Répond dans l'heure",
+    "responseSlow": "Répond en quelques heures",
     "contact": "Envoyer un message à l'hôte",
-    "languages": "Langues parlées : Anglais et Français",
+    "languages": "Langues parlées : {{languages}}",
+    "langFrench": "Français",
+    "langEnglish": "Anglais",
     "safety": "Afin de protéger votre paiement, utilisez toujours Airbnb pour envoyer de l'argent et communiquer avec les hôtes."
   }
 }

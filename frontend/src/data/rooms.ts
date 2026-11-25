@@ -39,6 +39,10 @@ export interface Room {
   categoryTitle?: string | null;
   /** Popularité issu de `is_popular` (fiche chambre). */
   isGuestFavourite?: boolean;
+  /** Taux de réponse calculé par le backend. */
+  hostResponseRate?: number | null;
+  hostResponseAnswered?: number;
+  hostResponseTotal?: number;
 }
 
 export function mapRoom(d: RoomData): Room {
@@ -75,6 +79,9 @@ export function mapRoom(d: RoomData): Room {
     gerantVerified: d.gerant_verified ?? false,
     categoryTitle: d.category_title ?? null,
     isGuestFavourite: d.is_guest_favourite ?? false,
+    hostResponseRate: d.host_response_rate ?? null,
+    hostResponseAnswered: d.host_response_answered ?? 0,
+    hostResponseTotal: d.host_response_total ?? 0,
   };
 }
 
