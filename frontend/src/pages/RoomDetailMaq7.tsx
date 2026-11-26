@@ -548,49 +548,65 @@ function RoomDetailContent() {
 
                 <div className="m7-book__dates">
                   <label>
-                    <span>{t('roomDetailSection2.arrival')}</span>
-                    <input type="date" value={arrivee} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setArrivee(e.target.value)} />
+                    <input
+                      type="date"
+                      value={arrivee}
+                      min={new Date().toISOString().slice(0, 10)}
+                      aria-label={t('roomDetailSection2.arrival')}
+                      placeholder={t('roomDetailSection2.arrival')}
+                      onChange={(e) => setArrivee(e.target.value)}
+                    />
                   </label>
                   <label>
-                    <span>{t('roomDetailSection2.departure')}</span>
-                    <input type="date" value={depart} min={arrivee || undefined} onChange={(e) => setDepart(e.target.value)} />
+                    <input
+                      type="date"
+                      value={depart}
+                      min={arrivee || undefined}
+                      aria-label={t('roomDetailSection2.departure')}
+                      placeholder={t('roomDetailSection2.departure')}
+                      onChange={(e) => setDepart(e.target.value)}
+                    />
                   </label>
                   <div className="m7-book__contact">
                     <p className="m7-book__contact-title">
                       {t('roomDetailSection2.contactTitle')}
                     </p>
                     <label>
-                      <span>{t('roomDetailSection2.lastName')}</span>
                       <input
                         type="text"
                         autoComplete="family-name"
+                        aria-label={t('roomDetailSection2.lastName')}
+                        placeholder={t('roomDetailSection2.lastName')}
                         value={contact.nom}
                         onChange={(e) => setContact((prev) => ({ ...prev, nom: e.target.value }))}
                       />
                     </label>
                     <label>
-                      <span>{t('roomDetailSection2.firstName')}</span>
                       <input
                         type="text"
                         autoComplete="given-name"
+                        aria-label={t('roomDetailSection2.firstName')}
+                        placeholder={t('roomDetailSection2.firstName')}
                         value={contact.prenom}
                         onChange={(e) => setContact((prev) => ({ ...prev, prenom: e.target.value }))}
                       />
                     </label>
                     <label>
-                      <span>{t('roomDetailSection2.phone')}</span>
                       <input
                         type="tel"
                         autoComplete="tel"
+                        aria-label={t('roomDetailSection2.phone')}
+                        placeholder={t('roomDetailSection2.phone')}
                         value={contact.telephone}
                         onChange={(e) => setContact((prev) => ({ ...prev, telephone: e.target.value }))}
                       />
                     </label>
                     <label>
-                      <span>{t('roomDetailSection2.email')}</span>
                       <input
                         type="email"
                         autoComplete="email"
+                        aria-label={t('roomDetailSection2.email')}
+                        placeholder={t('roomDetailSection2.email')}
                         value={contact.email}
                         onChange={(e) => setContact((prev) => ({ ...prev, email: e.target.value }))}
                       />

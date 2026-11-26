@@ -197,7 +197,7 @@
 
 .room-detail-maq7 .m7-book__dates {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -216,13 +216,8 @@
   box-shadow: 0 0 0 3px rgba(109, 63, 217, 0.12);
 }
 
-.room-detail-maq7 .m7-book__dates label:nth-child(2) {
-  border-right: 1px solid #d8d8dc;
-}
-
+.room-detail-maq7 .m7-book__dates label:nth-child(2),
 .room-detail-maq7 .m7-book__dates .m7-book__guests {
-  grid-column: 1 / -1;
-  border-top: 1px solid #d8d8dc;
   border-right: 1px solid #d8d8dc;
 }
 
@@ -239,7 +234,6 @@
 .room-detail-maq7 .m7-book__dates select {
   display: block;
   width: 100%;
-  margin-top: 5px;
   padding: 0;
   border: 0;
   background: transparent;
@@ -249,9 +243,15 @@
   outline: none;
 }
 
+.room-detail-maq7 .m7-book__dates input::placeholder,
+.room-detail-maq7 .m7-book__contact input::placeholder {
+  color: #9a9a9e;
+  font-weight: 400;
+}
+
 .room-detail-maq7 .m7-book__contact {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   margin-top: 22px;
   padding-top: 20px;
@@ -259,7 +259,6 @@
 }
 
 .room-detail-maq7 .m7-book__contact-title {
-  grid-column: 1 / -1;
   margin: 0;
   color: #222;
   font-size: 13px;
@@ -270,10 +269,6 @@
 .room-detail-maq7 .m7-book__contact label {
   display: block;
   min-width: 0;
-}
-
-.room-detail-maq7 .m7-book__contact label:last-child {
-  grid-column: 1 / -1;
 }
 
 .room-detail-maq7 .m7-book__contact span {
