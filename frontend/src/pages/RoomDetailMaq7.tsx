@@ -278,7 +278,10 @@ function RoomDetailContent() {
   const locationLabel = room ? [room.ville, room.pays].filter(Boolean).join(', ') : '';
   const capacityParts = room
     ? [
-        room.capacity || t('roomDetailHero.guest'),
+        // Aucune donnée « voyageur » n'est stockée sur la chambre : on n'en
+        // invente pas une. Seules les chambres/salles de bain réelles sont
+        // affichées ici.
+        room.capacity,
         `${room.chambres} ${room.chambres > 1 ? t('roomDetailHero.bedrooms') : t('roomDetailHero.bedroom')}`,
         `${room.douches} ${t('roomDetailHero.bath')}`,
       ].filter(Boolean)

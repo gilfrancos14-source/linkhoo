@@ -43,7 +43,7 @@ vi.mock('../data/rooms', () => ({
     alt: 'Suite',
     images: ['/images/room2.jpg', '/images/room3.jpg', '/images/room4.jpg', '/images/room5.jpg'],
     description: '',
-    capacity: '2 personnes',
+    capacity: '',
     category: 'cat-1',
     market: 'CI',
     pays: 'Côte d\'Ivoire',
@@ -94,9 +94,11 @@ function renderPage() {
 
 describe('RoomDetailMaq7 — première section', () => {
   it('affiche le titre, la galerie, les actions et le pied de page', async () => {
-    renderPage();
+    const view = renderPage();
 
     expect(await screen.findByRole('heading', { name: 'Suite vue mer' })).toBeInTheDocument();
+    // Aucune donnée « voyageur » en base : la ligne de faits n'en invente pas.
+    expect(view.container.querySelector('.m7-hero__facts')?.textContent).not.toMatch(/voyageur/i);
     expect(screen.getByRole('button', { name: /Partager/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Enregistrer/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Afficher toutes les photos/ })).toBeInTheDocument();
