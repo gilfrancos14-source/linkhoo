@@ -48,16 +48,19 @@
 }
 
 .language-globe-btn__flag {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
+  display: block;
+  overflow: hidden;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
 }
 
 .language-flag {
   display: block;
-  border-radius: 3px;
-  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.12);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  box-shadow: none;
 }
 
 .language-globe-btn__caret {
@@ -67,20 +70,20 @@
 }
 
 .language-globe-btn:hover {
-  border-color: color-mix(in srgb, var(--ls-accent) 45%, var(--ls-line));
-  box-shadow: 0 4px 12px -6px color-mix(in srgb, var(--ls-accent) 45%, transparent);
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px -6px rgba(15, 23, 42, 0.25);
   transform: translateY(-1px);
 }
 
 .language-globe-btn:focus-visible {
   outline: none;
-  border-color: var(--ls-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ls-accent) 18%, transparent);
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.2);
 }
 
 .language-globe-btn.is-open {
-  border-color: var(--ls-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ls-accent) 12%, transparent);
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
 .language-globe-btn.is-open .language-globe-btn__caret {
@@ -136,16 +139,12 @@
 .language-globe-item__badge {
   display: grid;
   place-items: center;
-  width: 32px;
+  overflow: hidden;
+  width: 24px;
   height: 24px;
   flex-shrink: 0;
-  border: 1px solid var(--ls-line);
-  border-radius: 7px;
+  border-radius: 50%;
   background: var(--ls-soft);
-  color: var(--ls-ink);
-  font-size: 17px;
-  font-weight: 400;
-  letter-spacing: 0;
 }
 
 .language-globe-item__name {
