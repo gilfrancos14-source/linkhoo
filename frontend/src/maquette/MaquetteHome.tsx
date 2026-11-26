@@ -63,28 +63,44 @@ export default function MaquetteHome({ market, data }: MaquetteHomeProps) {
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
+
+    // On arme les ENFANTS de chaque groupe (les cartes), pas le groupe entier :
+    // chaque carte apparaît quand elle entre elle-même dans le viewport.
     const groups = Array.from(root.querySelectorAll<HTMLElement>('.mq-reveal-group'));
+    const cards: HTMLElement[] = [];
+    for (const group of groups) {
+      group.classList.add('mq-reveal-armed');
+      Array.from(group.children).forEach((child, index) => {
+        const card = child as HTMLElement;
+        // Si plusieurs cartes entrent en même temps, on garde un léger décalage
+        // pour l'effet « une par une ».
+        card.style.transitionDelay = `${Math.min(index, 8) * 0.09}s`;
+        cards.push(card);
+      });
+    }
+
     if (!('IntersectionObserver' in window)) {
-      groups.forEach((group) => group.classList.add('is-visible'));
+      cards.forEach((card) => card.classList.add('is-visible'));
       return;
     }
+
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
-          entry.target.classList.add('is-visible');
-          observer.unobserve(entry.target);
+          const card = entry.target as HTMLElement;
+          card.classList.add('is-visible');
+          observer.unobserve(card);
         }
       },
-      { threshold: 0.08, rootMargin: '0px 0px -30px 0px' },
+      { threshold: 0.1, rootMargin: '0px 0px -24px 0px' },
     );
-    for (const group of groups) {
-      group.classList.add('mq-reveal-armed');
-      // On ré-observe à chaque chargement de données : un groupe armé lors
-      // d'un rendu précédent doit pouvoir être révélé après l'arrivée des
-      // cartes, sinon il reste invisible (section promotion vide).
-      observer.observe(group);
-    }
+
+    // Ré-observation à chaque chargement de données : les cartes créées après
+    // un rendu précédent (sections vides au départ) doivent aussi être armées.
+    cards.forEach((card) => {
+      if (!card.classList.contains('is-visible')) observer.observe(card);
+    });
     return () => observer.disconnect();
   }, [data]);
 
