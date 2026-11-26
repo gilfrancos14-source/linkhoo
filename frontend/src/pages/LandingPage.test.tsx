@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MarketProvider } from '../contexts/MarketContext';
 import LandingPage from './LandingPage';
@@ -92,22 +92,19 @@ describe('LandingPage — maquette accueil', () => {
 
     expect(screen.getByRole('combobox', { name: /Pays/ })).toHaveValue('');
     expect(document.querySelector('.acc-country-card--active')).toBeNull();
-    expect(screen.queryByRole('link', { name: /Continuer vers/ })).toBeNull();
+    expect(document.querySelector('.acc-country-continue')).toBeNull();
   });
 
-  it('affiche les 12 pays et permet d’en sélectionner un', () => {
+  it('affiche les 12 drapeaux qui mènent directement à la page du marché', () => {
     renderLanding();
 
     expect(screen.getByRole('heading', { level: 2, name: 'Choisissez un Pays' })).toBeInTheDocument();
     const countryGrid = document.querySelector('.acc-country-grid');
     expect(countryGrid).not.toBeNull();
-    expect(within(countryGrid as HTMLElement).getAllByRole('button')).toHaveLength(12);
-
-    fireEvent.click(screen.getByRole('button', { name: /^Sénégal$/ }));
-
-    expect(screen.getByRole('button', { name: /^Sénégal$/ })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('combobox', { name: /Pays/ })).toHaveValue('SN');
+    const links = within(countryGrid as HTMLElement).getAllByRole('link');
+    expect(links).toHaveLength(12);
     expect(screen.getByRole('link', { name: /Continuer vers Sénégal/ })).toHaveAttribute('href', '/sn');
+    expect(screen.getByRole('link', { name: /Continuer vers Côte d'Ivoire/ })).toHaveAttribute('href', '/ci');
   }, 20000);
 
   it('affiche le carrousel et les six avis', async () => {

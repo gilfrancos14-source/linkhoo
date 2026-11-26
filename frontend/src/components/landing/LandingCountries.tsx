@@ -42,23 +42,23 @@ export default function LandingCountries({ country, onCountryChange }: LandingCo
           {COUNTRIES.map((item) => {
             const selected = country?.code === item.code;
             return (
-              <button
+              <Link
                 key={item.code}
-                type="button"
+                to={`/${item.marketSlug ?? item.code.toLowerCase()}`}
                 className={`acc-country-card${selected ? ' acc-country-card--active' : ''}`}
-                aria-pressed={selected}
                 onClick={() => onCountryChange(item)}
+                aria-label={t('landing.countries.continue', {
+                  country: t(`markets.${item.code}`, { defaultValue: item.label }),
+                })}
               >
                 <span className="acc-flag" style={{ background: item.flag }} aria-hidden="true" />
                 <span className="acc-country-card__name">
                   {t(`markets.${item.code}`, { defaultValue: item.label })}
                 </span>
-                {selected && (
-                  <span className="acc-country-card__arrow">
-                    <Icon name="arrowRight" size={14} />
-                  </span>
-                )}
-              </button>
+                <span className="acc-country-card__arrow" aria-hidden="true">
+                  <Icon name="arrowRight" size={14} />
+                </span>
+              </Link>
             );
           })}
           {country && (
