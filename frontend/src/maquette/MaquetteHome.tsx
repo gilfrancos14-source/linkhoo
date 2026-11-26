@@ -73,8 +73,8 @@ export default function MaquetteHome({ market, data }: MaquetteHomeProps) {
       Array.from(group.children).forEach((child, index) => {
         const card = child as HTMLElement;
         // Si plusieurs cartes entrent en même temps, on garde un décalage de
-        // 3 secondes pour l'effet « une par une ».
-        card.style.transitionDelay = `${Math.min(index, 8) * 3}s`;
+        // 1 seconde pour l'effet « une par une ».
+        card.style.transitionDelay = `${Math.min(index, 8) * 1}s`;
         cards.push(card);
       });
     }

@@ -1,8 +1,8 @@
 /* Apparition en cascade des titres et des cartes des sections de l'accueil.
-   Les éléments ne sont masqués que si le JS a armé leur groupe : sans
-   IntersectionObserver, le contenu reste visible. */
+   Les cartes sont masquées dès le premier rendu : la section est vide par
+   défaut, puis chaque carte est révélée par le JS quand elle entre à l'écran. */
 
-.mq-reveal-group.mq-reveal-armed > * {
+.mq-reveal-group > * {
   opacity: 0;
   transform: translateY(16px);
   transition:
@@ -10,13 +10,13 @@
     transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.mq-reveal-group.mq-reveal-armed > *.is-visible {
+.mq-reveal-group > *.is-visible {
   opacity: 1;
   transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mq-reveal-group.mq-reveal-armed > * {
+  .mq-reveal-group > * {
     opacity: 1;
     transform: none;
     transition: none;
