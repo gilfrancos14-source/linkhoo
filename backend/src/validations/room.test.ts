@@ -53,13 +53,13 @@ describe('roomCreateSchema', () => {
     ).toBe(false);
   });
 
-  it('accepte au maximum trois images', () => {
-    const images = ['a', 'b', 'c'].map((n) => `${MEDIA}/${n}.webp`);
+  it('accepte au maximum cinq images', () => {
+    const images = ['a', 'b', 'c', 'd', 'e'].map((n) => `${MEDIA}/${n}.webp`);
     expect(roomCreateSchema.safeParse({ ...validRoom, images }).success).toBe(true);
   });
 
-  it('refuse plus de trois images', () => {
-    const images = ['a', 'b', 'c', 'd'].map((n) => `${MEDIA}/${n}.webp`);
+  it('refuse plus de cinq images', () => {
+    const images = ['a', 'b', 'c', 'd', 'e', 'f'].map((n) => `${MEDIA}/${n}.webp`);
     expect(roomCreateSchema.safeParse({ ...validRoom, images }).success).toBe(false);
   });
 
@@ -251,6 +251,12 @@ describe('roomUpdateSchema', () => {
       roomUpdateSchema.safeParse({ img: 'https://evil.example.com/media/images/photo.webp' }).success,
     ).toBe(false);
     expect(roomUpdateSchema.safeParse({ img: '/images/document.pdf' }).success).toBe(false);
+  });
+
+  it('accepte jusqu’à 5 photos et refuse la 6e', () => {
+    const urls = Array.from({ length: 5 }, (_, index) => `/images/photo-${index + 1}.jpg`);
+    expect(roomUpdateSchema.safeParse({ images: urls }).success).toBe(true);
+    expect(roomUpdateSchema.safeParse({ images: [...urls, '/images/photo-6.jpg'] }).success).toBe(false);
   });
 });
 

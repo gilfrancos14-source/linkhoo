@@ -35,7 +35,7 @@ const roomFields = {
   price_unit: z.enum(['/ mois', '/ nuit']),
   img: legacyImageUrlSchema,
   alt: optionalTextSafe(300),
-  images: z.array(legacyImageUrlSchema).min(1).max(3),
+  images: z.array(legacyImageUrlSchema).min(1).max(5),
   image_labels: roomImageLabelsSchema.optional().default({}),
   description: withoutPhoneNumber(z.string().trim().min(1).max(10000)),
   capacity: optionalTextSafe(100),
@@ -75,7 +75,7 @@ export const roomCreateSchema = z
   .object({
     ...roomFields,
     img: platformImageUrlSchema,
-    images: z.array(platformImageUrlSchema).min(1).max(3),
+    images: z.array(platformImageUrlSchema).min(1).max(5),
   })
   .strict();
 

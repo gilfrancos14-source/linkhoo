@@ -31,7 +31,7 @@ export interface PhotoItem {
 }
 
 /** Nombre maximum de photos par appartement. */
-export const MAX_PHOTOS = 3;
+export const MAX_PHOTOS = 5;
 
 export interface FormData {
   title: string;
