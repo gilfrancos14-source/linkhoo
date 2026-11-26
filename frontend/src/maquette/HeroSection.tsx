@@ -2,9 +2,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { MarketCode } from '../config/markets';
-import HeroArrivalScene from './HeroArrivalScene';
-import './hero-arrival.css';
-import './hero-reveal.css';
+import PartnerBanners from '../components/landing/PartnerBanners';
 
 interface HeroSectionProps {
   market: MarketCode;
@@ -61,27 +59,27 @@ export default function HeroSection({ market }: HeroSectionProps) {
 
   return (
     <section
-      className={`relative min-h-[350px] bg-white text-slate-900 flex flex-col justify-center overflow-hidden${market === 'CI' ? ' hero-reveal-on' : ''}`}
+      className="relative min-h-[350px] bg-white text-slate-900 flex flex-col justify-center overflow-hidden"
       data-purpose="hero-section"
     >
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 w-full">
         <div className="max-w-3xl">
-          <div className="hero-reveal hero-reveal--1 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold mb-4">
             <i className="fa-solid fa-location-dot text-[color:var(--market-accent)]"></i>
             <span>{countryName}</span>
           </div>
-          <h1 className="hero-reveal hero-reveal--2 text-3xl sm:text-4xl lg:text-[2.6rem] font-extrabold leading-[1.15] tracking-tight">
+          <h1 className="text-3xl sm:text-4xl lg:text-[2.6rem] font-extrabold leading-[1.15] tracking-tight">
             {t('hero.title')} <span className="text-[color:var(--market-accent)]">{t('hero.titleHighlight')}</span>
           </h1>
-          <p className="hero-reveal hero-reveal--3 mt-4 text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-2xl">
+          <p className="mt-4 text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-2xl">
             {t('hero.subtitle', { countryPhrase })}
           </p>
         </div>
-        <div className="hero-reveal hero-reveal--6 absolute right-6 top-4 hidden lg:block w-[320px] select-none pointer-events-none">
-          <HeroArrivalScene />
+        <div className="absolute right-6 top-4 hidden lg:flex lg:justify-center w-[320px]">
+          <PartnerBanners />
         </div>
         <div className="mt-5" data-purpose="hero-search-tabs">
-          <div className="hero-reveal hero-reveal--4 inline-flex rounded-t-xl overflow-hidden shadow-sm">
+          <div className="inline-flex rounded-t-xl overflow-hidden shadow-sm">
             <button
               type="button"
               className="bg-[color:var(--market-accent)] text-white px-6 py-2.5 min-h-[44px] text-xs sm:text-sm font-bold flex items-center gap-2"
@@ -98,7 +96,7 @@ export default function HeroSection({ market }: HeroSectionProps) {
             </button>
           </div>
           <form
-            className="hero-reveal hero-reveal--5 bg-white rounded-b-2xl rounded-tr-2xl p-3 sm:p-4 shadow-2xl text-slate-800 grid grid-cols-1 md:grid-cols-12 gap-3 items-center"
+            className="bg-white rounded-b-2xl rounded-tr-2xl p-3 sm:p-4 shadow-2xl text-slate-800 grid grid-cols-1 md:grid-cols-12 gap-3 items-center"
             onSubmit={handleSubmit}
           >
             <div className="md:col-span-4 flex items-center gap-3 px-4 py-2.5 border-b md:border-b-0 md:border-r border-slate-200">

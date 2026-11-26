@@ -836,5 +836,13 @@
     "langFrench": "Français",
     "langEnglish": "Anglais",
     "safety": "Afin de protéger votre paiement, utilisez toujours Airbnb pour envoyer de l'argent et communiquer avec les hôtes."
+  },
+  "partnerAds": {
+    "aria": "Bannières de nos partenaires",
+    "label": "Publicité",
+    "slide1": "Linkhoo Voyages — Des séjours tout compris",
+    "slide2": "Assurance Voyage — Partez l’esprit tranquille",
+    "slide3": "PawaPay — Payez en toute simplicité",
+    "discover": "En savoir plus"
   }
 }

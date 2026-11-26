@@ -41,6 +41,8 @@ describe('ressources i18n', () => {
       'landing.neighborRooms.viewAll',
       'landing.weekendRooms.title',
       'landing.weekendRooms.showAll',
+      'partnerAds.aria',
+      'partnerAds.slide1',
       'roomDetailHero.share',
       'roomDetailHero.allPhotos',
       'roomDetailHero.allFees',

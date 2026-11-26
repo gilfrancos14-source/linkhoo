@@ -5,9 +5,7 @@ import { fetchCategoriesByMarket, type Category } from '../../data/categories';
 import Icon from './icons';
 import { COUNTRIES, type Country } from './data';
 import { AnimatedSection, slideInFromBottomVariants } from '../../lib/animations';
-import HeroArrivalScene from '../../maquette/HeroArrivalScene';
-import '../../maquette/hero-arrival.css';
-import '../../maquette/hero-reveal.css';
+import PartnerBanners from './PartnerBanners';
 
 interface LandingHeroProps {
   country: Country | null;
@@ -57,28 +55,26 @@ export default function LandingHero({ country, onCountryChange }: LandingHeroPro
   };
 
   return (
-    <section className="acc-hero hero-reveal-on" id="accueil">
+    <section className="acc-hero" id="accueil">
       <div className="acc-container acc-hero__inner">
-        <div className="acc-hero__art hero-reveal hero-reveal--5 hidden lg:block" aria-hidden="true">
-          <HeroArrivalScene />
-        </div>
+        <PartnerBanners className="acc-hero__art hidden lg:block" />
         <AnimatedSection variants={slideInFromBottomVariants}>
             <div>
-              <p className="acc-hero__eyebrow hero-reveal hero-reveal--1">
+              <p className="acc-hero__eyebrow ">
                 {t('landing.hero.eyebrow')}
               </p>
-              <h1 className="acc-hero__title hero-reveal hero-reveal--2">
+              <h1 className="acc-hero__title ">
                 <span className="acc-hero__title-brand">{t('landing.hero.titleBrand')}</span>
                 {t('landing.hero.titleRest')}
               </h1>
-              <p className="acc-hero__sub hero-reveal hero-reveal--3">
+              <p className="acc-hero__sub ">
                 {t('landing.hero.subtitle')}
               </p>
             </div>
           </AnimatedSection>
 
         <form
-          className="acc-hero-search hero-reveal hero-reveal--4"
+          className="acc-hero-search "
           onSubmit={handleSubmit}
           role="search"
         >
