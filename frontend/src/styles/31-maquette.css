@@ -5,7 +5,7 @@
 .maquette-shell {
   display: flex;
   flex-direction: column;
-  background: #f8fafc;
+  background: #ffffff;
 }
 
 .maquette-shell .acc-header {

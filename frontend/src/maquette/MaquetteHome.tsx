@@ -105,7 +105,7 @@ export default function MaquetteHome({ market, data }: MaquetteHomeProps) {
   }, [data]);
 
   return (
-    <div ref={rootRef} className="maquette-home bg-[#F8FAFC] text-slate-800 font-sans antialiased selection:bg-[color:var(--market-accent)] selection:text-white">
+    <div ref={rootRef} className="maquette-home bg-white text-slate-800 font-sans antialiased selection:bg-[color:var(--market-accent)] selection:text-white">
       <HeroSection market={market} />
       <PopularSection market={market} cards={popular} banners={banners.popular} />
       <PromosSection market={market} cards={promos} banners={banners.promos} />
