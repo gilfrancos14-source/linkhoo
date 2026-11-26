@@ -840,6 +840,7 @@
   "partnerAds": {
     "aria": "Banderas de nuestros socios",
     "label": "Publicidad",
+    "imageAlt": "Publicidad – {{name}}",
     "slide1": "Linkhoo Voyages — Estancias todo incluido",
     "slide2": "Seguro de viaje — Viaja con tranquilidad",
     "slide3": "PawaPay — Paga con facilidad",

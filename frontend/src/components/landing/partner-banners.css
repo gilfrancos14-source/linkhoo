@@ -1,4 +1,4 @@
-/* Espace publicitaire du hero : bannières partenaires qui défilent. */
+/* Espace publicitaire du hero : visuels (images ou GIF animés) qui défilent. */
 
 /* Dans le hero de la landing, le composant remplace l'ancienne illustration
    absolue : on réaffirme le positionnement à droite (anti-cascade). */
@@ -27,14 +27,7 @@
 }
 
 .partner-banners__slide {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 34px;
   border-radius: 50%;
-  text-align: center;
   opacity: 0;
   transform: translateX(24px);
   transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
@@ -45,6 +38,43 @@
   opacity: 1;
   transform: none;
   pointer-events: auto;
+}
+
+/* Le visuel (jpg/png/webp/svg/GIF animé) recouvre le texte de repli. */
+.partner-banners__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.partner-banners__img.is-loaded {
+  opacity: 1;
+}
+
+.partner-banners__link {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: 50%;
+}
+
+.partner-banners__fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  padding: 34px;
+  border-radius: 50%;
+  text-align: center;
 }
 
 .partner-banners__slide--0 {
@@ -114,7 +144,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .partner-banners__slide {
+  .partner-banners__slide,
+  .partner-banners__img {
     transition: none;
   }
 }
