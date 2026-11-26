@@ -11,6 +11,7 @@ const SECTIONS: { key: AdminBanner['section']; label: string }[] = [
   { key: 'promos', label: 'Promos' },
   { key: 'categories', label: 'Catégories' },
   { key: 'events', label: 'Événements' },
+  { key: 'hero', label: 'Hero / Publicité' },
 ];
 
 const SECTION_COLORS: Record<string, string> = {
@@ -18,6 +19,7 @@ const SECTION_COLORS: Record<string, string> = {
   promos: 'admin-badge--warning',
   categories: 'admin-badge--success',
   events: 'admin-badge--danger',
+  hero: 'admin-badge--info',
 };
 
 interface FormData {

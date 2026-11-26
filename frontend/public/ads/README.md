@@ -1,18 +1,14 @@
 # Espace publicitaire du hero
 
-Les visuels placés ici sont affichés dans le cercle publicitaire à droite du hero
-(landing + pages marché), en défilement automatique toutes les 4 secondes.
+Le cercle publicitaire à droite du hero (landing et pages marché) est désormais
+géré **depuis l'administration**, comme les autres bannières du site.
 
-Formats acceptés : **JPG, PNG, WebP, SVG et GIF animé** (le GIF est animé
-automatiquement par le navigateur, aucune configuration supplémentaire).
+## Publier une publicité
 
-## Publier une offre
+1. Aller dans **Administration → Bannières** (`/admin/banners`).
+2. Créer une bannière avec la section **« Hero / Publicité »**, le marché cible,
+   l'image (JPEG, PNG, WebP ou **GIF animé**), le texte alternatif, le lien et l'ordre.
+3. La publicité apparaît immédiatement dans le hero du marché choisi. Sans
+   bannière publiée, des offres d'exemple traduites sont affichées en repli.
 
-1. Déposer le fichier dans ce dossier, par exemple `offre-black-friday.gif`.
-2. Renseigner son chemin (`/ads/offre-black-friday.gif`) dans
-   `src/components/landing/partnerAds.ts`, avec la clé de texte i18n associée.
-3. Ajouter si besoin un `href` pour rendre le visuel cliquable.
-
-Recommandation : image **carrée** (idéalement 520 × 520 px ou plus) pour un rendu
-net dans le cercle de 260 px. Le texte i18n reste affiché en repli si le visuel
-est absent ou ne charge pas.
+Le texte alternatif est traduit via `?lang=en|es`, comme les autres bannières.

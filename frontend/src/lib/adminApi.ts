@@ -237,7 +237,7 @@ export interface AdminGerant {
 
 export interface AdminBanner {
   id: string;
-  section: 'popular' | 'promos' | 'categories' | 'events';
+  section: 'popular' | 'promos' | 'categories' | 'events' | 'hero';
   img: string;
   alt: string;
   link: string;

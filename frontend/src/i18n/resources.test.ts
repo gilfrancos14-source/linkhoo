@@ -42,7 +42,7 @@ describe('ressources i18n', () => {
       'landing.weekendRooms.title',
       'landing.weekendRooms.showAll',
       'partnerAds.aria',
-      'partnerAds.imageAlt',
+      'partnerAds.defaultAlt',
       'partnerAds.slide1',
       'roomDetailHero.share',
       'roomDetailHero.allPhotos',

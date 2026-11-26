@@ -408,7 +408,13 @@ export interface BannerData {
 }
 
 export const apiBanners = {
-  list: (market?: string) => cachedGet<BannerData[]>(withLang(market ? `/banners?market=${market}` : '/banners')),
+  list: (market?: string, section?: string) => {
+    const params = new URLSearchParams();
+    if (market) params.set('market', market);
+    if (section) params.set('section', section);
+    const query = params.toString();
+    return cachedGet<BannerData[]>(withLang(query ? `/banners?${query}` : '/banners'));
+  },
 };
 
 // ── Events ──

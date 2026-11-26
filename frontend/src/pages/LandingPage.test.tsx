@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   localRooms: vi.fn(async () => ({ market: null, rooms: [] })),
   neighborRooms: vi.fn(async () => ({ market: null, rooms: [] })),
   weekendRooms: vi.fn(async () => ({ market: null, rooms: [] })),
+  banners: vi.fn(async () => []),
 }));
 
 vi.mock('../lib/api', () => ({
@@ -20,6 +21,9 @@ vi.mock('../lib/api', () => ({
     localRooms: mocks.localRooms,
     neighborRooms: mocks.neighborRooms,
     weekendRooms: mocks.weekendRooms,
+  },
+  apiBanners: {
+    list: mocks.banners,
   },
   cachedGet: mocks.cachedGet,
 }));

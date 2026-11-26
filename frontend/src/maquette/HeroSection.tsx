@@ -76,7 +76,7 @@ export default function HeroSection({ market }: HeroSectionProps) {
           </p>
         </div>
         <div className="absolute right-6 top-4 hidden lg:flex lg:justify-center w-[320px]">
-          <PartnerBanners />
+          <PartnerBanners market={market} />
         </div>
         <div className="mt-5" data-purpose="hero-search-tabs">
           <div className="inline-flex rounded-t-xl overflow-hidden shadow-sm">

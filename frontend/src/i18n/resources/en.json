@@ -840,7 +840,7 @@
   "partnerAds": {
     "aria": "Our partners’ banners",
     "label": "Advertisement",
-    "imageAlt": "Advertisement – {{name}}",
+    "defaultAlt": "Partner offer",
     "slide1": "Linkhoo Voyages — All-inclusive stays",
     "slide2": "Travel insurance — Travel with peace of mind",
     "slide3": "PawaPay — Pay with ease",

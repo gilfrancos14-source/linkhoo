@@ -31,11 +31,12 @@ describe('bannerCreateSchema', () => {
     expect(bannerCreateSchema.safeParse({ ...validBanner, order: undefined }).success).toBe(false);
   });
 
-  it('n’accepte que les sections popular, promos, categories et events', () => {
+  it('n’accepte que les sections popular, promos, categories, events et hero', () => {
     expect(bannerCreateSchema.safeParse({ ...validBanner, section: 'accueil' }).success).toBe(false);
     expect(bannerCreateSchema.safeParse({ ...validBanner, section: 'POPULAR' }).success).toBe(false);
     expect(bannerCreateSchema.safeParse({ ...validBanner, section: 'popular' }).success).toBe(true);
     expect(bannerCreateSchema.safeParse({ ...validBanner, section: 'events' }).success).toBe(true);
+    expect(bannerCreateSchema.safeParse({ ...validBanner, section: 'hero' }).success).toBe(true);
   });
 
   it('refuse une image vide, réduite à des espaces ou trop longue', () => {

@@ -9,7 +9,7 @@ import { BANNER_COLUMNS } from '../utils/selects';
 import { attachTranslations, enqueueTranslations, resolveLocale } from '../i18n/translations';
 
 const router = Router();
-const validSections = ['popular', 'promos', 'categories', 'events'] as const;
+const validSections = ['popular', 'promos', 'categories', 'events', 'hero'] as const;
 
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {

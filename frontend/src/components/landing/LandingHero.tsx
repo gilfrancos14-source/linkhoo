@@ -57,7 +57,7 @@ export default function LandingHero({ country, onCountryChange }: LandingHeroPro
   return (
     <section className="acc-hero" id="accueil">
       <div className="acc-container acc-hero__inner">
-        <PartnerBanners className="acc-hero__art hidden lg:block" />
+        <PartnerBanners className="acc-hero__art hidden lg:block" market={country?.code} />
         <AnimatedSection variants={slideInFromBottomVariants}>
             <div>
               <p className="acc-hero__eyebrow ">

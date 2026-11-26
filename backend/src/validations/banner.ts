@@ -5,7 +5,7 @@ const imageUrlSchema = z.string().trim().min(1).max(2048);
 
 export const bannerCreateSchema = z
   .object({
-    section: z.enum(['popular', 'promos', 'categories', 'events']),
+    section: z.enum(['popular', 'promos', 'categories', 'events', 'hero']),
     img: imageUrlSchema,
     alt: optionalText(300),
     link: z.string().trim().min(1).max(2048),
