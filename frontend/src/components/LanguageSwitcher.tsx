@@ -2,12 +2,53 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, ChevronDown, Globe2 } from 'lucide-react';
 
-/** Drapeaux des langues d'interface : France, États-Unis, Espagne. */
-const LANGUAGE_FLAGS: Record<string, string> = {
-  fr: '🇫🇷',
-  en: '🇺🇸',
-  es: '🇪🇸',
-};
+/** Drapeaux SVG des langues d'interface : France, États-Unis, Espagne. */
+function LanguageFlag({ code }: { code: string }) {
+  const common = {
+    width: 24,
+    height: 16,
+    viewBox: '0 0 24 16',
+    role: 'img' as const,
+    'aria-hidden': true as const,
+    className: 'language-flag',
+  };
+
+  if (code === 'fr') {
+    return (
+      <svg {...common}>
+        <rect width="24" height="16" rx="2" fill="#fff" />
+        <path d="M0 0h8v16H0z" fill="#0055A4" />
+        <path d="M16 0h8v16h-8z" fill="#EF4135" />
+      </svg>
+    );
+  }
+
+  if (code === 'es') {
+    return (
+      <svg {...common}>
+        <rect width="24" height="16" rx="2" fill="#AA151B" />
+        <rect y="4" width="24" height="8" fill="#F1BF00" />
+        <rect x="6" y="6.5" width="3" height="3" rx="0.5" fill="#AA151B" />
+      </svg>
+    );
+  }
+
+  // en — bandes rouges/blanches et canton bleu étoilé (version simplifiée).
+  return (
+    <svg {...common}>
+      <rect width="24" height="16" rx="2" fill="#fff" />
+      {[0, 2, 4, 6, 8, 10, 12, 14].map((y) => (
+        <rect key={y} y={y} width="24" height="1" fill="#B22234" />
+      ))}
+      <rect width="10" height="9" fill="#3C3B6E" />
+      {[2, 4, 6].map((y) =>
+        [1.5, 4, 6.5, 8.5].map((x) => (
+          <circle key={`${x}-${y}`} cx={x} cy={y} r="0.45" fill="#fff" />
+        )),
+      )}
+    </svg>
+  );
+}
 
 interface LanguageSwitcherProps {
   compact?: boolean;
@@ -63,8 +104,8 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ compact = false }) 
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
-          <span className="language-globe-btn__flag" aria-hidden="true">
-            {LANGUAGE_FLAGS[current.code]}
+          <span className="language-globe-btn__flag">
+            <LanguageFlag code={current.code} />
           </span>
         </button>
 
@@ -82,8 +123,8 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ compact = false }) 
                   className={`language-globe-item${active ? ' language-globe-item--active' : ''}`}
                   onClick={() => handleLanguageChange(lang.code)}
                 >
-                  <span className="language-globe-item__badge" aria-hidden="true">
-                    {LANGUAGE_FLAGS[lang.code]}
+                  <span className="language-globe-item__badge">
+                    <LanguageFlag code={lang.code} />
                   </span>
                   <span className="language-globe-item__name">{lang.name}</span>
                   {active && <Check size={14} strokeWidth={2.6} aria-hidden="true" />}

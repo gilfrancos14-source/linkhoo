@@ -30,13 +30,13 @@ afterEach(() => {
 });
 
 describe('LanguageSwitcher — version compacte', () => {
-  it('affiche uniquement le drapeau de la langue courante', () => {
+  it('affiche uniquement le drapeau SVG de la langue courante', () => {
     render(<LanguageSwitcher compact />);
 
     const button = screen.getByRole('button', { name: 'Choisir la langue' });
-    expect(button).toHaveTextContent('🇫🇷');
+    expect(button.querySelector('svg.language-flag')).toBeTruthy();
     expect(button.textContent).not.toContain('FR');
-    expect(button.querySelector('svg')).toBeNull();
+    expect(button.textContent).not.toContain('🇫🇷');
   });
 
   it('ouvre un menu avec les trois langues et marque la langue active', () => {

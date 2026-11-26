@@ -52,9 +52,12 @@
   place-items: center;
   width: 24px;
   height: 24px;
-  font-size: 20px;
-  line-height: 1;
-  letter-spacing: 0;
+}
+
+.language-flag {
+  display: block;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.12);
 }
 
 .language-globe-btn__caret {
