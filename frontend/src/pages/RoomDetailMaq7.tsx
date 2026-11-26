@@ -11,6 +11,8 @@ import { fetchRoomById, type Room } from '../data/rooms';
 import { useHomePath } from '../hooks/useHomePath';
 import { apiReviews, type RoomReviewsResponse } from '../lib/api';
 import { formatPrice } from '../lib/roomDisplay';
+import { addReservation } from '../lib/reservations';
+import { newClientKey } from '../lib/offlineQueue';
 import { MAQUETTE_NAV_ITEMS } from '../maquette/nav';
 import '../styles/40-room-detail-maq7.css';
 import '../styles/15-room-detail.css';
@@ -70,8 +72,14 @@ function RoomDetailContent() {
   const [reviews, setReviews] = useState<RoomReviewsResponse | null>(null);
   const [arrivee, setArrivee] = useState(searchParams.get('arrivee') ?? '');
   const [depart, setDepart] = useState(searchParams.get('depart') ?? '');
-  const [guests, setGuests] = useState(1);
+  const [contact, setContact] = useState({
+    nom: '',
+    prenom: '',
+    email: '',
+    telephone: '',
+  });
   const [bookingNotice, setBookingNotice] = useState('');
+  const [submittingBooking, setSubmittingBooking] = useState(false);
   const [reported, setReported] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [expandedReviews, setExpandedReviews] = useState<ReadonlySet<string>>(new Set());
@@ -547,26 +555,95 @@ function RoomDetailContent() {
                     <span>{t('roomDetailSection2.departure')}</span>
                     <input type="date" value={depart} min={arrivee || undefined} onChange={(e) => setDepart(e.target.value)} />
                   </label>
-                  <label className="m7-book__guests">
-                    <span>{t('roomDetailSection2.guests')}</span>
-                    <select value={guests} onChange={(e) => setGuests(Number(e.target.value))}>
-                      {[1, 2, 3, 4, 5, 6].map((value) => (
-                        <option key={value} value={value}>{value > 1 ? `${value} ${t('roomDetailSection2.guestsPlural')}` : t('roomDetailHero.guest')}</option>
-                      ))}
-                    </select>
-                  </label>
+                  <div className="m7-book__contact">
+                    <p className="m7-book__contact-title">
+                      {t('roomDetailSection2.contactTitle')}
+                    </p>
+                    <label>
+                      <span>{t('roomDetailSection2.lastName')}</span>
+                      <input
+                        type="text"
+                        autoComplete="family-name"
+                        value={contact.nom}
+                        onChange={(e) => setContact((prev) => ({ ...prev, nom: e.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      <span>{t('roomDetailSection2.firstName')}</span>
+                      <input
+                        type="text"
+                        autoComplete="given-name"
+                        value={contact.prenom}
+                        onChange={(e) => setContact((prev) => ({ ...prev, prenom: e.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      <span>{t('roomDetailSection2.phone')}</span>
+                      <input
+                        type="tel"
+                        autoComplete="tel"
+                        value={contact.telephone}
+                        onChange={(e) => setContact((prev) => ({ ...prev, telephone: e.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      <span>{t('roomDetailSection2.email')}</span>
+                      <input
+                        type="email"
+                        autoComplete="email"
+                        value={contact.email}
+                        onChange={(e) => setContact((prev) => ({ ...prev, email: e.target.value }))}
+                      />
+                    </label>
+                  </div>
                 </div>
 
                 <button
                   type="button"
                   className="m7-book__cta"
-                  onClick={() => setBookingNotice(
-                    !arrivee || !depart
-                      ? t('roomDetailSection2.chooseDates')
-                      : t('roomDetailSection2.ready'),
-                  )}
+                  disabled={submittingBooking}
+                  onClick={async () => {
+                    if (!room) return;
+                    if (!arrivee || !depart || nights === 0) {
+                      setBookingNotice(t('roomDetailSection2.chooseDates'));
+                      return;
+                    }
+                    if (
+                      !contact.nom.trim() ||
+                      !contact.prenom.trim() ||
+                      !contact.telephone.trim() ||
+                      !contact.email.trim()
+                    ) {
+                      setBookingNotice(t('roomDetailSection2.fillContact'));
+                      return;
+                    }
+                    setSubmittingBooking(true);
+                    setBookingNotice('');
+                    try {
+                      await addReservation({
+                        clientName: `${contact.prenom.trim()} ${contact.nom.trim()}`.trim(),
+                        clientEmail: contact.email.trim(),
+                        clientPhone: contact.telephone.trim(),
+                        roomId: room.id,
+                        roomTitle: room.title,
+                        dateDebut: arrivee,
+                        dateFin: depart,
+                        dureeNombre: nights,
+                        dureeUnite: 'nuit',
+                        montant: Number(room.priceNum || room.price) * nights,
+                        clientKey: newClientKey(),
+                      });
+                      setBookingNotice(t('roomDetailSection2.bookingSuccess'));
+                    } catch {
+                      setBookingNotice(t('roomDetailSection2.bookingError'));
+                    } finally {
+                      setSubmittingBooking(false);
+                    }
+                  }}
                 >
-                  {t('roomDetailSection2.reserve')}
+                  {submittingBooking
+                    ? t('roomDetailSection2.sending')
+                    : t('roomDetailSection2.reserve')}
                 </button>
                 {bookingNotice && <p className="m7-book__notice" role="status">{bookingNotice}</p>}
                 <p className="m7-book__disclaimer">{t('roomDetailSection2.noCharge')}</p>

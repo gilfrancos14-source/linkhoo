@@ -773,7 +773,16 @@
     "superhostWithMonths": "Superhost · {{months}} months of experience",
     "hostWithMonths": "Host · {{months}} months of experience",
     "newHost": "New on Linkhoo",
-    "responseRate": "Response rate: {{rate}}% ({{answered}}/{{total}} requests)"
+    "responseRate": "Response rate: {{rate}}% ({{answered}}/{{total}} requests)",
+    "contactTitle": "Your details",
+    "lastName": "Last name",
+    "firstName": "First name",
+    "phone": "Phone",
+    "email": "Email",
+    "fillContact": "Please fill in your last name, first name, phone and email.",
+    "bookingSuccess": "Your request has been sent to the host.",
+    "bookingError": "Could not send the request. Please try again.",
+    "sending": "Sending…"
   },
   "roomDetailSection4": {
     "aria": "Date selection",

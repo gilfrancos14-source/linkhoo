@@ -102,6 +102,10 @@ describe('RoomDetailMaq7 — première section', () => {
     expect(screen.getByRole('button', { name: /Partager/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Enregistrer/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Afficher toutes les photos/ })).toBeInTheDocument();
+    expect(view.container.querySelector('.m7-book__guests')).toBeNull();
+    expect(screen.getByLabelText('Nom')).toBeInTheDocument();
+    expect(screen.getByLabelText('Prénoms')).toBeInTheDocument();
+    expect(screen.getByLabelText('Téléphone')).toBeInTheDocument();
     expect(screen.getAllByText('Coup de cœur voyageurs').length).toBeGreaterThan(0);
     expect(screen.getByText(/Dans le quartier de Cocody à Abidjan/)).toBeInTheDocument();
     expect(screen.getByText(/Aya Kouassi est un hôte exceptionnel/)).toBeInTheDocument();

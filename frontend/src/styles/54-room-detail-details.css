@@ -234,6 +234,62 @@
   outline: none;
 }
 
+.room-detail-maq7 .m7-book__contact {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #ebebeb;
+}
+
+.room-detail-maq7 .m7-book__contact-title {
+  grid-column: 1 / -1;
+  margin: 0 0 2px;
+  color: #222;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.room-detail-maq7 .m7-book__contact label {
+  display: block;
+  min-width: 0;
+}
+
+.room-detail-maq7 .m7-book__contact label:last-child {
+  grid-column: 1 / -1;
+}
+
+.room-detail-maq7 .m7-book__contact span {
+  display: block;
+  margin-bottom: 3px;
+  color: #222;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.room-detail-maq7 .m7-book__contact input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #b0b0b0;
+  border-radius: 8px;
+  background: #fff;
+  color: #222;
+  font-size: 13px;
+  outline: none;
+}
+
+.room-detail-maq7 .m7-book__contact input:focus {
+  border-color: #222;
+}
+
+.room-detail-maq7 .m7-book__cta:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .room-detail-maq7 .m7-book__cta {
   width: 100%;
   height: 48px;
