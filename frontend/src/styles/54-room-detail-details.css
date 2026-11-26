@@ -205,7 +205,7 @@
   display: block;
   min-width: 0;
   padding: 11px 13px;
-  border: 1px solid #d8d8dc;
+  border: 1px solid #e2e2e6;
   border-radius: 10px;
   background: #fff;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -214,11 +214,6 @@
 .room-detail-maq7 .m7-book__dates label:focus-within {
   border-color: #6d3fd9;
   box-shadow: 0 0 0 3px rgba(109, 63, 217, 0.12);
-}
-
-.room-detail-maq7 .m7-book__dates label:nth-child(2),
-.room-detail-maq7 .m7-book__dates .m7-book__guests {
-  border-right: 1px solid #d8d8dc;
 }
 
 .room-detail-maq7 .m7-book__dates span {
@@ -234,8 +229,9 @@
 .room-detail-maq7 .m7-book__dates select {
   display: block;
   width: 100%;
-  padding: 0;
+  padding: 8px 0;
   border: 0;
+  border-radius: 0;
   background: transparent;
   color: #222;
   font-size: 14px;
@@ -249,13 +245,35 @@
   font-weight: 400;
 }
 
+.room-detail-maq7 .m7-book__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 18px;
+  padding: 14px 0;
+  border: 0;
+  border-top: 1px solid #eeeeef;
+  background: transparent;
+  color: #222;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.room-detail-maq7 .m7-book__toggle svg {
+  transition: transform 0.2s ease;
+}
+
+.room-detail-maq7 .m7-book__toggle--open svg {
+  transform: rotate(180deg);
+}
+
 .room-detail-maq7 .m7-book__contact {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
-  margin-top: 22px;
-  padding-top: 20px;
-  border-top: 1px solid #eeeeef;
+  gap: 12px;
+  margin-top: 2px;
 }
 
 .room-detail-maq7 .m7-book__contact-title {
@@ -281,19 +299,18 @@
 
 .room-detail-maq7 .m7-book__contact input {
   width: 100%;
-  padding: 11px 12px;
-  border: 1px solid #d8d8dc;
+  padding: 11px 13px;
+  border: 1px solid #e2e2e6;
   border-radius: 10px;
-  background: #fafafa;
+  background: #fff;
   color: #222;
   font-size: 14px;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .room-detail-maq7 .m7-book__contact input:focus {
   border-color: #6d3fd9;
-  background: #fff;
   box-shadow: 0 0 0 3px rgba(109, 63, 217, 0.12);
 }
 

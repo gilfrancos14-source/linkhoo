@@ -80,6 +80,7 @@ function RoomDetailContent() {
   });
   const [bookingNotice, setBookingNotice] = useState('');
   const [submittingBooking, setSubmittingBooking] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   const [reported, setReported] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [expandedReviews, setExpandedReviews] = useState<ReadonlySet<string>>(new Set());
@@ -567,10 +568,20 @@ function RoomDetailContent() {
                       onChange={(e) => setDepart(e.target.value)}
                     />
                   </label>
+                </div>
+
+                <button
+                  type="button"
+                  className={`m7-book__toggle${contactOpen ? ' m7-book__toggle--open' : ''}`}
+                  aria-expanded={contactOpen}
+                  onClick={() => setContactOpen((open) => !open)}
+                >
+                  <span>{t('roomDetailSection2.contactTitle')}</span>
+                  <Icon name="chevronDown" size={16} />
+                </button>
+
+                {contactOpen && (
                   <div className="m7-book__contact">
-                    <p className="m7-book__contact-title">
-                      {t('roomDetailSection2.contactTitle')}
-                    </p>
                     <label>
                       <input
                         type="text"
@@ -612,7 +623,7 @@ function RoomDetailContent() {
                       />
                     </label>
                   </div>
-                </div>
+                )}
 
                 <button
                   type="button"
@@ -630,6 +641,7 @@ function RoomDetailContent() {
                       !contact.telephone.trim() ||
                       !contact.email.trim()
                     ) {
+                      setContactOpen(true);
                       setBookingNotice(t('roomDetailSection2.fillContact'));
                       return;
                     }

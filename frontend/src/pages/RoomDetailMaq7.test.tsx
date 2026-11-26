@@ -103,6 +103,11 @@ describe('RoomDetailMaq7 — première section', () => {
     expect(screen.getByRole('button', { name: /Enregistrer/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Afficher toutes les photos/ })).toBeInTheDocument();
     expect(view.container.querySelector('.m7-book__guests')).toBeNull();
+    // Le formulaire est replié par défaut, un dropdown le déplie.
+    const toggle = screen.getByRole('button', { name: 'Vos informations' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByLabelText('Nom')).toBeInTheDocument();
     expect(screen.getByLabelText('Prénoms')).toBeInTheDocument();
     expect(screen.getByLabelText('Téléphone')).toBeInTheDocument();
