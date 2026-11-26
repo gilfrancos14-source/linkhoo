@@ -47,11 +47,14 @@
   flex-shrink: 0;
 }
 
-.language-globe-btn__code {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+.language-globe-btn__flag {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  font-size: 20px;
   line-height: 1;
+  letter-spacing: 0;
 }
 
 .language-globe-btn__caret {
@@ -137,9 +140,9 @@
   border-radius: 7px;
   background: var(--ls-soft);
   color: var(--ls-ink);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 .language-globe-item__name {

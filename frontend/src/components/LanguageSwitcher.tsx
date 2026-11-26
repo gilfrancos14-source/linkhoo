@@ -2,6 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, ChevronDown, Globe2 } from 'lucide-react';
 
+/** Drapeaux des langues d'interface : France, États-Unis, Espagne. */
+const LANGUAGE_FLAGS: Record<string, string> = {
+  fr: '🇫🇷',
+  en: '🇺🇸',
+  es: '🇪🇸',
+};
+
 interface LanguageSwitcherProps {
   compact?: boolean;
 }
@@ -56,9 +63,9 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ compact = false }) 
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
-          <Globe2 size={18} strokeWidth={1.9} aria-hidden="true" />
-          <span className="language-globe-btn__code">{current.code.toUpperCase()}</span>
-          <ChevronDown size={13} strokeWidth={2.2} className="language-globe-btn__caret" aria-hidden="true" />
+          <span className="language-globe-btn__flag" aria-hidden="true">
+            {LANGUAGE_FLAGS[current.code]}
+          </span>
         </button>
 
         {open && (
@@ -76,7 +83,7 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ compact = false }) 
                   onClick={() => handleLanguageChange(lang.code)}
                 >
                   <span className="language-globe-item__badge" aria-hidden="true">
-                    {lang.code.toUpperCase()}
+                    {LANGUAGE_FLAGS[lang.code]}
                   </span>
                   <span className="language-globe-item__name">{lang.name}</span>
                   {active && <Check size={14} strokeWidth={2.6} aria-hidden="true" />}
