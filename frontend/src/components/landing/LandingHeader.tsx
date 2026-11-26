@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Icon from './icons';
@@ -40,6 +40,26 @@ export default function LandingHeader({
 }: LandingHeaderProps) {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Fermeture au clic extérieur / Échap, comme un vrai menu déroulant.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onOutside);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onOutside);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
 
   // Les pages marchés passent leurs propres libellés (déjà dans leur contexte) :
   // seuls les éléments par défaut de la landing sont traduits ici.
@@ -95,41 +115,71 @@ export default function LandingHeader({
             </Link>
           )}
           <LanguageSwitcher compact />
-          <button
-            type="button"
-            className="acc-icon-btn"
-            aria-label={t('landing.header.menuAria')}
-            aria-expanded={menuOpen}
-            aria-controls="acc-mobile-menu"
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            <Icon name="menu" size={28} />
-          </button>
-        </div>
-      </div>
 
-      <div
-        id="acc-mobile-menu"
-        className={`acc-mobile-menu${menuOpen ? ' acc-mobile-menu--open' : ''}`}
-      >
-        {navItems.map((item) =>
-          onItemClick ? (
+          <div className="acc-user-menu" ref={menuRef}>
             <button
-              key={item.href}
               type="button"
-              onClick={() => {
-                onItemClick(item.href);
-                setMenuOpen(false);
-              }}
+              className={`acc-user-menu__btn${menuOpen ? ' is-open' : ''}`}
+              aria-label={t('landing.header.menuAria')}
+              aria-expanded={menuOpen}
+              aria-controls="acc-user-menu-dropdown"
+              aria-haspopup="menu"
+              onClick={() => setMenuOpen((open) => !open)}
             >
-              {item.label}
+              <Icon name="menu" size={16} />
+              <span className="acc-user-menu__avatar" aria-hidden="true">
+                <Icon name="userRound" size={14} />
+              </span>
             </button>
-          ) : (
-            <Link key={item.href} to={item.href} onClick={() => setMenuOpen(false)}>
-              {item.label}
-            </Link>
-          ),
-        )}
+
+            {menuOpen && (
+              <div
+                id="acc-user-menu-dropdown"
+                className="acc-user-menu__dropdown"
+                role="menu"
+                aria-label={t('landing.header.mainNav')}
+              >
+                <span className="acc-user-menu__title">
+                  {t('landing.header.mainNav')}
+                </span>
+                {navItems.map((item) =>
+                  onItemClick ? (
+                    <button
+                      key={item.href}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        onItemClick(item.href);
+                        setMenuOpen(false);
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ) : (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      role="menuitem"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      {item.label}
+                    </Link>
+                  ),
+                )}
+                {account && (
+                  <Link
+                    to={account.to}
+                    role="menuitem"
+                    className="acc-user-menu__account"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    {account.label}
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </header>
   );

@@ -268,6 +268,89 @@
   display: flex;
 }
 
+/* Menu utilisateur façon Airbnb : pilule hamburger + avatar, dropdown ancré. */
+.acc-user-menu {
+  position: relative;
+}
+
+.acc-user-menu__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 4px 5px 4px 11px;
+  border: 1px solid #dddddd;
+  border-radius: 20px;
+  background: #ffffff;
+  color: #222222;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+
+.acc-user-menu__btn:hover,
+.acc-user-menu__btn.is-open {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.acc-user-menu__avatar {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #717171;
+  color: #ffffff;
+}
+
+.acc-user-menu__dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 40;
+  min-width: 220px;
+  padding: 8px 0;
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.acc-user-menu__title {
+  display: block;
+  padding: 8px 16px;
+  color: #717171;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.acc-user-menu__dropdown a,
+.acc-user-menu__dropdown button {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border: 0;
+  background: transparent;
+  color: #222222;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.acc-user-menu__dropdown a:hover,
+.acc-user-menu__dropdown button:hover {
+  background: #f7f7f7;
+}
+
+.acc-user-menu__account {
+  margin-top: 6px;
+  border-top: 1px solid #eeeeee;
+  font-weight: 600;
+}
+
 /* ---------- Hero ---------- */
 .acc-hero {
   position: relative;
