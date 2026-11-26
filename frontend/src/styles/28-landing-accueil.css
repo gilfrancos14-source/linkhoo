@@ -1187,8 +1187,10 @@
     padding: 24px 0;
   }
 
-  .acc-mobile-menu {
-    display: none !important;
+  /* Le menu hamburger reste utilisable même quand la nav desktop est
+     visible : le bouton ouvre une liste déroulante sous l'en-tête. */
+  .acc-mobile-menu--open {
+    display: flex !important;
   }
 
   .acc-hero {
