@@ -1,7 +1,11 @@
 /* Espace publicitaire du hero : bannières partenaires qui défilent. */
 
+/* Dans le hero de la landing, le composant remplace l'ancienne illustration
+   absolue : on réaffirme le positionnement à droite (anti-cascade). */
 .partner-banners.acc-hero__art {
+  position: absolute;
   top: 8px;
+  right: 4%;
   width: 260px;
   pointer-events: auto;
   user-select: auto;
