@@ -72,9 +72,9 @@ export default function MaquetteHome({ market, data }: MaquetteHomeProps) {
       group.classList.add('mq-reveal-armed');
       Array.from(group.children).forEach((child, index) => {
         const card = child as HTMLElement;
-        // Si plusieurs cartes entrent en même temps, on garde un léger décalage
-        // pour l'effet « une par une ».
-        card.style.transitionDelay = `${Math.min(index, 8) * 0.09}s`;
+        // Si plusieurs cartes entrent en même temps, on garde un décalage de
+        // 3 secondes pour l'effet « une par une ».
+        card.style.transitionDelay = `${Math.min(index, 8) * 3}s`;
         cards.push(card);
       });
     }
