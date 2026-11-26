@@ -17,10 +17,10 @@ export default function EscapadesSection({ market, cards }: EscapadesSectionProp
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" data-purpose="weekend-escapes">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mq-reveal-group flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-            <span className="text-orange-500">
+            <span className="text-[color:var(--market-accent)]">
               <i className="fa-solid fa-suitcase-rolling"></i>
             </span>
             {t('escapades.title')}
@@ -31,7 +31,7 @@ export default function EscapadesSection({ market, cards }: EscapadesSectionProp
         </div>
       </div>
       <div className="relative">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="mq-reveal-group grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {cards.map((card) => (
             <Link
               key={card.id}

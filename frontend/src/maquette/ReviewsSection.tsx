@@ -17,7 +17,7 @@ export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
         title={t('reviews.title')}
         subtitle={t('reviews.subtitle')}
       />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="mq-reveal-group grid grid-cols-1 md:grid-cols-3 gap-5">
         {reviews.map((review) => (
           <article
             key={review.id}
@@ -27,7 +27,7 @@ export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
               {review.initials}
             </div>
             <div className="flex-1">
-              <div className="flex items-center text-amber-400 text-xs gap-1 mb-1.5">
+              <div className="flex items-center text-[color:var(--market-accent-light)] text-xs gap-1 mb-1.5">
                 {Array.from({ length: review.rating }).map((_, index) => (
                   <i key={index} className="fa-solid fa-star"></i>
                 ))}

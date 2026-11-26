@@ -54,6 +54,8 @@
      couleur dominante du drapeau dès qu'un segment de marché est présent. */
   --market-accent: #6d3fd9;
   --market-accent-dark: #5b3fd6;
+  --market-accent-light: color-mix(in srgb, var(--market-accent) 55%, white);
+  --market-accent-soft: color-mix(in srgb, var(--market-accent) 15%, transparent);
 }
 
 [data-market] {
@@ -193,40 +195,40 @@
   --admin-border: #d3ecd9;
 }
 
-/* Gabon — Vert / Jaune / Bleu */
+/* Gabon — Vert / Jaune / Bleu (accent bleu du drapeau) */
 [data-market="GA"] {
-  --sky: #0e7490;
-  --sky-dark: #155e75;
-  --sky-pale: #ecfeff;
+  --sky: #1d4ed8;
+  --sky-dark: #1e40af;
+  --sky-pale: #eff6ff;
   --sun: #eab308;
-  --gradient-primary: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
-  --sky-50:  #ecfeff;
-  --sky-100: #cffafe;
-  --sky-200: #a5f3fc;
-  --sky-400: #22d3ee;
-  --sky-500: #06b6d4;
-  --sky-600: #0891b2;
-  --sky-900: #164e63;
-  --admin-surface-alt: #f5fdfe;
-  --admin-border: #cfeef3;
+  --gradient-primary: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  --sky-50:  #eff6ff;
+  --sky-100: #dbeafe;
+  --sky-200: #bfdbfe;
+  --sky-400: #60a5fa;
+  --sky-500: #3b82f6;
+  --sky-600: #2563eb;
+  --sky-900: #1e3a8a;
+  --admin-surface-alt: #f8faff;
+  --admin-border: #dbe6fd;
 }
 
-/* Guinée — Vert / Rouge / Jaune */
+/* Guinée — Vert / Jaune / Rouge (accent vert du drapeau) */
 [data-market="GN"] {
-  --sky: #0f766e;
-  --sky-dark: #115e59;
-  --sky-pale: #f0fdfa;
+  --sky: #15803d;
+  --sky-dark: #166534;
+  --sky-pale: #f0fdf4;
   --sun: #eab308;
-  --gradient-primary: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
-  --sky-50:  #f0fdfa;
-  --sky-100: #ccfbf1;
-  --sky-200: #99f6e4;
-  --sky-400: #2dd4bf;
-  --sky-500: #14b8a6;
-  --sky-600: #0d9488;
-  --sky-900: #134e4a;
-  --admin-surface-alt: #f6fdfc;
-  --admin-border: #cfeee9;
+  --gradient-primary: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  --sky-50:  #f0fdf4;
+  --sky-100: #dcfce7;
+  --sky-200: #bbf7d0;
+  --sky-400: #4ade80;
+  --sky-500: #22c55e;
+  --sky-600: #16a34a;
+  --sky-900: #14532d;
+  --admin-surface-alt: #f7fdf9;
+  --admin-border: #d7f0df;
 }
 
 /* Mali — Vert / Jaune / Rouge */
@@ -265,21 +267,21 @@
   --admin-border: #fbdcc3;
 }
 
-/* RDC — Bleu ciel / Jaune / Rouge */
+/* RDC — Bleu ciel / Jaune / Rouge (accent bleu ciel du drapeau) */
 [data-market="CD"] {
-  --sky: #4338ca;
-  --sky-dark: #3730a3;
-  --sky-pale: #eef2ff;
+  --sky: #0284c7;
+  --sky-dark: #0369a1;
+  --sky-pale: #f0f9ff;
   --sun: #eab308;
-  --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-  --sky-50:  #eef2ff;
-  --sky-100: #e0e7ff;
-  --sky-200: #c7d2fe;
-  --sky-400: #818cf8;
-  --sky-500: #6366f1;
-  --sky-600: #4f46e5;
-  --sky-900: #312e81;
-  --admin-surface-alt: #f8f9ff;
-  --admin-border: #dcdff5;
+  --gradient-primary: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  --sky-50:  #f0f9ff;
+  --sky-100: #e0f2fe;
+  --sky-200: #bae6fd;
+  --sky-400: #38bdf8;
+  --sky-500: #0ea5e9;
+  --sky-600: #0284c7;
+  --sky-900: #075985;
+  --admin-surface-alt: #f6fcff;
+  --admin-border: #d5effb;
 }
 

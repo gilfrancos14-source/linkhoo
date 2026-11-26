@@ -31,10 +31,10 @@ export default function TourismSection({ market, view }: TourismSectionProps) {
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" data-purpose="tourism-section">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mq-reveal-group flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-            <span className="text-orange-500">
+            <span className="text-[color:var(--market-accent)]">
               <i className="fa-solid fa-compass"></i>
             </span>
             {t('tourism.title')}
@@ -44,7 +44,7 @@ export default function TourismSection({ market, view }: TourismSectionProps) {
           </p>
         </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+      <div className="mq-reveal-group grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         <div className="lg:col-span-7 rounded-3xl overflow-hidden relative shadow-lg min-h-[300px] flex flex-col justify-end p-6 sm:p-8 text-white">
           {view.bannerImage && (
             <img
@@ -67,7 +67,7 @@ export default function TourismSection({ market, view }: TourismSectionProps) {
             <p className="text-xs sm:text-sm text-slate-200 mt-2">
               {t('tourism.description')}
             </p>
-            <p className="font-handwriting text-xl text-amber-300 mt-1">
+            <p className="font-handwriting text-xl text-[color:var(--market-accent-light)] mt-1">
               {t('tourism.sentence', { countrySentence })}
             </p>
             <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/20 text-center sm:text-left">
@@ -125,7 +125,7 @@ function TourismHighlights({ view }: { view: TourismView }) {
       )}
 
       {view.minis.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="mq-reveal-group grid grid-cols-2 sm:grid-cols-4 gap-2">
           {view.minis.map((card) => {
             const selected = selectedId === card.id;
             return (

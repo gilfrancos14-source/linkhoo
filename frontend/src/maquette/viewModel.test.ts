@@ -337,15 +337,15 @@ describe('buildReviews', () => {
 describe('internationalisation du view model', () => {
   const translate: TranslateFn = (key, options) => {
     const dict: Record<string, string> = {
-      'promos.promo_15.title': 'Villas and apartments',
-      'promos.promo_15.text': 'Spacious stays at reduced prices',
-      'promos.promo_15.description': 'Save 15% on spacious villas.',
-      'promos.promo_10.title': 'Family getaways',
-      'promos.promo_10.text': 'Comfortable homes for the family',
-      'promos.promo_10.description': 'Save 10% on family homes.',
-      'promos.promo_5.title': 'Last minute',
-      'promos.promo_5.text': 'The last deals to grab',
-      'promos.promo_5.description': 'Save 5% on last deals.',
+      'promos.group_promo_15.title': 'Villas and apartments',
+      'promos.group_promo_15.text': 'Spacious stays at reduced prices',
+      'promos.group_promo_15.description': 'Save 15% on spacious villas.',
+      'promos.group_promo_10.title': 'Family getaways',
+      'promos.group_promo_10.text': 'Comfortable homes for the family',
+      'promos.group_promo_10.description': 'Save 10% on family homes.',
+      'promos.group_promo_5.title': 'Last minute',
+      'promos.group_promo_5.text': 'The last deals to grab',
+      'promos.group_promo_5.description': 'Save 5% on last deals.',
       'promos.perNight': '/night',
     };
     if (key === 'popular.bedrooms') {

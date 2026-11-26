@@ -64,10 +64,10 @@ export default function PromosSection({ market, cards, banners }: PromosSectionP
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" data-purpose="promotional-offers">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div className="mq-reveal-group flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-            <span className="text-orange-500">
+            <span className="text-[color:var(--market-accent)]">
               <i className="fa-solid fa-tags"></i>
             </span>
             {t('promos.title')}
@@ -79,8 +79,8 @@ export default function PromosSection({ market, cards, banners }: PromosSectionP
         {banners.length > 0 ? (
           <MaquetteBannerCarousel banners={banners} />
         ) : (
-          <div className="flex items-center gap-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 px-4 py-2 rounded-2xl max-w-md shadow-sm">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center text-lg flex-shrink-0">
+          <div className="flex items-center gap-3 bg-[color:var(--market-accent-soft)] border border-[color:var(--market-accent-soft)] px-4 py-2 rounded-2xl max-w-md shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-[color:var(--market-accent-soft)] text-[color:var(--market-accent)] flex items-center justify-center text-lg flex-shrink-0">
               <i className="fa-solid fa-gift"></i>
             </div>
             <div className="text-xs">
@@ -91,7 +91,7 @@ export default function PromosSection({ market, cards, banners }: PromosSectionP
         )}
       </div>
       {cards.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="mq-reveal-group grid grid-cols-1 lg:grid-cols-12 gap-6">
         {cards.map((card) => (
           <article
             key={card.key}
@@ -109,7 +109,7 @@ export default function PromosSection({ market, cards, banners }: PromosSectionP
               }
             }}
           >
-            <div className="relative h-40 overflow-hidden bg-gradient-to-br from-slate-100 via-slate-50 to-orange-50 flex items-center justify-center">
+            <div className="relative h-40 overflow-hidden bg-gradient-to-br from-slate-100 via-slate-50 to-[color:var(--market-accent-soft)] flex items-center justify-center">
               {card.image ? (
                 <img
                   alt={card.alt}
@@ -151,7 +151,7 @@ export default function PromosSection({ market, cards, banners }: PromosSectionP
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <span className="text-xs font-bold text-slate-900">
-                  {feature.title} <span className="text-emerald-600">{feature.discount}</span>
+                  {feature.title} <span className="text-[color:var(--market-accent-dark)]">{feature.discount}</span>
                 </span>
                 <p className="text-[10px] text-slate-500">{feature.description}</p>
               </div>
@@ -195,7 +195,7 @@ export default function PromosSection({ market, cards, banners }: PromosSectionP
                   <span className="block text-sm font-bold text-white truncate">
                     {singleRoom.title}
                   </span>
-                  <span className="block text-[11px] font-extrabold text-amber-300">
+                  <span className="block text-[11px] font-extrabold text-[color:var(--market-accent-light)]">
                     {singleRoom.price}{' '}
                     <span className="text-white/70 font-normal">{t('promos.perNight')}</span>
                   </span>

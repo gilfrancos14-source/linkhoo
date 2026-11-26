@@ -17,12 +17,12 @@ export default function HeroArrivalScene() {
             <stop offset="1" stopColor="#d9ab7e" />
           </linearGradient>
           <linearGradient id="ha-roof" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#ff9b5c" />
-            <stop offset="1" stopColor="#e95a2b" />
+            <stop offset="0" stopColor="var(--market-accent)" />
+            <stop offset="1" stopColor="var(--market-accent-dark)" />
           </linearGradient>
           <linearGradient id="ha-roof-side" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#e35b2a" />
-            <stop offset="1" stopColor="#b93d18" />
+            <stop offset="0" stopColor="color-mix(in srgb, var(--market-accent-dark) 85%, #000)" />
+            <stop offset="1" stopColor="color-mix(in srgb, var(--market-accent-dark) 70%, #000)" />
           </linearGradient>
           <radialGradient id="ha-glow">
             <stop offset="0" stopColor="#ffd488" stopOpacity="0.95" />
@@ -50,7 +50,7 @@ export default function HeroArrivalScene() {
           <polygon points="178,55 225,27 302,82 255,108" fill="url(#ha-roof-side)" />
           <polygon points="98,110 178,45 258,110" fill="url(#ha-roof)" />
           <polygon points="112,105 178,62 244,105" fill="url(#ha-wall)" />
-          <path d="M98 110 178 45 258 110" fill="none" stroke="#c9431c" strokeWidth="3" strokeLinejoin="round" opacity="0.5" />
+          <path d="M98 110 178 45 258 110" fill="none" stroke="var(--market-accent-dark)" strokeWidth="3" strokeLinejoin="round" opacity="0.5" />
 
           {/* Fenêtre */}
           <rect x="124" y="128" width="34" height="34" rx="4" fill="#bfe6f5" stroke="#fff" strokeWidth="3" />
@@ -87,7 +87,7 @@ export default function HeroArrivalScene() {
         </g>
 
         {/* Petits éclats décoratifs */}
-        <g className="hero-arrival__sparkles" fill="#ff9b5c">
+        <g className="hero-arrival__sparkles" fill="var(--market-accent)">
           <circle cx="286" cy="52" r="3" />
           <circle cx="78" cy="86" r="2.5" />
           <circle cx="304" cy="140" r="2" />

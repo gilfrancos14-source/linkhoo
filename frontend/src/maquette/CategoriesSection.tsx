@@ -10,11 +10,11 @@ interface CategoriesSectionProps {
 
 const BADGES = [
   { className: 'bg-[color:var(--market-accent)]', icon: 'fa-building' },
-  { className: 'bg-cyan-600', icon: 'fa-tree-city' },
-  { className: 'bg-amber-500', icon: 'fa-house' },
-  { className: 'bg-indigo-600', icon: 'fa-bed' },
-  { className: 'bg-emerald-600', icon: 'fa-door-open' },
-  { className: 'bg-teal-600', icon: 'fa-city' },
+  { className: 'bg-[color:var(--market-accent-dark)]', icon: 'fa-tree-city' },
+  { className: 'bg-[color:var(--market-accent)]', icon: 'fa-house' },
+  { className: 'bg-[color:var(--market-accent-dark)]', icon: 'fa-bed' },
+  { className: 'bg-[color:var(--market-accent)]', icon: 'fa-door-open' },
+  { className: 'bg-[color:var(--market-accent-dark)]', icon: 'fa-city' },
 ] as const;
 
 const GRID_BY_COUNT: Record<number, string> = {
@@ -33,10 +33,10 @@ export default function CategoriesSection({ cards, banners }: CategoriesSectionP
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" data-purpose="categories-section">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div className="mq-reveal-group flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-            <span className="text-orange-500">
+            <span className="text-[color:var(--market-accent)]">
               <i className="fa-solid fa-shapes"></i>
             </span>
             {t('categories.sectionTitle')}
@@ -48,7 +48,7 @@ export default function CategoriesSection({ cards, banners }: CategoriesSectionP
         <MaquetteBannerCarousel banners={banners} />
       </div>
       {cards.length > 0 && (
-        <div className={`grid ${gridCols} gap-3`}>
+        <div className={`mq-reveal-group grid ${gridCols} gap-3`}>
           {cards.map((card, index) => {
             const badge = BADGES[index % BADGES.length];
             return (

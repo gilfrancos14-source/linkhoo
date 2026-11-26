@@ -163,7 +163,7 @@ const PROMO_GROUPS = [
   {
     key: 'promo_15',
     badge: '-15%',
-    badgeClassName: 'bg-[#FF5E1E]',
+    badgeClassName: 'bg-[color:var(--market-accent)]',
     title: 'Villas et appartements',
     featureTitle: 'Villas et appartements',
     text: 'Des séjours spacieux à prix réduit',
@@ -173,7 +173,7 @@ const PROMO_GROUPS = [
   {
     key: 'promo_10',
     badge: '-10%',
-    badgeClassName: 'bg-emerald-600',
+    badgeClassName: 'bg-[color:var(--market-accent-dark)]',
     title: 'Escapades en famille',
     featureTitle: 'Escapades en famille',
     text: 'Des logements confortables pour toute la famille',
@@ -183,7 +183,7 @@ const PROMO_GROUPS = [
   {
     key: 'promo_5',
     badge: '-5%',
-    badgeClassName: 'bg-purple-600',
+    badgeClassName: 'bg-[color:var(--market-accent)]',
     title: 'Dernière minute',
     featureTitle: 'Dernière minute',
     text: 'Les dernières disponibilités à saisir',
@@ -297,12 +297,18 @@ export function buildPromos(
   return PROMO_GROUPS.map((group) => {
     const groupRooms = active.filter((room) => room.promo_group === group.key);
     const first = groupRooms[0];
+    // Les clés i18n suivent le nom des groupes renvoyés par l'API
+    // (`group_promo_15`…) : sans le préfixe `group_`, i18next renvoyait la clé
+    // brute (`promos.promo_15.title`) à l'écran.
+    const i18nKey = `promos.group_${group.key}`;
     const title = translate
-      ? translate(`promos.${group.key}.title`)
+      ? translate(`${i18nKey}.title`, { defaultValue: group.title })
       : group.title;
-    const text = translate ? translate(`promos.${group.key}.text`) : group.text;
+    const text = translate
+      ? translate(`${i18nKey}.text`, { defaultValue: group.text })
+      : group.text;
     const description = translate
-      ? translate(`promos.${group.key}.description`)
+      ? translate(`${i18nKey}.description`, { defaultValue: group.description })
       : group.description;
 
     return {
