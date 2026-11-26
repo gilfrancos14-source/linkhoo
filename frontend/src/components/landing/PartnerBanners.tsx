@@ -33,20 +33,22 @@ export default function PartnerBanners({ className = '' }: PartnerBannersProps) 
                 <strong>{caption}</strong>
                 <span className="partner-banners__cta">{t('partnerAds.discover')}</span>
               </div>
-              <img
-                className={`partner-banners__img${loaded[slide] ? ' is-loaded' : ''}`}
-                src={ad.image}
-                alt={t('partnerAds.imageAlt', { name: caption })}
-                decoding="async"
-                onLoad={() => setLoaded((current) => ({ ...current, [slide]: true }))}
-                onError={() => setLoaded((current) => ({ ...current, [slide]: false }))}
-              />
+              {ad.image && (
+                <img
+                  className={`partner-banners__img${loaded[slide] ? ' is-loaded' : ''}`}
+                  src={ad.image}
+                  alt={t('partnerAds.imageAlt', { name: caption })}
+                  decoding="async"
+                  onLoad={() => setLoaded((current) => ({ ...current, [slide]: true }))}
+                  onError={() => setLoaded((current) => ({ ...current, [slide]: false }))}
+                />
+              )}
             </>
           );
 
           return (
             <div
-              key={ad.image}
+              key={ad.textKey}
               className={`partner-banners__slide${slide === index ? ' is-active' : ''}`}
               aria-hidden={slide !== index}
             >
@@ -64,7 +66,7 @@ export default function PartnerBanners({ className = '' }: PartnerBannersProps) 
       <div className="partner-banners__dots" aria-hidden="true">
         {PARTNER_ADS.map((ad, slide) => (
           <button
-            key={ad.image}
+            key={ad.textKey}
             type="button"
             tabIndex={-1}
             className={`partner-banners__dot${slide === index ? ' is-active' : ''}`}
