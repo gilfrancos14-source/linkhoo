@@ -31,6 +31,8 @@ interface LandingHeaderProps {
   account?: HeaderAccount;
   /** Les pages marché masquent recherche, compte et menu utilisateur. */
   showActions?: boolean;
+  /** Bouton hamburger simple (sans avatar) qui ouvre le menu des sections. */
+  showMenu?: boolean;
   auth?: HeaderAuth;
 }
 
@@ -47,6 +49,7 @@ export default function LandingHeader({
   onItemClick,
   account,
   showActions = true,
+  showMenu = false,
   auth,
 }: LandingHeaderProps) {
   const { t } = useTranslation();
@@ -137,6 +140,67 @@ export default function LandingHeader({
               <Link to={auth.loginTo} className="acc-auth-btn acc-auth-btn--login">
                 {t('footer.login')}
               </Link>
+            </div>
+          )}
+
+          {showMenu && (
+            <div className="acc-nav-menu" ref={menuRef}>
+              <button
+                type="button"
+                className="acc-nav-menu__btn"
+                aria-label={t('landing.header.menuAria')}
+                aria-expanded={menuOpen}
+                aria-controls="acc-nav-menu-dropdown"
+                aria-haspopup="menu"
+                onClick={() => setMenuOpen((open) => !open)}
+              >
+                <Icon name="menu" size={24} />
+              </button>
+
+              {menuOpen && (
+                <div
+                  id="acc-nav-menu-dropdown"
+                  className="acc-user-menu__dropdown"
+                  role="menu"
+                  aria-label={t('landing.header.mainNav')}
+                >
+                  <span className="acc-user-menu__title">{t('landing.header.mainNav')}</span>
+                  {navItems.map((item) =>
+                    onItemClick ? (
+                      <button
+                        key={item.href}
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          onItemClick(item.href);
+                          setMenuOpen(false);
+                        }}
+                      >
+                        {item.label}
+                      </button>
+                    ) : (
+                      <Link
+                        key={item.href}
+                        to={item.href}
+                        role="menuitem"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        {item.label}
+                      </Link>
+                    ),
+                  )}
+                  {auth && (
+                    <Link
+                      to={auth.loginTo}
+                      role="menuitem"
+                      className="acc-user-menu__account"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      {t('footer.login')}
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

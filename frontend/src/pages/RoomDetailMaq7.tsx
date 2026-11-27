@@ -374,35 +374,6 @@ function RoomDetailContent() {
         <section className="m7-details" aria-label={t('roomDetailSection2.aria')}>
           <div className="m7-details__grid">
             <div className="m7-details__left">
-              <div className="m7-highlights">
-                <div className="m7-highlights__cell m7-highlights__cell--laurel">
-                  <LaurelIcon />
-                  <strong>
-                    {t(
-                      room?.isGuestFavourite
-                        ? 'roomDetailSection2.favouriteBadge'
-                        : 'roomDetailSection2.verifiedBadge',
-                    )}
-                  </strong>
-                </div>
-                <div className="m7-highlights__cell">
-                  <LaurelIcon />
-                  <strong>
-                    {t('roomDetailSection2.categoryText', {
-                      category: room?.categoryTitle ?? t('roomDetailHero.privateRoom'),
-                    })}
-                  </strong>
-                </div>
-                <div className="m7-highlights__cell m7-highlights__cell--rating">
-                  <strong>{reviews?.room_avg != null ? formatPrice(reviews.room_avg).replace(/\s/g, ',') : '—'}</strong>
-                  <span className="m7-highlights__stars" aria-hidden="true">★★★★★</span>
-                </div>
-                <div className="m7-highlights__cell m7-highlights__cell--reviews">
-                  <strong>{reviews?.room_count ?? 0}</strong>
-                  <span>{t('roomDetailSection2.comments')}</span>
-                </div>
-              </div>
-
               <div className="m7-detail-row">
                 <span className="m7-detail-row__icon"><Icon name="mapPin" size={18} /></span>
                 <div>
@@ -1085,16 +1056,6 @@ function TagIcon() {
   );
 }
 
-function LaurelIcon() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="1.6" aria-hidden="true">
-      <path d="M8 21C4 17 4 9 9 4" />
-      <path d="M16 21c4-4 4-12-1-17" />
-      <path d="M9 4c3 0 5 2 5 2M9 4c0 3 1 5 1 5M16 4c-3 0-5 2-5 2M16 4c0 3-1 5-1 5" />
-    </svg>
-  );
-}
-
 function UtensilsIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#222" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
@@ -1135,6 +1096,7 @@ function MarketHeader({ homePath }: { homePath: string }) {
         onItemClick={(purpose) => navigate(homePath, { state: { scrollTo: purpose } })}
         brandTo={homePath}
         showActions={false}
+        showMenu
       />
     </div>
   );

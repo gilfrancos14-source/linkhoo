@@ -215,6 +215,30 @@ html[data-market] .landing {
   gap: 8px;
 }
 
+/* Hamburger des pages marché : ouvre le menu des sections au clic. */
+.acc-nav-menu {
+  position: relative;
+}
+
+.acc-nav-menu__btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--acc-line, #dddddd);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--acc-ink, #222222);
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+
+.acc-nav-menu__btn:hover,
+.acc-nav-menu__btn[aria-expanded='true'] {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
 .acc-header__auth {
   display: flex;
   align-items: center;

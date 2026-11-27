@@ -222,7 +222,7 @@ function SearchPagination({ currentPage, totalPages, onPageChange }: PaginationP
 function SearchHeader() {
   return (
     <div className="search-header-scope">
-      <LandingHeader showActions={false} />
+      <LandingHeader showActions={false} showMenu />
     </div>
   );
 }

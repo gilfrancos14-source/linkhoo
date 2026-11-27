@@ -355,11 +355,15 @@ describe('App — racine et marché', () => {
     expect(within(nav).getByRole('button', { name: 'Événements' })).toBeInTheDocument();
     expect(within(nav).getByRole('button', { name: 'Tourisme' })).toBeInTheDocument();
     expect(within(nav).getByRole('button', { name: 'Avis' })).toBeInTheDocument();
-    // L'en-tête marché ne garde que le logo, les liens et le sélecteur de langue.
+    // Pas de recherche ni de compte dans l'en-tête marché, mais un hamburger.
     const header = screen.getByRole('banner');
     expect(within(header).queryByRole('button', { name: 'Rechercher' })).toBeNull();
     expect(within(header).queryByRole('link', { name: 'Mon espace' })).toBeNull();
-    expect(within(header).queryByRole('button', { name: 'Menu' })).toBeNull();
+    const menuButton = within(header).getByRole('button', { name: 'Menu' });
+    expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.click(menuButton);
+    expect(menuButton).toHaveAttribute('aria-expanded', 'true');
+    expect(within(header).getByRole('menu')).toBeInTheDocument();
 
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
     expect(document.documentElement.getAttribute('data-market')).toBe('CI');
