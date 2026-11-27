@@ -148,6 +148,7 @@ const adminMeResponse = {
     'destinations',
     'escapades',
     'promotions',
+    'chambres',
   ],
 };
 

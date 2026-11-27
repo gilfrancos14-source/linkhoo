@@ -11,6 +11,7 @@ export const ADMIN_PERMISSION_KEYS = [
   'destinations',
   'escapades',
   'promotions',
+  'chambres',
   'stats',
 ] as const;
 
@@ -30,6 +31,7 @@ export const ADMIN_PERMISSIONS: readonly AdminPermissionDef[] = [
   { key: 'destinations', label: 'Destinations', description: 'Gestion des destinations touristiques' },
   { key: 'escapades', label: 'Escapades', description: "Gestion des cartes de la section Escapade weekend" },
   { key: 'promotions', label: 'Promotions', description: 'Groupes de promotion des chambres' },
+  { key: 'chambres', label: 'Chambres', description: 'Ajouter des appartements pour le compte des gérants' },
   { key: 'stats', label: 'Tableau de bord', description: 'Statistiques et indicateurs globaux' },
 ];
 

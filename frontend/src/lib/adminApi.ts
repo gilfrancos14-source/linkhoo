@@ -1,7 +1,7 @@
 import type { MarketCode } from '../config/markets';
 
 import { API_BASE, REQUEST_TIMEOUT_MS, parseJsonBody, clearApiCache } from './api';
-import type { VerificationDocument } from './api';
+import type { VerificationDocument, RoomData } from './api';
 
 // F4 : le jeton admin vit dans un cookie HttpOnly posé par le serveur ; il
 // n'est jamais accessible au JavaScript (aucun localStorage/sessionStorage de
@@ -102,6 +102,7 @@ export type AdminPermissionKey =
   | 'destinations'
   | 'escapades'
   | 'promotions'
+  | 'chambres'
   | 'stats';
 
 export interface AdminData {
@@ -146,6 +147,20 @@ export interface AdminTeamUpdatePayload {
   prenom?: string;
   permissions?: AdminPermissionKey[];
   is_superadmin?: boolean;
+}
+
+/** Gérant proposé au sélecteur de la création de chambre par l'admin. */
+export interface AdminRoomGerant {
+  id: string;
+  nom: string | null;
+  prenom: string | null;
+  email: string;
+  market: MarketCode;
+}
+
+export interface AdminRoomCreatePayload extends Omit<RoomData, 'id'> {
+  /** UUID interne du gérant (jamais son Clerk user id). */
+  gerantId: string;
 }
 
 export interface AdminStats {
@@ -239,8 +254,10 @@ export interface AdminBanner {
   id: string;
   section: 'popular' | 'promos' | 'categories' | 'events' | 'hero';
   img: string;
-  alt: string;
-  link: string;
+  /** Facultatif : une bannière peut être purement visuelle. */
+  alt?: string | null;
+  /** Facultatif : pas de lien cliquable si vide. */
+  link?: string | null;
   market: MarketCode;
   order: number;
   created_at?: string;
@@ -730,6 +747,16 @@ export const apiAdmin = {
   updateRoomPromoGroup: (roomId: string, data: { promo_group: string | null; promo_start?: string | null; promo_end?: string | null }) =>
     adminRequest<any>(`/admin/rooms/${roomId}/promo-group`, {
       method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  /** Gérants pouvant recevoir une chambre créée depuis le back-office. */
+  listRoomGerants: () => adminRequest<AdminRoomGerant[]>('/admin/rooms/gerants'),
+
+  /** Création d'une chambre au nom d'un gérant (cookie admin, pas de Clerk). */
+  createRoom: (data: AdminRoomCreatePayload) =>
+    adminRequest<RoomData>('/admin/rooms', {
+      method: 'POST',
       body: JSON.stringify(data),
     }),
 };

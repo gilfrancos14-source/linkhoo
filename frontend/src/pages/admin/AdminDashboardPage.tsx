@@ -663,6 +663,17 @@ export default function AdminDashboardPage() {
             <ArrowUpRight size={16} color="#94a3b8" />
           </Link>
 
+          <Link to="/admin/chambres/ajouter" className="dash-shortcut-card">
+            <div className="dash-shortcut-icon">
+              <Building2 size={20} />
+            </div>
+            <div className="dash-shortcut-info">
+              <span className="dash-shortcut-label">Ajouter un appartement</span>
+              <span className="dash-shortcut-desc">Publier au nom d'un gérant</span>
+            </div>
+            <ArrowUpRight size={16} color="#94a3b8" />
+          </Link>
+
           <Link to="/admin/reservations" className="dash-shortcut-card">
             <div className="dash-shortcut-icon">
               <CalendarCheck size={20} />

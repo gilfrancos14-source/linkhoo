@@ -1,6 +1,7 @@
-import { Fragment, useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { Fragment, useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMarket } from '../../contexts/MarketContext';
+import type { MarketCode } from '../../config/markets';
 import { useHomePath } from '../../hooks/useHomePath';
 import { createRoom, updateRoom, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
@@ -42,10 +43,25 @@ interface ChambreFormMaq3Props {
   onPreviewChange?: (snapshot: PreviewSnapshot) => void;
   /** Annonce existante : le formulaire passe en mode modification. */
   room?: Room;
+  /** Marché imposé (création admin au nom d'un gérant d'un autre marché). */
+  marketOverride?: MarketCode;
+  /** Champs supplémentaires à l'étape 1 (ex. sélecteur de gérant côté admin). */
+  extraFields?: ReactNode;
+  /** Surcharges pour la création admin (cookie HttpOnly au lieu du Clerk). */
+  uploadFile?: (file: File) => Promise<{ url: string }>;
+  saveRoom?: (payload: Omit<Room, 'id'>) => Promise<unknown>;
 }
 
-export default function ChambreFormMaq3({ onPreviewChange, room }: ChambreFormMaq3Props) {
-  const { market } = useMarket();
+export default function ChambreFormMaq3({
+  onPreviewChange,
+  room,
+  marketOverride,
+  extraFields,
+  uploadFile = (file) => apiUpload.upload(file),
+  saveRoom,
+}: ChambreFormMaq3Props) {
+  const { market: contextMarket } = useMarket();
+  const market = marketOverride ?? contextMarket;
   const navigate = useNavigate();
   const homePath = useHomePath();
   const gerantPath = `${homePath}/gerant`;
@@ -213,7 +229,7 @@ export default function ChambreFormMaq3({ onPreviewChange, room }: ChambreFormMa
           continue;
         }
         if (!photo.file) continue;
-        const { url } = await apiUpload.upload(photo.file).catch((error: unknown) => {
+        const { url } = await uploadFile(photo.file).catch((error: unknown) => {
           throw new Error(
             `Photo ${i + 1} refusée : ${error instanceof Error ? error.message : 'téléversement impossible'}`,
           );
@@ -257,13 +273,13 @@ export default function ChambreFormMaq3({ onPreviewChange, room }: ChambreFormMa
         isPopular: form.isPopular,
       };
 
-      if (room) {
+      if (room && !saveRoom) {
         // `disponible` est piloté par la bascule de la liste : une
         // modification d'annonce ne doit pas remettre la chambre en ligne.
         const { disponible: _ignoredDisponible, ...updates } = payload;
         await updateRoom(room.id, updates);
       } else {
-        await createRoom(payload);
+        await (saveRoom ? saveRoom(payload) : createRoom(payload));
       }
       setSaved(true);
     } catch (error) {
@@ -386,6 +402,8 @@ export default function ChambreFormMaq3({ onPreviewChange, room }: ChambreFormMa
                 </p>
               </div>
             </div>
+
+            {extraFields && <div className="mt-6">{extraFields}</div>}
 
             <div className="mt-6 grid gap-5 md:grid-cols-2">
               <div>

@@ -170,8 +170,9 @@ export async function fetchRoomById(id: string): Promise<Room> {
   return mapRoom(data);
 }
 
-export async function createRoom(data: Omit<Room, 'id'>): Promise<Room> {
-  const payload: Omit<RoomData, 'id'> = {
+/** Conversion Room (front) -> RoomData (API) partagée avec la création admin. */
+export function toRoomDataPayload(data: Omit<Room, 'id'>): Omit<RoomData, 'id'> {
+  return {
     title: data.title,
     subtitle: data.subtitle,
     info: data.info,
@@ -200,7 +201,10 @@ export async function createRoom(data: Omit<Room, 'id'>): Promise<Room> {
     promo_end: data.promoEnd ?? null,
     image_labels: data.imageLabels ?? {},
   };
-  const created = await apiRooms.create(payload);
+}
+
+export async function createRoom(data: Omit<Room, 'id'>): Promise<Room> {
+  const created = await apiRooms.create(toRoomDataPayload(data));
   return mapRoom(created);
 }
 
