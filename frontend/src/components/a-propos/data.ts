@@ -10,12 +10,12 @@ export const ABOUT_STAT_ICONS: readonly IconName[] = [
 
 export const ABOUT_BENEFIT_STYLES: readonly {
   icon: IconName;
-  tone: 'green' | 'brand' | 'orange' | 'indigo';
+  tone: 'green' | 'brand' | 'orange' | 'navy';
 }[] = [
   { icon: 'shieldCheck', tone: 'green' },
   { icon: 'zap', tone: 'brand' },
   { icon: 'headphones', tone: 'orange' },
-  { icon: 'map', tone: 'indigo' },
+  { icon: 'map', tone: 'navy' },
 ];
 
 export const ABOUT_TEAM_ICONS: readonly IconName[] = [

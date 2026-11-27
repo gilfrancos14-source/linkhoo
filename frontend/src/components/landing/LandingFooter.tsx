@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import Icon from './icons';
 import PWAControlPanel from '../PWAControlPanel';
 import { useHomePath } from '../../hooks/useHomePath';
+import { useHostMarket } from '../../hooks/useHostMarket';
 import { useMarket } from '../../contexts/MarketContext';
 import { ApiError, apiNewsletter } from '../../lib/api';
 import { isValidEmail } from '../../utils/validators';
@@ -21,6 +22,9 @@ const SOCIALS = [
 export default function LandingFooter() {
   const { t, i18n } = useTranslation();
   const homePath = useHomePath();
+  // Liens de compte : marché de l'URL si on est sur /bj, /sn…, sinon pays
+  // détecté du visiteur sur l'accueil (au lieu du /ci en dur).
+  const hostHomePath = `/${useHostMarket().toLowerCase()}`;
   const { market } = useMarket();
   const [email, setEmail] = useState('');
   const [note, setNote] = useState(t('footer.newsletterNote'));
@@ -187,13 +191,15 @@ export default function LandingFooter() {
             <h3>{t('footer.landing.accountTitle')}</h3>
             <ul className="acc-footer__list">
               <li>
-                <Link to="/ci/login">{t('footer.login')}</Link>
+                <Link to={`${hostHomePath}/login`}>{t('footer.login')}</Link>
               </li>
               <li>
-                <Link to="/ci/inscription">{t('footer.signup')}</Link>
+                <Link to={`${hostHomePath}/inscription`}>{t('footer.signup')}</Link>
               </li>
               <li>
-                <Link to="/ci/inscription/gerant">{t('footer.landing.becomeHost')}</Link>
+                <Link to={`${hostHomePath}/inscription/gerant`}>
+                  {t('footer.landing.becomeHost')}
+                </Link>
               </li>
               <li>{t('footer.landing.help')}</li>
             </ul>

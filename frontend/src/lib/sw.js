@@ -40,6 +40,9 @@ function isNavigation(request) {
 // Ces chemins ne sont jamais interceptés, même sans en-tête d'authentification.
 const NEVER_INTERCEPT = [
   /\/api\/auth\//,
+  // Détection de marché : dépend de l'IP du visiteur. Une réponse mise en
+  // cache sous l'URL serait resservie à un autre appareil / après un voyage.
+  /\/api\/discover\/market(?:\/|$)/,
   /\/api\/reservations\/payment\/confirm(?:\/|$)/,
   /\/api\/reservations\/[^/]+\/payment(?:\/|$)/,
   /\/api\/premium\/(?:initiate|confirm)(?:\/|$)/,

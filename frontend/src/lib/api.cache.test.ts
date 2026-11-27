@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { cachedGet, clearApiCache, request } from './api';
+import { apiDiscover, cachedGet, clearApiCache, request } from './api';
 
 const fetchMock = vi.fn();
 
@@ -84,6 +84,22 @@ describe('cachedGet', () => {
 
     await cachedGet('/rooms?market=CI');
     expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('détecte le marché une seule fois pour le header et le footer', async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(jsonResponse({ market: 'BJ', countryCode: 'BJ' })),
+    );
+
+    const [a, b] = await Promise.all([apiDiscover.market(), apiDiscover.market()]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/discover/market',
+      expect.objectContaining({ cache: 'no-cache' }),
+    );
+    expect(a).toEqual({ market: 'BJ', countryCode: 'BJ' });
+    expect(b).toBe(a);
   });
 
   it('conserve une promesse unique en cas d’échec partagé (pas de requête en rafale)', async () => {

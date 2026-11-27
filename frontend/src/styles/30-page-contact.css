@@ -1,24 +1,29 @@
 .contact-page {
-  --ct-brand: #6b2fe0;
-  --ct-dark: #4c1fb0;
-  --ct-deep: #3a1c93;
-  --ct-soft: #ede9fe;
-  --ct-pale: #f6f3ff;
-  --ct-ink: #1b1740;
-  --ct-navy: #0e0f2e;
-  --ct-line: #e8e4f3;
-  --ct-muted: #6f6987;
+  --ct-brand: #c2410c;
+  --ct-dark: #9a3412;
+  --ct-deep: #7c2d12;
+  --ct-soft: #fff7ed;
+  --ct-pale: #fffaf5;
+  --ct-ink: #0e1433;
+  --ct-navy: #0e1433;
+  --ct-line: #f0e7df;
+  --ct-muted: #64748b;
+
+  /* Texte d'accent en orange pur, icônes en bleu nuit. */
+  --ct-text: #ff6a13;
+  --ct-icon: #0b2a55;
+  --ct-icon-bg: #dbe6fd; /* fond pâle des pastilles d'icônes, jamais orange */
 
   background: #fff;
   color: var(--ct-ink);
 }
 
 .contact-page :focus-visible {
-  outline-color: var(--ct-brand);
+  outline-color: var(--ct-text);
 }
 
 .ct-announce {
-  background: linear-gradient(90deg, var(--ct-brand), #7c4df0);
+  background: linear-gradient(90deg, var(--ct-brand), #9a3412);
   color: #fff;
   height: 32px;
   font-size: 11.5px;
@@ -113,7 +118,7 @@
   align-items: center;
   gap: 7px;
   flex-shrink: 0;
-  color: var(--ct-deep);
+  color: var(--ct-text);
 }
 
 .ct-brand__logo {
@@ -143,11 +148,11 @@
 }
 
 .contact-page .ct-nav__link:hover {
-  color: var(--ct-brand);
+  color: var(--ct-text);
 }
 
 .contact-page .ct-nav__link--active {
-  color: var(--ct-brand);
+  color: var(--ct-text);
   font-weight: 700;
 }
 
@@ -179,7 +184,7 @@
   gap: 6px;
   height: 30px;
   padding: 0 10px;
-  border: 1px solid #e6e3f2;
+  border: 1px solid #f5e7d5;
   border-radius: 8px;
   background: #fff;
   color: var(--ct-ink);
@@ -188,7 +193,7 @@
 }
 
 .contact-page .ct-country__btn:hover {
-  border-color: #d7cff0;
+  border-color: #fdba74;
   background: var(--ct-pale);
 }
 
@@ -228,7 +233,7 @@
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: #4b4566;
+  color: #475569;
   font-size: 11.5px;
   text-align: left;
 }
@@ -236,7 +241,7 @@
 .contact-page .ct-country__menu button:hover,
 .contact-page .ct-country__menu button[aria-selected='true'] {
   background: var(--ct-pale);
-  color: var(--ct-brand);
+  color: var(--ct-text);
   font-weight: 600;
 }
 
@@ -249,12 +254,12 @@
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: #4b4566;
+  color: #475569;
 }
 
 .contact-page .ct-icon-btn:hover {
   background: var(--ct-pale);
-  color: var(--ct-brand);
+  color: var(--ct-text);
 }
 
 
@@ -274,16 +279,16 @@
   padding: 9px 0;
   font-size: 13px;
   font-weight: 500;
-  color: #4b4566;
+  color: #475569;
 }
 
 .contact-page .ct-mobile-menu__active {
-  color: var(--ct-brand);
+  color: var(--ct-text);
   font-weight: 700;
 }
 
 .ct-hero {
-  background: linear-gradient(to bottom, #f7f4ff, #f3effd);
+  background: linear-gradient(to bottom, #fffaf5, #fff6ee);
 }
 
 .ct-hero__inner {
@@ -305,8 +310,8 @@
   height: 22px;
   padding: 0 10px;
   border-radius: 9999px;
-  background: #e9e3fb;
-  color: var(--ct-brand);
+  background: #ffedd5;
+  color: var(--ct-text);
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -322,13 +327,13 @@
 }
 
 .ct-hero__title span {
-  color: var(--ct-brand);
+  color: var(--ct-text);
 }
 
 .ct-hero__lead {
   max-width: 360px;
   margin: 17px 0 0;
-  color: #4b4f6b;
+  color: #475569;
   font-size: 12px;
   line-height: 17.5px;
 }
@@ -352,8 +357,8 @@
   width: 38px;
   height: 38px;
   border-radius: 9999px;
-  background: #e9e3fb;
-  color: var(--ct-brand);
+  background: #ffedd5;
+  color: var(--ct-text);
 }
 
 .ct-highlights h3 {
@@ -365,7 +370,7 @@
 
 .ct-highlights p {
   margin: 4px 0 0;
-  color: #7a7d96;
+  color: #64748b;
   font-size: 10.5px;
   line-height: 15px;
 }
@@ -380,7 +385,7 @@
     linear-gradient(to bottom left, rgba(45, 19, 128, 0.92) 0%, rgba(79, 34, 189, 0.5) 34%, rgba(45, 19, 128, 0) 62%),
     linear-gradient(to top, rgba(45, 19, 128, 0.5), rgba(45, 19, 128, 0) 38%),
     url('/images/contact-support.webp') center 18%/cover no-repeat,
-    linear-gradient(135deg, #6b35d9, #4f22bd 52%, #2d1380);
+    linear-gradient(135deg, #f97316, #ea580c 52%, #c2410c);
   box-shadow: 0 8px 24px rgba(80, 40, 180, 0.18);
 }
 
@@ -423,7 +428,7 @@
   height: 32px;
   border-radius: 9px;
   background: rgba(255, 255, 255, 0.95);
-  color: var(--ct-brand);
+  color: var(--ct-text);
   box-shadow: 0 4px 12px rgba(30, 16, 68, 0.2);
 }
 
@@ -476,7 +481,7 @@
 }
 
 .ct-card {
-  border: 1px solid #ece8f5;
+  border: 1px solid #f4ece3;
   border-radius: 10px;
   background: #fff;
   box-shadow: 0 1px 8px rgba(80, 60, 160, 0.05);
@@ -514,7 +519,7 @@
 
 .ct-card__subtitle {
   margin: 7px 0 0;
-  color: #5b5f8a;
+  color: #475569;
   font-size: 11.5px;
   line-height: 1.5;
 }
@@ -543,7 +548,7 @@
 }
 
 .ct-label .ct-label__optional {
-  color: #6b6f8a;
+  color: #64748b;
   font-weight: 400;
 }
 
@@ -554,7 +559,7 @@
   padding: 0 12px;
   border: 1px solid #e5e7f0;
   border-radius: 6px;
-  background: #fafafd;
+  background: #fdfcfb;
   color: var(--ct-ink);
   font-family: inherit;
   font-size: 16px;
@@ -563,11 +568,11 @@
 }
 
 .ct-input::placeholder {
-  color: #a7aabf;
+  color: #94a3b8;
 }
 
 .ct-input:focus {
-  border-color: var(--ct-brand);
+  border-color: var(--ct-text);
   box-shadow: 0 0 0 2px rgba(107, 47, 224, 0.15);
 }
 
@@ -623,7 +628,7 @@
   padding: 0 14px;
   border: 0;
   border-radius: 6px;
-  background: linear-gradient(to right, #5b25db, #6b35e8);
+  background: linear-gradient(to right, #c2410c, #ea580c);
   color: #fff;
   font-size: 11px;
   font-weight: 700;
@@ -636,7 +641,7 @@
 }
 .ct-details {
   padding: 18px;
-  background: #faf8ff;
+  background: #fffaf5;
 }
 
 .ct-details__title {
@@ -649,7 +654,7 @@
 
 .ct-details__lead {
   margin: 9px 0 0;
-  color: #5b5f8a;
+  color: #475569;
   font-size: 11.5px;
   line-height: 16px;
 }
@@ -698,12 +703,12 @@
 }
 
 .contact-page .ct-details a:hover {
-  color: var(--ct-brand);
+  color: var(--ct-text);
 }
 
 .ct-details__note {
   margin: 3px 0 0;
-  color: #7d7fb0;
+  color: #64748b;
   font-size: 9.5px;
 }
 
@@ -720,7 +725,7 @@
 
 .ct-details__social p {
   margin: 5px 0 0;
-  color: #6b6f8a;
+  color: #64748b;
   font-size: 10px;
 }
 
@@ -755,7 +760,7 @@
 
 .ct-location {
   padding: 16px;
-  background: #fdfcff;
+  background: #fffdfb;
   box-shadow: 0 1px 8px rgba(80, 60, 160, 0.04);
 }
 
@@ -785,7 +790,7 @@
 
 .ct-location__lead {
   margin: 3px 0 0;
-  color: #6b6f9a;
+  color: #64748b;
   font-size: 10px;
   line-height: 1.5;
 }
@@ -795,7 +800,7 @@
   height: 232px;
   margin-top: 13px;
   overflow: hidden;
-  border: 1px solid #ece8f5;
+  border: 1px solid #f4ece3;
   border-radius: 10px;
   background: #f5f2ec;
 }
@@ -819,7 +824,7 @@
   padding: 0 12px;
   border-radius: 9999px;
   background: #fff;
-  color: var(--ct-brand);
+  color: var(--ct-text);
   font-size: 9.5px;
   font-weight: 600;
   box-shadow: 0 3px 10px rgba(60, 40, 140, 0.18);
@@ -831,7 +836,7 @@
 
 .ct-faq {
   padding: 16px;
-  background: #fdfcff;
+  background: #fffdfb;
   box-shadow: 0 1px 8px rgba(80, 60, 160, 0.04);
 }
 
@@ -856,7 +861,7 @@
 
 .ct-faq__lead {
   margin: 3px 0 0;
-  color: #6b6f9a;
+  color: #64748b;
   font-size: 10px;
 }
 
@@ -867,7 +872,7 @@
 }
 
 .ct-faq__item {
-  border: 1px solid #e6e3f2;
+  border: 1px solid #f5e7d5;
   border-radius: 6px;
   background: #fff;
 }
@@ -892,7 +897,7 @@
 
 .ct-faq__chevron {
   flex-shrink: 0;
-  color: #6b6f8a;
+  color: #64748b;
   transition: transform 0.18s ease;
 }
 
@@ -903,7 +908,7 @@
 .ct-faq__item p {
   margin: 0;
   padding: 0 12px 12px;
-  color: #5b5f8a;
+  color: #475569;
   font-size: 10px;
   line-height: 15px;
 }
@@ -924,7 +929,7 @@
   padding: 20px 24px;
   overflow: hidden;
   border-radius: 10px;
-  background: linear-gradient(to right, #6a2ee0, #7a3ff0, #8e5cf6);
+  background: linear-gradient(to right, #ea580c, #f97316, #fb923c);
   color: #fff;
 }
 
@@ -996,7 +1001,7 @@
   margin-right: 27px;
   border-radius: 6px;
   background: #fff;
-  color: var(--ct-brand);
+  color: var(--ct-text);
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
@@ -1009,7 +1014,7 @@
 .ct-footer {
   padding: 20px 0 40px;
   background: var(--ct-navy);
-  color: #b9bad3;
+  color: #94a3b8;
 }
 
 .ct-footer__inner {
@@ -1042,7 +1047,7 @@
 
 .ct-footer__desc {
   margin: 12px 0 0;
-  color: #b9bad3;
+  color: #94a3b8;
   font-size: 9.5px;
   line-height: 13.5px;
 }
@@ -1060,7 +1065,7 @@
   width: 24px;
   height: 24px;
   border-radius: 9999px;
-  background: #23245a;
+  background: #1c2a5a;
   color: #fff;
 }
 
@@ -1077,12 +1082,12 @@
   margin: 12px 0 0;
   padding: 0;
   list-style: none;
-  color: #b9bad3;
+  color: #94a3b8;
   font-size: 9.5px;
 }
 
 .contact-page .ct-footer__list a {
-  color: #b9bad3;
+  color: #94a3b8;
 }
 
 .contact-page .ct-footer__list a:hover {
@@ -1091,7 +1096,7 @@
 
 .ct-footer__text {
   margin: 10px 0 0;
-  color: #b9bad3;
+  color: #94a3b8;
   font-size: 9.5px;
   line-height: 13.5px;
 }
@@ -1122,7 +1127,7 @@
 
 .ct-store:hover {
   border-color: #fff;
-  background: #171717;
+  background: #0e1433;
 }
 
 .ct-store svg {
@@ -1162,7 +1167,7 @@
   padding: 0 12px;
   border: 0;
   background: #fff;
-  color: #1e293b;
+  color: #0e1433;
   font-family: inherit;
   font-size: 16px;
   outline: none;
@@ -1184,14 +1189,14 @@
 }
 
 .contact-page .ct-newsletter button:hover {
-  background: #7b45f0;
+  background: #c2410c;
 }
 
 .ct-footer__bottom {
   margin-top: 26px;
   padding-top: 14px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  color: #b9bad3;
+  color: #94a3b8;
   font-size: 9.5px;
 }
 
@@ -1227,7 +1232,7 @@
 }
 
 .contact-page .ct-footer__legal a {
-  color: #b9bad3;
+  color: #94a3b8;
 }
 
 .contact-page .ct-footer__legal a:hover {
@@ -1589,4 +1594,68 @@
 
 .ct-newsletter input {
   font-size: 12px;
+}
+
+/* ---------- Icônes : bleu nuit (le texte reste orange pur) ---------- */
+.contact-page .ct-icon-btn,
+.contact-page .ct-highlights__icon,
+.contact-page .ct-hero__card-icon,
+.contact-page .ct-card__head-icon,
+.contact-page .ct-card__head-pin,
+.contact-page .ct-details__icon,
+.contact-page .ct-details__socials svg,
+.contact-page .ct-faq__head-icon,
+.contact-page .ct-faq__chevron,
+.contact-page .ct-select > svg,
+.contact-page .ct-map__link svg,
+.contact-page .ct-cta__icon {
+  color: var(--ct-icon);
+}
+
+/* Filet de sécurité : chaque `<svg>` de la page hérite du bleu nuit, même
+   lorsqu'il est imbriqué dans un texte orange. Seuls les pictos posés sur
+   un fond sombre/orange gardent le blanc pour rester lisibles. */
+.contact-page svg {
+  color: var(--ct-icon);
+}
+
+.contact-page .ct-cta__decor {
+  color: rgba(255, 255, 255, 0.1);
+}
+
+.contact-page .ct-icon-btn:hover {
+  color: var(--ct-icon);
+}
+
+.contact-page .ct-footer__logo svg,
+.contact-page .ct-footer__socials svg,
+.contact-page .ct-store svg,
+.contact-page .ct-announce__msg svg,
+.contact-page .ct-announce__close svg {
+  color: #fff;
+}
+
+/* ---------- Pastilles d'icônes : fond bleu nuit pâle, jamais orange ---------- */
+.contact-page .ct-highlights__icon,
+.contact-page .ct-hero__card-icon,
+.contact-page .ct-card__head-icon,
+.contact-page .ct-card__head-pin,
+.contact-page .ct-details__icon,
+.contact-page .ct-faq__head-icon {
+  background: var(--ct-icon-bg);
+  color: var(--ct-icon);
+}
+
+.contact-page .ct-icon-btn:hover {
+  background: var(--ct-icon-bg);
+}
+
+.contact-page .ct-cta__icon,
+.contact-page .ct-newsletter button {
+  background: #fff;
+  color: var(--ct-icon);
+}
+
+.contact-page .ct-newsletter button:hover {
+  background: var(--ct-icon-bg);
 }

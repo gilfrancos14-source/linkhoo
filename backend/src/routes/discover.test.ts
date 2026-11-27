@@ -69,6 +69,45 @@ describe('GET /api/discover/local-rooms', () => {
   });
 });
 
+describe('GET /api/discover/market', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renvoie le marché détecté sans interroger Supabase', async () => {
+    vi.mocked(marketFromRequest).mockResolvedValue({ market: 'BJ', countryCode: 'BJ' });
+
+    const res = await request(app).get('/api/discover/market');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ market: 'BJ', countryCode: 'BJ' });
+    expect(supabasePublic.from).not.toHaveBeenCalled();
+  });
+
+  it('renvoie null quand le pays est inconnu', async () => {
+    vi.mocked(marketFromRequest).mockResolvedValue({ market: null, countryCode: null });
+
+    const res = await request(app).get('/api/discover/market');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ market: null, countryCode: null });
+  });
+
+  it('honore ?market= hors production pour simuler un visiteur', async () => {
+    const res = await request(app).get('/api/discover/market?market=sn');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ market: 'SN', countryCode: 'SN' });
+    expect(marketFromRequest).not.toHaveBeenCalled();
+  });
+
+  it('refuse un marché inconnu', async () => {
+    const res = await request(app).get('/api/discover/market?market=zz');
+
+    expect(res.status).toBe(400);
+  });
+});
+
 describe('GET /api/discover/neighbor-rooms', () => {
   beforeEach(() => {
     vi.clearAllMocks();

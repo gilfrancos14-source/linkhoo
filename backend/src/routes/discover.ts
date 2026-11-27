@@ -1,7 +1,7 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 import { supabaseAdmin, supabasePublic } from '../config/supabase';
-import type { MarketCode } from '../config/markets';
+import { isMarketCode, type MarketCode } from '../config/markets';
 import { ROOM_COLUMNS } from '../utils/selects';
 import { createClientLimiter } from '../utils/rateLimiters';
 import { SecureCache } from '../utils/SecureCache';
@@ -53,6 +53,33 @@ interface DiscoverResponse {
 }
 
 const EMPTY: DiscoverResponse = { market: null, rooms: [] };
+
+/**
+ * GET /api/discover/market — marché déduit de l'IP du visiteur, sans logements.
+ *
+ * Sert les liens « Devenir hôte » / inscription de la landing : un visiteur
+ * doit arriver sur le marché de son pays, pas systématiquement sur /ci.
+ * Réponse dépendant de l'IP : aucun cache partagé (contrairement aux listes
+ * de logements, identiques pour tous les visiteurs d'un même marché).
+ */
+router.get('/market', discoverLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = querySchema.safeParse(req.query);
+    if (!parsed.success) return res.status(400).json({ error: 'Paramètres invalides' });
+
+    // Développement uniquement : une IP locale ne donne aucun pays.
+    if (process.env.NODE_ENV !== 'production' && parsed.data.market) {
+      const code = parsed.data.market.toUpperCase();
+      if (!isMarketCode(code)) return res.status(400).json({ error: 'Marché inconnu' });
+      return res.json({ market: code, countryCode: code });
+    }
+
+    const { market, countryCode } = await marketFromRequest(req);
+    return res.json({ market, countryCode });
+  } catch (err) {
+    next(err);
+  }
+});
 
 /**
  * GET /api/discover/local-rooms — quelques logements du marché déduit de l'IP

@@ -5,14 +5,19 @@
    ========================================================================== */
 
 .about-page {
-  --ab-brand: #6d28d9;
-  --ab-brand-dark: #5b21b6;
-  --ab-brand-light: #7c3aed;
-  --ab-soft: #ede9fe;
-  --ab-bg: #f6f4fd;
-  --ab-ink: #1b1535;
+  /* Bleu nuit + orange : deux couleurs visibles partout sur la page. */
+  --ab-navy: #0b2a55;
+  --ab-navy-dark: #071d3a;
+  --ab-navy-light: #173b6b;
+
+  --ab-brand: #f97316;        /* orange */
+  --ab-brand-dark: #ea580c;
+  --ab-brand-light: #fb923c;
+  --ab-soft: #fff7ed;         /* orange très pâle */
+  --ab-bg: #f4f7fd;           /* bleu très pâle */
+  --ab-ink: #0b2a55;
   --ab-muted: #64748b;
-  --ab-line: #ece8f8;
+  --ab-line: #dbe6fd;
 
   font-family: 'Poppins', system-ui, sans-serif;
   color: var(--ab-ink);
@@ -56,7 +61,7 @@
 
 /* ---------- Bandeau promo ---------- */
 .ab-topbar {
-  background: linear-gradient(to right, #6d28d9, #7c3aed, #8b5cf6);
+  background: linear-gradient(to right, var(--ab-navy-dark), var(--ab-navy) 55%, var(--ab-brand-dark));
   color: #fff;
   font-size: 12px;
 }
@@ -248,7 +253,7 @@
 /* ---------- Hero ---------- */
 .ab-hero {
   overflow: hidden;
-  background: linear-gradient(to bottom, #f9f8fe, #fff);
+  background: linear-gradient(to bottom, var(--ab-bg), #fff);
 }
 
 .ab-hero__inner {
@@ -288,7 +293,7 @@
   line-height: 1.15;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #14102b;
+  color: var(--ab-navy);
 }
 
 .ab-hero__title-brand {
@@ -296,14 +301,14 @@
 }
 
 .ab-hero__title-gradient {
-  background: linear-gradient(to right, #6d28d9, #a21caf);
+  background: linear-gradient(to right, var(--ab-navy), var(--ab-brand));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .ab-hero__title-dot {
-  color: #c026d3;
+  color: var(--ab-brand);
 }
 
 .ab-hero__lead {
@@ -334,7 +339,7 @@
 .ab-btn--primary {
   background: var(--ab-brand);
   color: #fff;
-  box-shadow: 0 10px 24px rgba(109, 40, 217, 0.25);
+  box-shadow: 0 10px 24px rgba(249, 115, 22, 0.25);
 }
 
 .about-page .ab-btn--primary {
@@ -428,8 +433,8 @@
 /* ---------- Mission / Vision / Valeurs ---------- */
 .ab-pillars {
   background: var(--ab-bg);
-  border-top: 1px solid #eeeafb;
-  border-bottom: 1px solid #eeeafb;
+  border-top: 1px solid var(--ab-line);
+  border-bottom: 1px solid var(--ab-line);
 }
 
 .ab-pillars__inner {
@@ -441,7 +446,7 @@
 
 .ab-pillar {
   padding-bottom: 40px;
-  border-bottom: 1px solid #e6e1f7;
+  border-bottom: 1px solid var(--ab-line);
 }
 
 .ab-pillar:last-child {
@@ -534,7 +539,7 @@
 .ab-stat {
   padding: 24px 12px;
   border-radius: 12px;
-  background: #f3f1fc;
+  background: var(--ab-bg);
   text-align: center;
 }
 
@@ -571,7 +576,7 @@
 
 /* ---------- Pourquoi Linkhoo ---------- */
 .ab-why {
-  background: linear-gradient(to bottom, #f8f7fd, #f3f1fc);
+  background: linear-gradient(to bottom, var(--ab-bg), #eaf1fc);
 }
 
 .ab-why__inner {
@@ -619,9 +624,9 @@
   color: #f97316;
 }
 
-.ab-benefit__icon--indigo {
-  background: #e0e7ff;
-  color: #4f46e5;
+.ab-benefit__icon--navy {
+  background: #dbe6fd;
+  color: var(--ab-navy);
 }
 
 .ab-benefit__title {
@@ -710,7 +715,7 @@
   margin: 0 auto;
   padding: 24px;
   border-radius: 16px;
-  background: linear-gradient(to right, #5b21b6, #6d28d9, #7c3aed);
+  background: linear-gradient(to right, var(--ab-navy-dark), var(--ab-navy) 55%, var(--ab-brand-dark));
   color: #fff;
 }
 
@@ -754,7 +759,7 @@
 
 /* ---------- Pied de page ---------- */
 .ab-footer {
-  background: #0e0b1f;
+  background: var(--ab-navy-dark);
   color: #fff;
 }
 
@@ -839,7 +844,7 @@
   padding: 0 12px;
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 6px;
-  background: #000;
+  background: #06152b;
 }
 
 .ab-store small {
@@ -855,8 +860,8 @@
 }
 
 .ab-store__play {
-  color: #34d399;
-  fill: #34d399;
+  color: var(--ab-brand-light);
+  fill: var(--ab-brand-light);
 }
 
 .ab-newsletter {
@@ -986,7 +991,7 @@
 
   .ab-pillar {
     padding: 0 40px 0 0;
-    border-right: 1px solid #e6e1f7;
+    border-right: 1px solid var(--ab-line);
     border-bottom: 0;
   }
 
@@ -1040,7 +1045,7 @@
     width: 160px;
     height: 288px;
     border-radius: 60px;
-    background: #e9e3fb;
+    background: #dbe6fd;
   }
 
   .ab-hero__blob--dot {
@@ -1049,7 +1054,7 @@
     width: 128px;
     height: 128px;
     border-radius: 9999px;
-    background: #ede8fb;
+    background: var(--ab-soft);
   }
 
   .ab-stats__inner {

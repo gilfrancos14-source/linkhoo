@@ -378,19 +378,39 @@ export interface LocalRoomsResponse {
   rooms: RoomData[];
 }
 
+export interface DetectedMarketResponse {
+  market: MarketCode | null;
+  countryCode: string | null;
+}
+
+/**
+ * Surcharge de marché réservée au développement : une IP locale (127.0.0.1)
+ * ne donne aucun pays. Le backend n'honore `market` QUE hors production, donc
+ * ce paramètre ne peut pas être utilisé par un visiteur en ligne.
+ */
+function discoverMarketOverride(): string {
+  if (!import.meta.env.DEV || typeof window === 'undefined') return '';
+  const value = new URLSearchParams(window.location.search).get('market');
+  return value && /^[A-Za-z]{2}$/.test(value)
+    ? encodeURIComponent(value.toUpperCase())
+    : '';
+}
+
 export const apiDiscover = {
+  /**
+   * Pays du visiteur détecté par le backend, sans dépendre de la présence de
+   * logements. `cachedGet` déduplit les appels du header et du footer pendant
+   * 60 s ; le service worker n'intercepte pas cette URL (NEVER_INTERCEPT),
+   * donc aucune réponse périmée n'est resservie d'une visite à l'autre.
+   */
+  market: () => {
+    const override = discoverMarketOverride();
+    const suffix = override ? `?market=${override}` : '';
+    return cachedGet<DetectedMarketResponse>(`/discover/market${suffix}`);
+  },
   localRooms: (limit = 4) => {
-    // Aperçu local uniquement : une IP de développement (127.0.0.1) ne donne
-    // aucun pays. Le backend n'honore `market` QUE hors production, donc ce
-    // paramètre ne peut pas être utilisé par un visiteur en ligne.
-    const override =
-      import.meta.env.DEV && typeof window !== 'undefined'
-        ? new URLSearchParams(window.location.search).get('market')
-        : null;
-    const suffix =
-      override && /^[A-Za-z]{2}$/.test(override)
-        ? `&market=${encodeURIComponent(override.toUpperCase())}`
-        : '';
+    const override = discoverMarketOverride();
+    const suffix = override ? `&market=${override}` : '';
     return cachedGet<LocalRoomsResponse>(
       withLang(`/discover/local-rooms?limit=${limit}${suffix}`),
     );

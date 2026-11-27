@@ -9,12 +9,15 @@ import LandingReviews from '../components/landing/LandingReviews';
 import LandingSlider from '../components/landing/LandingSlider';
 import LandingTopBar from '../components/landing/LandingTopBar';
 import type { Country } from '../components/landing/data';
+import { useHostMarket } from '../hooks/useHostMarket';
 import { AnimatedSection } from '../lib/animations.tsx';
 
 export default function LandingPage() {
-  // Aucun pays pré-sélectionné : le visiteur choisit explicitement son marché
-  // depuis le hero, l'en-tête ou la grille « Où louer ? ».
+  // Aucun pays pré-sélectionné pour la recherche : le visiteur choisit
+  // explicitement son marché depuis le hero, l'en-tête ou « Où louer ? ».
   const [country, setCountry] = useState<Country | null>(null);
+  // En revanche, « Devenir hôte » part du marché détecté (IP du visiteur).
+  const hostMarket = useHostMarket();
 
   return (
     <div className="landing">
@@ -23,7 +26,7 @@ export default function LandingPage() {
         showActions={false}
         showSearch={false}
         showMenu
-        hostLink="/ci/inscription/gerant"
+        hostLink={`/${hostMarket.toLowerCase()}/inscription/gerant`}
       />
       <main>
         <LandingHero country={country} onCountryChange={setCountry} />
