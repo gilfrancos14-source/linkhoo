@@ -23,7 +23,7 @@ export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
             key={review.id}
             className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-start gap-4"
           >
-            <div className="w-11 h-11 rounded-full bg-[#0E1A2D] text-white font-bold text-sm flex items-center justify-center flex-shrink-0">
+            <div className="w-11 h-11 rounded-full bg-[color:var(--market-accent-dark)] text-white font-bold text-sm flex items-center justify-center flex-shrink-0">
               {review.initials}
             </div>
             <div className="flex-1">

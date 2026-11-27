@@ -16,7 +16,7 @@
   --sp-sand: #f4c77a;
   --sp-sand-light: #fff6e5;
   --sp-navy: #0e1433;
-  --sp-surface: #fdf7ff;
+  --sp-surface: #ffffff;
   --sp-white: #ffffff;
 
   min-height: 80vh;
@@ -137,6 +137,8 @@
   filter: blur(64px);
   pointer-events: none;
   z-index: 0;
+  /* Fond de page blanc : les halos lilas/sable teintaient l'arrière-plan. */
+  display: none;
 }
 
 .search-page__glow--lilac {

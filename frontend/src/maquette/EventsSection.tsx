@@ -153,7 +153,7 @@ export default function EventsSection({ market, cities, featuredEvents, banners 
               </div>
               <div className="mt-3 flex items-center justify-between">
                 <Link
-                  className="px-3 py-1.5 bg-[#0E1A2D] hover:bg-[color:var(--market-accent)] !text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition"
+                  className="px-3 py-1.5 bg-[color:var(--market-accent-dark)] hover:bg-[color:var(--market-accent)] !text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition"
                   to={search(featured.city)}
                 >
                   <span>{t('events.viewProperties')}</span>

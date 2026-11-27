@@ -54,7 +54,7 @@ export default function TourismSection({ market, view }: TourismSectionProps) {
               loading="lazy"
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/40 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--market-accent-dark)] via-[color:var(--market-accent-soft)] to-transparent"></div>
           <div className="relative z-10 max-w-xl">
             <span className="inline-block px-2.5 py-0.5 bg-[color:var(--market-accent)] text-white text-[10px] font-bold uppercase tracking-wider rounded-md mb-2">
               {t('tourism.badge')}
@@ -292,7 +292,7 @@ function TourismCarousel({ cards }: { cards: TourismCard[] }) {
               key={card.id}
               type="button"
               className={`w-1.5 h-1.5 rounded-full transition ${
-                index === active ? 'bg-slate-800 scale-125' : 'bg-slate-300'
+                index === active ? 'bg-[color:var(--market-accent)] scale-125' : 'bg-slate-300'
               }`}
               aria-label={t('tourism.destination', { index: index + 1 })}
               aria-selected={index === active}

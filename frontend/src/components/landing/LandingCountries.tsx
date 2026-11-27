@@ -61,17 +61,6 @@ export default function LandingCountries({ country, onCountryChange }: LandingCo
               </Link>
             );
           })}
-          {country && (
-            <Link
-              to={`/${country.marketSlug ?? country.code.toLowerCase()}`}
-              className="acc-country-continue"
-            >
-              {t('landing.countries.continue', {
-                country: t(`markets.${country.code}`, { defaultValue: country.label }),
-              })}
-              <Icon name="arrowRight" size={16} aria-hidden="true" />
-            </Link>
-          )}
         </div>
       </div>
     </section>

@@ -5,12 +5,18 @@
    ========================================================================== */
 
 .landing {
-  --acc-brand: var(--market-accent);
-  --acc-brand-2: var(--market-accent-dark);
-  --acc-ink: #14122b;
-  --acc-soft: #f6f5fb;
+  /* Thème « orange + bleu nuit » : navy pour les surfaces fortes
+     (boutons, texte, pied de page), orange pour les accents. */
+  --market-accent: #f97316;
+  --market-accent-dark: #c2410c;
+  --market-accent-light: color-mix(in srgb, var(--market-accent) 55%, white);
+  --market-accent-soft: color-mix(in srgb, var(--market-accent) 12%, transparent);
+  --acc-brand: #0e1433;
+  --acc-brand-2: #1c2a5a;
+  --acc-ink: #0e1433;
+  --acc-soft: #fff8f2;
   --acc-navy: #0e1433;
-  --acc-line: #ebe9f3;
+  --acc-line: #f0e7df;
 
   min-height: 100vh;
   background: #fff;
@@ -19,6 +25,20 @@
   font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Pages marché : le wrapper .landing ne doit pas écraser le thème du drapeau
+   posé sur <html data-market>. La landing racine n'a pas cet attribut et
+   conserve donc intégralement le bleu nuit défini ci-dessus. */
+html[data-market] .landing {
+  --market-accent: var(--sky);
+  --market-accent-dark: var(--sky-dark);
+  --market-accent-light: color-mix(in srgb, var(--market-accent) 55%, white);
+  --market-accent-soft: color-mix(in srgb, var(--market-accent) 15%, transparent);
+  --acc-brand: var(--market-accent-dark);
+  --acc-brand-2: var(--market-accent-dark);
+  --acc-ink: var(--ink);
+  /* --acc-navy volontairement conservé : le pied de page reste bleu nuit. */
 }
 
 .landing *,
@@ -60,7 +80,7 @@
 /* ---------- Bandeau hors ligne ---------- */
 .acc-offline {
   height: 44px;
-  background: linear-gradient(to right, #6a3fd6, #7b4df0);
+  background: linear-gradient(to right, #0e1433, #1c2a5a);
   color: #fff;
   font-size: 13px;
 }
@@ -131,7 +151,7 @@
   top: 0;
   z-index: 30;
   background: #fff;
-  border-bottom: 1px solid #eeecf5;
+  border-bottom: 1px solid #e9ebf3;
 }
 
 /* L'en-tête reste en place pendant que les sections défilent dessous. Les
@@ -186,7 +206,7 @@
   bottom: 12px;
   height: 2px;
   border-radius: 2px;
-  background: var(--acc-brand);
+  background: var(--market-accent);
 }
 
 .acc-header__actions {
@@ -202,7 +222,7 @@
   width: 190px;
   height: 42px;
   padding: 0 16px 0 12px;
-  border: 1px solid #e5e2f0;
+  border: 1px solid #e7e9f2;
   border-radius: 12px;
   background: #fff;
   color: var(--acc-ink);
@@ -237,7 +257,7 @@
   gap: 8px;
   height: 42px;
   padding: 0 16px;
-  border: 1px solid #e5e2f0;
+  border: 1px solid #e7e9f2;
   border-radius: 12px;
   background: #fff;
   color: var(--acc-ink);
@@ -259,7 +279,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 12px 16px;
-  border-top: 1px solid #eeecf5;
+  border-top: 1px solid #e9ebf3;
   font-size: 15px;
   font-weight: 500;
 }
@@ -394,7 +414,7 @@
 }
 
 .acc-hero__title-brand {
-  background: linear-gradient(to right, #b36bff, #8f5cf5);
+  background: linear-gradient(to right, #ea580c, #f97316);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -426,7 +446,7 @@
   gap: 12px;
   height: 64px;
   padding: 0 16px;
-  border: 1px solid #e8e6f1;
+  border: 1px solid #e6e9f2;
   border-radius: 12px;
   background: #fff;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
@@ -493,11 +513,11 @@
   border-radius: 9999px;
   background: var(--acc-brand-2);
   color: #fff;
-  box-shadow: 0 10px 15px -3px rgba(91, 63, 214, 0.35);
+  box-shadow: 0 10px 15px -3px rgba(14, 20, 51, 0.35);
 }
 
 .acc-search-submit:hover {
-  background: #4d33c0;
+  background: #0e1433;
 }
 
 /* ---------- OÃ¹ louer ---------- */
@@ -548,9 +568,9 @@
   gap: 16px;
   margin-top: 24px;
   padding: 16px 12px 16px 16px;
-  border: 1px solid #d9ccf5;
+  border: 1px solid #fed7aa;
   border-radius: 16px;
-  background: #ece6fb;
+  background: #fff7ed;
 }
 
 .acc-manage-card__icon {
@@ -560,7 +580,7 @@
   height: 44px;
   flex-shrink: 0;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--market-accent-light), var(--market-accent));
+  background: linear-gradient(135deg, #ea580c, #c2410c);
   color: #fff;
 }
 
@@ -611,12 +631,12 @@
 }
 
 .acc-country-card:hover {
-  border-color: #c9bcf1;
+  border-color: #fdba74;
 }
 
 .acc-country-card--active {
-  border-color: #b7a4ee;
-  background: #e7e0fa;
+  border-color: #f97316;
+  background: #fff7ed;
 }
 
 .acc-country-card__name {
@@ -635,41 +655,8 @@
   height: 24px;
   flex-shrink: 0;
   border-radius: 9999px;
-  background: #d6caf6;
+  background: #ffedd5;
   color: var(--acc-brand);
-}
-
-/* Bouton de continuation affiché dès qu'un pays est sélectionné. */
-.acc-country-continue {
-  grid-column: 1 / -1;
-  justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.55rem;
-  /* La grille met déjà 17 px entre les lignes : on ajoute juste un léger
-     rattrapage au lieu de 1 rem, sinon l'écart paraît trop grand. */
-  margin-top: 0.25rem;
-  padding: 0.8rem 1.35rem;
-  border-radius: 10px;
-  background: var(--acc-brand);
-  color: #fff;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-decoration: none;
-  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--acc-brand) 55%, transparent);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
-}
-
-.acc-country-continue:hover {
-  filter: brightness(1.06);
-  transform: translateY(-1px);
-  box-shadow: 0 10px 22px -8px color-mix(in srgb, var(--acc-brand) 65%, transparent);
-}
-
-.acc-country-continue:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--acc-brand) 35%, transparent);
-  outline-offset: 2px;
 }
 
 /* ---------- Sections annonces / avis ---------- */
@@ -734,7 +721,7 @@
 .acc-skeleton {
   display: block;
   border-radius: 6px;
-  background: linear-gradient(90deg, #eceaf1 25%, #f7f6fa 37%, #eceaf1 63%);
+  background: linear-gradient(90deg, #e9ecf4 25%, #f7f8fc 37%, #e9ecf4 63%);
   background-size: 400% 100%;
   animation: acc-skeleton-shimmer 1.4s ease infinite;
 }
@@ -789,7 +776,7 @@
 }
 
 .acc-star-filled.acc-star-amber {
-  color: #fbbf24;
+  color: var(--market-accent);
 }
 
 /* ---------- Carrousel ---------- */
@@ -856,7 +843,7 @@
 }
 
 .acc-slider__cta:hover {
-  background: #4d33c0;
+  background: #0e1433;
 }
 
 .acc-slider__nav {
@@ -1030,6 +1017,9 @@
 
 /* ---------- Pied de page ---------- */
 .acc-footer {
+  /* Identité bleu nuit conservée sur toutes les pages, y compris marchés. */
+  --acc-brand: #0e1433;
+  --acc-brand-2: #0e1433;
   background: var(--acc-navy);
   color: #fff;
 }

@@ -433,7 +433,7 @@ export default function LaisserAvisPage() {
   }
 
   return (
-    <div className="linkhoo-avis min-h-screen bg-[#FAFAFA] text-[#1B2A4A] antialiased" style={{ fontFamily: 'Poppins' }}>
+    <div className="linkhoo-avis min-h-screen bg-[#FAFAFA] text-[color:var(--ink)] antialiased" style={{ fontFamily: 'Poppins' }}>
       {/* HEADER */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 h-14 lg:h-[72px] flex items-center justify-between">
@@ -456,9 +456,9 @@ export default function LaisserAvisPage() {
             </Link>
             <Link to={profilePath} className="flex items-center gap-2 text-sm font-medium">
               {user?.imageUrl ? (
-                <img src={user.imageUrl} alt="" className="w-10 h-10 rounded-full object-cover bg-[#1B2A4A]" />
+                <img src={user.imageUrl} alt="" className="w-10 h-10 rounded-full object-cover bg-[color:var(--market-accent-dark)]" />
               ) : (
-                <span className="grid place-items-center w-10 h-10 rounded-full bg-[#1B2A4A] text-white text-sm font-semibold">
+                <span className="grid place-items-center w-10 h-10 rounded-full bg-[color:var(--market-accent-dark)] text-white text-sm font-semibold">
                   {fullName.charAt(0).toUpperCase()}
                 </span>
               )}
@@ -500,7 +500,7 @@ export default function LaisserAvisPage() {
                   </button>
                 </>
               )}
-              <span className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-[#1B2A4A]/70 text-white text-xs font-semibold px-2.5 py-1.5">
+              <span className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-lg bg-[color:var(--market-accent-dark)]/70 text-white text-xs font-semibold px-2.5 py-1.5">
                 {safeCur + 1}/{photos.length}
               </span>
             </div>
@@ -684,7 +684,7 @@ export default function LaisserAvisPage() {
                         Gérant : {myReview.note_gerant}/5 · {reviewDate(myReview.created_at)}
                       </p>
                       {myReview.commentaire && (
-                        <p className="mt-2 text-sm leading-relaxed text-[#1B2A4A]/90">{myReview.commentaire}</p>
+                        <p className="mt-2 text-sm leading-relaxed text-[color:var(--ink)]">{myReview.commentaire}</p>
                       )}
                       <ReviewPhotos photos={reservationPhotos} />
                     </div>
@@ -728,7 +728,7 @@ export default function LaisserAvisPage() {
                       Gérant : {myReview.note_gerant}/5 · {reviewDate(myReview.created_at)}
                     </p>
                     {myReview.commentaire && (
-                      <p className="mt-2 text-sm leading-relaxed text-[#1B2A4A]/90">{myReview.commentaire}</p>
+                      <p className="mt-2 text-sm leading-relaxed text-[color:var(--ink)]">{myReview.commentaire}</p>
                     )}
                     <ReviewPhotos photos={reservationPhotos} />
                   </div>
@@ -792,7 +792,7 @@ export default function LaisserAvisPage() {
                         <span className="text-slate-500">· Gérant {review.note_gerant}/5</span>
                       </p>
                       {review.commentaire && (
-                        <p className="mt-2 text-sm leading-relaxed text-[#1B2A4A]/90">{review.commentaire}</p>
+                        <p className="mt-2 text-sm leading-relaxed text-[color:var(--ink)]">{review.commentaire}</p>
                       )}
                       <ReviewPhotos photos={reservationPhotos} />
                     </div>
@@ -823,7 +823,7 @@ export default function LaisserAvisPage() {
             </button>
           </div>
         )}
-        <nav className="grid grid-cols-4 text-[11px] text-[#1B2A4A] pt-2 pb-5">
+        <nav className="grid grid-cols-4 text-[11px] text-[color:var(--ink)] pt-2 pb-5">
           <Link to={homePath} className="flex flex-col items-center gap-1"><Ic d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" className="w-6 h-6" />Accueil</Link>
           <Link to={searchPath} className="flex flex-col items-center gap-1"><Ic d="m21 21-4.3-4.3M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z" className="w-6 h-6" />Rechercher</Link>
           <Link to={favoritesPath} className="flex flex-col items-center gap-1"><Ic d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" className="w-6 h-6" />Favoris</Link>

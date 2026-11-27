@@ -12,12 +12,23 @@
 }
 
 .partner-banners {
+  /* Landing : orange soutenu (texte blanc lisible), les pages marché
+     surchargent ces variables avec la couleur dominante de leur drapeau. */
+  --ad-accent: var(--market-accent-dark, #c2410c);
+  --ad-accent-dark: #9a3412;
+
   position: relative;
   width: 260px;
   height: 260px;
   border-radius: 50%;
   overflow: hidden;
-  box-shadow: 0 18px 40px rgba(14, 20, 51, 0.16);
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--ad-accent) 18%, transparent);
+}
+
+/* Page marché : `data-market` est posé sur <html> par MarketContext. */
+html[data-market] .partner-banners {
+  --ad-accent: var(--sky);
+  --ad-accent-dark: var(--sky-dark);
 }
 
 .partner-banners__slides,
@@ -78,15 +89,15 @@
 }
 
 .partner-banners__slide--0 {
-  background: linear-gradient(135deg, #6d3fd9, #4a2fb8);
+  background: linear-gradient(135deg, var(--ad-accent), var(--ad-accent-dark));
 }
 
 .partner-banners__slide--1 {
-  background: linear-gradient(135deg, #0e1433, #233a6b);
+  background: linear-gradient(135deg, var(--ad-accent-dark), var(--ad-accent));
 }
 
 .partner-banners__slide--2 {
-  background: linear-gradient(135deg, #e11d74, #a30d55);
+  background: linear-gradient(160deg, var(--ad-accent), var(--ad-accent-dark));
 }
 
 .partner-banners__label {

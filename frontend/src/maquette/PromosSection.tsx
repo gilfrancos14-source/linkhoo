@@ -135,7 +135,7 @@ export default function PromosSection({ market, cards, banners }: PromosSectionP
                 className={`mt-4 w-full py-2 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 transition ${
                   selected?.key === card.key
                     ? 'bg-[color:var(--market-accent)]'
-                    : 'bg-slate-900 group-hover:bg-[color:var(--market-accent)]'
+                    : 'bg-[color:var(--market-accent-dark)] group-hover:bg-[color:var(--market-accent)]'
                 }`}
               >
                 <span>{card.rooms.length > 0 ? t('promos.viewProperties') : t('promos.noOffer')}</span>
@@ -190,7 +190,7 @@ export default function PromosSection({ market, cards, banners }: PromosSectionP
                 ) : (
                   <span className="absolute inset-0 bg-slate-100" />
                 )}
-                <span className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/20 to-transparent" />
+                <span className="absolute inset-0 bg-gradient-to-t from-[color:var(--market-accent-dark)] via-[color:var(--market-accent-soft)] to-transparent" />
                 <span className="absolute bottom-3 left-3 right-3">
                   <span className="block text-sm font-bold text-white truncate">
                     {singleRoom.title}
