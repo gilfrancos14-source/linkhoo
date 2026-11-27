@@ -52,7 +52,9 @@ describe('TourismSection (accueil marché)', () => {
       minis: [card({ id: 'small-1', city: 'Assinie', title: 'Assinie', count: 1 })],
     });
 
-    expect(screen.getByAltText(/Plage et aventure/)).toHaveAttribute('src', '/images/banner.jpg');
+    expect(screen.queryByAltText(/Plage et aventure/)).not.toBeInTheDocument();
+    expect(screen.getByText(/une terre de culture et d'aventure/)).toBeInTheDocument();
+    expect(screen.getByText(/Des plages paradisiaques/)).toBeInTheDocument();
     expect(within(featuredRegion()).getByRole('heading', { name: 'Abidjan' })).toBeInTheDocument();
     expect(within(featuredRegion()).getByText('3 biens')).toBeInTheDocument();
     expect(screen.getAllByRole('tab')).toHaveLength(2);

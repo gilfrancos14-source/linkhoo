@@ -21,9 +21,6 @@ export default function TourismSection({ market, view }: TourismSectionProps) {
     feminine ? 'country.withArticleFeminine' : 'country.withArticleMasculine',
     { country: countryName },
   );
-  const countryAt = t(feminine ? 'country.inFeminine' : 'country.inMasculine', {
-    country: countryName,
-  });
   const countrySentence = t(
     feminine ? 'country.sentenceFeminine' : 'country.sentenceMasculine',
     { country: countryName },
@@ -45,29 +42,21 @@ export default function TourismSection({ market, view }: TourismSectionProps) {
         </div>
       </div>
       <div className="mq-reveal-group grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        <div className="lg:col-span-7 rounded-3xl overflow-hidden relative shadow-lg min-h-[300px] flex flex-col justify-end p-6 sm:p-8 text-white">
-          {view.bannerImage && (
-            <img
-              alt={t('tourism.bannerAlt', { countryAt })}
-              className="absolute inset-0 w-full h-full object-cover"
-              src={view.bannerImage}
-              loading="lazy"
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--market-accent-dark)] via-[color:var(--market-accent-soft)] to-transparent"></div>
-          <div className="relative z-10 max-w-xl">
+        <div className="lg:col-span-7 rounded-3xl overflow-hidden relative shadow-lg min-h-[300px] flex flex-col justify-end p-6 sm:p-8 text-white bg-[color:var(--market-accent-dark)]">
+          {/* Carte sans photo : le fond reprend la couleur du marché. */}
+          <div className="relative z-10 max-w-2xl rounded-2xl bg-slate-950/35 p-4 sm:p-5">
             <span className="inline-block px-2.5 py-0.5 bg-[color:var(--market-accent)] text-white text-[10px] font-bold uppercase tracking-wider rounded-md mb-2">
               {t('tourism.badge')}
             </span>
-            <h3 className="text-2xl sm:text-3xl font-extrabold leading-tight">
+            <h3 className="text-2xl sm:text-3xl font-extrabold leading-tight text-white">
               {t('tourism.headingStart', { countryWithArticle })}
               <br />
               {t('tourism.headingEnd')}
             </h3>
-            <p className="text-xs sm:text-sm text-slate-200 mt-2">
+            <p className="text-xs sm:text-sm text-white/90 mt-2">
               {t('tourism.description')}
             </p>
-            <p className="font-handwriting text-xl text-[color:var(--market-accent-light)] mt-1">
+            <p className="font-handwriting text-xl text-white/85 mt-1">
               {t('tourism.sentence', { countrySentence })}
             </p>
             <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/20 text-center sm:text-left">
