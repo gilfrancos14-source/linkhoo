@@ -99,6 +99,9 @@ describe('LandingPage — maquette accueil', () => {
     fireEvent.click(menuButton);
     expect(menuButton).toHaveAttribute('aria-expanded', 'true');
     expect(within(screen.getByRole('banner')).getByRole('menu')).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('banner')).getByRole('menuitem', { name: 'Devenir hôte' }),
+    ).toHaveAttribute('href', '/ci/inscription/gerant');
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       "La location directe en Afrique de l'Ouest",

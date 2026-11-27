@@ -136,11 +136,6 @@ export default function LandingHeader({
               <span>{account.label}</span>
             </Link>
           )}
-          {hostLink && (
-            <Link to={hostLink} className="acc-become-host">
-              {t('footer.landing.becomeHost')}
-            </Link>
-          )}
           <LanguageSwitcher compact />
 
           {showMenu && (
@@ -188,6 +183,16 @@ export default function LandingHeader({
                         {item.label}
                       </Link>
                     ),
+                  )}
+                  {hostLink && (
+                    <Link
+                      to={hostLink}
+                      role="menuitem"
+                      className="acc-user-menu__account"
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      {t('footer.landing.becomeHost')}
+                    </Link>
                   )}
                   {auth && (
                     <>
