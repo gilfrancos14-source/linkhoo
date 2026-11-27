@@ -34,7 +34,6 @@ const LIMITED_AUTH = {
 const MEDIA = 'https://ilehya.test/media/images';
 
 const payload = {
-  gerantId: '11111111-1111-4111-8111-111111111111',
   title: 'Studio meublé Cocody',
   subtitle: 'Proche des universités',
   info: 'Eau et électricité incluses',
@@ -56,6 +55,8 @@ const payload = {
   disponible: true,
   date_dispo: '',
   conditions: 'Séjour minimum de 30 jours',
+  equipments: ['wifi', 'climatisation'],
+  restauration: 'petit_dejeuner_inclus',
 };
 
 beforeEach(() => {
@@ -80,53 +81,41 @@ describe('POST /api/admin/rooms', () => {
     expect(res.status).toBe(403);
   });
 
-  it('400 si le gérant cible n’est pas un UUID', async () => {
+  it('400 pour des données de chambre invalides', async () => {
     useSupabaseTables(supabaseAdmin.from, {});
-    const res = await request(app)
-      .post('/api/admin/rooms')
-      .set(AUTH)
-      .send({ ...payload, gerantId: 'pas-un-uuid' });
+    const res = await request(app).post('/api/admin/rooms').set(AUTH).send({ ...payload, title: '' });
     expect(res.status).toBe(400);
   });
 
-  it('404 si le gérant n’existe pas', async () => {
-    useSupabaseTables(supabaseAdmin.from, {
-      gerants: fakeChain({ data: null, error: null }),
-    });
-    const res = await request(app).post('/api/admin/rooms').set(AUTH).send(payload);
-    expect(res.status).toBe(404);
-  });
-
-  it('201 : insère la chambre avec le clerk_user_id du gérant choisi', async () => {
+  it('201 : insère une chambre appartenant au compte admin, avec équipements et restauration', async () => {
     const roomsChain = fakeChain({ data: { id: 'room-1', ...payload }, error: null });
-    useSupabaseTables(supabaseAdmin.from, {
-      gerants: fakeChain({
-        data: { clerk_user_id: 'user_clerk_1', market: 'CI' },
-        error: null,
-      }),
-      rooms: roomsChain,
-    });
+    useSupabaseTables(supabaseAdmin.from, { rooms: roomsChain });
 
     const res = await request(app).post('/api/admin/rooms').set(AUTH).send(payload);
 
     expect(res.status).toBe(201);
     const inserted = (roomsChain.insert as ReturnType<typeof vi.fn>).mock.calls[0][0];
     expect(inserted).toMatchObject({
-      gerant_id: 'user_clerk_1',
+      admin_owner_id: 'admin-1',
+      is_admin_owned: true,
       market: 'CI',
       title: payload.title,
+      equipments: ['wifi', 'climatisation'],
+      restauration: 'petit_dejeuner_inclus',
     });
     expect(inserted).not.toHaveProperty('gerantId');
   });
 
-  it('403 si le marché de la chambre diffère de celui du gérant', async () => {
-    useSupabaseTables(supabaseAdmin.from, {
-      gerants: fakeChain({
-        data: { clerk_user_id: 'user_clerk_1', market: 'BJ' },
-        error: null,
-      }),
-    });
-    const res = await request(app).post('/api/admin/rooms').set(AUTH).send(payload);
-    expect(res.status).toBe(403);
+  it('applique les valeurs par défaut des équipements et de la restauration', async () => {
+    const roomsChain = fakeChain({ data: { id: 'room-2' }, error: null });
+    useSupabaseTables(supabaseAdmin.from, { rooms: roomsChain });
+    const { equipments: _e, restauration: _r, ...minimal } = payload;
+
+    const res = await request(app).post('/api/admin/rooms').set(AUTH).send(minimal);
+
+    expect(res.status).toBe(201);
+    const inserted = (roomsChain.insert as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(inserted.equipments).toEqual([]);
+    expect(inserted.restauration).toBe('aucune');
   });
 });

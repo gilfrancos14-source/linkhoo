@@ -1313,54 +1313,30 @@ router.patch('/notifications/:id/read', requireAdminAuth, async (req: Request, r
 
 // ── Chambres créées par l'administration (délégable à l'équipe) ──
 
-const adminRoomCreateSchema = roomCreateSchema.extend({
-  gerantId: z.string().uuid(),
-});
-
-/** Gérants éligibles au sélecteur : exposition minimale, pas de Clerk id. */
-router.get('/rooms/gerants', requireAdminAuth, requirePermission('chambres'), async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('gerants')
-      .select('id, nom, prenom, email, market')
-      .order('nom', { ascending: true });
-    if (error) throw error;
-    res.json(data ?? []);
-  } catch (err) {
-    next(err);
-  }
-});
-
 /**
- * Une chambre créée par un admin est rattachée au gérant choisi : le FK
- * `rooms.gerant_id` stocke son clerk_user_id, résolu ici côté serveur.
+ * Pas de sélecteur de gérant : la chambre appartient au compte admin qui la
+ * publie (ou au délégué), identifié par le JWT. Elle est marquée comme
+ * vérifiée/fiable d'office — les annonces et leurs auteurs sont de confiance.
  */
 router.post('/rooms', requireAdminAuth, requirePermission('chambres'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const parsed = adminRoomCreateSchema.safeParse(req.body);
+    const parsed = roomCreateSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: 'Données de chambre invalides', details: parsed.error.flatten() });
     }
 
-    const { gerantId, ...payload } = parsed.data;
-    const { data: gerant, error: gerantError } = await supabaseAdmin
-      .from('gerants')
-      .select('clerk_user_id, market')
-      .eq('id', gerantId)
-      .maybeSingle();
-    if (gerantError) throw gerantError;
-    if (!gerant) return res.status(404).json({ error: 'Gérant introuvable' });
-    if (gerant.market !== payload.market) {
-      return res.status(403).json({ error: 'Le gérant ne correspond pas au marché de la chambre' });
-    }
-
     const { data, error } = await supabaseAdmin
       .from('rooms')
-      .insert({ ...payload, id: randomUUID(), gerant_id: gerant.clerk_user_id })
+      .insert({
+        ...parsed.data,
+        id: randomUUID(),
+        admin_owner_id: req.admin!.adminId,
+        is_admin_owned: true,
+      })
       .select(ROOM_COLUMNS)
       .single();
     if (error) throw error;
-    if (data?.id) void enqueueTranslations('room', data.id, payload);
+    if (data?.id) void enqueueTranslations('room', data.id, parsed.data);
     res.status(201).json(data);
   } catch (err) {
     next(err);

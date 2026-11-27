@@ -36,6 +36,8 @@ interface LandingHeaderProps {
   /** Bouton hamburger simple (sans avatar) qui ouvre le menu des sections. */
   showMenu?: boolean;
   auth?: HeaderAuth;
+  /** Lien « Devenir hôte » de la landing, placé avant le sélecteur de langue. */
+  hostLink?: string;
 }
 
 const DEFAULT_ITEMS: readonly HeaderItem[] = [
@@ -54,6 +56,7 @@ export default function LandingHeader({
   showSearch = true,
   showMenu = false,
   auth,
+  hostLink,
 }: LandingHeaderProps) {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -131,6 +134,11 @@ export default function LandingHeader({
             <Link to={account.to} className="acc-account-btn" aria-label={account.label}>
               <Icon name="userRound" size={20} />
               <span>{account.label}</span>
+            </Link>
+          )}
+          {hostLink && (
+            <Link to={hostLink} className="acc-become-host">
+              {t('footer.landing.becomeHost')}
             </Link>
           )}
           <LanguageSwitcher compact />

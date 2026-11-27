@@ -142,7 +142,10 @@ function stampGerantFlags(rows: any[], signals: GerantSignals): any[] {
   return rows.map((room) => ({
     ...room,
     gerant_premium: !!room.gerant_id && signals.premiumIds.has(room.gerant_id),
-    gerant_verified: !!room.gerant_id && signals.verifiedIds.has(room.gerant_id),
+    // Les annonces publiées par l'administration sont vérifiées d'office.
+    gerant_verified:
+      Boolean(room.is_admin_owned) ||
+      (!!room.gerant_id && signals.verifiedIds.has(room.gerant_id)),
   }));
 }
 
@@ -451,8 +454,18 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     if (!data) return res.status(404).json({ error: 'Chambre introuvable' });
 
     const signals = await loadGerantSignals();
-    let gerant = null;
+    type PublicHost = {
+      nom?: string | null;
+      prenom?: string | null;
+      phone?: string | null;
+      is_verified: boolean;
+      is_premium: boolean;
+      premium_expires_at?: string | null;
+      created_at?: string | null;
+    };
+    let gerant: PublicHost | null = null;
     let gerantRow: GerantRow | null = null;
+    let adminOwnerCreatedAt: string | null = null;
     if (data.gerant_id) {
       const result = await supabaseAdmin
         .from('gerants')
@@ -473,6 +486,27 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       }
     }
 
+    // Chambre publiée par l'administration : le propriétaire est le compte
+    // admin (ou le délégué), pas un gérant. On affiche ce dernier comme hôte
+    // vérifié, sans exposer ses coordonnées.
+    if (!gerant && data.is_admin_owned && data.admin_owner_id) {
+      const { data: admin } = await supabaseAdmin
+        .from('admins')
+        .select('nom, prenom, created_at')
+        .eq('id', data.admin_owner_id)
+        .maybeSingle();
+      adminOwnerCreatedAt = (admin?.created_at as string | null) ?? null;
+      gerant = {
+        nom: (admin?.nom as string | null) ?? '',
+        prenom: (admin?.prenom as string | null) ?? 'Linkhoo',
+        phone: null,
+        is_verified: true,
+        is_premium: false,
+        premium_expires_at: null,
+        created_at: adminOwnerCreatedAt,
+      };
+    }
+
     // Catégorie et ancienneté de l'hôte : la page de détail affiche ces
     // informations, elles doivent venir de la base et non d'un texte codé.
     let categoryTitle: string | null = null;
@@ -484,11 +518,12 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
         .maybeSingle();
       categoryTitle = category?.title ?? null;
     }
-    const experienceMonths = gerantRow?.created_at
+    const ownerCreatedAt = gerantRow?.created_at ?? adminOwnerCreatedAt;
+    const experienceMonths = ownerCreatedAt
       ? Math.max(
           0,
           Math.floor(
-            (Date.now() - new Date(gerantRow.created_at).getTime()) /
+            (Date.now() - new Date(ownerCreatedAt).getTime()) /
               (30 * 24 * 60 * 60 * 1000),
           ),
         )
@@ -507,11 +542,13 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
         ? {
             ...gerant,
             experience_months: experienceMonths,
-            is_superhost: Boolean(gerantRow?.is_verified),
+            is_superhost: Boolean(gerantRow?.is_verified) || Boolean(data.is_admin_owned),
           }
         : null,
       gerant_premium: !!data.gerant_id && signals.premiumIds.has(data.gerant_id),
-      gerant_verified: !!data.gerant_id && signals.verifiedIds.has(data.gerant_id),
+      gerant_verified:
+        Boolean(data.is_admin_owned) ||
+        (!!data.gerant_id && signals.verifiedIds.has(data.gerant_id)),
     });
   } catch (err) {
     next(err);

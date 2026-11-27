@@ -1,11 +1,10 @@
 import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import AdminAjouterChambrePage from './AdminAjouterChambrePage';
 
 const mocks = vi.hoisted(() => ({
-  listRoomGerants: vi.fn(),
   createRoom: vi.fn(),
   uploadFile: vi.fn(),
   formProps: vi.fn(),
@@ -13,16 +12,19 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../../lib/adminApi', () => ({
   apiAdmin: {
-    listRoomGerants: mocks.listRoomGerants,
     createRoom: mocks.createRoom,
     uploadFile: mocks.uploadFile,
   },
 }));
 
 vi.mock('../gerant/ChambreFormMaq3', () => ({
-  default: (props: { extraFields: ReactNode }) => {
+  default: (props: {
+    extraFields?: ReactNode;
+    marketOverride?: string;
+    saveRoom: (room: Record<string, unknown>) => Promise<void>;
+  }) => {
     mocks.formProps(props);
-    return <div data-testid="chambre-form">{props.extraFields}</div>;
+    return <div data-testid="chambre-form" />;
   },
 }));
 
@@ -37,48 +39,36 @@ function renderPage() {
 describe('AdminAjouterChambrePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.listRoomGerants.mockResolvedValue([
-      {
-        id: 'gerant-1',
-        nom: 'Koné',
-        prenom: 'Aya',
-        email: 'aya@test.ci',
-        market: 'BJ',
-      },
-    ]);
     mocks.createRoom.mockResolvedValue({ id: 'room-1' });
   });
 
-  it('crée la chambre au nom du gérant sélectionné avec son marché', async () => {
-    const { unmount } = renderPage();
-
-    const select = await screen.findByRole('combobox');
-    fireEvent.change(select, { target: { value: 'gerant-1' } });
-
-    await waitFor(() =>
-      expect(mocks.formProps).toHaveBeenCalledWith(
-        expect.objectContaining({ marketOverride: 'BJ' }),
-      ),
-    );
-
-    const props = mocks.formProps.mock.calls.at(-1)?.[0];
-    await props.saveRoom({ title: 'Studio', market: 'BJ' });
-
-    expect(mocks.createRoom).toHaveBeenCalledWith(
-      expect.objectContaining({ gerantId: 'gerant-1', market: 'BJ', title: 'Studio' }),
-    );
-    unmount();
+  afterEach(() => {
     cleanup();
   });
 
-  it('refuse de sauvegarder sans gérant choisi', async () => {
+  it('ne propose aucun sélecteur de gérant', async () => {
     renderPage();
-    await screen.findByRole('combobox');
+
+    expect(await screen.findByTestId('chambre-form')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).toBeNull();
+    expect(screen.getByText(/vérifiée et fiable d'office/)).toBeInTheDocument();
 
     const props = mocks.formProps.mock.calls[0]?.[0];
-    await expect(props.saveRoom({ title: 'Studio', market: 'CI' })).rejects.toThrow(
-      'Choisissez un gérant propriétaire.',
+    expect(props?.marketOverride).toBeUndefined();
+    expect(props?.extraFields).toBeUndefined();
+  });
+
+  it('crée la chambre sans gerantId : le backend l’attribue à l’admin', async () => {
+    renderPage();
+    await screen.findByTestId('chambre-form');
+
+    const props = mocks.formProps.mock.calls[0]?.[0];
+    await props.saveRoom({ title: 'Studio', market: 'BJ' });
+
+    await waitFor(() => expect(mocks.createRoom).toHaveBeenCalledTimes(1));
+    expect(mocks.createRoom).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Studio', market: 'BJ' }),
     );
-    expect(mocks.createRoom).not.toHaveBeenCalled();
+    expect(mocks.createRoom.mock.calls[0][0]).not.toHaveProperty('gerantId');
   });
 });

@@ -5,6 +5,8 @@ export default {
     './src/pages/RoomDetailMaq7.tsx',
     './src/pages/gerant/DashboardPage.tsx',
     './src/pages/gerant/ChambresPage.tsx',
+    './src/pages/gerant/ChambreFormMaq3.tsx',
+    './src/pages/gerant/ChambreFormPage.tsx',
     './src/pages/gerant/AjouterChambreMaq3.tsx',
     './src/pages/gerant/AjouterChambreMaq3Form.tsx',
     './src/pages/gerant/DemandesReservationMaq4.tsx',

@@ -239,6 +239,21 @@ html[data-market] .landing {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
+.landing .acc-become-host {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+  color: var(--acc-navy);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.landing .acc-become-host:hover {
+  color: var(--market-accent);
+}
+
 .acc-header__auth {
   display: flex;
   align-items: center;
@@ -354,40 +369,6 @@ html[data-market] .landing {
 
 .acc-mobile-menu--open {
   display: flex;
-}
-
-/* Menu utilisateur façon Airbnb : pilule hamburger + avatar, dropdown ancré. */
-.acc-user-menu {
-  position: relative;
-}
-
-.acc-user-menu__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  height: 36px;
-  padding: 4px 5px 4px 11px;
-  border: 1px solid #dddddd;
-  border-radius: 20px;
-  background: #ffffff;
-  color: #222222;
-  cursor: pointer;
-  transition: box-shadow 0.2s ease;
-}
-
-.acc-user-menu__btn:hover,
-.acc-user-menu__btn.is-open {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-}
-
-.acc-user-menu__avatar {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #717171;
-  color: #ffffff;
 }
 
 .acc-user-menu__dropdown {

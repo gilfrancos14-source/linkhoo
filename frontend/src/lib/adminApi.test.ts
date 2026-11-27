@@ -551,24 +551,16 @@ describe('apiAdmin.uploadFile', () => {
 });
 
 describe('apiAdmin — création de chambre par l’administration', () => {
-  it('liste les gérants éligibles', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse([]));
-
-    await apiAdmin.listRoomGerants();
-
-    expect(firstCall().url).toBe('/api/admin/rooms/gerants');
-  });
-
-  it('crée la chambre pour le gérant choisi et purge le cache public', async () => {
+  it('crée la chambre sans gérant et purge le cache public', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'room-1' }));
-    const data = { gerantId: 'gerant-1', title: 'Studio' } as Parameters<typeof apiAdmin.createRoom>[0];
+    const data = { title: 'Studio' } as Parameters<typeof apiAdmin.createRoom>[0];
 
     await apiAdmin.createRoom(data);
 
     const { url, init } = firstCall();
     expect(url).toBe('/api/admin/rooms');
     expect(init.method).toBe('POST');
-    expect(JSON.parse(String(init.body))).toMatchObject({ gerantId: 'gerant-1' });
+    expect(JSON.parse(String(init.body))).not.toHaveProperty('gerantId');
     expect(clearCacheMock).toHaveBeenCalled();
   });
 });

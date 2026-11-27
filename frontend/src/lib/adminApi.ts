@@ -149,19 +149,12 @@ export interface AdminTeamUpdatePayload {
   is_superadmin?: boolean;
 }
 
-/** Gérant proposé au sélecteur de la création de chambre par l'admin. */
-export interface AdminRoomGerant {
-  id: string;
-  nom: string | null;
-  prenom: string | null;
-  email: string;
-  market: MarketCode;
-}
-
-export interface AdminRoomCreatePayload extends Omit<RoomData, 'id'> {
-  /** UUID interne du gérant (jamais son Clerk user id). */
-  gerantId: string;
-}
+/**
+ * Création par l'administration : aucun gérant à sélectionner. Le backend
+ * attribue la chambre au compte admin connecté (ou au délégué) et la marque
+ * comme vérifiée/fiable.
+ */
+export type AdminRoomCreatePayload = Omit<RoomData, 'id'>;
 
 export interface AdminStats {
   gerants: {
@@ -750,10 +743,7 @@ export const apiAdmin = {
       body: JSON.stringify(data),
     }),
 
-  /** Gérants pouvant recevoir une chambre créée depuis le back-office. */
-  listRoomGerants: () => adminRequest<AdminRoomGerant[]>('/admin/rooms/gerants'),
-
-  /** Création d'une chambre au nom d'un gérant (cookie admin, pas de Clerk). */
+  /** Création d'une chambre par l'administration (cookie admin, pas de Clerk). */
   createRoom: (data: AdminRoomCreatePayload) =>
     adminRequest<RoomData>('/admin/rooms', {
       method: 'POST',

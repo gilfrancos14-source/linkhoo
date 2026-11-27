@@ -1128,3 +1128,54 @@ describe('PATCH /api/admin/gerants/:id/payout-verification', () => {
     expect(res.body.verified).toBe(false);
   });
 });
+
+describe('POST /api/admin/rooms', () => {
+  const validRoom = {
+    title: 'Studio admin',
+    price: '25 000 FCFA',
+    price_num: 25000,
+    price_unit: '/ mois' as const,
+    img: 'http://localhost:3001/api/media/images/studio.webp',
+    images: ['http://localhost:3001/api/media/images/studio.webp'],
+    description: 'Studio fiable publié par l’administration',
+    category: 'Studio',
+    market: 'CI' as const,
+    pays: "Côte d'Ivoire",
+    ville: 'Abidjan',
+    quartier: 'Cocody',
+    chambres: 1,
+    douches: 1,
+    disponible: true,
+    conditions: 'Caution 1 mois',
+  };
+
+  it('201 : attribue la chambre à l’admin connecté, sans gérant', async () => {
+    rooms = fakeChain({ data: { id: 'r1', ...validRoom }, error: null });
+    stubTables();
+
+    const res = await request(app)
+      .post('/api/admin/rooms')
+      .set(auth(adminToken({ adminId: 'admin-42' })))
+      .send(validRoom);
+
+    expect(res.status).toBe(201);
+    expect(rooms.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ admin_owner_id: 'admin-42', is_admin_owned: true }),
+    );
+    expect(rooms.insert.mock.calls[0][0]).not.toHaveProperty('gerant_id');
+    expect(rooms.insert.mock.calls[0][0]).not.toHaveProperty('gerantId');
+    expect(supabaseAdmin.from).not.toHaveBeenCalledWith('gerants');
+  });
+
+  it('400 : refuse un gerantId envoyé par un client', async () => {
+    stubTables();
+
+    const res = await request(app)
+      .post('/api/admin/rooms')
+      .set(auth(adminToken()))
+      .send({ ...validRoom, gerantId: 'gerant-1' });
+
+    expect(res.status).toBe(400);
+    expect(rooms.insert).not.toHaveBeenCalled();
+  });
+});
