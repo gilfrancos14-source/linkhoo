@@ -7,6 +7,10 @@ import LandingPage from './LandingPage';
 const mocks = vi.hoisted(() => ({
   featuredReviews: vi.fn(),
   cachedGet: vi.fn(),
+  detectedMarket: vi.fn(async () => ({
+    market: null as string | null,
+    countryCode: null as string | null,
+  })),
   localRooms: vi.fn(async () => ({ market: null, rooms: [] })),
   neighborRooms: vi.fn(async () => ({ market: null, rooms: [] })),
   weekendRooms: vi.fn(async () => ({ market: null, rooms: [] })),
@@ -18,6 +22,7 @@ vi.mock('../lib/api', () => ({
     featured: mocks.featuredReviews,
   },
   apiDiscover: {
+    market: mocks.detectedMarket,
     localRooms: mocks.localRooms,
     neighborRooms: mocks.neighborRooms,
     weekendRooms: mocks.weekendRooms,
@@ -63,6 +68,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.cachedGet.mockResolvedValue([]);
   mocks.featuredReviews.mockResolvedValue(REVIEWS);
+  mocks.detectedMarket.mockResolvedValue({ market: null, countryCode: null });
 });
 
 afterEach(() => {
@@ -100,6 +106,7 @@ describe('LandingPage — maquette accueil', () => {
     expect(menuButton).toHaveAttribute('aria-expanded', 'true');
     expect(within(screen.getByRole('banner')).getByRole('menu')).toBeInTheDocument();
     expect(within(screen.getByRole('banner')).getByText('Langue')).toBeInTheDocument();
+    expect(document.querySelector('.acc-user-menu__langue .language-globe-btn')).not.toBeNull();
     expect(
       within(screen.getByRole('banner')).getByRole('menuitem', { name: 'Devenir hôte' }),
     ).toHaveAttribute('href', '/ci/inscription/gerant');
@@ -111,6 +118,30 @@ describe('LandingPage — maquette accueil', () => {
     expect(screen.getByText('Catégorie')).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /Pays/ })).toBeInTheDocument();
   }, 20000);
+
+  it('envoie « Devenir hôte » vers le marché détecté, pas toujours vers /ci', async () => {
+    mocks.detectedMarket.mockResolvedValue({ market: 'SN', countryCode: 'SN' });
+
+    renderLanding();
+
+    const menuButton = within(screen.getByRole('banner')).getByRole('button', {
+      name: 'Menu',
+    });
+    fireEvent.click(menuButton);
+
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole('banner')).getByRole('menuitem', {
+          name: 'Devenir hôte',
+        }),
+      ).toHaveAttribute('href', '/sn/inscription/gerant');
+    });
+    expect(
+      within(screen.getByRole('contentinfo')).getByRole('link', {
+        name: 'Devenir hôte',
+      }),
+    ).toHaveAttribute('href', '/sn/inscription/gerant');
+  });
 
   it("n'aucun pays sélectionné par défaut", () => {
     renderLanding();

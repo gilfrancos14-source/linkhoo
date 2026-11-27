@@ -433,6 +433,16 @@ html[data-market] .landing {
   font-weight: 600;
 }
 
+/* Dans le menu, le bouton redevient un petit disque avec le drapeau courant. */
+.acc-user-menu__langue .language-globe-btn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid #dddddd;
+  border-radius: 50%;
+  background: transparent;
+}
+
 /* ---------- Hero ---------- */
 .acc-hero {
   position: relative;
