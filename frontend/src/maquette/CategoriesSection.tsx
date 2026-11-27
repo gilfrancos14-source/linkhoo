@@ -33,7 +33,7 @@ export default function CategoriesSection({ cards, banners }: CategoriesSectionP
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" data-purpose="categories-section">
-      <div className="mq-reveal-group flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
             <span className="text-[color:var(--market-accent)]">
@@ -48,7 +48,7 @@ export default function CategoriesSection({ cards, banners }: CategoriesSectionP
         <MaquetteBannerCarousel banners={banners} />
       </div>
       {cards.length > 0 && (
-        <div className={`mq-reveal-group grid ${gridCols} gap-3`}>
+        <div className={`grid ${gridCols} gap-3`}>
           {cards.map((card, index) => {
             const badge = BADGES[index % BADGES.length];
             return (

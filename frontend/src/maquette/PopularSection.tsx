@@ -31,7 +31,7 @@ export default function PopularSection({ market, cards, banners }: PopularSectio
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" data-purpose="popular-listings">
-      <div className="mq-reveal-group flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
             <span className="text-[color:var(--market-accent)]">
@@ -54,7 +54,7 @@ export default function PopularSection({ market, cards, banners }: PopularSectio
         >
           <i className="fa-solid fa-chevron-left text-xs"></i>
         </button>
-        <div className="mq-reveal-group -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 md:grid-cols-3 lg:grid-cols-5">
+        <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 md:grid-cols-3 lg:grid-cols-5">
           {cards.map((card) => (
             <article
               key={card.id}

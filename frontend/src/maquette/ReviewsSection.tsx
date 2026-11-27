@@ -17,7 +17,7 @@ export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
         title={t('reviews.title')}
         subtitle={t('reviews.subtitle')}
       />
-      <div className="mq-reveal-group grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {reviews.map((review) => (
           <article
             key={review.id}

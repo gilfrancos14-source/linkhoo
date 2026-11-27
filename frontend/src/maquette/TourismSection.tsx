@@ -28,7 +28,7 @@ export default function TourismSection({ market, view }: TourismSectionProps) {
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" data-purpose="tourism-section">
-      <div className="mq-reveal-group flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
             <span className="text-[color:var(--market-accent)]">
@@ -41,7 +41,7 @@ export default function TourismSection({ market, view }: TourismSectionProps) {
           </p>
         </div>
       </div>
-      <div className="mq-reveal-group grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         <div className="lg:col-span-7 rounded-3xl overflow-hidden relative shadow-lg min-h-[300px] flex flex-col justify-end p-6 sm:p-8 text-white bg-[color:var(--market-accent-dark)]">
           {/* Carte sans photo : le fond reprend la couleur du marché. */}
           <div className="relative z-10 max-w-2xl rounded-2xl bg-slate-950/35 p-4 sm:p-5">
@@ -114,7 +114,7 @@ function TourismHighlights({ view }: { view: TourismView }) {
       )}
 
       {view.minis.length > 0 && (
-        <div className="mq-reveal-group grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {view.minis.map((card) => {
             const selected = selectedId === card.id;
             return (

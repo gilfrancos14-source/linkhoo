@@ -65,7 +65,7 @@ export default function EventsSection({ market, cities, featuredEvents, banners 
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8" data-purpose="events-section">
-      <div className="mq-reveal-group flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
             <span className="text-[color:var(--market-accent)]">
@@ -80,7 +80,7 @@ export default function EventsSection({ market, cities, featuredEvents, banners 
         <MaquetteBannerCarousel banners={banners} />
       </div>
       {(cities.length > 0 || featuredEvents.length > 0) && (
-        <div className="mq-reveal-group grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         <div className={`${citiesSpan} grid ${cityGrid} gap-3`}>
           {cities.map((city, cityIndex) => {
             const badge = CITY_BADGES[cityIndex % CITY_BADGES.length];

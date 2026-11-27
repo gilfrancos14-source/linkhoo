@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { MarketCode } from '../config/markets';
 import CategoriesSection from './CategoriesSection';
@@ -10,7 +10,6 @@ import PromosSection from './PromosSection';
 import ReviewsSection from './ReviewsSection';
 import TourismSection from './TourismSection';
 import type { MaquetteData } from './maquetteApi';
-import './maquette-reveal.css';
 import {
   buildBanners,
   buildCategoryCards,
@@ -58,54 +57,9 @@ export default function MaquetteHome({ market, data }: MaquetteHomeProps) {
   const tourism = useMemo(() => buildTourism(data.tourism, data.rooms), [data.tourism, data.rooms]);
   const escapades = useMemo(() => buildEscapades(data.escapades), [data.escapades]);
   const reviews = useMemo(() => buildReviews(data.reviews, market), [data.reviews, market]);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
-
-    // On arme les ENFANTS de chaque groupe (les cartes), pas le groupe entier :
-    // chaque carte apparaît quand elle entre elle-même dans le viewport.
-    const groups = Array.from(root.querySelectorAll<HTMLElement>('.mq-reveal-group'));
-    const cards: HTMLElement[] = [];
-    for (const group of groups) {
-      group.classList.add('mq-reveal-armed');
-      Array.from(group.children).forEach((child, index) => {
-        const card = child as HTMLElement;
-        // Si plusieurs cartes entrent en même temps, on garde un décalage
-        // fluide de 120 ms pour l'effet « une par une ».
-        card.style.transitionDelay = `${Math.min(index, 8) * 120}ms`;
-        cards.push(card);
-      });
-    }
-
-    if (!('IntersectionObserver' in window)) {
-      cards.forEach((card) => card.classList.add('is-visible'));
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          const card = entry.target as HTMLElement;
-          card.classList.add('is-visible');
-          observer.unobserve(card);
-        }
-      },
-      { threshold: 0.1, rootMargin: '0px 0px -24px 0px' },
-    );
-
-    // Ré-observation à chaque chargement de données : les cartes créées après
-    // un rendu précédent (sections vides au départ) doivent aussi être armées.
-    cards.forEach((card) => {
-      if (!card.classList.contains('is-visible')) observer.observe(card);
-    });
-    return () => observer.disconnect();
-  }, [data]);
 
   return (
-    <div ref={rootRef} className="maquette-home bg-white text-slate-800 font-sans antialiased selection:bg-[color:var(--market-accent)] selection:text-white">
+    <div className="maquette-home bg-white text-slate-800 font-sans antialiased selection:bg-[color:var(--market-accent)] selection:text-white">
       <HeroSection market={market} />
       <PopularSection market={market} cards={popular} banners={banners.popular} />
       <PromosSection market={market} cards={promos} banners={banners.promos} />
