@@ -99,6 +99,7 @@ describe('LandingPage — maquette accueil', () => {
     fireEvent.click(menuButton);
     expect(menuButton).toHaveAttribute('aria-expanded', 'true');
     expect(within(screen.getByRole('banner')).getByRole('menu')).toBeInTheDocument();
+    expect(within(screen.getByRole('banner')).getByText('Langue')).toBeInTheDocument();
     expect(
       within(screen.getByRole('banner')).getByRole('menuitem', { name: 'Devenir hôte' }),
     ).toHaveAttribute('href', '/ci/inscription/gerant');

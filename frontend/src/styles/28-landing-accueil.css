@@ -420,6 +420,19 @@ html[data-market] .landing {
   font-weight: 600;
 }
 
+.acc-user-menu__langue {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  padding: 8px 16px;
+  border-top: 1px solid #eeeeee;
+  color: var(--acc-ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
 /* ---------- Hero ---------- */
 .acc-hero {
   position: relative;

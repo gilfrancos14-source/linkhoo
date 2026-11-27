@@ -91,6 +91,7 @@
     },
     "backToTop": "Haut de page",
     "language": {
+      "label": "Langue",
       "choose": "Choisir la langue",
       "interfaceTitle": "Langue de l'interface"
     },

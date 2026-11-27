@@ -91,6 +91,7 @@
     },
     "backToTop": "Back to top",
     "language": {
+      "label": "Language",
       "choose": "Choose language",
       "interfaceTitle": "Interface language"
     },

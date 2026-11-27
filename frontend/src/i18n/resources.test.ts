@@ -44,6 +44,7 @@ describe('ressources i18n', () => {
       'partnerAds.aria',
       'partnerAds.defaultAlt',
       'partnerAds.slide1',
+      'landing.language.label',
       'equipments.title',
       'equipments.items.wifi',
       'equipments.categories.confort',

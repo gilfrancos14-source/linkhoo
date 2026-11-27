@@ -136,8 +136,6 @@ export default function LandingHeader({
               <span>{account.label}</span>
             </Link>
           )}
-          <LanguageSwitcher compact />
-
           {showMenu && (
             <div className="acc-nav-menu" ref={menuRef}>
               <button
@@ -184,6 +182,11 @@ export default function LandingHeader({
                       </Link>
                     ),
                   )}
+                  <div className="acc-user-menu__langue">
+                    <span>{t('landing.language.label')}</span>
+                    <LanguageSwitcher compact />
+                  </div>
+
                   {hostLink && (
                     <Link
                       to={hostLink}

@@ -91,6 +91,7 @@
     },
     "backToTop": "Volver arriba",
     "language": {
+      "label": "Idioma",
       "choose": "Elegir idioma",
       "interfaceTitle": "Idioma de la interfaz"
     },
