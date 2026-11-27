@@ -231,6 +231,33 @@ describe('AjouterChambreMaq3', () => {
     expect(await screen.findByText(/a été ajoutée avec succès/)).toBeInTheDocument();
   });
 
+  it('enregistre les équipements et la restauration choisis', async () => {
+    renderPage();
+    await fillStep1();
+
+    await userEvent.click(screen.getByLabelText('Wi-Fi gratuit'));
+    await userEvent.click(screen.getByLabelText('Climatisation'));
+    await userEvent.selectOptions(
+      screen.getByLabelText(/restauration/i),
+      'petit_dejeuner_inclus',
+    );
+    await fillStep2();
+
+    fireEvent.change(document.querySelector<HTMLInputElement>('input[type="file"]')!, {
+      target: { files: [new File(['x'], 'photo.jpg', { type: 'image/jpeg' })] },
+    });
+    await act(async () => {});
+    await userEvent.click(screen.getByRole('button', { name: /enregistrer la chambre/i }));
+
+    await waitFor(() => expect(mocks.createRoom).toHaveBeenCalledTimes(1));
+    expect(mocks.createRoom).toHaveBeenCalledWith(
+      expect.objectContaining({
+        equipments: ['wifi', 'climatisation'],
+        restauration: 'petit_dejeuner_inclus',
+      }),
+    );
+  });
+
   it('enregistre le lien Google Maps saisi à l’étape 1', async () => {
     renderPage();
     await screen.findByRole('option', { name: 'Appartements' });

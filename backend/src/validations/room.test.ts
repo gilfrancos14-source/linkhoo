@@ -326,3 +326,33 @@ describe('roomAvailableQuerySchema', () => {
     if (parsed.success) expect(parsed.data.q).toBe('Bouaké');
   });
 });
+
+describe('équipements et restauration', () => {
+  it('accepte des équipements connus et une restauration', () => {
+    const parsed = roomCreateSchema.safeParse({
+      ...validRoom,
+      equipments: ['wifi', 'climatisation'],
+      restauration: 'petit_dejeuner_inclus',
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.equipments).toEqual(['wifi', 'climatisation']);
+      expect(parsed.data.restauration).toBe('petit_dejeuner_inclus');
+    }
+  });
+
+  it('refuse un équipement inconnu, un doublon ou une restauration inconnue', () => {
+    expect(roomCreateSchema.safeParse({ ...validRoom, equipments: ['inconnu'] }).success).toBe(false);
+    expect(roomCreateSchema.safeParse({ ...validRoom, equipments: ['wifi', 'wifi'] }).success).toBe(false);
+    expect(roomCreateSchema.safeParse({ ...validRoom, restauration: 'buffet' }).success).toBe(false);
+  });
+
+  it('applique les valeurs par défaut', () => {
+    const parsed = roomCreateSchema.safeParse(validRoom);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.equipments).toEqual([]);
+      expect(parsed.data.restauration).toBe('aucune');
+    }
+  });
+});

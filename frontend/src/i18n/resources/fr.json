@@ -845,5 +845,54 @@
     "slide2": "Assurance Voyage — Partez l’esprit tranquille",
     "slide3": "PawaPay — Payez en toute simplicité",
     "discover": "En savoir plus"
+  },
+  "equipments": {
+    "title": "Équipements",
+    "restaurationLabel": "Restauration",
+    "none": "Non renseigné",
+    "categories": {
+      "confort": "Confort & connectivité",
+      "cuisine": "Cuisine",
+      "pratique": "Pratique & sécurité"
+    },
+    "items": {
+      "wifi": "Wi-Fi gratuit",
+      "climatisation": "Climatisation",
+      "ventilateur": "Ventilateur",
+      "eau_chaude": "Eau chaude",
+      "television": "Télévision / streaming",
+      "prises_lit": "Prises près du lit",
+      "linge_lit": "Linge de lit fourni",
+      "serviettes": "Serviettes fournies",
+      "douche_privee": "Douche privée",
+      "toilettes_privees": "Toilettes privées",
+      "seche_cheveux": "Sèche-cheveux",
+      "cuisine_equipee": "Cuisine équipée",
+      "refrigerateur": "Réfrigérateur",
+      "cuisiniere": "Cuisinière / gaz",
+      "micro_ondes": "Micro-ondes",
+      "bouilloire": "Bouilloire / cafetière",
+      "vaisselle": "Vaisselle et ustensiles",
+      "eau_filtree": "Eau filtrée / potable",
+      "parking": "Parking",
+      "machine_laver": "Machine à laver",
+      "terrasse": "Terrasse / balcon / cour",
+      "piscine": "Piscine",
+      "checkin_autonome": "Check-in autonome (24 h)",
+      "ascenseur": "Ascenseur",
+      "coffre_fort": "Coffre-fort",
+      "gardien": "Gardien / sécurité",
+      "camera": "Caméra de surveillance",
+      "groupe_electrogene": "Groupe électrogène / solaire",
+      "animaux_acceptes": "Animaux acceptés",
+      "non_fumeur": "Chambre non-fumeur"
+    },
+    "restauration": {
+      "aucune": "Aucune restauration",
+      "petit_dejeuner_inclus": "Petit-déjeuner inclus",
+      "petit_dejeuner_option": "Petit-déjeuner en option",
+      "repas_sur_demande": "Repas sur demande / room service",
+      "restaurant": "Restaurant sur place"
+    }
   }
 }

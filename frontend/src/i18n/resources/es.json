@@ -845,5 +845,54 @@
     "slide2": "Seguro de viaje — Viaja con tranquilidad",
     "slide3": "PawaPay — Paga con facilidad",
     "discover": "Saber más"
+  },
+  "equipments": {
+    "title": "Equipamientos",
+    "restaurationLabel": "Restauración",
+    "none": "Sin información",
+    "categories": {
+      "confort": "Confort y conectividad",
+      "cuisine": "Cocina",
+      "pratique": "Práctico y seguridad"
+    },
+    "items": {
+      "wifi": "Wi-Fi gratuito",
+      "climatisation": "Aire acondicionado",
+      "ventilateur": "Ventilador",
+      "eau_chaude": "Agua caliente",
+      "television": "TV / streaming",
+      "prises_lit": "Enchufes cerca de la cama",
+      "linge_lit": "Ropa de cama incluida",
+      "serviettes": "Toallas incluidas",
+      "douche_privee": "Ducha privada",
+      "toilettes_privees": "Aseo privado",
+      "seche_cheveux": "Secador de pelo",
+      "cuisine_equipee": "Cocina equipada",
+      "refrigerateur": "Nevera",
+      "cuisiniere": "Cocina / gas",
+      "micro_ondes": "Microondas",
+      "bouilloire": "Hervidor / cafetera",
+      "vaisselle": "Vajilla y cubiertos",
+      "eau_filtree": "Agua filtrada / potable",
+      "parking": "Aparcamiento",
+      "machine_laver": "Lavadora",
+      "terrasse": "Terraza / balcón / patio",
+      "piscine": "Piscina",
+      "checkin_autonome": "Check-in autónomo (24 h)",
+      "ascenseur": "Ascensor",
+      "coffre_fort": "Caja fuerte",
+      "gardien": "Vigilante / seguridad",
+      "camera": "Cámara de seguridad",
+      "groupe_electrogene": "Generador / energía solar",
+      "animaux_acceptes": "Se admiten mascotas",
+      "non_fumeur": "Habitación para no fumadores"
+    },
+    "restauration": {
+      "aucune": "Sin servicio de restauración",
+      "petit_dejeuner_inclus": "Desayuno incluido",
+      "petit_dejeuner_option": "Desayuno opcional",
+      "repas_sur_demande": "Comidas a petición / servicio de habitación",
+      "restaurant": "Restaurante en el alojamiento"
+    }
   }
 }

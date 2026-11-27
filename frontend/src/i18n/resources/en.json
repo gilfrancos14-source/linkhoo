@@ -845,5 +845,54 @@
     "slide2": "Travel insurance — Travel with peace of mind",
     "slide3": "PawaPay — Pay with ease",
     "discover": "Learn more"
+  },
+  "equipments": {
+    "title": "Amenities",
+    "restaurationLabel": "Dining",
+    "none": "Not specified",
+    "categories": {
+      "confort": "Comfort & connectivity",
+      "cuisine": "Kitchen",
+      "pratique": "Practical & safety"
+    },
+    "items": {
+      "wifi": "Free Wi-Fi",
+      "climatisation": "Air conditioning",
+      "ventilateur": "Fan",
+      "eau_chaude": "Hot water",
+      "television": "TV / streaming",
+      "prises_lit": "Power sockets near the bed",
+      "linge_lit": "Bed linen provided",
+      "serviettes": "Towels provided",
+      "douche_privee": "Private shower",
+      "toilettes_privees": "Private toilet",
+      "seche_cheveux": "Hair dryer",
+      "cuisine_equipee": "Equipped kitchen",
+      "refrigerateur": "Refrigerator",
+      "cuisiniere": "Stove / gas cooker",
+      "micro_ondes": "Microwave",
+      "bouilloire": "Kettle / coffee maker",
+      "vaisselle": "Dishes and utensils",
+      "eau_filtree": "Filtered / drinking water",
+      "parking": "Parking",
+      "machine_laver": "Washing machine",
+      "terrasse": "Terrace / balcony / courtyard",
+      "piscine": "Swimming pool",
+      "checkin_autonome": "Self check-in (24 h)",
+      "ascenseur": "Elevator",
+      "coffre_fort": "Safe",
+      "gardien": "Security guard",
+      "camera": "Security camera",
+      "groupe_electrogene": "Generator / solar power",
+      "animaux_acceptes": "Pets allowed",
+      "non_fumeur": "Non-smoking room"
+    },
+    "restauration": {
+      "aucune": "No dining service",
+      "petit_dejeuner_inclus": "Breakfast included",
+      "petit_dejeuner_option": "Breakfast available",
+      "repas_sur_demande": "Meals on request / room service",
+      "restaurant": "On-site restaurant"
+    }
   }
 }

@@ -167,6 +167,8 @@ describe('fetchRoomsByMarket', () => {
       hostResponseTotal: 0,
       imageLabels: null,
       mapsUrl: null,
+      equipments: [],
+      restauration: 'aucune',
     });
   });
 

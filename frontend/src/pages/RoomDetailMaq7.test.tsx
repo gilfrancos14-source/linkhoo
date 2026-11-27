@@ -55,6 +55,8 @@ vi.mock('../data/rooms', () => ({
     dateDispo: '',
     conditions: '',
     categoryTitle: 'Logement entier',
+    equipments: ['wifi', 'parking'],
+    restauration: 'restaurant',
     isGuestFavourite: true,
     hostResponseRate: 100,
     hostResponseAnswered: 12,
@@ -93,6 +95,14 @@ function renderPage() {
 }
 
 describe('RoomDetailMaq7 — première section', () => {
+  it('affiche les équipements et la restauration de l’annonce', async () => {
+    renderPage();
+
+    expect(await screen.findByText('Wi-Fi gratuit')).toBeInTheDocument();
+    expect(screen.getByText('Parking')).toBeInTheDocument();
+    expect(screen.getByText('Restaurant sur place')).toBeInTheDocument();
+  });
+
   it('affiche le titre, la galerie, les actions et le pied de page', async () => {
     const view = renderPage();
 

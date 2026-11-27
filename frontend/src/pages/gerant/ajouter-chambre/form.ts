@@ -47,6 +47,10 @@ export interface FormData {
   douches: number;
   category: string;
   isPopular: boolean;
+  /** Clés des équipements cochés (catalogue EQUIPMENT_KEYS). */
+  equipments: string[];
+  /** Service de restauration (catalogue RESTAURATION_KEYS). */
+  restauration: string;
 }
 
 export const emptyForm: FormData = {
@@ -62,6 +66,8 @@ export const emptyForm: FormData = {
   douches: 1,
   category: '',
   isPopular: false,
+  equipments: [],
+  restauration: 'aucune',
 };
 
 export const marketPays: Record<string, string> = {
@@ -91,6 +97,8 @@ export function formFromRoom(room: Room): FormData {
     douches: room.douches,
     category: room.category,
     isPopular: Boolean(room.isPopular),
+    equipments: room.equipments ?? [],
+    restauration: room.restauration ?? 'aucune',
   };
 }
 

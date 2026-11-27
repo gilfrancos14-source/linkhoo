@@ -47,6 +47,10 @@ export interface Room {
   hostResponseTotal?: number;
   /** URL de photo → type de pièce. */
   imageLabels?: Record<string, string> | null;
+  /** Équipements cochés par le gérant. */
+  equipments?: string[];
+  /** Service de restauration proposé aux clients. */
+  restauration?: string;
 }
 
 export function mapRoom(d: RoomData): Room {
@@ -88,6 +92,8 @@ export function mapRoom(d: RoomData): Room {
     hostResponseAnswered: d.host_response_answered ?? 0,
     hostResponseTotal: d.host_response_total ?? 0,
     imageLabels: d.image_labels ?? null,
+    equipments: d.equipments ?? [],
+    restauration: d.restauration ?? 'aucune',
   };
 }
 
@@ -200,6 +206,8 @@ export function toRoomDataPayload(data: Omit<Room, 'id'>): Omit<RoomData, 'id'> 
     promo_start: data.promoStart ?? null,
     promo_end: data.promoEnd ?? null,
     image_labels: data.imageLabels ?? {},
+    equipments: data.equipments ?? [],
+    restauration: data.restauration ?? 'aucune',
   };
 }
 
@@ -237,6 +245,8 @@ export async function updateRoom(id: string, updates: Partial<Room>): Promise<vo
   if (updates.promoStart !== undefined) payload.promo_start = updates.promoStart;
   if (updates.promoEnd !== undefined) payload.promo_end = updates.promoEnd;
   if (updates.imageLabels !== undefined) payload.image_labels = updates.imageLabels;
+  if (updates.equipments !== undefined) payload.equipments = updates.equipments;
+  if (updates.restauration !== undefined) payload.restauration = updates.restauration;
   await apiRooms.update(id, payload);
 }
 

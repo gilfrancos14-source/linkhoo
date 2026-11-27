@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { dateStringSchema, marketSchema, optionalTextSafe, withoutPhoneNumber } from './common';
 import { legacyImageUrlSchema, platformImageUrlSchema } from './imageUrl';
 import { isGoogleMapsUrl } from '../utils/googleMaps';
+import { EQUIPMENT_KEYS, RESTAURATION_KEYS } from '../config/equipments';
 
 /**
  * Champs communs création / mise à jour. Les images utilisent ici le schéma
@@ -61,6 +62,15 @@ const roomFields = {
   date_dispo: z.string().trim().max(50).optional().default(''),
   conditions: withoutPhoneNumber(z.string().trim().min(1).max(5000)),
   is_popular: z.boolean().optional().default(false),
+  equipments: z
+    .array(z.enum(EQUIPMENT_KEYS))
+    .max(EQUIPMENT_KEYS.length)
+    .refine((values) => new Set(values).size === values.length, {
+      message: 'Équipement en double',
+    })
+    .optional()
+    .default([]),
+  restauration: z.enum(RESTAURATION_KEYS).optional().default('aucune'),
   promo_group: z.enum(['promo_15', 'promo_10', 'promo_5']).nullable().optional(),
   promo_start: z.string().nullable().optional(),
   promo_end: z.string().nullable().optional(),

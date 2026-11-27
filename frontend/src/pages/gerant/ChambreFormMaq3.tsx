@@ -1,7 +1,9 @@
 import { Fragment, useEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMarket } from '../../contexts/MarketContext';
 import type { MarketCode } from '../../config/markets';
+import { EQUIPMENT_CATEGORIES, RESTAURATION_KEYS } from '../../data/equipments';
 import { useHomePath } from '../../hooks/useHomePath';
 import { createRoom, updateRoom, type Room } from '../../data/rooms';
 import { fetchCategoriesByMarket, type Category } from '../../data/categories';
@@ -61,6 +63,7 @@ export default function ChambreFormMaq3({
   saveRoom,
 }: ChambreFormMaq3Props) {
   const { market: contextMarket } = useMarket();
+  const { t } = useTranslation();
   const market = marketOverride ?? contextMarket;
   const navigate = useNavigate();
   const homePath = useHomePath();
@@ -106,7 +109,7 @@ export default function ChambreFormMaq3({
     onPreviewChange?.({ form, photos, mainPhotoIndex, categoryTitle });
   }, [form, photos, mainPhotoIndex, categoryTitle, onPreviewChange]);
 
-  const update = (field: keyof FormData, value: string | number | boolean) => {
+  const update = (field: keyof FormData, value: string | number | boolean | string[]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => {
@@ -271,6 +274,8 @@ export default function ChambreFormMaq3({
         dateDispo: '',
         conditions: form.conditions,
         isPopular: form.isPopular,
+        equipments: form.equipments,
+        restauration: form.restauration,
       };
 
       if (room && !saveRoom) {
@@ -643,6 +648,55 @@ export default function ChambreFormMaq3({
                 Pas de numéro de téléphone : les clients vous contactent via la messagerie.
               </p>
               {errors.conditions && <p className="err">{errors.conditions}</p>}
+            </div>
+
+            <div className="mt-5">
+              <span className="lbl">{t('equipments.title')}</span>
+              {EQUIPMENT_CATEGORIES.map((category) => (
+                <fieldset key={category.key} className="mt-3">
+                  <legend className="text-xs font-bold text-slate-600">
+                    {t(`equipments.categories.${category.key}`)}
+                  </legend>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    {category.items.map((key) => (
+                      <label key={key} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4"
+                          checked={form.equipments.includes(key)}
+                          onChange={(event) =>
+                            update(
+                              'equipments',
+                              event.target.checked
+                                ? [...form.equipments, key]
+                                : form.equipments.filter((item) => item !== key),
+                            )
+                          }
+                        />
+                        <span>{t(`equipments.items.${key}`)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              ))}
+            </div>
+
+            <div className="mt-5">
+              <label htmlFor="maq3-restauration" className="lbl">
+                {t('equipments.restaurationLabel')}
+              </label>
+              <select
+                id="maq3-restauration"
+                className="input"
+                value={form.restauration}
+                onChange={(event) => update('restauration', event.target.value)}
+              >
+                {RESTAURATION_KEYS.map((key) => (
+                  <option key={key} value={key}>
+                    {t(`equipments.restauration.${key}`)}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <label className="mt-5 flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">

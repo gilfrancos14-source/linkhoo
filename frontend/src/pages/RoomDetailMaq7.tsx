@@ -8,6 +8,7 @@ import { useFavorites } from '../contexts/FavoritesContext';
 import { useMarket } from '../contexts/MarketContext';
 import { fetchCategoriesByMarket, type Category } from '../data/categories';
 import { fetchRoomById, type Room } from '../data/rooms';
+import { EQUIPMENT_CATEGORIES } from '../data/equipments';
 import { useHomePath } from '../hooks/useHomePath';
 import { apiReviews, type RoomReviewsResponse } from '../lib/api';
 import { formatPrice } from '../lib/roomDisplay';
@@ -452,6 +453,44 @@ function RoomDetailContent() {
                   )}
                 </div>
               </div>
+
+              {room && (room.equipments?.length ?? 0) > 0 && (
+                <div className="m7-detail-row">
+                  <span className="m7-detail-row__icon"><Icon name="check" size={18} /></span>
+                  <div>
+                    <strong>{t('equipments.title')}</strong>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 6 }}>
+                      {EQUIPMENT_CATEGORIES.flatMap((category) => category.items)
+                        .filter((key) => room.equipments?.includes(key))
+                        .map((key) => (
+                          <span
+                            key={key}
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: 999,
+                              background: '#f1f5f9',
+                              color: '#334155',
+                              fontSize: 12,
+                              fontWeight: 600,
+                            }}
+                          >
+                            {t(`equipments.items.${key}`)}
+                          </span>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {room && room.restauration && room.restauration !== 'aucune' && (
+                <div className="m7-detail-row">
+                  <span className="m7-detail-row__icon"><UtensilsIcon /></span>
+                  <div>
+                    <strong>{t('equipments.restaurationLabel')}</strong>
+                    <p>{t(`equipments.restauration.${room.restauration}`)}</p>
+                  </div>
+                </div>
+              )}
 
               <p className="m7-details__more"><InfoIcon /> {t('roomDetailSection2.learnMore')}</p>
 

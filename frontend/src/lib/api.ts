@@ -272,6 +272,10 @@ export interface RoomData {
   host_response_total?: number;
   /** Libellé de chaque photo (URL → type de pièce), saisi par le gérant. */
   image_labels?: Record<string, string> | null;
+  /** Clés du catalogue EQUIPMENT_KEYS cochées pour cette annonce. */
+  equipments?: string[] | null;
+  /** Clé du catalogue RESTAURATION_KEYS. */
+  restauration?: string | null;
 }
 
 /** Chambre favorite : données de la chambre + date d'ajout au favori. */
