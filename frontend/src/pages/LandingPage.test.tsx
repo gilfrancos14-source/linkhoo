@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { MarketProvider } from '../contexts/MarketContext';
 import LandingPage from './LandingPage';
@@ -93,6 +93,12 @@ describe('LandingPage — maquette accueil', () => {
     expect(
       within(screen.getByRole('banner')).queryByRole('button', { name: 'Rechercher' }),
     ).toBeNull();
+
+    const menuButton = within(screen.getByRole('banner')).getByRole('button', { name: 'Menu' });
+    expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(menuButton);
+    expect(menuButton).toHaveAttribute('aria-expanded', 'true');
+    expect(within(screen.getByRole('banner')).getByRole('menu')).toBeInTheDocument();
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       "La location directe en Afrique de l'Ouest",

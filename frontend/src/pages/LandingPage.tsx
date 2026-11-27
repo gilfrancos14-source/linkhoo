@@ -19,7 +19,12 @@ export default function LandingPage() {
   return (
     <div className="landing">
       <LandingTopBar />
-      <LandingHeader showSearch={false} />
+      <LandingHeader
+        showActions={false}
+        showSearch={false}
+        showMenu
+        hostLink="/ci/inscription/gerant"
+      />
       <main>
         <LandingHero country={country} onCountryChange={setCountry} />
         <AnimatedSection>
