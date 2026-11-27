@@ -266,7 +266,7 @@ html[data-market] .landing {
    texte ne soit pas écrasée par l'héritage du lien. */
 .landing .acc-auth-btn--signup {
   background: var(--acc-navy);
-  color: var(--market-accent);
+  color: #ffffff;
 }
 
 .acc-auth-btn--signup:hover {
