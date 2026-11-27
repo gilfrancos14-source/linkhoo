@@ -31,8 +31,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -251,8 +251,9 @@
   }
 
   .language-globe-btn {
-    min-width: 44px;
-    min-height: 44px;
+    /* Même ligne et même compacité que le hamburger sur mobile. */
+    min-width: 18px;
+    min-height: 18px;
   }
 
   .language-select {

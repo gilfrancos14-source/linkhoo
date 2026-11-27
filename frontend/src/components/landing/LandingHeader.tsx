@@ -143,17 +143,6 @@ export default function LandingHeader({
           )}
           <LanguageSwitcher compact />
 
-          {auth && (
-            <div className="acc-header__auth">
-              <Link to={auth.signupTo} className="acc-auth-btn acc-auth-btn--signup">
-                {t('footer.signup')}
-              </Link>
-              <Link to={auth.loginTo} className="acc-auth-btn acc-auth-btn--login">
-                {t('footer.login')}
-              </Link>
-            </div>
-          )}
-
           {showMenu && (
             <div className="acc-nav-menu" ref={menuRef}>
               <button
@@ -201,14 +190,24 @@ export default function LandingHeader({
                     ),
                   )}
                   {auth && (
-                    <Link
-                      to={auth.loginTo}
-                      role="menuitem"
-                      className="acc-user-menu__account"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      {t('footer.login')}
-                    </Link>
+                    <>
+                      <Link
+                        to={auth.signupTo}
+                        role="menuitem"
+                        className="acc-user-menu__account"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        {t('footer.signup')}
+                      </Link>
+                      <Link
+                        to={auth.loginTo}
+                        role="menuitem"
+                        className="acc-user-menu__account"
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        {t('footer.login')}
+                      </Link>
+                    </>
                   )}
                 </div>
               )}
