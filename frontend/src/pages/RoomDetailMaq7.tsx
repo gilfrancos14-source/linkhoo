@@ -1131,11 +1131,10 @@ function MarketHeader({ homePath }: { homePath: string }) {
   return (
     <div className="landing maquette-shell m7-market-header">
       <LandingHeader
-        onSearchClick={() => navigate(homePath, { state: { focusSearch: true } })}
         items={items}
         onItemClick={(purpose) => navigate(homePath, { state: { scrollTo: purpose } })}
         brandTo={homePath}
-        account={{ to: `${homePath}/compte`, label: 'Mon espace' }}
+        showActions={false}
       />
     </div>
   );

@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMarket } from '../../contexts/MarketContext';
 import { MAQUETTE_NAV_ITEMS } from '../../maquette/nav';
@@ -16,7 +15,6 @@ import LandingHeader from './LandingHeader';
  */
 export default function MarketHeader() {
   const { market } = useMarket();
-  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -31,13 +29,6 @@ export default function MarketHeader() {
     window.scrollTo({ top, behavior: 'smooth' });
   }, []);
 
-  const focusSearch = useCallback(() => {
-    const input = document.getElementById('maquette-destination');
-    if (!input) return;
-    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    input.focus({ preventScroll: true });
-  }, []);
-
   const onItemClick = useCallback(
     (href: string) => {
       if (onHome) {
@@ -49,21 +40,12 @@ export default function MarketHeader() {
     [homePath, navigate, onHome, scrollToSection],
   );
 
-  const onSearchClick = useCallback(() => {
-    if (onHome) {
-      focusSearch();
-      return;
-    }
-    navigate(homePath, { state: { focusSearch: true } });
-  }, [focusSearch, homePath, navigate, onHome]);
-
   return (
     <LandingHeader
-      onSearchClick={onSearchClick}
       items={MAQUETTE_NAV_ITEMS}
       onItemClick={onItemClick}
       brandTo={homePath}
-      account={{ to: `${homePath}/compte`, label: t('footer.mySpace') }}
+      showActions={false}
     />
   );
 }

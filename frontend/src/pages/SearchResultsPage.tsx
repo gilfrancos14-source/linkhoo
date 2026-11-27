@@ -219,10 +219,10 @@ function SearchPagination({ currentPage, totalPages, onPageChange }: PaginationP
   );
 }
 
-function SearchHeader({ onSearchClick }: { onSearchClick: () => void }) {
+function SearchHeader() {
   return (
     <div className="search-header-scope">
-      <LandingHeader onSearchClick={onSearchClick} />
+      <LandingHeader showActions={false} />
     </div>
   );
 }
@@ -467,21 +467,10 @@ export default function SearchResultsPage() {
       dateArrivee,
     )}&depart=${encodeURIComponent(dateDepart)}`;
 
-  // Sur mobile les filtres sont repliés : le bouton « Rechercher » de
-  // l'en-tête doit les ouvrir avant de donner le focus au champ ville.
-  const focusSearch = () => {
-    if (hasDates) setFiltersOpen(true);
-    window.requestAnimationFrame(() => {
-      const input = document.getElementById(hasDates ? 'sp-ville' : 'sp-arrivee');
-      input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      input?.focus({ preventScroll: true });
-    });
-  };
-
   if (loading) {
     return (
       <>
-        <SearchHeader onSearchClick={focusSearch} />
+        <SearchHeader />
         <main className="search-page">
           <div className="search-page__shell search-page__loading">
             <p className="search-page__loading-text">Chargement...</p>
@@ -508,7 +497,7 @@ export default function SearchResultsPage() {
 
   return (
     <>
-    <SearchHeader onSearchClick={focusSearch} />
+    <SearchHeader />
     <main className="search-page">
       <section className="search-page__shell search-page__breadcrumb-section">
         <nav className="search-page__breadcrumb" aria-label="Fil d'Ariane">

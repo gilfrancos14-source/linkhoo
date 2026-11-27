@@ -18,11 +18,13 @@ export interface HeaderAccount {
 }
 
 interface LandingHeaderProps {
-  onSearchClick: () => void;
+  onSearchClick?: () => void;
   items?: readonly HeaderItem[];
   brandTo?: string;
   onItemClick?: (href: string) => void;
   account?: HeaderAccount;
+  /** Les pages marché masquent recherche, compte et menu utilisateur. */
+  showActions?: boolean;
 }
 
 const DEFAULT_ITEMS: readonly HeaderItem[] = [
@@ -37,6 +39,7 @@ export default function LandingHeader({
   brandTo = '/',
   onItemClick,
   account,
+  showActions = true,
 }: LandingHeaderProps) {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -105,10 +108,12 @@ export default function LandingHeader({
         </nav>
 
         <div className="acc-header__actions">
-          <button type="button" className="acc-icon-btn" aria-label={t('landing.header.searchAria')} onClick={onSearchClick}>
-            <Icon name="search" size={24} />
-          </button>
-          {account && (
+          {showActions && (
+            <button type="button" className="acc-icon-btn" aria-label={t('landing.header.searchAria')} onClick={onSearchClick}>
+              <Icon name="search" size={24} />
+            </button>
+          )}
+          {showActions && account && (
             <Link to={account.to} className="acc-account-btn" aria-label={account.label}>
               <Icon name="userRound" size={20} />
               <span>{account.label}</span>
@@ -116,6 +121,7 @@ export default function LandingHeader({
           )}
           <LanguageSwitcher compact />
 
+          {showActions && (
           <div className="acc-user-menu" ref={menuRef}>
             <button
               type="button"
@@ -179,6 +185,7 @@ export default function LandingHeader({
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
     </header>
