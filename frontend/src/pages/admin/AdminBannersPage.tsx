@@ -88,8 +88,8 @@ export default function AdminBannersPage() {
     setForm({
       section: banner.section,
       market: banner.market,
-      link: banner.link,
-      alt: banner.alt || '',
+      link: banner.link ?? '',
+      alt: banner.alt ?? '',
       order: banner.order,
     });
     setImageFile(null);
@@ -150,8 +150,8 @@ export default function AdminBannersPage() {
       const payload = {
         section: form.section,
         market: form.market,
-        link: form.link,
-        alt: form.alt,
+        link: form.link.trim(),
+        alt: form.alt.trim(),
         order: form.order,
         img,
       };
@@ -426,12 +426,12 @@ export default function AdminBannersPage() {
             </label>
 
             <label className="banner-field">
-              <span>Lien</span>
+              <span>Lien (facultatif)</span>
               <input type="url" placeholder="https://..." value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} />
             </label>
 
             <label className="banner-field">
-              <span>Texte alternatif</span>
+              <span>Texte alternatif (facultatif)</span>
               <input type="text" placeholder="Description de la bannière" value={form.alt} onChange={(e) => setForm({ ...form, alt: e.target.value })} />
             </label>
 

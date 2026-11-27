@@ -26,8 +26,6 @@ function asBanners(value: BannerData[]): BannerData[] {
       typeof banner.id === 'string' &&
       typeof banner.img === 'string' &&
       banner.img.length > 0 &&
-      typeof banner.link === 'string' &&
-      banner.link.length > 0 &&
       isBannerSection(banner.section),
   );
 }

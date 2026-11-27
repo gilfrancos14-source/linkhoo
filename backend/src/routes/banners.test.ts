@@ -217,6 +217,31 @@ describe('POST /api/banners', () => {
     );
   });
 
+  it('201 : accepte une bannière sans lien ni texte alternatif', async () => {
+    adminChain = fakeChain({
+      data: {
+        id: 'b2',
+        section: 'hero',
+        img: validBanner.img,
+        market: 'CI',
+        order: 0,
+        alt: '',
+        link: '',
+      },
+      error: null,
+    });
+    mockAdminFrom(adminChain);
+
+    const res = await request(app)
+      .post('/api/banners')
+      .set('Authorization', bearer())
+      .send({ section: 'hero', img: validBanner.img, market: 'CI', order: 0 });
+
+    expect(res.status).toBe(201);
+    expect(adminChain.insert).toHaveBeenCalledWith(expect.objectContaining({ alt: '' }));
+    expect(adminChain.insert.mock.calls[0][0].link).toBeUndefined();
+  });
+
   it('500 quand Supabase renvoie une erreur', async () => {
     adminChain = fakeChain({ data: null, error: { message: 'boom' } });
     mockAdminFrom(adminChain);

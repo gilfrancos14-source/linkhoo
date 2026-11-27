@@ -70,6 +70,14 @@ afterEach(() => {
 });
 
 describe('LandingPage — maquette accueil', () => {
+  it('affiche l’espace publicitaire du hero sous forme de cercle', () => {
+    renderLanding();
+
+    const ad = document.querySelector('.partner-banners');
+    expect(ad).not.toBeNull();
+    expect(ad?.className).not.toMatch(/partner-banners--/);
+  });
+
   it("affiche l'en-tête et le hero sans bandeau hors ligne quand la connexion est disponible", async () => {
     renderLanding();
 

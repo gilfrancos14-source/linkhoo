@@ -19,7 +19,7 @@ export interface BannerSlide {
   id: string;
   image: string;
   alt: string;
-  link: string;
+  link?: string | null;
 }
 
 export type BannerSlides = Record<MaquetteBannerSection, BannerSlide[]>;
@@ -152,7 +152,7 @@ export function buildBanners(
       alt:
         banner.alt ||
         (translate ? translate('landing.header.bannerAlt') : 'Bannière promotionnelle'),
-      link: banner.link,
+      link: banner.link || null,
     });
   }
 

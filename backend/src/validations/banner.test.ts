@@ -16,17 +16,21 @@ describe('bannerCreateSchema', () => {
     expect(bannerCreateSchema.safeParse({ ...validBanner, market: 'BJ' }).success).toBe(true);
   });
 
-  it('applique un alt vide par défaut', () => {
-    const parsed = bannerCreateSchema.safeParse({ ...validBanner, alt: undefined });
+  it('applique un alt vide par défaut et laisse le lien absent', () => {
+    const parsed = bannerCreateSchema.safeParse({
+      ...validBanner,
+      alt: undefined,
+      link: undefined,
+    });
     expect(parsed.success).toBe(true);
     if (!parsed.success) return;
     expect(parsed.data.alt).toBe('');
+    expect(parsed.data.link).toBeUndefined();
   });
 
-  it('exige section, img, link, market et order', () => {
+  it('exige section, img, market et order', () => {
     expect(bannerCreateSchema.safeParse({ ...validBanner, section: undefined }).success).toBe(false);
     expect(bannerCreateSchema.safeParse({ ...validBanner, img: undefined }).success).toBe(false);
-    expect(bannerCreateSchema.safeParse({ ...validBanner, link: undefined }).success).toBe(false);
     expect(bannerCreateSchema.safeParse({ ...validBanner, market: undefined }).success).toBe(false);
     expect(bannerCreateSchema.safeParse({ ...validBanner, order: undefined }).success).toBe(false);
   });
@@ -45,9 +49,9 @@ describe('bannerCreateSchema', () => {
     expect(bannerCreateSchema.safeParse({ ...validBanner, img: 'x'.repeat(2049) }).success).toBe(false);
   });
 
-  it('refuse un lien vide ou trop long', () => {
-    expect(bannerCreateSchema.safeParse({ ...validBanner, link: '' }).success).toBe(false);
-    expect(bannerCreateSchema.safeParse({ ...validBanner, link: ' '.repeat(5) }).success).toBe(false);
+  it('accepte un lien vide et refuse un lien trop long', () => {
+    expect(bannerCreateSchema.safeParse({ ...validBanner, link: '' }).success).toBe(true);
+    expect(bannerCreateSchema.safeParse({ ...validBanner, link: '   ' }).success).toBe(true);
     expect(bannerCreateSchema.safeParse({ ...validBanner, link: 'x'.repeat(2049) }).success).toBe(false);
   });
 

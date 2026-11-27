@@ -1,52 +1,71 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, ChevronDown, Globe2 } from 'lucide-react';
 
-/** Drapeaux SVG des langues d'interface : France, États-Unis, Espagne. */
+/** Drapeaux SVG des langues d'interface, dessinés directement en cercle. */
 function LanguageFlag({ code }: { code: string }) {
+  const clipId = `lang-flag-${useId().replace(/:/g, '')}`;
   const common = {
     width: 24,
-    height: 16,
-    viewBox: '0 0 24 16',
+    height: 24,
+    viewBox: '0 0 24 24',
     role: 'img' as const,
     'aria-hidden': true as const,
     className: 'language-flag',
   };
 
+  const frame = (content: React.ReactNode) => (
+    <svg {...common}>
+      <defs>
+        <clipPath id={clipId}>
+          <circle cx="12" cy="12" r="12" />
+        </clipPath>
+      </defs>
+      <g clipPath={`url(#${clipId})`}>{content}</g>
+    </svg>
+  );
+
   if (code === 'fr') {
-    return (
-      <svg {...common}>
-        <rect width="24" height="16" rx="2" fill="#fff" />
-        <path d="M0 0h8v16H0z" fill="#0055A4" />
-        <path d="M16 0h8v16h-8z" fill="#EF4135" />
-      </svg>
+    return frame(
+      <>
+        <rect width="24" height="24" fill="#fff" />
+        <path d="M0 0h8v24H0z" fill="#0055A4" />
+        <path d="M16 0h8v24h-8z" fill="#EF4135" />
+      </>,
     );
   }
 
   if (code === 'es') {
-    return (
-      <svg {...common}>
-        <rect width="24" height="16" rx="2" fill="#AA151B" />
-        <rect y="4" width="24" height="8" fill="#F1BF00" />
-        <rect x="6" y="6.5" width="3" height="3" rx="0.5" fill="#AA151B" />
-      </svg>
+    return frame(
+      <>
+        <rect width="24" height="24" fill="#AA151B" />
+        <rect y="8" width="24" height="8" fill="#F1BF00" />
+      </>,
     );
   }
 
   // en — bandes rouges/blanches et canton bleu étoilé (version simplifiée).
-  return (
-    <svg {...common}>
-      <rect width="24" height="16" rx="2" fill="#fff" />
-      {[0, 2, 4, 6, 8, 10, 12, 14].map((y) => (
-        <rect key={y} y={y} width="24" height="1" fill="#B22234" />
-      ))}
-      <rect width="10" height="9" fill="#3C3B6E" />
-      {[2, 4, 6].map((y) =>
-        [1.5, 4, 6.5, 8.5].map((x) => (
-          <circle key={`${x}-${y}`} cx={x} cy={y} r="0.45" fill="#fff" />
+  return frame(
+    <>
+      <rect width="24" height="24" fill="#fff" />
+      {Array.from({ length: 13 }, (_, index) =>
+        index % 2 === 0 ? (
+          <rect
+            key={index}
+            y={(index * 24) / 13}
+            width="24"
+            height={24 / 13}
+            fill="#B22234"
+          />
+        ) : null,
+      )}
+      <rect width="11" height="13" fill="#3C3B6E" />
+      {[2.5, 6, 9.5].map((y) =>
+        [2, 5, 8].map((x) => (
+          <circle key={`${x}-${y}`} cx={x} cy={y} r="0.5" fill="#fff" />
         )),
       )}
-    </svg>
+    </>,
   );
 }
 

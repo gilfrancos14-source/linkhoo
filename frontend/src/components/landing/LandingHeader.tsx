@@ -17,6 +17,12 @@ export interface HeaderAccount {
   readonly label: string;
 }
 
+/** Liens client affichés dans la barre des pages marché. */
+export interface HeaderAuth {
+  readonly signupTo: string;
+  readonly loginTo: string;
+}
+
 interface LandingHeaderProps {
   onSearchClick?: () => void;
   items?: readonly HeaderItem[];
@@ -25,6 +31,7 @@ interface LandingHeaderProps {
   account?: HeaderAccount;
   /** Les pages marché masquent recherche, compte et menu utilisateur. */
   showActions?: boolean;
+  auth?: HeaderAuth;
 }
 
 const DEFAULT_ITEMS: readonly HeaderItem[] = [
@@ -40,6 +47,7 @@ export default function LandingHeader({
   onItemClick,
   account,
   showActions = true,
+  auth,
 }: LandingHeaderProps) {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -120,6 +128,17 @@ export default function LandingHeader({
             </Link>
           )}
           <LanguageSwitcher compact />
+
+          {auth && (
+            <div className="acc-header__auth">
+              <Link to={auth.signupTo} className="acc-auth-btn acc-auth-btn--signup">
+                {t('footer.signup')}
+              </Link>
+              <Link to={auth.loginTo} className="acc-auth-btn acc-auth-btn--login">
+                {t('footer.login')}
+              </Link>
+            </div>
+          )}
 
           {showActions && (
           <div className="acc-user-menu" ref={menuRef}>

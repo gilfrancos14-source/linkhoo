@@ -288,6 +288,22 @@ describe('AdminBannersPage', () => {
     expect(table().getAllByRole('row')).toHaveLength(5);
   }, 20000);
 
+  it('crée une bannière sans lien ni texte alternatif', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<AdminBannersPage />);
+    await screen.findByRole('table');
+
+    await user.click(screen.getByRole('button', { name: 'Ajouter' }));
+    const file = new File(['contenu'], 'banniere.png', { type: 'image/png' });
+    await user.upload(fileInput(), file);
+    await user.click(panel().getByRole('button', { name: 'Enregistrer' }));
+
+    await waitFor(() => expect(mocks.createBanner).toHaveBeenCalledTimes(1));
+    expect(mocks.createBanner).toHaveBeenCalledWith(
+      expect.objectContaining({ link: '', alt: '' }),
+    );
+  });
+
   it("pré-remplit le panneau quand on modifie une bannière", async () => {
     const user = userEvent.setup({ delay: null, pointerEventsCheck: 0 });
     render(<AdminBannersPage />);

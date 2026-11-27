@@ -46,6 +46,10 @@ export default function MarketHeader() {
       onItemClick={onItemClick}
       brandTo={homePath}
       showActions={false}
+      auth={{
+        signupTo: `${homePath}/inscription/client`,
+        loginTo: `${homePath}/login`,
+      }}
     />
   );
 }

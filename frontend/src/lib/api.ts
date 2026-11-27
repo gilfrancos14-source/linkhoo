@@ -401,8 +401,10 @@ export interface BannerData {
   id: string;
   section: string;
   img: string;
-  alt: string;
-  link: string;
+  /** Facultatif : le landing retombe sur un libellé par défaut. */
+  alt?: string | null;
+  /** Facultatif : le visuel s'affiche alors sans lien cliquable. */
+  link?: string | null;
   market: MarketCode;
   order: number;
 }

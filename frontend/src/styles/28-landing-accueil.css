@@ -215,6 +215,50 @@ html[data-market] .landing {
   gap: 8px;
 }
 
+.acc-header__auth {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Ces deux boutons restent bleu nuit sur tous les marchés : --acc-navy
+   n'est pas surchargé par le thème du drapeau. */
+.acc-auth-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--acc-navy);
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  transition: filter 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+/* `.landing a` est plus spécifique : on préfixe pour que la couleur du
+   texte ne soit pas écrasée par l'héritage du lien. */
+.landing .acc-auth-btn--signup {
+  background: var(--acc-navy);
+  color: var(--market-accent);
+}
+
+.acc-auth-btn--signup:hover {
+  filter: brightness(1.25);
+  transform: translateY(-1px);
+}
+
+.landing .acc-auth-btn--login {
+  background: #fff;
+  color: var(--acc-navy);
+}
+
+.acc-auth-btn--login:hover {
+  background: color-mix(in srgb, var(--acc-navy) 6%, white);
+}
+
 .acc-country-btn {
   display: none;
   align-items: center;

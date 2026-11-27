@@ -107,11 +107,20 @@ export default function MaquetteBannerCarousel({ banners }: MaquetteBannerCarous
             />
           );
 
-          return isExternal(banner.link) ? (
+          const link = banner.link?.trim();
+          if (!link) {
+            return (
+              <div key={banner.id} className="w-full h-full shrink-0 snap-start block">
+                {image}
+              </div>
+            );
+          }
+
+          return isExternal(link) ? (
             <a
               key={banner.id}
               className="w-full h-full shrink-0 snap-start block"
-              href={banner.link}
+              href={link}
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -121,7 +130,7 @@ export default function MaquetteBannerCarousel({ banners }: MaquetteBannerCarous
             <Link
               key={banner.id}
               className="w-full h-full shrink-0 snap-start block"
-              to={banner.link}
+              to={link}
             >
               {image}
             </Link>
