@@ -31,6 +31,8 @@ interface LandingHeaderProps {
   account?: HeaderAccount;
   /** Les pages marché masquent recherche, compte et menu utilisateur. */
   showActions?: boolean;
+  /** Bouton de recherche de la landing (désactivé sur la landing racine). */
+  showSearch?: boolean;
   /** Bouton hamburger simple (sans avatar) qui ouvre le menu des sections. */
   showMenu?: boolean;
   auth?: HeaderAuth;
@@ -49,6 +51,7 @@ export default function LandingHeader({
   onItemClick,
   account,
   showActions = true,
+  showSearch = true,
   showMenu = false,
   auth,
 }: LandingHeaderProps) {
@@ -119,7 +122,7 @@ export default function LandingHeader({
         </nav>
 
         <div className="acc-header__actions">
-          {showActions && (
+          {showActions && showSearch && (
             <button type="button" className="acc-icon-btn" aria-label={t('landing.header.searchAria')} onClick={onSearchClick}>
               <Icon name="search" size={24} />
             </button>
@@ -204,71 +207,6 @@ export default function LandingHeader({
             </div>
           )}
 
-          {showActions && (
-          <div className="acc-user-menu" ref={menuRef}>
-            <button
-              type="button"
-              className={`acc-user-menu__btn${menuOpen ? ' is-open' : ''}`}
-              aria-label={t('landing.header.menuAria')}
-              aria-expanded={menuOpen}
-              aria-controls="acc-user-menu-dropdown"
-              aria-haspopup="menu"
-              onClick={() => setMenuOpen((open) => !open)}
-            >
-              <Icon name="menu" size={16} />
-              <span className="acc-user-menu__avatar" aria-hidden="true">
-                <Icon name="userRound" size={14} />
-              </span>
-            </button>
-
-            {menuOpen && (
-              <div
-                id="acc-user-menu-dropdown"
-                className="acc-user-menu__dropdown"
-                role="menu"
-                aria-label={t('landing.header.mainNav')}
-              >
-                <span className="acc-user-menu__title">
-                  {t('landing.header.mainNav')}
-                </span>
-                {navItems.map((item) =>
-                  onItemClick ? (
-                    <button
-                      key={item.href}
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        onItemClick(item.href);
-                        setMenuOpen(false);
-                      }}
-                    >
-                      {item.label}
-                    </button>
-                  ) : (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      role="menuitem"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      {item.label}
-                    </Link>
-                  ),
-                )}
-                {account && (
-                  <Link
-                    to={account.to}
-                    role="menuitem"
-                    className="acc-user-menu__account"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    {account.label}
-                  </Link>
-                )}
-              </div>
-            )}
-          </div>
-          )}
         </div>
       </div>
     </header>

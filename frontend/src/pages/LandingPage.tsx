@@ -16,16 +16,10 @@ export default function LandingPage() {
   // depuis le hero, l'en-tête ou la grille « Où louer ? ».
   const [country, setCountry] = useState<Country | null>(null);
 
-  const focusSearch = () => {
-    const input = document.getElementById('acc-search-keyword');
-    input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    input?.focus({ preventScroll: true });
-  };
-
   return (
     <div className="landing">
       <LandingTopBar />
-      <LandingHeader onSearchClick={focusSearch} />
+      <LandingHeader showSearch={false} />
       <main>
         <LandingHero country={country} onCountryChange={setCountry} />
         <AnimatedSection>

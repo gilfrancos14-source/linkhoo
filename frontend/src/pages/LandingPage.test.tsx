@@ -90,6 +90,9 @@ describe('LandingPage — maquette accueil', () => {
     expect(screen.getAllByRole('link', { name: 'Accueil' }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', { name: 'À propos' }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole('link', { name: 'Contact' }).length).toBeGreaterThan(0);
+    expect(
+      within(screen.getByRole('banner')).queryByRole('button', { name: 'Rechercher' }),
+    ).toBeNull();
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       "La location directe en Afrique de l'Ouest",
