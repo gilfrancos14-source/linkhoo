@@ -157,17 +157,18 @@
 }
 
 .ab-nav__link:hover {
-  color: var(--ab-brand);
+  color: var(--ab-navy);
 }
 
 .ab-nav__link--active {
-  color: var(--ab-brand);
+  color: var(--ab-navy);
   font-weight: 600;
+  /* L'orange reste réservé aux icônes et aux liserés. */
   border-bottom-color: var(--ab-brand);
 }
 
 .about-page .ab-nav__link--active {
-  color: var(--ab-brand);
+  color: var(--ab-navy);
 }
 
 .ab-header__actions {
@@ -243,11 +244,11 @@
 }
 
 .ab-mobile-menu__active {
-  color: var(--ab-brand);
+  color: var(--ab-navy);
 }
 
 .about-page .ab-mobile-menu__active {
-  color: var(--ab-brand);
+  color: var(--ab-navy);
 }
 
 /* ---------- Hero ---------- */
@@ -274,7 +275,7 @@
 }
 
 .ab-breadcrumb a:hover {
-  color: var(--ab-brand);
+  color: var(--ab-navy);
 }
 
 .ab-badge {
@@ -282,7 +283,7 @@
   padding: 4px 12px;
   border-radius: 9999px;
   background: var(--ab-soft);
-  color: var(--ab-brand-dark);
+  color: var(--ab-navy);
   font-size: 11px;
   font-weight: 600;
 }
@@ -297,18 +298,18 @@
 }
 
 .ab-hero__title-brand {
-  color: var(--ab-brand);
+  color: var(--ab-navy);
 }
 
 .ab-hero__title-gradient {
-  background: linear-gradient(to right, var(--ab-navy), var(--ab-brand));
+  background: linear-gradient(to right, var(--ab-navy), var(--ab-navy-light));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
 .ab-hero__title-dot {
-  color: var(--ab-brand);
+  color: var(--ab-navy);
 }
 
 .ab-hero__lead {
@@ -515,7 +516,7 @@
 }
 
 .ab-text-brand {
-  color: var(--ab-brand);
+  color: var(--ab-navy);
 }
 
 .ab-section-lead {
@@ -559,7 +560,7 @@
   font-size: 26px;
   font-weight: 800;
   line-height: 1;
-  color: var(--ab-brand-dark);
+  color: var(--ab-navy);
 }
 
 .ab-stat__label {
@@ -747,14 +748,14 @@
   padding: 0 20px;
   border-radius: 8px;
   background: #fff;
-  color: var(--ab-brand-dark);
+  color: var(--ab-navy);
   font-size: 12px;
   font-weight: 600;
   flex-shrink: 0;
 }
 
 .about-page .ab-cta__btn {
-  color: var(--ab-brand-dark);
+  color: var(--ab-navy);
 }
 
 /* ---------- Pied de page ---------- */

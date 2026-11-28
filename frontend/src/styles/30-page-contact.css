@@ -9,10 +9,11 @@
   --ct-line: #f0e7df;
   --ct-muted: #64748b;
 
-  /* Texte d'accent en orange pur, icônes en bleu nuit. */
-  --ct-text: #ff6a13;
+  /* Texte d'accent en bleu nuit ; orange réservé à quelques icônes. */
+  --ct-text: #0e1433;
   --ct-icon: #0b2a55;
-  --ct-icon-bg: #dbe6fd; /* fond pâle des pastilles d'icônes, jamais orange */
+  --ct-icon-accent: #f97316;
+  --ct-icon-bg: #fff7ed; /* fond pâle des pastilles d'icônes orange */
 
   background: #fff;
   color: var(--ct-ink);
@@ -1635,7 +1636,7 @@
   color: #fff;
 }
 
-/* ---------- Pastilles d'icônes : fond bleu nuit pâle, jamais orange ---------- */
+/* ---------- Pastilles d'icônes : orange sur fond pâle ---------- */
 .contact-page .ct-highlights__icon,
 .contact-page .ct-hero__card-icon,
 .contact-page .ct-card__head-icon,
@@ -1643,7 +1644,7 @@
 .contact-page .ct-details__icon,
 .contact-page .ct-faq__head-icon {
   background: var(--ct-icon-bg);
-  color: var(--ct-icon);
+  color: var(--ct-icon-accent);
 }
 
 .contact-page .ct-icon-btn:hover {
