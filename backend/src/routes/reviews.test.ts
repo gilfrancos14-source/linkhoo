@@ -122,6 +122,57 @@ describe('GET /api/reviews', () => {
     ]);
   });
 
+  it('200 : calcule les moyennes des six critères', async () => {
+    rooms = fakeChain({ data: { id: 'room-1', gerant_id: null }, error: null });
+    const roomReviews = fakeChain({
+      data: [
+        {
+          id: 'r1',
+          note_appartement: 5,
+          note_gerant: 5,
+          note_proprete: 5,
+          note_exactitude: 4,
+          note_arrivee: 5,
+          note_communication: 4,
+          note_emplacement: 3,
+          note_rapport_qualite_prix: 5,
+        },
+        {
+          id: 'r2',
+          note_appartement: 3,
+          note_gerant: 3,
+          note_proprete: 3,
+          note_exactitude: null,
+          note_arrivee: 4,
+          note_communication: null,
+          note_emplacement: 5,
+          note_rapport_qualite_prix: 3,
+        },
+      ],
+      error: null,
+    });
+    const statsReviews = fakeChain({
+      data: [
+        { room_id: 'room-1', note_appartement: 5 },
+        { room_id: 'room-1', note_appartement: 3 },
+      ],
+      error: null,
+    });
+    stubTables({ reviews: [roomReviews, statsReviews] });
+
+    const res = await request(app).get('/api/reviews?room_id=room-1');
+
+    expect(res.status).toBe(200);
+    expect(res.body.scores).toEqual({
+      note_proprete: 4,
+      note_exactitude: 4,
+      note_arrivee: 4.5,
+      note_communication: 4,
+      note_emplacement: 4,
+      note_rapport_qualite_prix: 4,
+    });
+  });
+
   it('200 : chambre sans gérant na pas d’agrégat gérant', async () => {
     rooms = fakeChain({ data: { id: 'room-1', gerant_id: null }, error: null });
     reviews = fakeChain({ data: [], error: null });
@@ -137,6 +188,14 @@ describe('GET /api/reviews', () => {
       room_distribution: [],
       gerant_avg: null,
       gerant_count: 0,
+      scores: {
+        note_proprete: null,
+        note_exactitude: null,
+        note_arrivee: null,
+        note_communication: null,
+        note_emplacement: null,
+        note_rapport_qualite_prix: null,
+      },
     });
     expect(reviews.select).toHaveBeenCalledTimes(2);
   });

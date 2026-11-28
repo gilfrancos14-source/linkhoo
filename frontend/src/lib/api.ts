@@ -1035,6 +1035,15 @@ export const apiClients = {
 };
 
 // ── Reviews ──
+export interface ReviewScores {
+  note_proprete: number | null;
+  note_exactitude: number | null;
+  note_arrivee: number | null;
+  note_communication: number | null;
+  note_emplacement: number | null;
+  note_rapport_qualite_prix: number | null;
+}
+
 export interface ReviewData {
   id: string;
   room_id: string | null;
@@ -1045,6 +1054,13 @@ export interface ReviewData {
   note_gerant: number;
   commentaire: string | null;
   created_at: string;
+  /** Notes par critère (absentes sur les avis historiques). */
+  note_proprete?: number | null;
+  note_exactitude?: number | null;
+  note_arrivee?: number | null;
+  note_communication?: number | null;
+  note_emplacement?: number | null;
+  note_rapport_qualite_prix?: number | null;
 }
 
 export interface RoomReviewDistributionItem {
@@ -1064,6 +1080,8 @@ export interface RoomReviewsResponse {
   room_distribution: RoomReviewDistributionItem[];
   gerant_avg: number | null;
   gerant_count: number;
+  /** Moyennes par critère, calculées côté backend. */
+  scores?: ReviewScores | null;
 }
 
 export interface FeaturedReviewData {
@@ -1090,7 +1108,8 @@ export const apiReviews = {
     note_appartement: number;
     note_gerant: number;
     commentaire?: string;
-  }) => request<ReviewData>('/reviews', { method: 'POST', body: JSON.stringify(data) }),
+  } & Partial<ReviewScores>) =>
+    request<ReviewData>('/reviews', { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // ── Messagerie client ↔ gérant (par chambre) ──

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth, useUser } from '@clerk/clerk-react';
+import { useTranslation } from 'react-i18next';
 import { useHomePath } from '../hooks/useHomePath';
 import {
   setAuthTokenGetter,
@@ -8,6 +9,7 @@ import {
   type ClientMineReservationData,
   type ReviewData,
   type RoomReviewsResponse,
+  type ReviewScores,
 } from '../lib/api';
 import { getMyReservations } from '../lib/reservations';
 import { fetchRoomById, type Room } from '../data/rooms';
@@ -118,7 +120,18 @@ function StarPicker({
 const PLACEHOLDER_IMAGE =
   'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=1200';
 
+/** Les six critères affichés sur la fiche chambre. */
+const REVIEW_CRITERIA: readonly { key: keyof ReviewScores; labelKey: string }[] = [
+  { key: 'note_proprete', labelKey: 'roomDetailSection5.cleanliness' },
+  { key: 'note_exactitude', labelKey: 'roomDetailSection5.accuracy' },
+  { key: 'note_arrivee', labelKey: 'roomDetailSection5.checkin' },
+  { key: 'note_communication', labelKey: 'roomDetailSection5.communication' },
+  { key: 'note_emplacement', labelKey: 'roomDetailSection5.location' },
+  { key: 'note_rapport_qualite_prix', labelKey: 'roomDetailSection5.value' },
+];
+
 export default function LaisserAvisPage() {
+  const { t } = useTranslation();
   const { reservationId } = useParams<{ reservationId: string }>();
   const navigate = useNavigate();
   const homePath = useHomePath();
@@ -139,6 +152,14 @@ export default function LaisserAvisPage() {
 
   const [noteAppartement, setNoteAppartement] = useState(5);
   const [noteGerant, setNoteGerant] = useState(5);
+  const [scores, setScores] = useState<ReviewScores>({
+    note_proprete: 0,
+    note_exactitude: 0,
+    note_arrivee: 0,
+    note_communication: 0,
+    note_emplacement: 0,
+    note_rapport_qualite_prix: 0,
+  });
   const [commentaire, setCommentaire] = useState('');
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -306,11 +327,15 @@ export default function LaisserAvisPage() {
 
     setSending(true);
     try {
+      const ratedScores = Object.fromEntries(
+        REVIEW_CRITERIA.map(({ key }) => [key, scores[key] || null]),
+      ) as Partial<ReviewScores>;
       const created = await apiReviews.create({
         reservation_id: reservation.id,
         note_appartement: noteAppartement,
         note_gerant: noteGerant,
         commentaire: text,
+        ...ratedScores,
       });
       setMyReview(created);
       setSuccess(true);
@@ -339,6 +364,21 @@ export default function LaisserAvisPage() {
         <StarPicker label="Logement" value={noteAppartement} onChange={setNoteAppartement} />
         <StarPicker label="Gérant" value={noteGerant} onChange={setNoteGerant} />
       </div>
+      <fieldset className="mt-4">
+        <legend className="text-xs font-semibold text-slate-500">
+          {t('roomDetailSection5.aria')}
+        </legend>
+        <div className="grid gap-3 mt-2 sm:grid-cols-2">
+          {REVIEW_CRITERIA.map(({ key, labelKey }) => (
+            <StarPicker
+              key={key}
+              label={t(labelKey)}
+              value={scores[key] || 0}
+              onChange={(value) => setScores((current) => ({ ...current, [key]: value }))}
+            />
+          ))}
+        </div>
+      </fieldset>
       <div className="relative mt-4">
         <textarea
           value={commentaire}

@@ -5,6 +5,7 @@ import { MarketProvider } from '../contexts/MarketContext';
 import RoomDetailMaq7 from './RoomDetailMaq7';
 
 vi.mock('../lib/api', () => ({
+  apiDiscover: { market: vi.fn(async () => ({ market: null })) },
   apiReviews: {
     listByRoom: vi.fn(async () => ({
       reviews: [
@@ -23,6 +24,14 @@ vi.mock('../lib/api', () => ({
       ],
       gerant_avg: 4.85,
       gerant_count: 13,
+      scores: {
+        note_proprete: 4.8,
+        note_exactitude: 4.5,
+        note_arrivee: 5,
+        note_communication: 4.2,
+        note_emplacement: 4.9,
+        note_rapport_qualite_prix: 4.6,
+      },
     })),
   },
   apiNewsletter: { subscribe: vi.fn() },
@@ -167,6 +176,9 @@ describe('RoomDetailMaq7 — première section', () => {
       expect(rating.getByText(label)).toBeInTheDocument();
     }
     expect(rating.getAllByRole('img', { name: /Évaluation globale/ })).toHaveLength(5);
+    // Les critères viennent du backend, pas d'un calcul à partir de la note globale.
+    expect(rating.getByText('4,8')).toBeInTheDocument();
+    expect(rating.getByText('4,2')).toBeInTheDocument();
   });
 
   it('affiche la présentation de l’hôte', async () => {

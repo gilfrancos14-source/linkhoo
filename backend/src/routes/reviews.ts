@@ -2,7 +2,11 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { supabaseAdmin } from '../config/supabase';
 import { requireClerkAuth } from '../middleware/clerkAuth';
 import { createClientLimiter } from '../utils/rateLimiters';
-import { reviewCreateSchema, reviewRoomQuerySchema } from '../validations/review';
+import {
+  REVIEW_SCORE_KEYS,
+  reviewCreateSchema,
+  reviewRoomQuerySchema,
+} from '../validations/review';
 import { attachTranslations, enqueueTranslations, resolveLocale } from '../i18n/translations';
 import {
   fetchRoomReviewStats,
@@ -11,6 +15,7 @@ import {
 
 const router = Router();
 const reviewsLimiter = createClientLimiter({ prefix: 'reviews' });
+const REVIEW_SCORE_COLUMNS = `, ${REVIEW_SCORE_KEYS.join(', ')}`;
 
 // GET /api/reviews?room_id= — avis publics d'un appartement + agrégats
 router.get('/', reviewsLimiter, async (req: Request, res: Response, next: NextFunction) => {
@@ -31,7 +36,7 @@ router.get('/', reviewsLimiter, async (req: Request, res: Response, next: NextFu
 
     const { data: roomReviews, error } = await supabaseAdmin
       .from('reviews')
-      .select('id, room_id, gerant_id, client_name, note_appartement, note_gerant, commentaire, created_at')
+      .select(`id, room_id, gerant_id, client_name, note_appartement, note_gerant, commentaire, created_at${REVIEW_SCORE_COLUMNS}`)
       .eq('room_id', roomId)
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -64,6 +69,17 @@ router.get('/', reviewsLimiter, async (req: Request, res: Response, next: NextFu
         : null;
     }
 
+    // Moyennes des six critères : uniquement sur les avis qui les ont renseignés.
+    const scores: Record<string, number | null> = {};
+    for (const key of REVIEW_SCORE_KEYS) {
+      const values = (roomReviews ?? [])
+        .map((review) => Number((review as Record<string, unknown>)[key]))
+        .filter((value) => Number.isFinite(value) && value >= 1 && value <= 5);
+      scores[key] = values.length
+        ? Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10
+        : null;
+    }
+
     res.json({
       reviews,
       room_avg: roomAvg,
@@ -71,6 +87,7 @@ router.get('/', reviewsLimiter, async (req: Request, res: Response, next: NextFu
       room_distribution: roomStats?.distribution ?? [],
       gerant_avg: gerantAvg,
       gerant_count: gerantCount,
+      scores,
     });
   } catch (err) {
     next(err);
@@ -195,6 +212,10 @@ router.post('/', requireClerkAuth, async (req: Request, res: Response, next: Nex
     const clientName = [client.prenom, client.nom].filter(Boolean).join(' ')
       || reservation.client_email.split('@')[0];
 
+    const scoreValues = Object.fromEntries(
+      REVIEW_SCORE_KEYS.map((key) => [key, parsedBody.data[key] ?? null]),
+    );
+
     const { data, error } = await supabaseAdmin
       .from('reviews')
       .insert({
@@ -206,8 +227,9 @@ router.post('/', requireClerkAuth, async (req: Request, res: Response, next: Nex
         note_appartement: parsedBody.data.note_appartement,
         note_gerant: parsedBody.data.note_gerant,
         commentaire: parsedBody.data.commentaire || '',
+        ...scoreValues,
       })
-      .select('id, room_id, gerant_id, client_name, reservation_id, note_appartement, note_gerant, commentaire, created_at')
+      .select(`id, room_id, gerant_id, client_name, reservation_id, note_appartement, note_gerant, commentaire, created_at${REVIEW_SCORE_COLUMNS}`)
       .single();
     if (error) throw error;
 

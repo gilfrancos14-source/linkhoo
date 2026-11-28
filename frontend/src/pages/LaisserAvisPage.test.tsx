@@ -235,6 +235,12 @@ describe('LaisserAvisPage — avis du logement', () => {
         note_appartement: 3,
         note_gerant: 4,
         commentaire: 'Séjour très agréable et hôte disponible.',
+        note_proprete: null,
+        note_exactitude: null,
+        note_arrivee: null,
+        note_communication: null,
+        note_emplacement: null,
+        note_rapport_qualite_prix: null,
       });
     });
 

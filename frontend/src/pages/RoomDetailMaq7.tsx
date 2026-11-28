@@ -10,7 +10,7 @@ import { fetchCategoriesByMarket, type Category } from '../data/categories';
 import { fetchRoomById, type Room } from '../data/rooms';
 import { EQUIPMENT_CATEGORIES } from '../data/equipments';
 import { useHomePath } from '../hooks/useHomePath';
-import { apiReviews, type RoomReviewsResponse } from '../lib/api';
+import { apiReviews, type ReviewScores, type RoomReviewsResponse } from '../lib/api';
 import { formatPrice } from '../lib/roomDisplay';
 import { addReservation } from '../lib/reservations';
 import { newClientKey } from '../lib/offlineQueue';
@@ -197,27 +197,38 @@ function RoomDetailContent() {
     setDepart('');
   };
 
-  const rating = reviews?.room_avg ?? 4.85;
-  const ratingText = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(rating);
+  const rating = reviews?.room_avg ?? null;
+  const ratingText =
+    rating == null
+      ? '—'
+      : new Intl.NumberFormat(locale, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(rating);
   const distribution = [5, 4, 3, 2, 1].map(
     (note) => reviews?.room_distribution?.find((item) => item.note === note)?.percent ?? 0,
   );
-  // Sans répartition renvoyée par l'API, on retombe sur la courbe type de s5.
-  const bars = reviews?.room_distribution?.length ? distribution : [85, 15, 0, 0, 0];
+  // Pas de notes fictives : sans répartition de l'API, l'histogramme est vide.
+  const bars = reviews?.room_distribution?.length ? distribution : [0, 0, 0, 0, 0];
   const formatNote = (value: number) =>
     new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
       .format(Math.min(5, Math.max(0, value)));
-  const scoreDetails: { label: string; value: string; icon: ScoreIconName }[] = [
-    { label: t('roomDetailSection5.cleanliness'), value: formatNote(rating - 0.25), icon: 'broom' },
-    { label: t('roomDetailSection5.accuracy'), value: formatNote(rating - 0.15), icon: 'check' },
-    { label: t('roomDetailSection5.checkin'), value: formatNote(rating - 0.05), icon: 'key' },
-    { label: t('roomDetailSection5.communication'), value: formatNote(rating + 0.15), icon: 'chat' },
-    { label: t('roomDetailSection5.location'), value: formatNote(rating - 0.35), icon: 'map' },
-    { label: t('roomDetailSection5.value'), value: formatNote(rating - 0.05), icon: 'tag' },
+  const criteria: readonly { key: keyof ReviewScores; label: string; icon: ScoreIconName }[] = [
+    { key: 'note_proprete', label: t('roomDetailSection5.cleanliness'), icon: 'broom' },
+    { key: 'note_exactitude', label: t('roomDetailSection5.accuracy'), icon: 'check' },
+    { key: 'note_arrivee', label: t('roomDetailSection5.checkin'), icon: 'key' },
+    { key: 'note_communication', label: t('roomDetailSection5.communication'), icon: 'chat' },
+    { key: 'note_emplacement', label: t('roomDetailSection5.location'), icon: 'map' },
+    { key: 'note_rapport_qualite_prix', label: t('roomDetailSection5.value'), icon: 'tag' },
   ];
+  const scoreDetails = criteria.map(({ key, label, icon }) => {
+    const score = reviews?.scores?.[key];
+    return {
+      label,
+      icon,
+      value: score == null ? '—' : formatNote(Number(score)),
+    };
+  });
 
   const host = room?.gerant;
   const hostName = host ? `${host.prenom ?? ''} ${host.nom ?? ''}`.trim() || 'Linkhoo' : 'Linkhoo';
@@ -254,8 +265,9 @@ function RoomDetailContent() {
   const isSuperhost = Boolean(
     host?.is_verified && gerantAvg != null && gerantAvg >= 4.8 && hostReviewCount >= 10 && experienceMonths >= 3,
   );
-  const responseRate = Math.min(100, 80 + (host?.is_verified ? 10 : 0) + (host?.is_premium ? 10 : 0));
-  const respondsQuickly = responseRate >= 100 || experienceMonths >= 6;
+  // Taux calculé par le backend sur les vraies réservations, pas déduit du profil.
+  const responseRate = room?.hostResponseRate ?? null;
+  const respondsQuickly = responseRate != null && responseRate >= 80;
   const spokenLanguages = new Intl.ListFormat(locale, { type: 'conjunction' }).format([
     t('roomDetailSection6.langEnglish'),
     t('roomDetailSection6.langFrench'),
@@ -879,7 +891,7 @@ function RoomDetailContent() {
               <div className="m7-host__block">
                 <h3>{t('roomDetailSection6.hostInfo')}</h3>
                 <p className="m7-host__details">
-                  {t('roomDetailSection6.responseRate', { rate: responseRate })}
+                  {t('roomDetailSection6.responseRate', { rate: responseRate ?? '—' })}
                   <br />
                   {respondsQuickly ? t('roomDetailSection6.responseFast') : t('roomDetailSection6.responseSlow')}
                 </p>

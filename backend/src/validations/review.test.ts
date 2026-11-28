@@ -163,3 +163,23 @@ describe('reviewRoomQuerySchema', () => {
     expect(reviewRoomQuerySchema.safeParse({ room_id: null }).success).toBe(false);
   });
 });
+
+describe('notes par critère', () => {
+  it('accepte les six critères', () => {
+    const parsed = reviewCreateSchema.safeParse({
+      ...validReview,
+      note_proprete: 5,
+      note_exactitude: 4,
+      note_arrivee: 5,
+      note_communication: 4,
+      note_emplacement: 3,
+      note_rapport_qualite_prix: 5,
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it('refuse un critère hors bornes et accepte null', () => {
+    expect(reviewCreateSchema.safeParse({ ...validReview, note_proprete: 6 }).success).toBe(false);
+    expect(reviewCreateSchema.safeParse({ ...validReview, note_proprete: null }).success).toBe(true);
+  });
+});
