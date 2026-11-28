@@ -74,6 +74,8 @@ const roomFields = {
   promo_group: z.enum(['promo_15', 'promo_10', 'promo_5']).nullable().optional(),
   promo_start: z.string().nullable().optional(),
   promo_end: z.string().nullable().optional(),
+  promo_min_nights: z.number().int().min(1).max(365).nullable().optional(),
+  promo_max_nights: z.number().int().min(1).max(365).nullable().optional(),
 };
 
 /**

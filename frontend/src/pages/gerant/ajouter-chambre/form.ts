@@ -51,6 +51,12 @@ export interface FormData {
   equipments: string[];
   /** Service de restauration (catalogue RESTAURATION_KEYS). */
   restauration: string;
+  /** Réduction appliquée par le gérant (promo_15 / promo_10 / promo_5). */
+  promoGroup: string;
+  promoStart: string;
+  promoEnd: string;
+  promoMinNights: number;
+  promoMaxNights: number;
 }
 
 export const emptyForm: FormData = {
@@ -68,6 +74,11 @@ export const emptyForm: FormData = {
   isPopular: false,
   equipments: [],
   restauration: 'aucune',
+  promoGroup: '',
+  promoStart: '',
+  promoEnd: '',
+  promoMinNights: 1,
+  promoMaxNights: 30,
 };
 
 export const marketPays: Record<string, string> = {
@@ -99,6 +110,11 @@ export function formFromRoom(room: Room): FormData {
     isPopular: Boolean(room.isPopular),
     equipments: room.equipments ?? [],
     restauration: room.restauration ?? 'aucune',
+    promoGroup: room.promoGroup ?? '',
+    promoStart: room.promoStart ?? '',
+    promoEnd: room.promoEnd ?? '',
+    promoMinNights: room.promoMinNights ?? 1,
+    promoMaxNights: room.promoMaxNights ?? 30,
   };
 }
 

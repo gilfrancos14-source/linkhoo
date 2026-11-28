@@ -258,6 +258,35 @@ describe('AjouterChambreMaq3', () => {
     );
   });
 
+  it('enregistre la promotion définie par le gérant', async () => {
+    renderPage();
+    await fillStep1();
+
+    await userEvent.selectOptions(document.querySelector<HTMLSelectElement>('#maq3-promo')!, 'promo_10');
+    setText(document.querySelector<HTMLInputElement>('#maq3-promo-min')!, '3');
+    setText(document.querySelector<HTMLInputElement>('#maq3-promo-max')!, '14');
+    setText(document.querySelector<HTMLInputElement>('#maq3-promo-start')!, '2026-12-01');
+    setText(document.querySelector<HTMLInputElement>('#maq3-promo-end')!, '2026-12-31');
+    await fillStep2();
+
+    fireEvent.change(document.querySelector<HTMLInputElement>('input[type="file"]')!, {
+      target: { files: [new File(['x'], 'photo.jpg', { type: 'image/jpeg' })] },
+    });
+    await act(async () => {});
+    await userEvent.click(screen.getByRole('button', { name: /enregistrer la chambre/i }));
+
+    await waitFor(() => expect(mocks.createRoom).toHaveBeenCalledTimes(1));
+    expect(mocks.createRoom).toHaveBeenCalledWith(
+      expect.objectContaining({
+        promoGroup: 'promo_10',
+        promoMinNights: 3,
+        promoMaxNights: 14,
+        promoStart: '2026-12-01',
+        promoEnd: '2026-12-31',
+      }),
+    );
+  });
+
   it('enregistre le lien Google Maps saisi à l’étape 1', async () => {
     renderPage();
     await screen.findByRole('option', { name: 'Appartements' });

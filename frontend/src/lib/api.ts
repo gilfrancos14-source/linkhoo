@@ -262,6 +262,9 @@ export interface RoomData {
   promo_group?: string | null;
   promo_start?: string | null;
   promo_end?: string | null;
+  /** Fenêtre de séjour (nuits) à laquelle la réduction s'applique. */
+  promo_min_nights?: number | null;
+  promo_max_nights?: number | null;
   /** Titre de la catégorie, joint par le backend pour la fiche chambre. */
   category_title?: string | null;
   /** Popularité calculée depuis `is_popular` (badge « coup de cœur »). */

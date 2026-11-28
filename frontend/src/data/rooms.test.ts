@@ -169,6 +169,8 @@ describe('fetchRoomsByMarket', () => {
       mapsUrl: null,
       equipments: [],
       restauration: 'aucune',
+      promoMinNights: null,
+      promoMaxNights: null,
     });
   });
 

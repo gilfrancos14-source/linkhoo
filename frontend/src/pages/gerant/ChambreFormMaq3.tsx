@@ -193,6 +193,13 @@ export default function ChambreFormMaq3({
     if (!form.priceNum || form.priceNum <= 0) next.priceNum = 'Le prix doit être supérieur à 0';
     if (!form.conditions.trim()) next.conditions = 'Les conditions sont requises';
     else if (containsPhoneNumber(form.conditions)) next.conditions = PHONE_IN_TEXT_ERROR;
+    if (form.promoGroup) {
+      if (form.promoMinNights < 1 || form.promoMaxNights < form.promoMinNights) {
+        next.promo = 'La durée maximale doit être supérieure ou égale à la durée minimale';
+      } else if (form.promoStart && form.promoEnd && form.promoEnd < form.promoStart) {
+        next.promo = 'La fin de l’offre doit être après son début';
+      }
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -276,6 +283,11 @@ export default function ChambreFormMaq3({
         isPopular: form.isPopular,
         equipments: form.equipments,
         restauration: form.restauration,
+        promoGroup: form.promoGroup || null,
+        promoStart: form.promoStart || null,
+        promoEnd: form.promoEnd || null,
+        promoMinNights: form.promoGroup ? form.promoMinNights : null,
+        promoMaxNights: form.promoGroup ? form.promoMaxNights : null,
       };
 
       if (room && !saveRoom) {
@@ -697,6 +709,75 @@ export default function ChambreFormMaq3({
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="mt-5 rounded-xl border border-slate-200 p-4">
+              <p className="lbl">Offre promotionnelle</p>
+              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="maq3-promo" className="lbl">Réduction</label>
+                  <select
+                    id="maq3-promo"
+                    className="input"
+                    value={form.promoGroup}
+                    onChange={(event) => update('promoGroup', event.target.value)}
+                  >
+                    <option value="">Aucune promotion</option>
+                    <option value="promo_15">-15 %</option>
+                    <option value="promo_10">-10 %</option>
+                    <option value="promo_5">-5 %</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="maq3-promo-min" className="lbl">À partir de (nuits)</label>
+                  <input
+                    id="maq3-promo-min"
+                    type="number"
+                    min={1}
+                    max={365}
+                    className="input"
+                    value={form.promoMinNights}
+                    disabled={!form.promoGroup}
+                    onChange={(event) => update('promoMinNights', Number(event.target.value))}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="maq3-promo-max" className="lbl">Jusqu'à (nuits)</label>
+                  <input
+                    id="maq3-promo-max"
+                    type="number"
+                    min={1}
+                    max={365}
+                    className="input"
+                    value={form.promoMaxNights}
+                    disabled={!form.promoGroup}
+                    onChange={(event) => update('promoMaxNights', Number(event.target.value))}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="maq3-promo-start" className="lbl">Début de l'offre</label>
+                  <input
+                    id="maq3-promo-start"
+                    type="date"
+                    className="input"
+                    value={form.promoStart}
+                    disabled={!form.promoGroup}
+                    onChange={(event) => update('promoStart', event.target.value)}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="maq3-promo-end" className="lbl">Fin de l'offre</label>
+                  <input
+                    id="maq3-promo-end"
+                    type="date"
+                    className="input"
+                    value={form.promoEnd}
+                    disabled={!form.promoGroup}
+                    onChange={(event) => update('promoEnd', event.target.value)}
+                  />
+                </div>
+              </div>
+              {errors.promo && <p className="err">{errors.promo}</p>}
             </div>
 
             <label className="mt-5 flex items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">

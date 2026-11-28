@@ -31,6 +31,8 @@ export interface Room {
   promoGroup?: string | null;
   promoStart?: string | null;
   promoEnd?: string | null;
+  promoMinNights?: number | null;
+  promoMaxNights?: number | null;
   gerantId?: string;
   gerant?: GerantInfo;
   /** Gérant premium : la carte affiche le badge « Premium ». */
@@ -82,6 +84,8 @@ export function mapRoom(d: RoomData): Room {
     promoGroup: d.promo_group ?? null,
     promoStart: d.promo_start ?? null,
     promoEnd: d.promo_end ?? null,
+    promoMinNights: d.promo_min_nights ?? null,
+    promoMaxNights: d.promo_max_nights ?? null,
     gerantId: d.gerant_id,
     gerant: d.gerant,
     gerantPremium: d.gerant_premium,
@@ -205,6 +209,8 @@ export function toRoomDataPayload(data: Omit<Room, 'id'>): Omit<RoomData, 'id'> 
     promo_group: data.promoGroup ?? null,
     promo_start: data.promoStart ?? null,
     promo_end: data.promoEnd ?? null,
+    promo_min_nights: data.promoMinNights ?? null,
+    promo_max_nights: data.promoMaxNights ?? null,
     image_labels: data.imageLabels ?? {},
     equipments: data.equipments ?? [],
     restauration: data.restauration ?? 'aucune',
@@ -244,6 +250,8 @@ export async function updateRoom(id: string, updates: Partial<Room>): Promise<vo
   if (updates.promoGroup !== undefined) payload.promo_group = updates.promoGroup;
   if (updates.promoStart !== undefined) payload.promo_start = updates.promoStart;
   if (updates.promoEnd !== undefined) payload.promo_end = updates.promoEnd;
+  if (updates.promoMinNights !== undefined) payload.promo_min_nights = updates.promoMinNights;
+  if (updates.promoMaxNights !== undefined) payload.promo_max_nights = updates.promoMaxNights;
   if (updates.imageLabels !== undefined) payload.image_labels = updates.imageLabels;
   if (updates.equipments !== undefined) payload.equipments = updates.equipments;
   if (updates.restauration !== undefined) payload.restauration = updates.restauration;

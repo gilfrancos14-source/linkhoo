@@ -327,6 +327,29 @@ describe('roomAvailableQuerySchema', () => {
   });
 });
 
+describe('promotion du gérant', () => {
+  it('accepte une réduction avec fenêtre de séjour et dates', () => {
+    const parsed = roomCreateSchema.safeParse({
+      ...validRoom,
+      promo_group: 'promo_15',
+      promo_min_nights: 3,
+      promo_max_nights: 14,
+      promo_start: '2026-12-01',
+      promo_end: '2026-12-31',
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.promo_group).toBe('promo_15');
+      expect(parsed.data.promo_min_nights).toBe(3);
+    }
+  });
+
+  it('refuse un groupe inconnu ou une durée hors bornes', () => {
+    expect(roomCreateSchema.safeParse({ ...validRoom, promo_group: 'promo_50' }).success).toBe(false);
+    expect(roomCreateSchema.safeParse({ ...validRoom, promo_min_nights: 0 }).success).toBe(false);
+  });
+});
+
 describe('équipements et restauration', () => {
   it('accepte des équipements connus et une restauration', () => {
     const parsed = roomCreateSchema.safeParse({
