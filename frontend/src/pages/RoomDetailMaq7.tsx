@@ -200,7 +200,7 @@ function RoomDetailContent() {
   const rating = reviews?.room_avg ?? null;
   const ratingText =
     rating == null
-      ? '—'
+      ? '0'
       : new Intl.NumberFormat(locale, {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
@@ -226,7 +226,7 @@ function RoomDetailContent() {
     return {
       label,
       icon,
-      value: score == null ? '—' : formatNote(Number(score)),
+      value: score == null ? '0' : formatNote(Number(score)),
     };
   });
 
@@ -249,7 +249,7 @@ function RoomDetailContent() {
       : null);
   const hostRatingText =
     gerantAvg == null
-      ? '—'
+      ? '0'
       : new Intl.NumberFormat(locale, {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
@@ -891,7 +891,7 @@ function RoomDetailContent() {
               <div className="m7-host__block">
                 <h3>{t('roomDetailSection6.hostInfo')}</h3>
                 <p className="m7-host__details">
-                  {t('roomDetailSection6.responseRate', { rate: responseRate ?? '—' })}
+                  {t('roomDetailSection6.responseRate', { rate: responseRate ?? 0 })}
                   <br />
                   {respondsQuickly ? t('roomDetailSection6.responseFast') : t('roomDetailSection6.responseSlow')}
                 </p>
