@@ -742,7 +742,9 @@
     "bedrooms": "bedrooms",
     "bath": "bathroom",
     "privateRoom": "Private room",
-    "allFees": "Prices include all fees"
+    "allFees": "Prices include all fees",
+    "night": "night",
+    "nights": "nights"
   },
   "roomDetailSection2": {
     "aria": "Highlights and booking",
@@ -781,6 +783,8 @@
     "phone": "Phone",
     "email": "Email",
     "fillContact": "Please fill in your last name, first name, phone and email.",
+    "promoApplied": "-{{rate}}% discount applied",
+    "promoInstead": "{{total}} instead of {{base}}",
     "bookingSuccess": "Your request has been sent to the host.",
     "bookingError": "Could not send the request. Please try again.",
     "sending": "Sending…"

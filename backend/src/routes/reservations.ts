@@ -8,7 +8,8 @@ import { createClientLimiter } from '../utils/rateLimiters';
 import { isQualifiedGerantUser } from '../utils/gerantAccess';
 import { isPremiumActive } from '../utils/premium';
 import { fetchAllRows } from '../utils/fetchAll';
-import { calculateMontant, unitFromPriceUnit } from '../utils/duration';
+import { unitFromPriceUnit } from '../utils/duration';
+import { promoTotals, type PromoRoom } from '../utils/promo';
 import { RESERVATION_COLUMNS } from '../utils/selects';
 import {
   CANCELLATION_TOO_LATE_MESSAGE,
@@ -318,7 +319,7 @@ router.post('/', requireClerkAuth, reserveLimiter, async (req: Request, res: Res
 
     const { data: room, error: roomError } = await supabaseAdmin
       .from('rooms')
-      .select('id, disponible, title, price_num, price_unit, gerant_id')
+      .select('id, disponible, title, price_num, price_unit, gerant_id, promo_group, promo_start, promo_end, promo_min_nights, promo_max_nights')
       .eq('id', parsedBody.data.room_id)
       .maybeSingle();
     if (roomError) throw roomError;
@@ -330,7 +331,8 @@ router.post('/', requireClerkAuth, reserveLimiter, async (req: Request, res: Res
       return res.status(400).json({ error: `Cette chambre est facturée ${room.price_unit}` });
     }
 
-    const montant = calculateMontant(room.price_num, parsedBody.data.duree_nombre);
+    const totals = promoTotals(room as unknown as PromoRoom, parsedBody.data.duree_nombre);
+    const montant = totals.total;
 
     const reservationId = randomUUID();
     const { data: rpcRows, error: rpcError } = await supabaseAdmin.rpc('create_reservation_checked', {
@@ -382,6 +384,18 @@ router.post('/', requireClerkAuth, reserveLimiter, async (req: Request, res: Res
     const isReplay = Boolean(clientKey) && data.id !== reservationId;
     if (isReplay && !isOwnReservation(data as { client_email?: unknown })) {
       return res.status(404).json({ error: 'Réservation introuvable' });
+    }
+
+    if (!isReplay && totals.rate > 0) {
+      const { error: promoError } = await supabaseAdmin
+        .from('reservations')
+        .update({
+          promo_group: room.promo_group,
+          remise_percent: totals.rate,
+          montant_base: totals.base,
+        })
+        .eq('id', data.id);
+      if (promoError) console.error('[reservations] promo update failed:', promoError.message);
     }
 
     if (!isReplay) {

@@ -742,7 +742,9 @@
     "bedrooms": "chambres",
     "bath": "salle de bain",
     "privateRoom": "Chambre privée",
-    "allFees": "Les prix comprennent tous les frais"
+    "allFees": "Les prix comprennent tous les frais",
+    "night": "nuit",
+    "nights": "nuits"
   },
   "roomDetailSection2": {
     "aria": "Points forts et réservation",
@@ -781,6 +783,8 @@
     "phone": "Téléphone",
     "email": "Email",
     "fillContact": "Renseignez votre nom, vos prénoms, votre téléphone et votre email.",
+    "promoApplied": "Réduction -{{rate}} % appliquée",
+    "promoInstead": "{{total}} au lieu de {{base}}",
     "bookingSuccess": "Votre demande a été envoyée au gérant.",
     "bookingError": "Impossible d'envoyer la demande. Réessayez.",
     "sending": "Envoi…"

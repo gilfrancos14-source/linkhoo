@@ -23,6 +23,45 @@ describe('ressources i18n', () => {
     }
   });
 
+  it('couvre toutes les clés littérales utilisées par le code', () => {
+    const sources = import.meta.glob('../**/*.{ts,tsx}', {
+      query: '?raw',
+      import: 'default',
+      eager: true,
+    }) as Record<string, string>;
+
+    const used = new Set<string>();
+    for (const [file, source] of Object.entries(sources)) {
+      if (file.includes('.test.')) continue;
+      for (const match of source.matchAll(/\bt\(\s*['"]([^'"]+)['"]/g)) {
+        used.add(match[1]!);
+      }
+    }
+
+    const resolve = (key: string, resources: Record<string, unknown>): unknown =>
+      key.split('.').reduce<unknown>(
+        (node, part) => (node as Record<string, unknown> | null)?.[part],
+        resources,
+      );
+
+    const missing: string[] = [];
+    for (const key of used) {
+      for (const [locale, resources] of Object.entries(locales)) {
+        const value = resolve(key, resources);
+        // Les clés de pluriel sont résolues avec un suffixe par i18next
+        // (`_one`, `_other`…) ; les listes sont lues avec `returnObjects`.
+        const plural = ['one', 'other', 'few', 'many', 'zero', 'two'].some((form) =>
+          typeof resolve(`${key}_${form}`, resources) === 'string',
+        );
+        const object = value !== null && typeof value === 'object';
+        if (typeof value !== 'string' && !plural && !object) {
+          missing.push(`${key} (${locale})`);
+        }
+      }
+    }
+    expect(missing.sort(), 'clés utilisées absentes des traductions').toEqual([]);
+  });
+
   it('couvre les libellés de la phase 2', () => {
     for (const key of [
       'landing.header.bannerAlt',
@@ -44,6 +83,8 @@ describe('ressources i18n', () => {
       'partnerAds.aria',
       'partnerAds.defaultAlt',
       'partnerAds.slide1',
+      'roomDetailSection2.promoApplied',
+      'roomDetailSection2.promoInstead',
       'landing.language.label',
       'equipments.title',
       'equipments.items.wifi',
@@ -52,6 +93,8 @@ describe('ressources i18n', () => {
       'roomDetailHero.share',
       'roomDetailHero.allPhotos',
       'roomDetailHero.allFees',
+      'roomDetailHero.night',
+      'roomDetailHero.nights',
       'roomDetailSection2.reserve',
       'roomDetailSection2.noCharge',
       'roomDetailSection2.responseRate',

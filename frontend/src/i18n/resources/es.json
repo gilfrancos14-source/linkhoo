@@ -742,7 +742,9 @@
     "bedrooms": "habitaciones",
     "bath": "baño",
     "privateRoom": "Habitación privada",
-    "allFees": "Los precios incluyen todos los gastos"
+    "allFees": "Los precios incluyen todos los gastos",
+    "night": "noche",
+    "nights": "noches"
   },
   "roomDetailSection2": {
     "aria": "Aspectos destacados y reserva",
@@ -781,6 +783,8 @@
     "phone": "Teléfono",
     "email": "Email",
     "fillContact": "Completa tu apellido, nombre, teléfono y email.",
+    "promoApplied": "Descuento -{{rate}} % aplicado",
+    "promoInstead": "{{total}} en lugar de {{base}}",
     "bookingSuccess": "Tu solicitud se ha enviado al anfitrión.",
     "bookingError": "No se pudo enviar la solicitud. Inténtalo de nuevo.",
     "sending": "Enviando…"

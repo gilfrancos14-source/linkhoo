@@ -12,6 +12,7 @@ import { EQUIPMENT_CATEGORIES } from '../data/equipments';
 import { useHomePath } from '../hooks/useHomePath';
 import { apiReviews, type ReviewScores, type RoomReviewsResponse } from '../lib/api';
 import { formatPrice } from '../lib/roomDisplay';
+import { promoTotals } from '../lib/promo';
 import { addReservation } from '../lib/reservations';
 import { newClientKey } from '../lib/offlineQueue';
 import { MAQUETTE_NAV_ITEMS } from '../maquette/nav';
@@ -142,6 +143,24 @@ function RoomDetailContent() {
       ? Math.max(1, Math.round((Date.parse(depart) - Date.parse(arrivee)) / 86_400_000))
       : 0;
   const priceText = room ? formatPrice(room.priceNum || room.price) : '';
+  const bookingTotals = useMemo(
+    () =>
+      room
+        ? promoTotals(
+            {
+              price_num: room.priceNum || Number(room.price) || 0,
+              price_unit: room.priceUnit,
+              promo_group: room.promoGroup,
+              promo_start: room.promoStart,
+              promo_end: room.promoEnd,
+              promo_min_nights: room.promoMinNights,
+              promo_max_nights: room.promoMaxNights,
+            },
+            nights,
+          )
+        : { base: 0, rate: 0, discount: 0, total: 0 },
+    [room, nights],
+  );
 
   const reviewLanguage = i18n.language.split('-')[0];
   const reviewLocale =
@@ -569,6 +588,32 @@ function RoomDetailContent() {
                   {nights > 0 ? ` pour ${nights} ${nights > 1 ? t('roomDetailHero.nights') : t('roomDetailHero.night')}` : ''}
                 </p>
 
+                {nights > 0 && bookingTotals.rate > 0 && (
+                  <p
+                    className="m7-book__promo"
+                    role="status"
+                    style={{
+                      marginTop: 8,
+                      padding: '8px 10px',
+                      borderRadius: 10,
+                      background: '#fff7ed',
+                      color: '#9a3412',
+                      fontSize: 12,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 2,
+                    }}
+                  >
+                    <strong>{t('roomDetailSection2.promoApplied', { rate: bookingTotals.rate })}</strong>
+                    <span>
+                      {t('roomDetailSection2.promoInstead', {
+                        total: formatPrice(bookingTotals.total),
+                        base: formatPrice(bookingTotals.base),
+                      })}
+                    </span>
+                  </p>
+                )}
+
                 <div className="m7-book__dates">
                   <label>
                     <input
@@ -680,7 +725,7 @@ function RoomDetailContent() {
                         dateFin: depart,
                         dureeNombre: nights,
                         dureeUnite: 'nuit',
-                        montant: Number(room.priceNum || room.price) * nights,
+                        montant: bookingTotals.total,
                         clientKey: newClientKey(),
                       });
                       setBookingNotice(t('roomDetailSection2.bookingSuccess'));

@@ -186,6 +186,38 @@ describe('POST /api/reservations', () => {
     expect(supabaseAdmin.rpc).not.toHaveBeenCalled();
   });
 
+  it('201 : applique la remise du gérant au montant enregistré', async () => {
+    rooms = fakeChain({
+      data: {
+        ...availableRoom,
+        promo_group: 'promo_15',
+        promo_start: '2020-01-01',
+        promo_end: '2099-01-01',
+        promo_min_nights: 2,
+        promo_max_nights: 5,
+      },
+      error: null,
+    });
+    stubTables({});
+    mockRpc([{ data: [{ id: 'resa-promo', statut: 'en_attente' }], error: null }]);
+
+    const res = await request(app)
+      .post('/api/reservations')
+      .set('Authorization', clerkBearer('user_1'))
+      .send(validReservation);
+
+    expect(res.status).toBe(201);
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith(
+      'create_reservation_checked',
+      expect.objectContaining({ p_montant: 12750 }),
+    );
+    expect(reservations.update).toHaveBeenCalledWith({
+      promo_group: 'promo_15',
+      remise_percent: 15,
+      montant_base: 15000,
+    });
+  });
+
   it('404 si la chambre n’existe pas', async () => {
     const res = await request(app).post('/api/reservations').set('Authorization', clerkBearer('user_1')).send(validReservation);
     expect(res.status).toBe(404);
