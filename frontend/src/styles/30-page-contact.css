@@ -9,11 +9,12 @@
   --ct-line: #f0e7df;
   --ct-muted: #64748b;
 
-  /* Texte d'accent en bleu nuit ; orange réservé à quelques icônes. */
+  /* Texte d'accent en bleu nuit ; pastilles d'icônes en bleu nuit avec
+     pictogramme blanc, les autres icônes restent orange. */
   --ct-text: #0e1433;
-  --ct-icon: #0b2a55;
+  --ct-icon: #f97316;
   --ct-icon-accent: #f97316;
-  --ct-icon-bg: #fff7ed; /* fond pâle des pastilles d'icônes orange */
+  --ct-icon-bg: #0e1433; /* fond bleu nuit des pastilles */
 
   background: #fff;
   color: var(--ct-ink);
@@ -24,7 +25,7 @@
 }
 
 .ct-announce {
-  background: linear-gradient(90deg, var(--ct-brand), #9a3412);
+  background: linear-gradient(90deg, #0e1433, #1c2a5a);
   color: #fff;
   height: 32px;
   font-size: 11.5px;
@@ -1625,7 +1626,7 @@
 }
 
 .contact-page .ct-icon-btn:hover {
-  color: var(--ct-icon);
+  color: #ffffff;
 }
 
 .contact-page .ct-footer__logo svg,
@@ -1636,7 +1637,7 @@
   color: #fff;
 }
 
-/* ---------- Pastilles d'icônes : orange sur fond pâle ---------- */
+/* ---------- Pastilles d'icônes : fond bleu nuit, icône blanche ---------- */
 .contact-page .ct-highlights__icon,
 .contact-page .ct-hero__card-icon,
 .contact-page .ct-card__head-icon,
@@ -1644,7 +1645,7 @@
 .contact-page .ct-details__icon,
 .contact-page .ct-faq__head-icon {
   background: var(--ct-icon-bg);
-  color: var(--ct-icon-accent);
+  color: #ffffff;
 }
 
 .contact-page .ct-icon-btn:hover {
@@ -1659,4 +1660,5 @@
 
 .contact-page .ct-newsletter button:hover {
   background: var(--ct-icon-bg);
+  color: #ffffff;
 }
