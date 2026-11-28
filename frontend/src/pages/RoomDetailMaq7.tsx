@@ -714,9 +714,7 @@ function RoomDetailContent() {
         <section className="m7-rating" aria-label={t('roomDetailSection5.aria')}>
           <div className="m7-rating__hero">
             <div className="m7-rating__score-row">
-              <GuestFavouriteLaurel className="m7-rating__laurel" />
               <strong className="m7-rating__score">{ratingText}</strong>
-              <GuestFavouriteLaurel className="m7-rating__laurel m7-rating__laurel--right" />
             </div>
             <h2 className="m7-rating__badge">{t('roomDetailSection5.badge')}</h2>
             <p className="m7-rating__description">{t('roomDetailSection5.description')}</p>
@@ -917,26 +915,6 @@ function RoomDetailContent() {
         <LandingFooter />
       </div>
     </div>
-  );
-}
-
-/** Couronnes de laurier du badge « Coup de cœur voyageurs » (s5.png). */
-function GuestFavouriteLaurel({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 64 120" fill="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="m7-laurel-leaf" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#5c5c5c" />
-          <stop offset="0.55" stopColor="#3a3a3a" />
-          <stop offset="1" stopColor="#242424" />
-        </linearGradient>
-      </defs>
-      <path d="M34 10C14 36 14 76 45 107" stroke="#2b2b2b" strokeWidth="6" strokeLinecap="round" />
-      <ellipse cx="34" cy="19" rx="13" ry="18" transform="rotate(-8 34 19)" fill="url(#m7-laurel-leaf)" />
-      <ellipse cx="25" cy="46" rx="12" ry="17" transform="rotate(-32 25 46)" fill="url(#m7-laurel-leaf)" />
-      <ellipse cx="30" cy="72" rx="12" ry="16" transform="rotate(-48 30 72)" fill="url(#m7-laurel-leaf)" />
-      <ellipse cx="47" cy="95" rx="19" ry="10" transform="rotate(-18 47 95)" fill="url(#m7-laurel-leaf)" />
-    </svg>
   );
 }
 
