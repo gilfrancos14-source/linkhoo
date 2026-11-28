@@ -130,6 +130,14 @@ const reviewsResponse = {
   room_count: 12,
   gerant_avg: 4.7,
   gerant_count: 8,
+  scores: {
+    note_proprete: 4.8,
+    note_exactitude: 4.5,
+    note_arrivee: 4.9,
+    note_communication: 4.6,
+    note_emplacement: 4.7,
+    note_rapport_qualite_prix: 4.4,
+  },
 };
 
 const adminMeResponse = {
